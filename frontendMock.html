@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+    <script src="./dist/index.bundle.js"></script>
+    <script>
+        window.addEventListener('load', async function () {
+
+            const OT_NODE_HOSTNAME = 'alpha-stella-node-06.origin-trail.network';
+            const OT_NODE_PORT = '8900';
+
+            let options = { endpoint: OT_NODE_HOSTNAME, port: OT_NODE_PORT, useSSL: true, loglevel: 'trace' };
+            this.dkg = new SemanticWeb3(options);
+
+            this.dkg.nodeInfo().then(result => {
+                console.log('============ Node info results ===================');
+                console.log(JSON.stringify(result, null, 2));
+                console.log('===============================');
+            });
+
+            // SET & GET
+            // options = {
+            //     keywords: ['ETHDenver'],
+            //     visibility: 'public'
+            // };
+            //
+            // const content = {
+            //     "@context": "https://www.schema.org/",
+            //     "@type": "ERC721",
+            //     "asset_data": {
+            //         "properties": {
+            //             "prop1": "value1",
+            //             "prop2": {
+            //                 "abc":"ads",
+            //                 "abs":"adsb"
+            //             },
+            //         },
+            //
+            //         "urls": "https://opensea.io/assets/0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d/8520"
+            //
+            //     },
+            //     "native_blockchain": "polygon",
+            //     "onchain_data": {
+            //         "contract_address": "0x123",
+            //         "tokenID": "32",
+            //         "tokenURI": "....",
+            //         "owner": "0x12345431",
+            //         "name": "Tracie 101 Updated",
+            //         "symbol": "TRACIE",
+            //         "eventHistory": [{
+            //             "timestamp": "2020-10-12",
+            //             "from": "0x123",
+            //             "to": "0x343",
+            //             "event": "Transfer",
+            //         },
+            //             {
+            //                 "timestamp": "2020-09-11",
+            //                 "from": "0x123",
+            //                 "to": "0x343",
+            //                 "event": "Sale",
+            //                 "price": "1.23",
+            //                 "currency": "ETH",
+            //             }
+            //
+            //         ]
+            //     },
+            //     "erc721_metadata": {
+            //         "title": "Asset Metadata",
+            //         "type": "object",
+            //         "properties": {
+            //             "name": {
+            //                 "type": "string",
+            //                 "description": "Identifies the asset to which this NFT represents"
+            //             },
+            //             "description": {
+            //                 "type": "string",
+            //                 "description": "Describes the asset to which this NFT represents"
+            //             },
+            //             "image": {
+            //                 "type": "string",
+            //                 "description": "A URI pointing to a resource with mime type image/* representing the asset to which this NFT represents. Consider making any images at a width between 320 and 1080 pixels and aspect ratio between 1.91:1 and 4:5 inclusive."
+            //             }
+            //         }
+            //     },
+            //     "linkedTo": [
+            //         "ual1",
+            //         "ual2",
+            //     ]
+            // }
+            // let result = await dkg.assets.create(content,options)
+            // let ual = result.data.metadata.UALs[0];
+            // console.log(`Created UAL is ${ual}`)
+            //
+            // let asset = await dkg.assets.get(ual);
+            //
+            // const proof = await asset.data.proof.valueOf;
+            // console.log(`Proof is ${JSON.stringify(proof)}}`)
+
+            // SEARCH
+            // options = { query: 'ETHDenver', resultType: 'assertions' }; //or entities
+            // await dkg.search(options).then((result) => {
+            //     console.log('============ Search results ===================');
+            //     console.log(JSON.stringify(result, null, 2));
+            //     console.log('===============================');
+            // });
+
+            // QUERY
+
+            // retrieve all connected UALs for given UAL
+            // ual = 'a44c97e1a27eab0db298f01f1a5d7c9d84caed8c7ce91480acaf92989888fc37';
+            // options = {
+            //     query: `PREFIX schema: <http://schema.org/>
+            //             construct { ?b2 schema:linkedTo ?linkedAssets }
+            //             WHERE {
+            //                 GRAPH ?g {
+            //                     ?b1 schema:linkedTo ?linkedAssets .
+            //                 }
+            //                 ?b2 schema:hasUALs '${ual}'
+            //                 FILTER (?g = ?b2)
+            //             }`
+            // };
+            //
+            // // all states for an asset
+            // ual = 'a44c97e1a27eab0db298f01f1a5d7c9d84caed8c7ce91480acaf92989888fc37';
+            // options = {
+            //     query: `PREFIX schema: <http://schema.org/>
+            //             construct { ?assertionId schema:hasUALs ?assertionId }
+            //             WHERE {
+            //                 ?assertionId schema:hasUALs '${ual}' .
+            //             }`
+            // };
+            //
+            // await dkg.query(options).then((result) => {
+            //     console.log('============ Query results ===================');
+            //     console.log(JSON.stringify(result, null, 2));
+            //     console.log('===============================');
+            // });
+
+        });
+    </script>
+</head>
+<body>
+
+<h1>Hello World!</h1>
+
+
+</body>
+</html>

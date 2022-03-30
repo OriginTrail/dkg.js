@@ -1,0 +1,19 @@
+{
+  "@context": "http://schema.org/",
+  "@type": "nft",
+  "name": "Tracie 101 Updated",
+  "description": "The genesis collection of NFTs supercharged by the OriginTrail Decentralized Knowledge Graph",
+  "creator": "0xBD084aB97C704FE4a6D620CB7c30C0BE0366646f",
+  "dateCreated": "2021",
+  "blockchain": {
+    "name": "polygon",
+    "contract": "0x123",
+    "owner": "0xabc",
+    "standard": "ERC-721"
+  },
+  "connectedTo": [
+    "Tracie 10"
+  ],
+  "encodingFormat": "url",
+  "content": "https://lh3.googleusercontent.com/NZ9lz_eqVsNjMwbaAHldfszslDqkpkcenpMXZA3MwwDKyGeTY3aaOayMUqgjONS-DLpVis2bBgT-usK_-gUeqVIYs74psHZP-od28tI=w600"
+}
