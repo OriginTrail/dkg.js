@@ -1,2 +1,9 @@
 node_modules/
 .idea/
+
+assets-demo.js
+frontendMock.html
+native-demo.js
+nft-example-updated.json
+nft-example.json
+kg-example.json

@@ -5,7 +5,9 @@ class AssetsClient extends AbstractClient {
     constructor(options) {
         super(options);
         this._assetsProxyPath = new AssetsProxyPath(options);
-        this.loadMetamask()
+        if (!this.nodeSupported()) {
+            this.loadMetamask()
+        }
     }
 
     /**
@@ -16,8 +18,9 @@ class AssetsClient extends AbstractClient {
      */
     async create(content, options) {
         content['@context'] = "https://www.schema.org/";
-        content.proof = await this.signMessage(content.toString());
-
+        if (!this.nodeSupported()) {
+            content.proof = await this.signMessage(content.toString());
+        }
         options.content = content;
         options.method = 'provision';
         return new Promise((resolve, reject) => {
@@ -42,7 +45,10 @@ class AssetsClient extends AbstractClient {
      */
     async update(content, ual, options) {
         content['@context'] = "https://www.schema.org/";
-        content.proof = await this.signMessage(content.toString());
+
+        if (!this.nodeSupported()) {
+            content.proof = await this.signMessage(content.toString());
+        }
         options.content = content;
         options.ual = ual;
         options.method = 'update';

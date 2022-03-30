@@ -1,11 +1,11 @@
-const DkgClient = require('./index');
+const DKG = require('./index');
 
 const OT_NODE_HOSTNAME = '0.0.0.0';
-const OT_NODE_PORT = '8900';
+const OT_NODE_PORT = '8910';
 
 // initialize connection to your DKG Node
 let options = { endpoint: OT_NODE_HOSTNAME, port: OT_NODE_PORT, useSSL: false, loglevel: 'trace' };
-const dkg = new DkgClient(options);
+const dkg = new DKG(options);
 
 async function main() {
 

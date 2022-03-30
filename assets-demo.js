@@ -1,7 +1,7 @@
 const DkgClient = require('./index');
 
 const OT_NODE_HOSTNAME = '0.0.0.0';
-const OT_NODE_PORT = '8900';
+const OT_NODE_PORT = '8910';
 
 // initialize connection to your DKG Node
 let options = { endpoint: OT_NODE_HOSTNAME, port: OT_NODE_PORT, useSSL: false, loglevel: 'trace' };
@@ -102,7 +102,7 @@ async function main() {
     const states = await dkg.assets.getStateCommitHashes(ual);
     asset = await dkg.assets.get(ual);
 
-    name = await asset.data.name;
+    name = await asset.data.native_blockchain;
     console.log(`Owner of UAL ${ual} is ${name}`)
 
     options = {

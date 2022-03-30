@@ -4,9 +4,9 @@ const FormData = require("form-data");
 const Logger = require("../utilities/logger");
 
 class AbstractClient {
-    defaultMaxNumberOfRetries = 50;
-    defaultTimeoutInSeconds = 10;
-    defaultNumberOfResults = 20;
+    defaultMaxNumberOfRetries = 5;
+    defaultTimeoutInSeconds = 25;
+    defaultNumberOfResults = 2000;
     STATUSES = {
         pending: "PENDING",
         completed: "COMPLETED",
@@ -69,11 +69,24 @@ class AbstractClient {
             form.append("ual", options.ual);
         }
         form.append("visibility", options.visibility);
-        let axios_config = {
-            method: "post",
-            url: `${this.nodeBaseUrl}/${options.method}`,
-            data: form,
-        };
+        let axios_config;
+
+        if (this.nodeSupported()) {
+            axios_config = {
+                method: "post",
+                url: `${this.nodeBaseUrl}/${options.method}`,
+                headers: {
+                    ...form.getHeaders(),
+                },
+                data: form,
+            };
+        }else {
+            axios_config = {
+                method: "post",
+                url: `${this.nodeBaseUrl}/${options.method}`,
+                data: form,
+            };
+        }
 
         return axios(axios_config);
     }
@@ -199,7 +212,7 @@ class AbstractClient {
         }, timeout * 1000);
 
         do {
-            await this.sleepForMilliseconds(1 * 1000);
+            await this.sleepForMilliseconds(5 * 1000);
             try {
                 searchResponse = await axios(axios_config);
                 currentNumberOfResults = searchResponse.data.itemListElement.length;
@@ -350,7 +363,7 @@ class AbstractClient {
                 throw Error("Unable to get results. Max number of retries reached.");
             }
             retries++;
-            await this.sleepForMilliseconds(1 * 1000);
+            await this.sleepForMilliseconds(5 * 1000);
             try {
                 response = await axios(axios_config);
                 this.logger.debug(
@@ -371,6 +384,10 @@ class AbstractClient {
 
     async sleepForMilliseconds(milliseconds) {
         await new Promise((r) => setTimeout(r, milliseconds));
+    }
+
+    nodeSupported() {
+        return typeof window === 'undefined';
     }
 }
 
