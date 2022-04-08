@@ -133,6 +133,7 @@ class AbstractClient {
             method: "get",
             url: `${this.nodeBaseUrl}/resolve?${ids}`,
             data: form,
+            headers: {...form.getHeaders()}
         };
         return axios(axios_config);
     }
@@ -227,6 +228,7 @@ class AbstractClient {
     /**
      * @param {object} options
      * @param {string} options.query - sparql query
+     * @param {string} options.type - query type (default: construct)
      */
     query(options) {
         if (!options || !options.query) {
@@ -253,6 +255,7 @@ class AbstractClient {
         let type = options.type ? options.type : "construct";
         let sparqlQuery = options.query;
         form.append("query", sparqlQuery);
+        form.append("type", type);
         let axios_config;
 
         if (this.nodeSupported()) {
@@ -367,7 +370,6 @@ class AbstractClient {
             status: this.STATUSES.pending,
         };
         let retries = 0;
-        const form = new FormData();
         let axios_config = {
             method: "get",
             url: `${this.nodeBaseUrl}/${options.operation}/result/${options.handler_id}`,
