@@ -261,7 +261,7 @@ class AbstractClient {
         if (this.nodeSupported()) {
             axios_config = {
                 method: "post",
-                url: `${this.nodeBaseUrl}/query`,
+                url: `${this.nodeBaseUrl}/query?type=${type}`,
                 headers: {
                     ...form.getHeaders(),
                 },
@@ -270,7 +270,7 @@ class AbstractClient {
         }else {
             axios_config = {
                 method: "post",
-                url: `${this.nodeBaseUrl}/query`,
+                url: `${this.nodeBaseUrl}/query?type=${type}`,
                 data: form,
             };
         }
