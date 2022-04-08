@@ -256,12 +256,25 @@ class AbstractClient {
         let sparqlQuery = options.query;
         form.append("query", sparqlQuery);
         form.append("type", type);
-        let axios_config = {
-            method: "post",
-            url: `${this.nodeBaseUrl}/query`,
-            data: form,
-            headers: {...form.getHeaders()}
-        };
+        let axios_config;
+
+        if (this.nodeSupported()) {
+            axios_config = {
+                method: "post",
+                url: `${this.nodeBaseUrl}/query`,
+                headers: {
+                    ...form.getHeaders(),
+                },
+                data: form,
+            };
+        }else {
+            axios_config = {
+                method: "post",
+                url: `${this.nodeBaseUrl}/query`,
+                data: form,
+            };
+        }
+
         return axios(axios_config);
     }
 
