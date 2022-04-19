@@ -121,8 +121,8 @@ class AbstractClient {
 
         let firstOne = true;
         for (let id of options.ids) {
-            firstOne = false;
             if (firstOne) {
+                firstOne = false;
                 ids += `ids=${id}`;
             } else {
                 ids += `&ids=${id}`;
