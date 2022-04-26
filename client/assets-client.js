@@ -110,6 +110,10 @@ class AssetsClient extends AbstractClient {
 
     loadMetamask(){
         if (window.ethereum) {
+            if(typeof Web3 === "undefined" || !window?.Web3){
+                console.warn("NO web3 implementation injected, please inject your own Web3 implementation to use metamask");
+                return ;
+            }
             window.web3 = new Web3(ethereum);
             ethereum.enable()
                 .then(() => {
