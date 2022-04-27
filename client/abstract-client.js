@@ -1,5 +1,7 @@
 const axios = require("axios");
 const FormData = require("form-data");
+const NodeFormData = require("form-data/lib/form_data");
+
 
 const Logger = require("../utilities/logger");
 
@@ -76,7 +78,7 @@ class AbstractClient {
                 method: "post",
                 url: `${this.nodeBaseUrl}/${options.method}`,
                 headers: {
-                    ...form.getHeaders(),
+                    ...this._getFormHeaders(form),
                 },
                 data: form,
             };
@@ -89,6 +91,15 @@ class AbstractClient {
         }
 
         return axios(axios_config);
+    }
+
+    _getFormHeaders(form){
+        if(typeof form?.getHeaders !== 'function'){
+            const nfd = new NodeFormData();
+            return nfd.getHeaders();
+        }else{
+            return form?.getHeaders();
+        }
     }
 
     /**
@@ -133,7 +144,7 @@ class AbstractClient {
             method: "get",
             url: `${this.nodeBaseUrl}/resolve?${ids}`,
             data: form,
-            headers: {...form.getHeaders()}
+            headers: {...this._getFormHeaders(form)}
         };
         return axios(axios_config);
     }
@@ -263,7 +274,7 @@ class AbstractClient {
                 method: "post",
                 url: `${this.nodeBaseUrl}/query?type=${type}`,
                 headers: {
-                    ...form.getHeaders(),
+                    ...this._getFormHeaders(form),
                 },
                 data: form,
             };
