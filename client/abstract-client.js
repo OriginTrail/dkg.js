@@ -9,6 +9,7 @@ class AbstractClient {
     defaultMaxNumberOfRetries = 5;
     defaultTimeoutInSeconds = 25;
     defaultNumberOfResults = 2000;
+    defaultFrequency = 5;
     STATUSES = {
         pending: "PENDING",
         completed: "COMPLETED",
@@ -30,6 +31,18 @@ class AbstractClient {
             options.maxNumberOfRetries && options.maxNumberOfRetries >= 0
                 ? options.maxNumberOfRetries
                 : this.defaultMaxNumberOfRetries;
+        this.timeoutInSeconds =
+            options.timeoutInSeconds && options.timeoutInSeconds >= 0
+                ? options.timeoutInSeconds
+                : this.defaultTimeoutInSeconds;
+        this.numberOfResults =
+            options.numberOfResults && options.numberOfResults >= 0
+                ? options.numberOfResults
+                : this.defaultNumberOfResults;
+        this.frequency =
+            options.frequency && options.frequency >= 0
+                ? options.frequency
+                : this.defaultFrequency;
         this.logger = new Logger(loglevel);
         if (!options.endpoint || !options.port) {
             throw Error("Endpoint and port are required parameters");
@@ -116,6 +129,7 @@ class AbstractClient {
                     this._getResult({
                         handler_id: response.data.handler_id,
                         operation: "resolve",
+                        ...options
                     })
                 )
                 .then((response) => {
@@ -169,9 +183,7 @@ class AbstractClient {
                 .then((response) =>
                     this._getSearchResult({
                         handler_id: response.data.handler_id,
-                        resultType: options.resultType,
-                        numberOfResults:  options.numberOfResults,
-                        timeout:  options.timeout,
+                        ...options
                     })
                 )
                 .then((response) => {
@@ -205,11 +217,9 @@ class AbstractClient {
             throw Error("Unable to get results, need handler id");
         }
         let searchResponse = {};
-        let retries = 0;
-        let timeout = options.timeout ? options.timeout : this.defaultTimeoutInSeconds;
-        let numberOfResults = options.numberOfResults
-            ? options.numberOfResults
-            : this.defaultNumberOfResults;
+        let timeoutInSeconds = options.timeoutInSeconds ? options.timeoutInSeconds : this.defaultTimeoutInSeconds;
+        let numberOfResults = options.numberOfResults ? options.numberOfResults : this.defaultNumberOfResults;
+        let frequency = options.frequency ? options.frequency : this.frequency;
 
         const form = new FormData();
         let axios_config = {
@@ -221,10 +231,10 @@ class AbstractClient {
         let currentNumberOfResults = numberOfResults;
         setTimeout(() => {
             timeoutFlag = true;
-        }, timeout * 1000);
+        }, timeoutInSeconds * 1000);
 
         do {
-            await this.sleepForMilliseconds(5 * 1000);
+            await this.sleepForMilliseconds(frequency * 1000);
             try {
                 searchResponse = await axios(axios_config);
                 currentNumberOfResults = searchResponse.data.itemListElement.length;
@@ -251,6 +261,7 @@ class AbstractClient {
                     this._getResult({
                         handler_id: response.data.handler_id,
                         operation: "query",
+                        ...options
                     })
                 )
                 .then((response)=>{
@@ -306,6 +317,7 @@ class AbstractClient {
                     this._getResult({
                         handler_id: response.data.handler_id,
                         operation: "proofs:get",
+                        ...options
                     })
                 )
                 .then(async (response) => {
@@ -381,16 +393,19 @@ class AbstractClient {
             status: this.STATUSES.pending,
         };
         let retries = 0;
+        let maxNumberOfRetries = options.maxNumberOfRetries ? options.maxNumberOfRetries : this.maxNumberOfRetries;
+        let frequency = options.frequency ? options.frequency : this.frequency;
+
         let axios_config = {
             method: "get",
             url: `${this.nodeBaseUrl}/${options.operation}/result/${options.handler_id}`,
         };
         do {
-            if (retries > this.maxNumberOfRetries) {
+            if (retries > maxNumberOfRetries) {
                 throw Error("Unable to get results. Max number of retries reached.");
             }
             retries++;
-            await this.sleepForMilliseconds(5 * 1000);
+            await this.sleepForMilliseconds(frequency * 1000);
             try {
                 response = await axios(axios_config);
                 this.logger.debug(

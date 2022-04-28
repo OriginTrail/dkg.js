@@ -29,6 +29,7 @@ class AssetsClient extends AbstractClient {
                     this._getResult({
                         handler_id: response.data.handler_id,
                         operation: options.method,
+                        ...options
                     })
                 )
                 .then((response) => {
@@ -58,6 +59,7 @@ class AssetsClient extends AbstractClient {
                     this._getResult({
                         handler_id: response.data.handler_id,
                         operation: options.method,
+                        ...options
                     })
                 )
                 .then((response) => {
