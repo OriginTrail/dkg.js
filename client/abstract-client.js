@@ -71,7 +71,7 @@ class AbstractClient {
     _sendNodeInfoRequest() {
         this.logger.debug("Sending node info request");
         return axios.get(`${this.nodeBaseUrl}/info`, {
-            timeout: this.defaultTimeoutInSeconds * 1000,
+            timeout: this.timeoutInSeconds * 1000,
         });
     }
 
@@ -217,11 +217,10 @@ class AbstractClient {
             throw Error("Unable to get results, need handler id");
         }
         let searchResponse = {};
-        let timeoutInSeconds = options.timeoutInSeconds ? options.timeoutInSeconds : this.defaultTimeoutInSeconds;
-        let numberOfResults = options.numberOfResults ? options.numberOfResults : this.defaultNumberOfResults;
+        let timeoutInSeconds = options.timeoutInSeconds ? options.timeoutInSeconds : this.timeoutInSeconds;
+        let numberOfResults = options.numberOfResults ? options.numberOfResults : this.numberOfResults;
         let frequency = options.frequency ? options.frequency : this.frequency;
 
-        const form = new FormData();
         let axios_config = {
             method: "get",
             url: `${this.nodeBaseUrl}/${options.resultType}:search/result/${options.handler_id}`,
