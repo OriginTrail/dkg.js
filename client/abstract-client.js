@@ -174,7 +174,7 @@ class AbstractClient {
      * @param {number} options.numberOfResults (optional)
      * @param {number} options.timeout (optional)
      */
-    search(options) {
+    search(options, cb) {
         if (!options || !options.query || !options.resultType) {
             throw Error("Please provide search options in order to search.");
         }
@@ -184,7 +184,7 @@ class AbstractClient {
                     this._getSearchResult({
                         handler_id: response.data.handler_id,
                         ...options
-                    })
+                    }, cb)
                 )
                 .then((response) => {
                     resolve(response);
@@ -212,7 +212,7 @@ class AbstractClient {
         return axios(axios_config);
     }
 
-    async _getSearchResult(options) {
+    async _getSearchResult(options, cb) {
         if (!options.handler_id) {
             throw Error("Unable to get results, need handler id");
         }
@@ -237,6 +237,7 @@ class AbstractClient {
             try {
                 searchResponse = await axios(axios_config);
                 currentNumberOfResults = searchResponse.data.itemListElement.length;
+                cb(searchResponse.data);
             } catch (e) {
                 this.logger.error(e);
                 throw e;
