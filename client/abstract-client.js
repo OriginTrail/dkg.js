@@ -341,6 +341,9 @@ class AbstractClient {
             method: "post",
             url: `${this.nodeBaseUrl}/proofs:get`,
             data: form,
+            headers: {
+                ...this._getFormHeaders(form),
+            },
         };
         return axios(axios_config);
     }
