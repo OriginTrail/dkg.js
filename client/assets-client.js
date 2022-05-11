@@ -133,7 +133,6 @@ class AssetsClient extends AbstractClient {
                 })
                 .catch(() => {
                     console.warn('User didn\'t allow access to accounts.');
-                    waitLogin();
                 });
         } else {
             console.log("Non-Ethereum browser detected. You should consider installing MetaMask.");
@@ -141,11 +140,16 @@ class AssetsClient extends AbstractClient {
     }
 
     async signMessage(message) {
-        const web3 = new Web3(window.ethereum);
-        var hash = web3.utils.sha3(message)
-        var accounts = await web3.eth.getAccounts()
-        var signature = await web3.eth.personal.sign(hash, accounts[0])
-        return {hash, account: accounts[0], signature}
+        if (window?.ethereum) {
+            const web3 = new Web3(window.ethereum);
+            var hash = web3.utils.sha3(message)
+            var accounts = await web3.eth.getAccounts()
+            var signature = await web3.eth.personal.sign(hash, accounts[0])
+            return {hash, account: accounts[0], signature}
+        } else {
+            console.log("Non-Ethereum browser detected. You should consider installing MetaMask.");
+            return null;
+        }
     }
 
 }
