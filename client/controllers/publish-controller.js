@@ -15,85 +15,63 @@ class PublishController {
     this.requestValidationService.validatePublishRequest(options);
     let nquads = await this.dataService.canonize(options.content);
 
-    let metadata = {};
-    metadata.issuer = this.blockchainService.getPublicKey();
-    metadata.visibility = options.visibility;
-    metadata.keywords = options.keywords;
-    metadata.keywords.sort();
+    let assertion = {};
+    let type;
+    if (options.content["@type"]) {
+      type = options.content["@type"];
+    } else if (options.content.type) {
+      type = options.content.type;
+    } else {
+      type = "default";
+    }
+    assertion.metadata.type = type;
+
+    assertion.metadata.issuer = this.blockchainService.getPublicKey();
+    assertion.metadata.visibility = options.visibility;
+    assertion.metadata.keywords = options.keywords;
+    assertion.metadata.keywords.sort();
     if (options.method === PUBLISH_METHOD.PROVISION) {
       // TODO: UAL calculation
       const calculatedUal = Math.random(100000);
-      metadata.UALs = [calculatedUal];
+      assertion.metadata.UALs = [calculatedUal];
     } else if (options.method === PUBLISH_METHOD.UPDATE) {
-      metadata.UALs = [options.ual];
+      assertion.metadata.UALs = [options.ual];
     }
-    metadata.dataHash = this.validationService.calculateHash(nquads);
-    const metadataHash = this.validationService.calculateHash(metadata);
-    metadata.assertionId = this.validationService.calculateHash(
-      metadataHash + metadata.dataHash
+    assertion.metadata.dataHash = this.validationService.calculateHash(nquads);
+    assertion.metadataHash = this.validationService.calculateHash(metadata);
+    assertion.metadata.assertionId = this.validationService.calculateHash(
+      assertion.metadataHash + assertion.metadata.dataHash
     );
-    metadata.signature = this.validationService.sign(
-      metadata.assertionId,
+    assertion.signature = this.validationService.sign(
+      assertion.id,
       this.blockchainService.getPrivateKey()
     );
 
-    nquads = await this.dataService.appendMetadata(
-      nquads,
-      metadata
-    );
+    nquads = await this.dataService.appendMetadata(nquads, assertion);
 
-    const rootHash = this.validationService.calculateRootHash(nquads);
+    assertion.rootHash = this.validationService.calculateRootHash(nquads);
 
-    if (metadata.UALs) {
-      this.logger.info(`UAL: ${metadata.UALs[0]}`);
+    if (assertion.metadata.UALs) {
+      this.logger.info(`UAL: ${assertion.metadata.UALs[0]}`);
     }
-    this.logger.info(`Assertion ID: ${metadata.assertionId}`);
-    this.logger.info(`Assertion metadataHash: ${metadataHash}`);
-    this.logger.info(`Assertion dataHash: ${metadata.dataHash}`);
-    this.logger.info(`Assertion rootHash: ${rootHash}`);
-    this.logger.info(`Assertion signature: ${metadata.signature}`);
+    this.logger.info(`Assertion ID: ${assertion.metadata.assertionId}`);
+    this.logger.info(`Assertion metadataHash: ${assertion.metadataHash}`);
+    this.logger.info(`Assertion dataHash: ${assertion.metadata.dataHash}`);
+    this.logger.info(`Assertion rootHash: ${assertion.rootHash}`);
+    this.logger.info(`Assertion signature: ${assertion.signature}`);
     this.logger.info(`Assertion length in N-QUADS format: ${nquads.length}`);
-    this.logger.info(`Keywords: ${metadata.keywords}`);
+    this.logger.info(`Keywords: ${assertion.metadata.keywords}`);
 
-    let result;
-    switch (options.method) {
-      case PUBLISH_METHOD.PUBLISH:
-        result = await this.blockchainService.createAssertionRecord(
-          metadata.assertionId,
-          rootHash,
-          metadata.issuer
-        );
-        break;
-      case PUBLISH_METHOD.PROVISION:
-        result = await this.blockchainService.registerAsset(
-          metadata.UALs[0],
-          metadata.type,
-          metadata.UALs[0],
-          metadata.assertionId,
-          rootHash,
-          1
-        );
-        break;
-      case PUBLISH_METHOD.UPDATE:
-        result = await this.blockchainService.updateAsset(
-          metadata.UALs[0],
-          metadata.assertionId,
-          rootHash
-        );
-        break;
-      default:
-        break;
-    }
+    const result = this.submitProofs(options.method, assertion);
     const { transactionHash, blockchain } = result;
     this.logger.info(`Transaction hash is ${transactionHash} on ${blockchain}`);
 
-    const blockchainMetadata = {
-      assertionId: metadata.assertionId,
+    assertion.blockchain = {
       name: blockchain,
       transactionHash,
     };
 
-    nquads = await this.dataService.appendBlockchainMetadata(nquads, blockchainMetadata);
+    nquads = await this.dataService.appendBlockchainMetadata(nquads, assertion);
 
     this.logger.debug("Sending publish request.");
     /* const form = new FormData();
@@ -117,6 +95,39 @@ class PublishController {
     }
 
     return axios(axios_config); */
+  }
+
+  async submitProofs(method, assertion) {
+    let result;
+    switch (method) {
+      case constants.PUBLISH_METHOD.PUBLISH:
+        result = await this.blockchainModuleManager.createAssertionRecord(
+          assertion.id,
+          assertion.rootHash,
+          assertion.metadata.issuer
+        );
+        break;
+      case constants.PUBLISH_METHOD.PROVISION:
+        result = await this.blockchainModuleManager.registerAsset(
+          assertion.metadata.UALs[0],
+          assertion.metadata.type,
+          assertion.metadata.UALs[0],
+          assertion.id,
+          assertion.rootHash,
+          1
+        );
+        break;
+      case constants.PUBLISH_METHOD.UPDATE:
+        result = await this.blockchainModuleManager.updateAsset(
+          assertion.metadata.UALs[0],
+          assertion.id,
+          assertion.rootHash
+        );
+        break;
+      default:
+        break;
+    }
+    return result;
   }
 }
 

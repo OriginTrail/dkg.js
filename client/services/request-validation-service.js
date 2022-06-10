@@ -1,4 +1,4 @@
-const MAX_FILE_SIZE = 2621440;
+const { MAX_FILE_SIZE } = require("../../constants");
 const publishAllowedVisibilityParams = ["public", "private"];
 
 class RequestValidationService {

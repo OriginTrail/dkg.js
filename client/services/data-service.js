@@ -25,34 +25,34 @@ class DataService {
     return nquads;
   }
 
-  async appendMetadata(nquads, metadata) {
+  async appendMetadata(nquads, assertion) {
     const jsonMetadata = {
       "@context": "https://www.schema.org/",
-      "@id": `${DID_PREFIX}:${metadata.assertionId}`,
-      hasType: metadata.type,
-      hasSignature: metadata.signature,
-      hasIssuer: metadata.issuer,
-      hasTimestamp: metadata.timestamp,
-      hasVisibility: metadata.visibility,
-      hasDataHash: metadata.dataHash,
-      hasKeywords: metadata.keywords,
+      "@id": `${DID_PREFIX}:${assertion.id}`,
+      hasType: assertion.metadata.type,
+      hasSignature: assertion.signature,
+      hasIssuer: assertion.metadata.issuer,
+      hasTimestamp: assertion.metadata.timestamp,
+      hasVisibility: assertion.metadata.visibility,
+      hasDataHash: assertion.metadata.dataHash,
+      hasKeywords: assertion.metadata.keywords,
     };
 
     if (metadata.UALs) {
-      jsonMetadata.hasUALs = metadata.UALs;
+      jsonMetadata.hasUALs = assertion.metadata.UALs;
     }
 
-    const nquadsMetadata = await this.toNQuads(jsonMetadata);
+    const nquadsMetadata = await this.toNQuads(assertion);
     nquads = nquads.concat(nquadsMetadata);
     return nquads;
   }
 
-  async appendBlockchainMetadata(nquads, blockchainMetadata) {
+  async appendBlockchainMetadata(nquads, assertion) {
     const jsonMetadata = {
       "@context": "https://www.schema.org/",
-      "@id": `${DID_PREFIX}:${blockchainMetadata.assertionId}`,
-      hasBlockchain: blockchainMetadata.name,
-      hasTransactionHash: blockchainMetadata.transactionHash,
+      "@id": `${DID_PREFIX}:${assertion.id}`,
+      hasBlockchain: assertion.blockchain.name,
+      hasTransactionHash: assertion.blockchain.transactionHash,
     };
 
     const nquadsMetadata = await this.toNQuads(jsonMetadata);
