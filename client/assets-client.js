@@ -1,123 +1,154 @@
-const { PUBLISH_METHOD } = require("../../constants");
-const axios = require("axios");
-const FormData = require("form-data");
+const AbstractClient = require("./abstract-client");
+const AssetsProxyPath = require("../utilities/assets-proxy-path");
+const {PUBLISH_METHOD  } = require("../constants");
 
-class PublishController {
-  constructor(config, logger) {
-    this.logger = logger;
-    this.blockchainService = config.blockchainService;
-    this.validationService = config.validationService;
-    this.requestValidationService = config.requestValidationService;
-    this.dataService = config.dataService;
+class AssetsClient extends AbstractClient {
+  constructor(options) {
+    super(options);
+    this._assetsProxyPath = new AssetsProxyPath(options);
+    if (!this.nodeSupported()) {
+      this.loadMetamask();
+    }
   }
 
-  async publish(options) {
-    this.requestValidationService.validatePublishRequest(options);
-    let nquads = await this.dataService.canonize(options.content);
-
-    let metadata = {};
-    metadata.issuer = this.blockchainService.getPublicKey();
-    metadata.visibility = options.visibility;
-    metadata.keywords = options.keywords;
-    metadata.keywords.sort();
-    if (options.method === PUBLISH_METHOD.PROVISION) {
-      // TODO: UAL calculation
-      const calculatedUal = Math.random(100000);
-      metadata.UALs = [calculatedUal];
-    } else if (options.method === PUBLISH_METHOD.UPDATE) {
-      metadata.UALs = [options.ual];
+  /**
+   * @param content
+   * @param {object} options
+   * @param {string} options.filepath - path to the dataset
+   * @param {string[]} options.keywords (optional)
+   */
+  async create(content, options = {}) {
+    options.content = content;
+    options.method = PUBLISH_METHOD.PROVISION;
+      
+    if (!this.nodeSupported()) {
+      content.proof = await this.signMessage(content.toString());
     }
-    metadata.dataHash = this.validationService.calculateHash(nquads);
-    const metadataHash = this.validationService.calculateHash(metadata);
-    metadata.assertionId = this.validationService.calculateHash(
-      metadataHash + metadata.dataHash
-    );
-    metadata.signature = this.validationService.sign(
-      metadata.assertionId,
-      this.blockchainService.getPrivateKey()
-    );
-
-    nquads = await this.dataService.appendMetadata(
-      nquads,
-      metadata
-    );
-
-    const rootHash = this.validationService.calculateRootHash(nquads);
-
-    if (metadata.UALs) {
-      this.logger.info(`UAL: ${metadata.UALs[0]}`);
+    
+    try {
+      const response = await this._publishRequest(options);
+      return await this._getResult({
+        handler_id: response.data.handler_id,
+        operation: options.method,
+        ...options,
+      });
+    } catch (e) {
+      throw e;
     }
-    this.logger.info(`Assertion ID: ${metadata.assertionId}`);
-    this.logger.info(`Assertion metadataHash: ${metadataHash}`);
-    this.logger.info(`Assertion dataHash: ${metadata.dataHash}`);
-    this.logger.info(`Assertion rootHash: ${rootHash}`);
-    this.logger.info(`Assertion signature: ${metadata.signature}`);
-    this.logger.info(`Assertion length in N-QUADS format: ${nquads.length}`);
-    this.logger.info(`Keywords: ${metadata.keywords}`);
+  }
+
+  /**
+   * @param {object} content
+   * @param {object} options
+   * @param {string} options.filepath - path to the dataset
+   * @param {string[]} options.keywords (optional)
+   */
+  async update(content, ual, options = {}) {
+    options.content = content;
+    options.ual = ual;
+    options.method = PUBLISH_METHOD.UPDATE;
+
+    if (!this.nodeSupported()) {
+      content.proof = await this.signMessage(content.toString());
+    }
+    
+    try {
+      const response = await this._publishRequest(options);
+      return await this._getResult({
+        handler_id: response.data.handler_id,
+        operation: options.method,
+        ...options,
+      });
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  async get(ual, commitHash) {
+    //TODO add cache
 
     let result;
-    switch (options.method) {
-      case PUBLISH_METHOD.PUBLISH:
-        result = await this.blockchainService.createAssertionRecord(
-          metadata.assertionId,
-          rootHash,
-          metadata.issuer
-        );
-        break;
-      case PUBLISH_METHOD.PROVISION:
-        result = await this.blockchainService.registerAsset(
-          metadata.UALs[0],
-          metadata.type,
-          metadata.UALs[0],
-          metadata.assertionId,
-          rootHash,
-          1
-        );
-        break;
-      case PUBLISH_METHOD.UPDATE:
-        result = await this.blockchainService.updateAsset(
-          metadata.UALs[0],
-          metadata.assertionId,
-          rootHash
-        );
-        break;
-      default:
-        break;
+    if (commitHash) result = await this.resolve({ ids: [commitHash] });
+    else result = await this.resolve({ ids: [ual] });
+    if (result.status === this.STATUSES.completed) {
+      const data = result.data[0].result;
+
+      return this._assetsProxyPath.createPath(
+        Object.assign(Object.create(null), undefined, undefined),
+        Object.assign(Object.create(null), undefined, data),
+        ual
+      );
     }
-    const { transactionHash, blockchain } = result;
-    this.logger.info(`Transaction hash is ${transactionHash} on ${blockchain}`);
 
-    const blockchainMetadata = {
-      assertionId: metadata.assertionId,
-      name: blockchain,
-      transactionHash,
-    };
+    return undefined;
+  }
 
-    nquads = await this.dataService.appendBlockchainMetadata(nquads, blockchainMetadata);
+  async getStateCommitHashes(ual) {
+    //TODO add cache
 
-    this.logger.debug("Sending publish request.");
-    /* const form = new FormData();
-    let axios_config;
+    let result = await this.resolve({ ids: [ual] });
+    if (result.status === this.STATUSES.completed) {
+      return result.data[0].result.assertions;
+    }
+    return undefined;
+  }
 
-    if (nodeSupported()) {
-      axios_config = {
-        method: "post",
-        url: `${nodeBaseUrl}/${options.method}`,
-        headers: {
-          ..._getFormHeaders(form),
-        },
-        data: form,
-      };
+  transfer(options) {
+    //TODO
+  }
+
+  approve(options) {
+    //TODO
+  }
+
+  loadMetamask() {
+    if (window.ethereum) {
+      if (typeof Web3 === "undefined" || !window?.Web3) {
+        console.warn(
+          "No web3 implementation injected, please inject your own Web3 implementation to use metamask"
+        );
+        return;
+      }
+      window.web3 = new Web3(ethereum);
+      ethereum
+        .enable()
+        .then(() => {
+          console.log("Ethereum enabled");
+
+          web3.eth.getAccounts(function (err, acc) {
+            if (err != null) {
+              self.setStatus("There was an error fetching your accounts");
+              return;
+            }
+            if (acc.length > 0) {
+              console.log(acc);
+            }
+          });
+        })
+        .catch(() => {
+          console.warn("User didn't allow access to accounts.");
+        });
     } else {
-      axios_config = {
-        method: "post",
-        url: `${nodeBaseUrl}/${options.method}`,
-        data: form,
-      };
+      console.log(
+        "Non-Ethereum browser detected. You should consider installing MetaMask."
+      );
     }
+  }
 
-    return axios(axios_config); */
+  async signMessage(message) {
+    if (window?.ethereum) {
+      const web3 = new Web3(window.ethereum);
+      const hash = web3.utils.sha3(message);
+      const accounts = await web3.eth.getAccounts();
+      const signature = await web3.eth.personal.sign(hash, accounts[0]);
+      return { hash, account: accounts[0], signature };
+    } else {
+      console.log(
+        "Non-Ethereum browser detected. You should consider installing MetaMask."
+      );
+      return null;
+    }
   }
 }
 
-module.exports = PublishController;
+module.exports = AssetsClient;
