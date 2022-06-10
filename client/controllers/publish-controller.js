@@ -58,6 +58,7 @@ class PublishController {
     let result;
     switch (options.method) {
       case PUBLISH_METHOD.PUBLISH:
+        console.log("publish")
         result = await this.blockchainService.createAssertionRecord(
           metadata.assertionId,
           rootHash,
@@ -65,6 +66,7 @@ class PublishController {
         );
         break;
       case PUBLISH_METHOD.PROVISION:
+        console.log("provision")
         result = await this.blockchainService.registerAsset(
           metadata.UALs[0],
           metadata.type,
@@ -75,6 +77,7 @@ class PublishController {
         );
         break;
       case PUBLISH_METHOD.UPDATE:
+        console.log("update")
         result = await this.blockchainService.updateAsset(
           metadata.UALs[0],
           metadata.assertionId,
@@ -96,6 +99,7 @@ class PublishController {
     nquads = await this.dataService.appendBlockchainMetadata(nquads, blockchainMetadata);
 
     this.logger.debug("Sending publish request.");
+    console.log(JSON.stringify(nquads, null, 2))
     /* const form = new FormData();
     let axios_config;
 

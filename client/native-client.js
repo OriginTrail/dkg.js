@@ -1,4 +1,5 @@
 const AbstractClient = require("./abstract-client");
+const {PUBLISH_METHOD} = require("../constants")
 
 class NativeClient extends AbstractClient {
   constructor(props) {
@@ -6,15 +7,14 @@ class NativeClient extends AbstractClient {
   }
 
   /**
+   * @param {object} content
    * @param {object} options
-   * @param {string} options.filepath - path to the dataset
    * @param {string[]} options.keywords (optional)
    */
-  async publish(options) {
-    if (!options || !options.filepath) {
-      throw Error("Please provide publish options in order to publish.");
-    }
-    options.method = "publish";
+  async publish(content, options = {}) {
+    options.content = content;
+    options.method = PUBLISH_METHOD.PUBLISH;
+    
     try {
       const response = await this._publishRequest(options);
       return this._getResult({

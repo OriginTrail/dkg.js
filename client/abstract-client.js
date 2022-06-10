@@ -1,8 +1,13 @@
 const axios = require("axios");
 const FormData = require("form-data");
 const NodeFormData = require("form-data/lib/form_data");
-
 const Logger = require("../utilities/logger");
+const PublishController = require("./controllers/publish-controller");
+const RequestValidationService = require("./services/request-validation-service");
+const BlockchainService = require("./services/blockchain-service");
+const ValidationService = require("./services/validation-service");
+const DataService = require("./services/data-service");
+const { services: servicesConfig } = require("../config.json");
 
 class AbstractClient {
   defaultMaxNumberOfRetries = 5;
@@ -49,11 +54,48 @@ class AbstractClient {
     this.nodeBaseUrl = `${options.useSSL ? "https://" : "http://"}${
       options.endpoint
     }:${options.port}`;
-    this._sendNodeInfoRequest()
-      .then()
-      .catch((error) => {
-        throw new Error(`Endpoint not available: ${error}`);
-      });
+  }
+
+  async initialize() {
+    await this.initializeServices();
+    this.initializeControllers();
+    try {
+      await this.nodeInfo();
+    } catch (error) {
+      throw new Error(`Endpoint not available: ${error}`);
+    }
+  }
+
+  async initializeServices() {
+    this.blockchainService = new BlockchainService();
+    await this.blockchainService.initialize(
+      servicesConfig.blockchain,
+      this.logger
+    );
+    this.validationService = new ValidationService();
+    await this.validationService.initialize(
+      servicesConfig.validation,
+      this.logger
+    );
+    this.requestValidationService = new RequestValidationService();
+    await this.requestValidationService.initialize(
+      servicesConfig.requestValidation,
+      this.logger
+    );
+    this.dataService = new DataService();
+    await this.dataService.initialize(servicesConfig.data, this.logger);
+  }
+
+  initializeControllers() {
+    this.publishController = new PublishController(
+      {
+        blockchainService: this.blockchainService,
+        validationService: this.validationService,
+        requestValidationService: this.requestValidationService,
+        dataService: this.dataService,
+      },
+      this.logger
+    );
   }
 
   /**
@@ -74,35 +116,8 @@ class AbstractClient {
     });
   }
 
-  _publishRequest(options) {
-    this.logger.debug("Sending publish request.");
-    const form = new FormData();
-    form.append("data", JSON.stringify(options.content));
-    form.append("keywords", JSON.stringify(options.keywords));
-    if (options.ual) {
-      form.append("ual", options.ual);
-    }
-    form.append("visibility", options.visibility);
-    let axios_config;
-
-    if (this.nodeSupported()) {
-      axios_config = {
-        method: "post",
-        url: `${this.nodeBaseUrl}/${options.method}`,
-        headers: {
-          ...this._getFormHeaders(form),
-        },
-        data: form,
-      };
-    } else {
-      axios_config = {
-        method: "post",
-        url: `${this.nodeBaseUrl}/${options.method}`,
-        data: form,
-      };
-    }
-
-    return axios(axios_config);
+  async _publishRequest(options) {
+    return this.publishController.publish(options);
   }
 
   _getFormHeaders(form) {
