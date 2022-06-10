@@ -1,6 +1,6 @@
 const AbstractClient = require("./abstract-client");
 const AssetsProxyPath = require("../utilities/assets-proxy-path");
-const {PUBLISH_METHOD  } = require("../constants");
+const { PUBLISH_METHOD } = require("../constants");
 
 class AssetsClient extends AbstractClient {
   constructor(options) {
@@ -20,11 +20,11 @@ class AssetsClient extends AbstractClient {
   async create(content, options = {}) {
     options.content = content;
     options.method = PUBLISH_METHOD.PROVISION;
-      
+
     if (!this.nodeSupported()) {
       content.proof = await this.signMessage(content.toString());
     }
-    
+
     try {
       const response = await this._publishRequest(options);
       return await this._getResult({
@@ -51,7 +51,7 @@ class AssetsClient extends AbstractClient {
     if (!this.nodeSupported()) {
       content.proof = await this.signMessage(content.toString());
     }
-    
+
     try {
       const response = await this._publishRequest(options);
       return await this._getResult({

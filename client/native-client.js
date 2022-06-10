@@ -1,5 +1,5 @@
 const AbstractClient = require("./abstract-client");
-const {PUBLISH_METHOD} = require("../constants")
+const { PUBLISH_METHOD } = require("../constants");
 
 class NativeClient extends AbstractClient {
   constructor(props) {
@@ -14,7 +14,7 @@ class NativeClient extends AbstractClient {
   async publish(content, options = {}) {
     options.content = content;
     options.method = PUBLISH_METHOD.PUBLISH;
-    
+
     try {
       const response = await this._publishRequest(options);
       return this._getResult({

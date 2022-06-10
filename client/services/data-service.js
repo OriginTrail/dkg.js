@@ -38,7 +38,7 @@ class DataService {
       hasKeywords: assertion.metadata.keywords,
     };
 
-    if (metadata.UALs) {
+    if (assertion.metadata.UALs) {
       jsonMetadata.hasUALs = assertion.metadata.UALs;
     }
 

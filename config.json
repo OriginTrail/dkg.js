@@ -1,8 +1,8 @@
 {
   "services": {
     "blockchain": {
-      "publicKey": "...",
-      "privateKey": "...",
+      "publicKey": "0x06071378320274B5554241F974D461d8BC114699",
+      "privateKey": "e5d635562f2346ed18674e87f017110a50791f4e94ec4537177936d9f9cdfb2d",
       "blockchainTitle": "Polygon",
       "networkId": "polygon::mainnet",
       "hubContractAddress": "0xFD6ECaed420aB70fb97eB2423780517dc425ef81",
