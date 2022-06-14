@@ -4,16 +4,27 @@ const NodeFormData = require("form-data/lib/form_data");
 const Logger = require("../utilities/logger");
 const PublishController = require("./controllers/publish-controller");
 const RequestValidationService = require("./services/request-validation-service");
-const BlockchainService = require("./services/blockchain-service");
+const NodeBlockchainService = require("./services/node-blockchain-service");
+const BrowserBlockchainService = require("./services/browser-blockchain-service");
 const ValidationService = require("./services/validation-service");
 const DataService = require("./services/data-service");
-const { services: servicesConfig } = require("../config.json");
 
 class AbstractClient {
   defaultMaxNumberOfRetries = 5;
   defaultTimeoutInSeconds = 25;
   defaultNumberOfResults = 2000;
   defaultFrequency = 5;
+  defaultBlockchainServiceConfig = {
+    blockchainTitle: "Polygon",
+    networkId: "polygon::mainnet",
+    hubContractAddress: "0xFD6ECaed420aB70fb97eB2423780517dc425ef81",
+    rpcEndpoints: [
+      "https://rpc-mumbai.maticvigil.com/",
+      "https://matic-mumbai.chainstacklabs.com",
+      "https://rpc-mumbai.matic.today",
+      "https://matic-testnet-archive-rpc.bwarelabs.com",
+    ],
+  };
   STATUSES = {
     pending: "PENDING",
     completed: "COMPLETED",
@@ -54,36 +65,29 @@ class AbstractClient {
     this.nodeBaseUrl = `${options.useSSL ? "https://" : "http://"}${
       options.endpoint
     }:${options.port}`;
-  }
 
-  async initialize() {
-    await this.initializeServices();
+    this.initializeServices({
+      blockchain: options.blockchain ?? this.defaultBlockchainServiceConfig,
+      validation: options.validation ?? {},
+      requestValidation: options.requestValidation ?? {},
+      dataService: options.dataService ?? {},
+    });
     this.initializeControllers();
-    try {
-      await this.nodeInfo();
-    } catch (error) {
-      throw new Error(`Endpoint not available: ${error}`);
-    }
   }
 
-  async initializeServices() {
-    this.blockchainService = new BlockchainService();
-    await this.blockchainService.initialize(
-      servicesConfig.blockchain,
+  initializeServices(config) {
+    this.blockchainService = this.nodeSupported()
+      ? new NodeBlockchainService(config.blockchain, this.logger)
+      : new BrowserBlockchainService(config.blockchain, this.logger);
+    this.validationService = new ValidationService(
+      config.validation,
       this.logger
     );
-    this.validationService = new ValidationService();
-    await this.validationService.initialize(
-      servicesConfig.validation,
+    this.requestValidationService = new RequestValidationService(
+      config.requestValidation,
       this.logger
     );
-    this.requestValidationService = new RequestValidationService();
-    await this.requestValidationService.initialize(
-      servicesConfig.requestValidation,
-      this.logger
-    );
-    this.dataService = new DataService();
-    await this.dataService.initialize(servicesConfig.data, this.logger);
+    this.dataService = new DataService(config.data, this.logger);
   }
 
   initializeControllers() {

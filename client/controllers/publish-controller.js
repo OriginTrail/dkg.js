@@ -13,68 +13,77 @@ class PublishController {
 
   async publish(options) {
     this.requestValidationService.validatePublishRequest(options);
-    let nquads = await this.dataService.canonize(options.content);
+    const content = await this.dataService.compact(options.content);
+    const request = { metadata: [], data: [] };
 
-    let assertion = { metadata: {} };
-    let type;
-    if (options.content["@type"]) {
-      type = options.content["@type"];
-    } else if (options.content.type) {
-      type = options.content.type;
-    } else {
-      type = "default";
-    }
-    assertion.metadata.type = type;
+    request.data = await this.dataService.canonize(content);
 
-    assertion.metadata.issuer = this.blockchainService.getPublicKey();
-    assertion.metadata.visibility = options.visibility;
-    assertion.metadata.keywords = options.keywords;
-    assertion.metadata.keywords.sort();
-    if (options.method === PUBLISH_METHOD.PROVISION) {
-      // TODO: UAL calculation
-      const calculatedUal = Math.random(100000);
-      assertion.metadata.UALs = [calculatedUal];
-    } else if (options.method === PUBLISH_METHOD.UPDATE) {
-      assertion.metadata.UALs = [options.ual];
-    }
-    assertion.metadata.dataHash = this.validationService.calculateHash(nquads);
-    console.log(JSON.stringify(assertion, null, 2));
-    assertion.metadataHash = this.validationService.calculateHash(
-      assertion.metadata
-    );
-    assertion.id = this.validationService.calculateHash(
-      assertion.metadataHash + assertion.metadata.dataHash
-    );
-    assertion.signature = this.validationService.sign(
-      assertion.id,
-      this.blockchainService.getPrivateKey()
-    );
-
-    nquads = await this.dataService.appendMetadata(nquads, assertion);
-
-    assertion.rootHash = this.validationService.calculateRootHash(nquads);
-
-    if (assertion.metadata.UALs) {
-      this.logger.info(`UAL: ${assertion.metadata.UALs[0]}`);
-    }
-    this.logger.info(`Assertion ID: ${assertion.id}`);
-    this.logger.info(`Assertion metadataHash: ${assertion.metadataHash}`);
-    this.logger.info(`Assertion dataHash: ${assertion.metadata.dataHash}`);
-    this.logger.info(`Assertion rootHash: ${assertion.rootHash}`);
-    this.logger.info(`Assertion signature: ${assertion.signature}`);
-    this.logger.info(`Assertion length in N-QUADS format: ${nquads.length}`);
-    this.logger.info(`Keywords: ${assertion.metadata.keywords}`);
-
-    const result = await this.submitProofs(options.method, assertion);
-    const { transactionHash, blockchain } = result;
-    this.logger.info(`Transaction hash is ${transactionHash} on ${blockchain}`);
-
-    assertion.blockchain = {
-      name: blockchain,
-      transactionHash,
+    const metadata = {
+      type: content.type ?? "Thing",
+      issuer: options.publicKey ?? await this.blockchainService.getAccount(),
+      visibility: options.visibility,
+      keywords: options.keywords,
+      dataRootId: content.id ?? "https://origintrail.io/default-data-id",
     };
 
-    nquads = await this.dataService.appendBlockchainMetadata(nquads, assertion);
+    metadata.keywords.sort();
+
+    request.metadata = await this.dataService.appendMetadata(
+      request.metadata,
+      metadata
+    );
+
+    const metadataHash = this.validationService.calculateHash(request.metadata);
+    const dataHash = this.validationService.calculateHash(request.data);
+    const assertionId = this.validationService.calculateHash(
+      metadataHash + dataHash
+    );
+    const signature = await this.blockchainService.sign(
+      assertionId,
+      options.privateKey
+    );
+
+    const rootHash = this.validationService.calculateRootHash(request.data);
+
+    if (options.method === PUBLISH_METHOD.PROVISION) {
+      // TODO: get UAL from blockchain
+      request.ual = rootHash;
+    } else if (options.method === PUBLISH_METHOD.UPDATE) {
+      request.ual = options.ual;
+    }
+
+    if (request.ual) {
+      this.logger.info(`UAL: ${request.ual}`);
+    }
+    this.logger.info(`Assertion ID: ${assertionId}`);
+    this.logger.info(`Assertion metadataHash: ${metadataHash}`);
+    this.logger.info(`Assertion dataHash: ${dataHash}`);
+    this.logger.info(`Assertion rootHash: ${rootHash}`);
+    this.logger.info(`Assertion signature: ${signature}`);
+    this.logger.info(
+      `Assertion length in N-QUADS format: ${request.data.length}`
+    );
+    this.logger.info(`Keywords: ${metadata.keywords}`);
+
+    const { transactionHash, blockchain } = await this.submitProofs(
+      options.method,
+      assertionId,
+      rootHash,
+      metadata,
+      {
+        publicKey: options.publicKey,
+        privateKey: options.privateKey,
+        ual: request.ual,
+      }
+    );
+    this.logger.info(`Transaction hash is ${transactionHash} on ${blockchain}`);
+
+    request.metadata = await this.dataService.appendMetadata(request.metadata, {
+      blockchain,
+      transactionHash,
+    });
+
+    console.log(JSON.stringify(request, null, 2));
 
     this.logger.debug("Sending publish request.");
     /* const form = new FormData();
@@ -100,31 +109,34 @@ class PublishController {
     return axios(axios_config); */
   }
 
-  async submitProofs(method, assertion) {
+  async submitProofs(method, assertionId, rootHash, metadata, options) {
     let result;
     switch (method) {
       case PUBLISH_METHOD.PUBLISH:
         result = await this.blockchainService.createAssertionRecord(
-          assertion.id,
-          assertion.rootHash,
-          assertion.metadata.issuer
+          assertionId,
+          rootHash,
+          metadata.issuer,
+          options
         );
         break;
       case PUBLISH_METHOD.PROVISION:
         result = await this.blockchainService.registerAsset(
-          assertion.metadata.UALs[0],
-          assertion.metadata.type,
-          assertion.metadata.UALs[0],
-          assertion.id,
-          assertion.rootHash,
-          1
+          options.ual,
+          metadata.type,
+          options.ual,
+          assertionId,
+          rootHash,
+          1,
+          options
         );
         break;
       case PUBLISH_METHOD.UPDATE:
         result = await this.blockchainService.updateAsset(
-          assertion.metadata.UALs[0],
-          assertion.id,
-          assertion.rootHash
+          options.ual,
+          assertionId,
+          rootHash,
+          options
         );
         break;
       default:

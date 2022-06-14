@@ -17,7 +17,7 @@ class NativeClient extends AbstractClient {
 
     try {
       const response = await this._publishRequest(options);
-      return this._getResult({
+      return await this._getResult({
         handler_id: response.data.handler_id,
         operation: options.method,
         ...options,

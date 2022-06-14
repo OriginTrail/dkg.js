@@ -2,7 +2,7 @@ const { MAX_FILE_SIZE } = require("../../constants");
 const publishAllowedVisibilityParams = ["public", "private"];
 
 class RequestValidationService {
-  async initialize(config, logger) {
+  constructor(config, logger) {
     this.config = config;
     this.logger = logger;
   }
@@ -30,14 +30,32 @@ class RequestValidationService {
       );
   }
 
+  validatePublicKey(publicKey) {
+    if (nodeSupported() && !publicKey) {
+      throw Error(`No publicKey key provided`);
+    }
+  }
+
+  validatePrivateKey(privateKey) {
+    if (nodeSupported() && !privateKey) {
+      throw Error(`No private key provided`);
+    }
+  }
+
   async validatePublishRequest(options) {
     this.validateVisibility(options.visibility);
     this.validateKeywords(options.keywords);
     this.validateContent(options.content);
+    this.validatePublicKey(options.publicKey);
+    this.validatePrivateKey(options.privateKey);
 
     if (options.method === "update" && !options.ual)
       throw Error("No ual provided");
   }
+}
+
+function nodeSupported() {
+  return typeof window === "undefined";
 }
 
 module.exports = RequestValidationService;

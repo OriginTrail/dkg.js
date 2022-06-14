@@ -42,7 +42,7 @@ const _slicedToArray = (function () {
 })();
 
 class ValidationService {
-  async initialize(config, logger) {
+  constructor(config, logger) {
     this.config = config;
     this.logger = logger;
   }
