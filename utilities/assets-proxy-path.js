@@ -105,12 +105,15 @@ class AssetsProxyPath {
         let body = {
             status: 'PENDING'
         }
+        let milestonesDate = new Date().getTime();
         let response = request('GET', `${this.nodeBaseUrl}/resolve?ids=${id}`);
-        const handler = JSON.parse(response.getBody()).handler_id
+        const handler = JSON.parse(response.getBody()).handler_id;
         while (body.status === 'PENDING') {
-            new Date(new Date().getTime() + 1000);
-            response = request('GET', `${this.nodeBaseUrl}/resolve/result/${handler}`);
-            body = JSON.parse(response.getBody());
+            if((new Date().getTime()) > milestonesDate + 1000){
+                new Date(new Date().getTime() + 1000);
+                response = request('GET', `${this.nodeBaseUrl}/resolve/result/${handler}`);
+                body = JSON.parse(response.getBody());
+            }
         }
         return body.data[0].result;
     }
