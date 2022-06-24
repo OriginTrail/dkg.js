@@ -14,12 +14,9 @@
                 loglevel: "trace",
             });
 
-            var result = await dkg.nodeInfo();
-            console.log(JSON.stringify(result.data, null, 2));
-
-            // SET & GET
+            /* // SET & GET
             options = {
-                keywords: ['ETHDenver'],
+                keywords: ['13128adwadwda2111231331', "24.06.2022"],
                 visibility: 'public'
             };
 
@@ -70,8 +67,14 @@
                     }
                 ]
             }
-            var result = await dkg.assets.create(content, options)
-            let ual = result.data.metadata.UALs[0];
+            const result = await dkg.publish(content, options)
+            console.log(JSON.stringify(result, null, 2)) */
+
+            const id = "a5e68af2a724ee33ccf714bb6be8f5a1a6f894d200bc8de72a1653a4f461b563"
+            const result = await dkg.resolve({id})
+            console.log(JSON.stringify(result, null, 2))
+
+            /* let ual = result.data.metadata.UALs[0];
             console.log(`Created UAL is ${ual}`)
             //
             let asset = await dkg.assets.get(ual);
@@ -88,7 +91,7 @@
             }, ual, options)
 
             const res = await asset.data.valueOf;
-            console.log(res);
+            console.log(res); */
 
             // SEARCH
             // options = { query: 'ETHDenver', resultType: 'assertions' }; //or entities

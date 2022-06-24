@@ -42,7 +42,7 @@ class RequestValidationService {
     }
   }
 
-  async validatePublishRequest(options) {
+  validatePublishRequest(options) {
     this.validateVisibility(options.visibility);
     this.validateKeywords(options.keywords);
     this.validateContent(options.content);
@@ -51,6 +51,16 @@ class RequestValidationService {
 
     if (options.method === "update" && !options.ual)
       throw Error("No ual provided");
+  }
+
+  // RESOLVE
+
+  validateResolveId(id) {
+    if (!id) throw Error("No id provided");
+  }
+
+  validateResolveRequest(options) {
+    this.validateResolveId(options.id);
   }
 }
 

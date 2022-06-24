@@ -15,7 +15,7 @@
  *  Possible methods for publish
  */
  exports.PUBLISH_METHOD = {
-    PUBLISH: 'PUBLISH',
-    PROVISION: 'PROVISION',
-    UPDATE: 'UPDATE',
+    PUBLISH: 'publish',
+    PROVISION: 'provision',
+    UPDATE: 'update',
 };

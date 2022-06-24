@@ -3,6 +3,7 @@ const FormData = require("form-data");
 const NodeFormData = require("form-data/lib/form_data");
 const Logger = require("../utilities/logger");
 const PublishController = require("./controllers/publish-controller");
+const ResolveController = require("./controllers/resolve-controller");
 const RequestValidationService = require("./services/request-validation-service");
 const NodeBlockchainService = require("./services/node-blockchain-service");
 const BrowserBlockchainService = require("./services/browser-blockchain-service");
@@ -19,8 +20,8 @@ class AbstractClient {
     networkId: "polygon::mainnet",
     hubContractAddress: "0xFD6ECaed420aB70fb97eB2423780517dc425ef81",
     rpcEndpoints: [
-      "https://rpc-mumbai.maticvigil.com/",
       "https://matic-mumbai.chainstacklabs.com",
+      "https://rpc-mumbai.maticvigil.com/",
       "https://rpc-mumbai.matic.today",
       "https://matic-testnet-archive-rpc.bwarelabs.com",
     ],
@@ -100,6 +101,14 @@ class AbstractClient {
       },
       this.logger
     );
+
+    this.resolveController = new ResolveController(
+      {
+        validationService: this.validationService,
+        requestValidationService: this.requestValidationService,
+      },
+      this.logger
+    );
   }
 
   /**
@@ -121,7 +130,15 @@ class AbstractClient {
   }
 
   async _publishRequest(options) {
-    return this.publishController.publish(options);
+    const request = await this.publishController.generatePublishRequest(options);
+
+    this.logger.debug("Sending publish request.");
+
+    return axios({
+      method: "post",
+      url: `${this.nodeBaseUrl}/${options.method}`,
+      data: request,
+    });
   }
 
   _getFormHeaders(form) {
@@ -135,46 +152,32 @@ class AbstractClient {
 
   /**
    * @param {object} options
-   * @param {string[]} options.ids - assertion ids
+   * @param {string} options.id - assertion id
    */
   async resolve(options) {
-    if (!options || !options.ids) {
-      throw Error("Please provide resolve options in order to resolve.");
-    }
+    const request = await this.resolveController.generateResolveRequest(options);
+
     try {
-      const response = await this._resolveRequest(options);
+      const response = await this._resolveRequest(request);
+      console.log(JSON.stringify(response, null, 2))
       return this._getResult({
+        ...options,
         handler_id: response.data.handler_id,
         operation: "resolve",
-        ...options,
       });
     } catch (e) {
       throw e;
     }
   }
 
-  _resolveRequest(options) {
+  _resolveRequest(request) {
     this.logger.debug("Sending resolve request.");
-    const form = new FormData();
-    let ids = "";
-
-    let firstOne = true;
-    for (let id of options.ids) {
-      if (firstOne) {
-        firstOne = false;
-        ids += `ids=${id}`;
-      } else {
-        ids += `&ids=${id}`;
-      }
-    }
-
-    let axios_config = {
+    
+    return axios({
       method: "get",
-      url: `${this.nodeBaseUrl}/resolve?${ids}`,
-      data: form,
-      headers: { ...this._getFormHeaders(form) },
-    };
-    return axios(axios_config);
+      url: `${this.nodeBaseUrl}/resolve`,
+      data: request,
+    });
   }
 
   /**
@@ -428,7 +431,7 @@ class AbstractClient {
         this.logger.error(e);
         throw e;
       }
-    } while (response.data.status === this.STATUSES.pending);
+    } while (response.data.status !== this.STATUSES.completed && response.data.status !== this.STATUSES.failed);
     if (response.data.status === this.STATUSES.failed) {
       throw Error(
         `Get ${options.operation} failed. Reason: ${response.data.message}.`

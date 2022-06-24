@@ -17,11 +17,12 @@ class NativeClient extends AbstractClient {
 
     try {
       const response = await this._publishRequest(options);
-      return await this._getResult({
-        handler_id: response.data.handler_id,
-        operation: options.method,
+      const result = await this._getResult({
         ...options,
+        handler_id: response.data.handlerId,
+        operation: options.method
       });
+      return result;
     } catch (e) {
       throw e;
     }
