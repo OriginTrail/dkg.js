@@ -159,10 +159,10 @@ class AbstractClient {
 
     try {
       const response = await this._resolveRequest(request);
-      console.log(JSON.stringify(response, null, 2))
+      
       return this._getResult({
         ...options,
-        handler_id: response.data.handler_id,
+        handler_id: response.data.handlerId,
         operation: "resolve",
       });
     } catch (e) {
@@ -174,7 +174,7 @@ class AbstractClient {
     this.logger.debug("Sending resolve request.");
     
     return axios({
-      method: "get",
+      method: "post",
       url: `${this.nodeBaseUrl}/resolve`,
       data: request,
     });
