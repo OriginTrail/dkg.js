@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+    <script src="./dist/dkg.min.js"></script>
+</head>
+<body>
+
+<script>
+    window.addEventListener('load', async function () {
+        const dkg = new DKG({
+            endpoint: 'localhost',
+            port: '8903',
+            useSSL: false,
+            loglevel: 'trace'
+        });
+        console.log(dkg, 'dkg');
+
+        let options = {
+            operation: "PUBLISH",
+            metadata: {
+                type: "Product",
+                issuer: "0x4609ffd1d9bc8ebeeb048834721dbe43e420e528",
+                visibility: "public",
+                keywords: ["24.06.2022", "awdaawd8"],
+                dataRootId: "https://origintrail.io/default-data-id",
+            },
+            data: [
+                "<https://origintrail.io/default-data-id> <http://schema.org/aggregateRating> _:c14n5 .",
+                "<https://origintrail.io/default-data-id> <http://schema.org/offers> _:c14n2 .",
+            ],
+            ual: "dkg://did.otp.0x174714134abcd13431413413/987654321",
+        };
+
+        await dkg.socketPublish(options).then((result) => {
+            console.log('============ Publish results ===================');
+            console.log(JSON.stringify(result, null, 2));
+            console.log('===============================');
+        });
+    });
+</script>
+</body>
+</html>
