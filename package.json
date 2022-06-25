@@ -33,6 +33,7 @@
     "loglevel": "^1.8.0",
     "merkle-tools": "^1.4.1",
     "n3": "^1.12.2",
+    "socket.io-client": "^4.5.1",
     "sparqljs": "^3.5.1",
     "sync-request": "^6.1.0",
     "uglifyjs-webpack-plugin": "^2.2.0",

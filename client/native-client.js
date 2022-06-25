@@ -11,10 +11,9 @@ class NativeClient extends AbstractClient {
      * @param {string[]} options.keywords (optional)
      */
     publish(options) {
-        if (!options || !options.filepath) {
+        if (!options || !options.metadata) {
             throw Error("Please provide publish options in order to publish.");
         }
-        options.method = 'publish';
         return new Promise((resolve, reject) => {
             this._publishRequest(options)
                 .then((response) =>
@@ -23,6 +22,24 @@ class NativeClient extends AbstractClient {
                         operation: options.method,
                         ...options
                     })
+                )
+                .then((response) => {
+                    resolve(response);
+                })
+                .catch((error) => reject(error));
+        });
+    }
+
+    socketPublish(options) {
+        if (!options || !options.metadata) {
+            throw Error("Please provide publish options in order to publish.");
+        }
+        return new Promise((resolve, reject) => {
+            this._socketsPublishRequest(options)
+                .then((response) =>
+                    {
+                        return response;
+                    }
                 )
                 .then((response) => {
                     resolve(response);
