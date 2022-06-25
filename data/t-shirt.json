@@ -1,0 +1,15 @@
+{
+ "@context": "https://schema.org",
+ "@type": "Product",
+ "@id": "6666666",
+ "description": "Bob Metcalfe's T-Shirt by OriginTrail.",
+ "name": "Obey the Metcalfe's law T-Shirt",
+ "image": "URL",
+ "color": "white",
+ "manufacturer": "dkg://did.ganache.testnet.0xA99754D3634B8Be489F50F69F728c3d1fEB1fcce/123545678912354567891",
+ "material": "Cotton",
+ "size": "L",
+ "isRelatedTo": "dkg://did.ganache.testnet.0xA99754D3634B8Be489F50F69F728c3d1fEB1fcce/99998888",
+ "number": "043"
+ 
+}

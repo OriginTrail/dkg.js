@@ -18,12 +18,9 @@ class AbstractClient {
   defaultBlockchainServiceConfig = {
     blockchainTitle: "Polygon",
     networkId: "polygon::mainnet",
-    hubContractAddress: "0xFD6ECaed420aB70fb97eB2423780517dc425ef81",
+    hubContractAddress: "0xF21dD87cFC5cF5D073398833AFe5EFC543b78a00",
     rpcEndpoints: [
-      "https://matic-mumbai.chainstacklabs.com",
-      "https://rpc-mumbai.maticvigil.com/",
-      "https://rpc-mumbai.matic.today",
-      "https://matic-testnet-archive-rpc.bwarelabs.com",
+      "http://localhost:7545"
     ],
   };
   STATUSES = {
@@ -80,6 +77,7 @@ class AbstractClient {
     this.blockchainService = this.nodeSupported()
       ? new NodeBlockchainService(config.blockchain, this.logger)
       : new BrowserBlockchainService(config.blockchain, this.logger);
+
     this.validationService = new ValidationService(
       config.validation,
       this.logger

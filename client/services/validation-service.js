@@ -5,6 +5,11 @@ const sortedStringify = require("json-stable-stringify");
 // eslint-disable-next-line new-cap
 const secp256k1 = new elliptic.ec("secp256k1");
 const BytesUtilities = require("../../utilities/bytes-utilities");
+const keccak256 = require('keccak256')
+const web3 = require('web3')
+const {MerkleTree} = require('merkletreejs')
+
+
 
 const _slicedToArray = (function () {
   function sliceIterator(arr, i) {
@@ -57,17 +62,15 @@ class ValidationService {
     return hash.toString();
   }
 
-  calculateRootHash(assertion) {
-    assertion.sort();
-    const tree = new MerkleTools({
-        hashType: 'sha256',
-    });
-    for (const leaf of assertion) {
-        tree.addLeaf(leaf, true);
-    }
-    tree.makeTree();
-    return tree.getMerkleRoot().toString('hex');
-}
+  calculateRootHash(nquadsArray) {
+      nquadsArray.sort();
+      const leaves = nquadsArray.map((element, index) => keccak256(web3.utils.encodePacked(
+          keccak256(element),
+          index
+      )))
+      const tree = new MerkleTree(leaves, keccak256, {sortPairs: true})
+      return tree.getRoot().toString('hex')
+  }
 
   sign(content, privateKey) {
     const signature = secp256k1

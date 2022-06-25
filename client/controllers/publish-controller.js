@@ -12,7 +12,8 @@ class PublishController {
   async generatePublishRequest(options) {
     this.requestValidationService.validatePublishRequest(options);
 
-    const content = await this.dataService.compact(options.content);
+    const content = options.content;
+    // const content = await this.dataService.compact(options.content);
     if (!content.id) {
       content.id = "https://origintrail.io/default-data-id";
     }
@@ -21,6 +22,7 @@ class PublishController {
     request.data = await this.dataService.toNQuads(content);
 
     request.metadata = {
+      '@context': 'https://schema.org/',
       type: content.type ?? "Thing",
       issuer: options.publicKey ?? (await this.blockchainService.getAccount()),
       visibility: options.visibility,
@@ -29,90 +31,56 @@ class PublishController {
     };
 
     request.metadata.keywords.sort();
+    let nquadsArray = await this.dataService.toNQuads(request.metadata);
+    nquadsArray = nquadsArray.concat(request.data)
 
-    const metadataHash = this.validationService.calculateHash(request.metadata);
-    const dataHash = this.validationService.calculateHash(request.data);
-    const assertionId = this.validationService.calculateHash(
-      metadataHash + dataHash
-    );
+    console.log(nquadsArray.sort());
+    const assertionId = this.validationService.calculateRootHash(nquadsArray);
+
     const signature = await this.blockchainService.sign(
       assertionId,
       options.privateKey
     );
 
-    const rootHash = this.validationService.calculateRootHash(request.data);
+    const uai = await this.submitProofs(
+        options.method,
+        assertionId,
+        1000,
+        nquadsArray.length,
+        200,
+        {
+          publicKey: options.publicKey,
+          privateKey: options.privateKey,
+        }
+    );
 
-    if (options.method === PUBLISH_METHOD.PROVISION) {
-      // TODO: get UAL from blockchain
-      request.ual = rootHash;
-    } else if (options.method === PUBLISH_METHOD.UPDATE) {
-      request.ual = options.ual;
-    }
-
-    if (request.ual) {
-      this.logger.info(`UAL: ${request.ual}`);
-    }
     this.logger.info(`Assertion ID: ${assertionId}`);
-    this.logger.info(`Assertion metadataHash: ${metadataHash}`);
-    this.logger.info(`Assertion dataHash: ${dataHash}`);
-    this.logger.info(`Assertion rootHash: ${rootHash}`);
     this.logger.info(`Assertion signature: ${signature}`);
     this.logger.info(
       `Assertion length in N-QUADS format: ${request.data.length}`
     );
     this.logger.info(`Keywords: ${request.metadata.keywords}`);
+    request.ual = `dkg://did.ganache.${this.blockchainService.config.hubContractAddress}/${uai}`
 
-    const { transactionHash, blockchain } = await this.submitProofs(
-      options.method,
-      assertionId,
-      rootHash,
-      request.metadata,
-      {
-        publicKey: options.publicKey,
-        privateKey: options.privateKey,
-        ual: request.ual,
-      }
-    );
-    this.logger.info(`Transaction hash is ${transactionHash} on ${blockchain}`);
-    request.ual = "dkg://did.otp.0x174714134abcd13431413413/987654321"
+    if (request.ual) {
+      this.logger.info(`UAL: ${request.ual}`);
+    }
 
     return request;
   }
 
-  async submitProofs(method, assertionId, rootHash, metadata, options) {
-    let result;
-    switch (method) {
-      case PUBLISH_METHOD.PUBLISH:
-        result = await this.blockchainService.createAssertionRecord(
-          assertionId,
-          rootHash,
-          metadata.issuer,
-          options
-        );
-        break;
-      case PUBLISH_METHOD.PROVISION:
-        result = await this.blockchainService.registerAsset(
-          options.ual,
-          metadata.type,
-          options.ual,
-          assertionId,
-          rootHash,
-          1,
-          options
-        );
-        break;
-      case PUBLISH_METHOD.UPDATE:
-        result = await this.blockchainService.updateAsset(
-          options.ual,
-          assertionId,
-          rootHash,
-          options
-        );
-        break;
-      default:
-        break;
+  async submitProofs(method, assertionId, amount, length, holdingTimeInSeconds, options) {
+    if (!this.blockchainService.isInitialized()) {
+      await this.blockchainService.initializeContracts();
     }
-    return result;
+
+    // TODO: implement other methods
+    let result = await this.blockchainService.createAsset(
+      assertionId, amount, length, holdingTimeInSeconds,
+      options
+    );
+
+    return result.UAI;
   }
 }
 

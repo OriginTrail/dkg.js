@@ -1,0 +1,15 @@
+{
+  "@context": "https://schema.org",
+  "@id":"99998888",
+  "@type": "VisualArtwork",
+  "name": "Obey Metcalfe's Law print design",
+  "image": "https://origintrail.io/images/meta-images/home-meta.png",
+  "description": "Specially designed print for the first ever object to receive a UAL at the Knowledge Graph Conference 2022 in New York City, depicting internet pioneer Bob Metcalfe and his law",
+  "creator": {
+      "@type": "Person",
+      "name": "Irena Cuturic"
+  },
+  "artMedium": "vector",
+  "brand":"Nike",
+  "company":"dkg://did.ganache.testnet.0xA99754D3634B8Be489F50F69F728c3d1fEB1fcce/123545678912354567891"
+}
