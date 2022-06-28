@@ -9,6 +9,7 @@ const NodeBlockchainService = require("./services/node-blockchain-service");
 const BrowserBlockchainService = require("./services/browser-blockchain-service");
 const ValidationService = require("./services/validation-service");
 const DataService = require("./services/data-service");
+const io = require("socket.io-client");
 
 class AbstractClient {
   defaultMaxNumberOfRetries = 5;
@@ -149,6 +150,37 @@ class AbstractClient {
       return form?.getHeaders();
     }
   }
+    initializeSockets() {
+        let io = require('socket.io-client');
+        this.socket = io.connect("http://localhost:3000/", {
+            reconnection: true
+        });
+        this.socket.on('connect', function () {
+            console.log('connected to localhost:3000');
+        });
+    }
+
+    async _socketsPublishRequest(options) {
+      this.initializeSockets();
+      return new Promise((resolve, reject) => {
+            this.logger.debug("Sending publish request via socket.");
+            this.socket.emit("PUBLISH", options);
+            this.socket.on("operation_status_update", (data) => {
+                if(data.lastEvent === 'COMPLETED' || data.lastEvent === 'FAILED') {
+                    resolve(data);
+                }
+            });
+        });
+    }
+
+    _getFormHeaders(form){
+        if(typeof form?.getHeaders !== 'function'){
+            const nfd = new NodeFormData();
+            return nfd.getHeaders();
+        }else{
+            return form?.getHeaders();
+        }
+    }
 
   /**
    * @param {object} options
@@ -159,7 +191,7 @@ class AbstractClient {
 
     try {
       const response = await this._resolveRequest(request);
-      
+
       return this._getResult({
         ...options,
         handler_id: response.data.handlerId,
@@ -172,7 +204,7 @@ class AbstractClient {
 
   _resolveRequest(request) {
     this.logger.debug("Sending resolve request.");
-    
+
     return axios({
       method: "post",
       url: `${this.nodeBaseUrl}/resolve`,

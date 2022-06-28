@@ -7,11 +7,33 @@
     <script>
         window.addEventListener('load', async function () {
 
-            const dkg = new DKG({
-                endpoint: "0.0.0.0",
+            window.dkg = new DKG({
+                endpoint: "localhost",
                 useSSL: false,
-                port: 8900,
+                port: 8903,
                 loglevel: "trace",
+            });
+
+            let options = {
+                operation: "PUBLISH",
+                metadata: {
+                    type: "Product",
+                    issuer: "0x4609ffd1d9bc8ebeeb048834721dbe43e420e528",
+                    visibility: "public",
+                    keywords: ["24.06.2022", "awdaawd8"],
+                    dataRootId: "https://origintrail.io/default-data-id",
+                },
+                data: [
+                    "<https://origintrail.io/default-data-id> <http://schema.org/aggregateRating> _:c14n5 .",
+                    "<https://origintrail.io/default-data-id> <http://schema.org/offers> _:c14n2 .",
+                ],
+                ual: "dkg://did.otp.0x174714134abcd13431413413/987654321",
+            };
+
+            await window.dkg.socketPublish(options).then((result) => {
+                console.log('============ Publish results ===================');
+                console.log(JSON.stringify(result, null, 2));
+                console.log('===============================');
             });
 
             /* // SET & GET
@@ -70,9 +92,9 @@
             const result = await dkg.publish(content, options)
             console.log(JSON.stringify(result, null, 2)) */
 
-            const id = "a5e68af2a724ee33ccf714bb6be8f5a1a6f894d200bc8de72a1653a4f461b563"
-            const result = await dkg.resolve({id})
-            console.log(JSON.stringify(result, null, 2))
+            // const id = "a5e68af2a724ee33ccf714bb6be8f5a1a6f894d200bc8de72a1653a4f461b563"
+            // const result = await dkg.resolve({id})
+            // console.log(JSON.stringify(result, null, 2))
 
             /* let ual = result.data.metadata.UALs[0];
             console.log(`Created UAL is ${ual}`)
