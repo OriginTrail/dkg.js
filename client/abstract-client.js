@@ -19,9 +19,11 @@ class AbstractClient {
   defaultBlockchainServiceConfig = {
     blockchainTitle: "Polygon",
     networkId: "polygon::mainnet",
-    hubContractAddress: "0x03bF4e6EeAFFa0a3E4Be7a2456513c0d358A96A7",
+    hubContractAddress: "0x8b3A3D55C3a51f7c7605D2a6F5B122dA0e5A88A8",
     rpcEndpoints: [
-      "http://localhost:7545"
+      "https://matic-mumbai.chainstacklabs.com",
+      "https://rpc-mumbai.matic.today",
+      "https://matic-testnet-archive-rpc.bwarelabs.com"
     ],
   };
   STATUSES = {
@@ -160,7 +162,7 @@ class AbstractClient {
 
     try {
       const response = await this._resolveRequest(request);
-      
+
       return this._getResult({
         ...options,
         handler_id: response.data.handlerId,
@@ -173,7 +175,7 @@ class AbstractClient {
 
   _resolveRequest(request) {
     this.logger.debug("Sending resolve request.");
-    
+
     return axios({
       method: "get",
       url: `${this.nodeBaseUrl}/resolve`,
