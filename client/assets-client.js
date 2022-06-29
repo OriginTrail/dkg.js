@@ -16,12 +16,12 @@ class AssetsClient extends AbstractClient {
    */
   async create(content, options = {}, walletInformation) {
     options.content = content;
-    options.method = PUBLISH_METHOD.PROVISION;
+    options.method = PUBLISH_METHOD.PUBLISH;
 
     try {
       const response = await this._publishRequest(options, walletInformation);
       return await this._getResult({
-        handler_id: response.data.handler_id,
+        handler_id: response.data.handlerId,
         operation: options.method,
         ...options,
       });
@@ -44,7 +44,7 @@ class AssetsClient extends AbstractClient {
     try {
       const response = await this._publishRequest(options);
       return await this._getResult({
-        handler_id: response.data.handler_id,
+        handler_id: response.data.handlerId,
         operation: options.method,
         ...options,
       });
