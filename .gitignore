@@ -3,7 +3,7 @@ node_modules/
 
 assets-demo.js
 frontendMock.html
-native-demo.js
+./native-demo.js
 nft-example-updated.json
 nft-example.json
 kg-example.json
