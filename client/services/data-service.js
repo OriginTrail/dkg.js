@@ -26,6 +26,73 @@ class DataService {
       "@context": "https://schema.org/",
     });
   }
+
+  async fromNQuads(nquads, type) {
+    const Id_operation = uuidv1();
+    this.logger.emit({
+      msg: "Started measuring execution of fromRDF command",
+      Event_name: "fromrdf_start",
+      Operation_name: "fromrdf",
+      Id_operation,
+    });
+    let context;
+    let frame;
+    switch (type.toLowerCase()) {
+      case this.constants.GS1EPCIS:
+        context = {
+          "@context": [
+            "https://gs1.github.io/EPCIS/epcis-context.jsonld",
+            {
+              example: "http://ns.example.com/epcis/",
+            },
+          ],
+        };
+
+        frame = {
+          "@context": [
+            "https://gs1.github.io/EPCIS/epcis-context.jsonld",
+            {
+              example: "http://ns.example.com/epcis/",
+            },
+          ],
+          isA: "EPCISDocument",
+        };
+        break;
+      case this.constants.ERC721:
+      case this.constants.OTTELEMETRY:
+        context = {
+          "@context": "https://www.schema.org/",
+        };
+        frame = {
+          "@context": "https://www.schema.org/",
+          "@type": type,
+        };
+        break;
+      default:
+        context = {
+          "@context": "https://www.schema.org/",
+        };
+
+        frame = {
+          "@context": "https://www.schema.org/",
+          "@type": type,
+        };
+    }
+    const json = await this.workerPool.exec("fromNQuads", [
+      nquads,
+      context,
+      frame,
+    ]);
+
+    this.logger.emit({
+      msg: "Finished measuring execution of fromRDF command",
+      Event_name: "fromrdf_end",
+      Operation_name: "fromrdf",
+      Id_operation,
+    });
+
+    return json;
+  }
 }
 
 module.exports = DataService;

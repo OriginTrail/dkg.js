@@ -25,9 +25,9 @@ class AbstractClient {
     ],
   };
   STATUSES = {
-    pending: "PENDING",
-    completed: "COMPLETED",
-    failed: "FAILED",
+    PUBLISH_END: "PUBLISH_END",
+    RESOLVE_END: "RESOLVE_END",
+    FAILED: "FAILED",
   };
   /**
    * Initialize client
@@ -160,10 +160,10 @@ class AbstractClient {
 
     try {
       const response = await this._resolveRequest(request);
-      console.log(JSON.stringify(response, null, 2))
+      
       return this._getResult({
         ...options,
-        handler_id: response.data.handler_id,
+        handler_id: response.data.handlerId,
         operation: "resolve",
       });
     } catch (e) {
@@ -404,9 +404,7 @@ class AbstractClient {
     if (!options.handler_id || !options.operation) {
       throw Error("Unable to get results, need handler id and operation");
     }
-    let response = {
-      status: this.STATUSES.pending,
-    };
+    let response;
     let retries = 0;
     let maxNumberOfRetries = options.maxNumberOfRetries
       ? options.maxNumberOfRetries
@@ -432,8 +430,8 @@ class AbstractClient {
         this.logger.error(e);
         throw e;
       }
-    } while (response.data.status !== this.STATUSES.completed && response.data.status !== this.STATUSES.failed);
-    if (response.data.status === this.STATUSES.failed) {
+    } while (response.data.status !== this.STATUSES.PUBLISH_END && response.data.status !== this.STATUSES.FAILED && response.data.status !== this.STATUSES.RESOLVE_END);
+    if (response.data.status === this.STATUSES.FAILED) {
       throw Error(
         `Get ${options.operation} failed. Reason: ${response.data.message}.`
       );
