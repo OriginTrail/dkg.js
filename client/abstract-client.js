@@ -174,7 +174,7 @@ class AbstractClient {
     this.logger.debug("Sending resolve request.");
     
     return axios({
-      method: "post",
+      method: "get",
       url: `${this.nodeBaseUrl}/resolve`,
       data: request,
     });
