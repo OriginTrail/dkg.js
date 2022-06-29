@@ -15,7 +15,7 @@ class AbstractBlockchainService {
     this.config = config;
     this.logger = logger;
 
-    this.gasStationLink = "https://gasstation-mainnet.matic.network/v2";
+    this.gasStationLink = "https://gasstation-mumbai.matic.today/v2";
     this.initializeWeb3();
   }
 
