@@ -3,7 +3,7 @@ const AssetsProxyPath = require("../utilities/assets-proxy-path");
 const { PUBLISH_METHOD } = require("../constants");
 
 class AssetsClient extends AbstractClient {
-  constructor(options) {
+  constructor(options, walletInformation) {
     super(options);
     this._assetsProxyPath = new AssetsProxyPath(options);
   }
@@ -14,14 +14,14 @@ class AssetsClient extends AbstractClient {
    * @param {string} options.filepath - path to the dataset
    * @param {string[]} options.keywords (optional)
    */
-  async create(content, options = {}) {
+  async create(content, options = {}, walletInformation) {
     options.content = content;
-    options.method = PUBLISH_METHOD.PROVISION;
+    options.method = PUBLISH_METHOD.PUBLISH;
 
     try {
-      const response = await this._publishRequest(options);
+      const response = await this._publishRequest(options, walletInformation);
       return await this._getResult({
-        handler_id: response.data.handler_id,
+        handler_id: response.data.handlerId,
         operation: options.method,
         ...options,
       });
@@ -44,7 +44,7 @@ class AssetsClient extends AbstractClient {
     try {
       const response = await this._publishRequest(options);
       return await this._getResult({
-        handler_id: response.data.handler_id,
+        handler_id: response.data.handlerId,
         operation: options.method,
         ...options,
       });

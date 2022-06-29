@@ -9,6 +9,7 @@ const NodeBlockchainService = require("./services/node-blockchain-service");
 const BrowserBlockchainService = require("./services/browser-blockchain-service");
 const ValidationService = require("./services/validation-service");
 const DataService = require("./services/data-service");
+const UALService = require("./services/ual-service");
 
 class AbstractClient {
   defaultMaxNumberOfRetries = 5;
@@ -18,12 +19,11 @@ class AbstractClient {
   defaultBlockchainServiceConfig = {
     blockchainTitle: "Polygon",
     networkId: "polygon::mainnet",
-    hubContractAddress: "0xFD6ECaed420aB70fb97eB2423780517dc425ef81",
+    hubContractAddress: "0x8b3A3D55C3a51f7c7605D2a6F5B122dA0e5A88A8",
     rpcEndpoints: [
       "https://matic-mumbai.chainstacklabs.com",
-      "https://rpc-mumbai.maticvigil.com/",
       "https://rpc-mumbai.matic.today",
-      "https://matic-testnet-archive-rpc.bwarelabs.com",
+      "https://matic-testnet-archive-rpc.bwarelabs.com"
     ],
   };
   STATUSES = {
@@ -80,6 +80,7 @@ class AbstractClient {
     this.blockchainService = this.nodeSupported()
       ? new NodeBlockchainService(config.blockchain, this.logger)
       : new BrowserBlockchainService(config.blockchain, this.logger);
+
     this.validationService = new ValidationService(
       config.validation,
       this.logger
@@ -89,6 +90,7 @@ class AbstractClient {
       this.logger
     );
     this.dataService = new DataService(config.data, this.logger);
+    this.ualService = new UALService();
   }
 
   initializeControllers() {
@@ -98,6 +100,7 @@ class AbstractClient {
         validationService: this.validationService,
         requestValidationService: this.requestValidationService,
         dataService: this.dataService,
+        ualService: this.ualService,
       },
       this.logger
     );
@@ -129,8 +132,8 @@ class AbstractClient {
     });
   }
 
-  async _publishRequest(options) {
-    const request = await this.publishController.generatePublishRequest(options);
+  async _publishRequest(options, walletInformation) {
+    const request = await this.publishController.generatePublishRequest(options, walletInformation);
 
     this.logger.debug("Sending publish request.");
 
@@ -159,7 +162,7 @@ class AbstractClient {
 
     try {
       const response = await this._resolveRequest(request);
-      
+
       return this._getResult({
         ...options,
         handler_id: response.data.handlerId,
@@ -172,7 +175,7 @@ class AbstractClient {
 
   _resolveRequest(request) {
     this.logger.debug("Sending resolve request.");
-    
+
     return axios({
       method: "get",
       url: `${this.nodeBaseUrl}/resolve`,

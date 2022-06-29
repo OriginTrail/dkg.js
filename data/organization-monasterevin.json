@@ -1,0 +1,14 @@
+{
+  "@context": "https://schema.org",
+  "@id":"MONASTEREVIN_UAL",
+  "@type": "Organization",
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "Monasterevin",
+    "streetAddress": "Kildare, Ireland"
+  },
+  "email": "office@churchofoak.com",
+  "name": "Churk of Oak Distillery (Monasterevin)",
+  "url" : "https://twitter.com/churchofoak",
+  "description" : "Distillers of fine Monasterevin Whiskey"
+}

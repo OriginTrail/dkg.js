@@ -1,113 +1,42 @@
 const DKG = require('./index');
 
 const OT_NODE_HOSTNAME = '0.0.0.0';
-const OT_NODE_PORT = '8910';
+const OT_NODE_PORT = '8900';
 
-// initialize connection to your DKG Node
-let options = { endpoint: OT_NODE_HOSTNAME, port: OT_NODE_PORT, useSSL: false, loglevel: 'trace' };
-const dkg = new DKG(options);
+const dkg = new DKG({ endpoint: OT_NODE_HOSTNAME, port: OT_NODE_PORT, useSSL: false, loglevel: 'trace' }, {
+    privateKey: "02b39cac1532bef9dba3e36ec32d3de1e9a88f1dda597d3ac6e2130aed9adc4e",
+    publicKey: "0xd6879C0A03aDD8cFc43825A42a3F3CF44DB7D2b9",
+});
 
 async function main() {
 
-    console.log('============ DKG-Client v6 Demo ===================')
-
-    await dkg.nodeInfo().then(result => {
-        console.log('============ Node info results ===================');
-        console.log(JSON.stringify(result, null, 2));
-        console.log('===============================');
-    } );
-
-    await keypress();
-
-    options = {
-        filepath: './kg-example.json',
-        keywords: ['Product', 'Executive Objects', 'ACME'],
-        visibility: 'public'
-    };
-
-    await dkg.publish(options).then((result) => {
-        console.log('============ Publish results ===================');
-        console.log(JSON.stringify(result, null, 2));
-        console.log('===============================');
-    });
-
-    await keypress();
-
-    options = {
-        ids: [
-            '9f388253151d743a36ed2e06d3466949fab2190d09acafc36d973f4f1bbc74f3'
-        ]
-    };
-
-    await dkg.resolve(options).then((result) => {
-        console.log('============ Resolve results ===================');
-        console.log(JSON.stringify(result, null, 2));
-        console.log('===============================');
-    });
-
-    await keypress();
-
-    // search assertions
-    options = { query: 'acme', resultType: 'assertions' };
-    await dkg.search(options).then((result) => {
-        console.log('============ Search assertions results ===================');
-        console.log(JSON.stringify(result, null, 2));
-        console.log('===============================');
-    });
-
-    await keypress();
-
-    // search entities
-    options = { query: 'acme', resultType: 'entities' };
-    await dkg.search(options).then((result) => {
-        console.log('============ Search entities results ===================');
-        console.log(JSON.stringify(result, null, 2));
-        console.log('===============================');
-    });
-
-    await keypress();
-
-    options = {
-        query: `PREFIX schema: <http://schema.org/>
-            construct { ?s ?p ?o}
-            WHERE { 
-                GRAPH ?g {?s ?p ?o .
-                    ?s schema:offers / schema:seller/ schema:name "Executive Objects" .
-                }
-            }`
-    };
-
-    await dkg.query(options).then((result) => {
-        console.log('============ Query results ===================');
-        console.log(JSON.stringify(result, null, 2));
-        console.log('===============================');
-    });
-
-    await keypress();
-
-    options = {
-        nquads: [
-            '<did:dkg:43a5f8c55600a36882f9bac7c69c05a3e0edd1293b56b8024faf3a29d8157435> <http://schema.org/hasDataHash> \"019042b4b5cb5701579a4fd8e339bed0fa983b06920ed8cd4d5864ffcb01c801\" .',
-            '<did:dkg:43a5f8c55600a36882f9bac7c69c05a3e0edd1293b56b8024faf3a29d8157435> <http://schema.org/hasIssuer> \"0xbd084ab97c704fe4a6d620cb7c30c0be0366646f\" .'
-        ],
-    };
-    await dkg.validate(options).then((result) => {
-        console.log('============ Validate results ===================');
-        console.log(JSON.stringify(result, null, 2));
-        console.log('===============================');
-    });
-
-    console.log("That's all folks");
-    process.exit(0);
+    const seed = Math.random().toString();
+    const content =
+        {
+            "@context": "https://schema.org",
+            "@type": "Product",
+            "seed": seed,
+            "description": "0.7 cubic feet countertop microwave. Has six preset cooking categories and convenience features like Add-A-Minute and Child Lock.",
+            "name": "Kenmore White 17\" Microwave",
+            "image": "kenmore-microwave-17in.jpg",
+            "offers": {
+                "@type": "Offer",
+                "availability": "https://schema.org/InStock",
+                "price": "55.00",
+                "priceCurrency": "USD"
+            }
+        }
+    const result = await dkg.assets.create(content, {
+        keywords: ['13128adwadwda2111231331', "24.06.2022"],
+        visibility: 'public',
+        tokenAmount: 1,
+        holdingTimeInSeconds: 200
+    }, {
+        privateKey: "02b39cac1532bef9dba3e36ec32d3de1e9a88f1dda597d3ac6e2130aed9adc4e",
+        publicKey: "0xd6879C0A03aDD8cFc43825A42a3F3CF44DB7D2b9",
+    })
+    console.log(JSON.stringify(result, null, 2));
 }
 
-const keypress = async () => {
-    console.log('Press any key...')
-    process.stdin.setRawMode(true)
-    return new Promise(resolve => process.stdin.once('data', () => {
-        process.stdin.setRawMode(false)
-        resolve()
-    }))
-}
 
 main();

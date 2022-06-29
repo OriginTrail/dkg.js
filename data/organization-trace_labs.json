@@ -1,0 +1,15 @@
+{
+  "@context": "https://schema.org",
+  "@id":"12354567891235456789",
+  "@type": "Organization",
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "Belgrade, Serbia",
+    "postalCode": "11000",
+    "streetAddress": "Vitezova Karadjordjeve Zvezde 50"
+  },
+  "email": "office@tracelabs.io",
+  "name": "Trace Labs LTD",
+  "url" : "https://www.tracelabs.io",
+  "description" : "Core developers of OriginTrail"
+}

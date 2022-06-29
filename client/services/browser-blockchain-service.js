@@ -41,24 +41,6 @@ class BrowserBlockchainService extends AbstractBlockchainService {
     return this.account;
   }
 
-  async executeContractFunction(contractInstance, functionName, args) {
-    try {
-      const tx = await this.prepareTransaction(
-        contractInstance,
-        functionName,
-        args,
-        {publicKey: await this.getAccount()}
-      );
-
-      const result = await contractInstance.methods[functionName](...args).send(
-        tx
-      );
-      return result;
-    } catch (error) {
-      await this.handleError(error, functionName);
-    }
-  }
-
   async handleError(error, functionName) {
     this.logger.error(
       `Unable to execute smart contract function ${functionName}. Error ${error.message}.`

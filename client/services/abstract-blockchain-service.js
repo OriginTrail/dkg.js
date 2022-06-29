@@ -1,9 +1,12 @@
 const BigNumber = require("big-number");
 const axios = require("axios");
-const DKGContractAbi = require("../../build/contracts/DKGcontract.json").abi;
-const UAIRegistryAbi = require("../../build/contracts/UAIRegistry.json").abi;
+const Hub = require('../../build/contracts/Hub.json');
+const UAIRegistry = require('../../build/contracts/UAIRegistry.json');
+const Token = require('../../build/contracts/ERC20Token.json');
 
 class AbstractBlockchainService {
+  initialized = false;
+
   getName() {
     return "BlockchainService";
   }
@@ -12,7 +15,7 @@ class AbstractBlockchainService {
     this.config = config;
     this.logger = logger;
 
-    this.gasStationLink = "https://gasstation-mainnet.matic.network/v2";
+    this.gasStationLink = "https://gasstation-mumbai.matic.today/v2";
     this.initializeWeb3();
   }
 
@@ -20,28 +23,27 @@ class AbstractBlockchainService {
 
   async sign(message) {}
 
-  async getUAIRegistryContract() {
-    if (!this.UAIRegistryContract) {
-      this.UAIRegistryContract = new this.web3.eth.Contract(
-        UAIRegistryAbi,
-        this.config.hubContractAddress
-      );
-    }
-    return this.UAIRegistryContract;
-  }
+  async initializeContracts() {
+    this.hubContract = new this.web3.eth.Contract(
+        Hub.abi,
+        this.config.hubContractAddress,
+    );
 
-  async getDKGContract() {
-    if (!this.DKGContract) {
-      const UAIRegistryContract = await this.getUAIRegistryContract();
-      const DKGContractAddress = await UAIRegistryContract.methods
-        .getAssertionRegistry()
-        .call();
-      this.DKGContract = new this.web3.eth.Contract(
-        DKGContractAbi,
-        DKGContractAddress
-      );
-    }
-    return this.DKGContract;
+    const UAIRegistryContractAddress = await this.callContractFunction(this.hubContract, 'getContractAddress', ['UAIRegistry']);
+
+    this.UAIRegistryContract = new this.web3.eth.Contract(
+        UAIRegistry.abi,
+        UAIRegistryContractAddress,
+    );
+
+    const TokenAddress = await this.callContractFunction(this.hubContract, 'getContractAddress', ['Token']);
+
+    this.TokenContract = new this.web3.eth.Contract(
+        Token.abi,
+        TokenAddress,
+    );
+
+    this.initialized = true;
   }
 
   async getGasStationPrice() {
@@ -79,69 +81,79 @@ class AbstractBlockchainService {
     };
   }
 
-  async executeContractFunction(
-    contractInstance,
-    functionName,
-    args,
-    options
-  ) {}
 
-  async createAssertionRecord(stateCommitHash, rootHash, issuer, options) {
-    const result = await this.executeContractFunction(
-      await this.getDKGContract(),
-      "createAssertionRecord",
-      [
-        `0x${stateCommitHash}`,
-        `0x${rootHash}`,
-        issuer,
-        new BigNumber(1),
-        new BigNumber(1),
-      ],
-      options
-    );
-    return {
-      transactionHash: result.transactionHash,
-      blockchain: this.config.networkId,
-    };
+  async executeContractFunction(contractInstance, functionName, args) {
+    try {
+      const tx = await this.prepareTransaction(
+          contractInstance,
+          functionName,
+          args,
+          {publicKey: await this.getAccount()}
+      );
+
+      const result = await contractInstance.methods[functionName](...args).send(
+          tx
+      );
+      return result;
+    } catch (error) {
+      await this.handleError(error, functionName);
+    }
   }
 
-  async registerAsset(
-    uai,
-    type,
-    alsoKnownAs,
-    stateCommitHash,
-    rootHash,
-    tokenAmount,
-    options
+  async callContractFunction(contractInstance, functionName, args) {
+    let result;
+    while (!result) {
+      try {
+        result = await contractInstance.methods[functionName](...args).call();
+      } catch (error) {
+        await this.handleError(error, functionName);
+      }
+    }
+
+    return result;
+  }
+
+  async createAsset(
+      stateCommitHash,
+      amount,
+      length,
+      holdingTimeInSeconds,
+      signature,
+      options
   ) {
-    const result = await this.executeContractFunction(
-      await this.getUAIRegistryContract(),
-      "registerAsset",
-      [`0x${uai}`, 0, `0x${uai}`, `0x${stateCommitHash}`, `0x${rootHash}`, 1],
-      options
+    const transactionReceipt = await this.executeContractFunction(
+        this.UAIRegistryContract,
+        "createAsset",
+        [`0x${stateCommitHash}`, 0, length, 2400, `0x${signature}`],
+        options
     );
+    const UAI = parseInt(transactionReceipt.logs[4].topics[1], 16);
+
     return {
-      transactionHash: result.transactionHash,
+      UAI,
       blockchain: this.config.networkId,
     };
   }
 
-  async updateAsset(UAI, newStateCommitHash, rootHash, options) {
-    const result = await this.executeContractFunction(
-      await this.getUAIRegistryContract(),
-      "updateAssetState",
-      [`0x${UAI}`, `0x${newStateCommitHash}`, `0x${rootHash}`],
-      options
+  async balanceOf(
+      address
+  ) {
+    const balance = await this.callContractFunction(
+        this.TokenContract,
+        "balanceOf",
+        [address]
     );
-    return {
-      transactionHash: result.transactionHash,
-      blockchain: this.config.networkId,
-    };
+
+    return balance;
   }
 
   async handleError(error, functionName) {}
 
   async restartService() {}
+
+  isInitialized() {
+    return this.initialized;
+  }
 }
 
 module.exports = AbstractBlockchainService;

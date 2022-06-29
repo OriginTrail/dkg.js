@@ -1,0 +1,12 @@
+{
+ "@context": "https://schema.org",
+ "@type": "Product",
+ "@id": "TBD",
+ "description": "Whiskey bottle #1337 of Monasterevin Whiskey",
+ "name": "Monasterevin Whiskey",
+ "image": "https://origintrail.io/slika.jpg",
+ "manufacturer": "UAL_Monasterevin",
+ "weight": "0.7L",
+ "productionDate": "2022-01-01",
+ "isRelatedTo": "RELATED_PRINT"
+}
