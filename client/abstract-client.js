@@ -9,6 +9,7 @@ const NodeBlockchainService = require("./services/node-blockchain-service");
 const BrowserBlockchainService = require("./services/browser-blockchain-service");
 const ValidationService = require("./services/validation-service");
 const DataService = require("./services/data-service");
+const UALService = require("./services/ual-service");
 
 class AbstractClient {
   defaultMaxNumberOfRetries = 5;
@@ -18,7 +19,7 @@ class AbstractClient {
   defaultBlockchainServiceConfig = {
     blockchainTitle: "Polygon",
     networkId: "polygon::mainnet",
-    hubContractAddress: "0xF21dD87cFC5cF5D073398833AFe5EFC543b78a00",
+    hubContractAddress: "0x03bF4e6EeAFFa0a3E4Be7a2456513c0d358A96A7",
     rpcEndpoints: [
       "http://localhost:7545"
     ],
@@ -87,6 +88,7 @@ class AbstractClient {
       this.logger
     );
     this.dataService = new DataService(config.data, this.logger);
+    this.ualService = new UALService();
   }
 
   initializeControllers() {
@@ -96,6 +98,7 @@ class AbstractClient {
         validationService: this.validationService,
         requestValidationService: this.requestValidationService,
         dataService: this.dataService,
+        ualService: this.ualService,
       },
       this.logger
     );
@@ -127,8 +130,8 @@ class AbstractClient {
     });
   }
 
-  async _publishRequest(options) {
-    const request = await this.publishController.generatePublishRequest(options);
+  async _publishRequest(options, walletInformation) {
+    const request = await this.publishController.generatePublishRequest(options, walletInformation);
 
     this.logger.debug("Sending publish request.");
 

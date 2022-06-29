@@ -8,8 +8,10 @@ class RequestValidationService {
   }
 
   validateContent(content) {
+    // TODO checks if it is json
     if (!content) throw Error("No content provided");
-    if (Buffer.byteLength(JSON.stringify(content), "utf-8") > MAX_FILE_SIZE)
+    if (typeof content !== 'object' && Array.isArray(content)) throw Error("Provided content is not a JSON object");
+      if (Buffer.byteLength(JSON.stringify(content), "utf-8") > MAX_FILE_SIZE)
       throw Error(`File size limit is ${MAX_FILE_SIZE / (1024 * 1024)}MB.`);
   }
 
@@ -42,13 +44,15 @@ class RequestValidationService {
     }
   }
 
-  validatePublishRequest(options) {
+  validatePublishRequest(options, walletInformation) {
     this.validateVisibility(options.visibility);
     this.validateKeywords(options.keywords);
     this.validateContent(options.content);
-    this.validatePublicKey(options.publicKey);
-    this.validatePrivateKey(options.privateKey);
+    this.validatePublicKey(walletInformation.publicKey);
+    this.validatePrivateKey(walletInformation.privateKey);
 
+    // TODO update with assetUpdate method
+    // TODO validate UAL format
     if (options.method === "update" && !options.ual)
       throw Error("No ual provided");
   }

@@ -23796,12 +23796,12 @@
         }
       },
       "links": {},
-      "address": "0xA50fC71FBF7E8d2AA20f6a9adE92B49804345a8f",
-      "transactionHash": "0x83196d30253d55f0ef9a85810ca17b081fd18020a6c6c8a212ba6fe5777bf111"
+      "address": "0x67b4Ccc03F6C827C51d714bCF61437eeC15d50db",
+      "transactionHash": "0x67bfac92c073d57a4196e8dbc823801c65c9b9747ea0828c3686b31bcd95b9c8"
     }
   },
   "schemaVersion": "3.4.3",
-  "updatedAt": "2022-06-23T06:15:56.482Z",
+  "updatedAt": "2022-06-29T08:34:14.340Z",
   "networkType": "ethereum",
   "devdoc": {
     "details": "Implementation of https://eips.ethereum.org/EIPS/eip-721[ERC721] Non-Fungible Token Standard, including the Metadata extension, but not including the Enumerable extension, which is available separately as {ERC721Enumerable}.",

@@ -6,53 +6,58 @@ class PublishController {
     this.blockchainService = config.blockchainService;
     this.validationService = config.validationService;
     this.requestValidationService = config.requestValidationService;
+    this.ualService = config.ualService;
     this.dataService = config.dataService;
   }
 
-  async generatePublishRequest(options) {
-    this.requestValidationService.validatePublishRequest(options);
-
-    const content = options.content;
-    // const content = await this.dataService.compact(options.content);
-    if (!content.id) {
-      content.id = "https://origintrail.io/default-data-id";
+  async generatePublishRequest(options, walletInformation) {
+    this.requestValidationService.validatePublishRequest(options, walletInformation);
+    const balanceOf = await this.balanceOf(walletInformation.publicKey);
+    if (balanceOf < options.tokenAmount) {
+      throw Error('Insufficient funds');
     }
 
+    const content = await this.dataService.compact(options.content);
+
     const request = { metadata: {}, data: [] };
-    request.data = await this.dataService.toNQuads(content);
+    request.data = await this.dataService.canonize(content);
 
     request.metadata = {
       '@context': 'https://schema.org/',
       type: content.type ?? "Thing",
-      issuer: options.publicKey ?? (await this.blockchainService.getAccount()),
+      issuer: walletInformation.publicKey ?? (await this.blockchainService.getAccount()),
       visibility: options.visibility,
       keywords: options.keywords,
-      dataRootId: content.id,
     };
 
     request.metadata.keywords.sort();
-    let nquadsArray = await this.dataService.toNQuads(request.metadata);
+    let nquadsArray = await this.dataService.canonize(request.metadata);
     nquadsArray = nquadsArray.concat(request.data)
 
     console.log(nquadsArray.sort());
     const assertionId = this.validationService.calculateRootHash(nquadsArray);
 
-    const signature = await this.blockchainService.sign(
+    let signature = await this.blockchainService.sign(
       assertionId,
-      options.privateKey
+      walletInformation.privateKey
     );
 
-    const uai = await this.submitProofs(
+    signature = this.validationService.calculateHash(signature);
+
+    const uai = await this.submitTransaction(
         options.method,
         assertionId,
-        1000,
+        options.tokenAmount,
         nquadsArray.length,
-        200,
+        options.holdingTimeInSeconds,
+        signature,
         {
-          publicKey: options.publicKey,
-          privateKey: options.privateKey,
+          publicKey: walletInformation.publicKey,
+          privateKey: walletInformation.privateKey,
         }
     );
+
+    request.ual = this.ualService.deriveUAL(uai, this.blockchainService.config.blockchainTitle, this.blockchainService.config.hubContractAddress);
 
     this.logger.info(`Assertion ID: ${assertionId}`);
     this.logger.info(`Assertion signature: ${signature}`);
@@ -60,27 +65,36 @@ class PublishController {
       `Assertion length in N-QUADS format: ${request.data.length}`
     );
     this.logger.info(`Keywords: ${request.metadata.keywords}`);
-    request.ual = `dkg://did.ganache.${this.blockchainService.config.hubContractAddress}/${uai}`
 
     if (request.ual) {
       this.logger.info(`UAL: ${request.ual}`);
     }
 
+    // TODO create index entry
+
     return request;
   }
 
-  async submitProofs(method, assertionId, amount, length, holdingTimeInSeconds, options) {
+  async submitTransaction(method, assertionId, amount, length, holdingTimeInSeconds, signature, options) {
     if (!this.blockchainService.isInitialized()) {
       await this.blockchainService.initializeContracts();
     }
 
     // TODO: implement other methods
     let result = await this.blockchainService.createAsset(
-      assertionId, amount, length, holdingTimeInSeconds,
-      options
+        assertionId, amount, length, holdingTimeInSeconds, signature,
+        options
     );
 
     return result.UAI;
+  }
+
+  async balanceOf(address) {
+    if (!this.blockchainService.isInitialized()) {
+      await this.blockchainService.initializeContracts();
+    }
+
+    return parseInt(await this.blockchainService.balanceOf(address));
   }
 }
 

@@ -67,7 +67,7 @@
                     }
                 ]
             }
-            const result = await dkg.publish(content, options)
+            const result = await dkg.assets.create(content, options)
             console.log(JSON.stringify(result, null, 2));
 
             // const id = "a5e68af2a724ee33ccf714bb6be8f5a1a6f894d200bc8de72a1653a4f461b563"

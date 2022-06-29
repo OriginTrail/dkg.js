@@ -6,7 +6,7 @@ class DataService {
     this.logger = logger;
   }
 
-  async toNQuads(content) {
+  async canonize(content) {
     const canonized = await jsonld.canonize(content, {
       algorithm: "URDNA2015",
       format: "application/n-quads",

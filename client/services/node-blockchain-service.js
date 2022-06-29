@@ -19,6 +19,11 @@ class NodeBlockchainService extends AbstractBlockchainService {
     return result.signature;
   }
 
+  async verify(message, signature, publicKey) {
+    let result = await this.web3.eth.accounts.recover(message, signature);
+    return publicKey === result;
+  }
+
   async executeContractFunction(contractInstance, functionName, args, options) {
     let result
     while(!result) {

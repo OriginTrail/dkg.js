@@ -2,10 +2,10 @@ const NativeClient = require('./client/native-client')
 const AssetsClient = require('./client/assets-client')
 
 class DkgClient extends NativeClient {
-  constructor(props) {
-    super(props);
+  constructor(options, walletInformation) {
+    super(options, walletInformation);
 
-    this.assets = new AssetsClient(props)
+    this.assets = new AssetsClient(options, walletInformation)
   }
 
 }
