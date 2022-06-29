@@ -34,7 +34,6 @@ class PublishController {
     let nquadsArray = await this.dataService.canonize(request.metadata);
     nquadsArray = nquadsArray.concat(request.data)
 
-    console.log(nquadsArray.sort());
     const assertionId = this.validationService.calculateRootHash(nquadsArray);
 
     let signature = await this.blockchainService.sign(

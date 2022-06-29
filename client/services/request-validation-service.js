@@ -10,7 +10,7 @@ class RequestValidationService {
   validateContent(content) {
     // TODO checks if it is json
     if (!content) throw Error("No content provided");
-    if (typeof content !== 'object' && Array.isArray(content)) throw Error("Provided content is not a JSON object");
+    if (typeof content !== 'object' || Array.isArray(content)) throw Error("Provided content is not a JSON object");
       if (Buffer.byteLength(JSON.stringify(content), "utf-8") > MAX_FILE_SIZE)
       throw Error(`File size limit is ${MAX_FILE_SIZE / (1024 * 1024)}MB.`);
   }
