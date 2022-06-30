@@ -163,7 +163,7 @@ class AbstractClient {
   /**
    * @param {object} options
    * @param {string} id - UAL | assertion id
-   * @param {string} options.OutputFormat - 'json-ld' | 'nquads'
+   * @param {string} options.outputFormat - 'json-ld' | 'nquads'
    * @param {boolean} options.responseValidation - response validation
    */
   async resolve(id, options) {

@@ -65,13 +65,13 @@ class RequestValidationService {
     if (!id) throw Error("No id provided");
   }
 
-  validateOutputFormat(OutputFormat) {
+  validateOutputFormat(outputFormat) {
     if (
-      OutputFormat &&
-      !resolveAllowedOutputFormats.includes(OutputFormat.toLowerCase())
+      outputFormat &&
+      !resolveAllowedOutputFormats.includes(outputFormat.toLowerCase())
     )
       throw Error(
-        `Please set OutputFormat to one of these values : ${resolveAllowedOutputFormats}`
+        `Please set outputFormat to one of these values : ${resolveAllowedOutputFormats}`
       );
   }
 
@@ -93,7 +93,7 @@ class RequestValidationService {
 
   validateResolveRequest(id, options) {
     this.validateResolveId(id);
-    this.validateOutputFormat(options.OutputFormat);
+    this.validateOutputFormat(options.outputFormat);
     this.validateResponseValidation(options.responseValidation);
   }
 }
