@@ -38,7 +38,10 @@ class ResolveController {
       }
     }
     let data = response.data.data;
-    if (!options.resultType || options.resultType.toLowerCase() === "json-ld") {
+    if (
+      !options.OutputFormat ||
+      options.OutputFormat.toLowerCase() === "json-ld"
+    ) {
       data = await this.dataService.fromNQuads(response.data.data);
       data = await this.dataService.compact(data);
       data = await this.dataService.frame(data);

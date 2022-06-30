@@ -1,6 +1,6 @@
 const { MAX_FILE_SIZE, PUBLISH_METHOD } = require("../../constants");
 const publishAllowedVisibilityParams = ["public", "private"];
-const resolveAllowedResultTypes = ["json-ld, n-quads"];
+const resolveAllowedOutputFormats = ["json-ld", "n-quads"];
 
 class RequestValidationService {
   constructor(config, logger) {
@@ -65,13 +65,13 @@ class RequestValidationService {
     if (!id) throw Error("No id provided");
   }
 
-  validateResultType(resultType) {
+  validateOutputFormat(OutputFormat) {
     if (
-      resultType &&
-      !resolveAllowedResultTypes.includes(resultType.toLowerCase())
+      OutputFormat &&
+      !resolveAllowedOutputFormats.includes(OutputFormat.toLowerCase())
     )
       throw Error(
-        `Please set resultType to one of these values : ${resolveAllowedResultTypes}`
+        `Please set OutputFormat to one of these values : ${resolveAllowedOutputFormats}`
       );
   }
 
@@ -83,12 +83,17 @@ class RequestValidationService {
         ["true", "false"].includes(responseValidation)
       )
     )
-      throw Error(`responseValidation must be of type boolean`);
+      throw Error(
+        `Please set responseValidation to one of these values : ${[
+          "true",
+          "false",
+        ]}`
+      );
   }
 
   validateResolveRequest(id, options) {
     this.validateResolveId(id);
-    this.validateResultType(options.resultType);
+    this.validateOutputFormat(options.OutputFormat);
     this.validateResponseValidation(options.responseValidation);
   }
 }
