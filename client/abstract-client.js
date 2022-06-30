@@ -107,8 +107,11 @@ class AbstractClient {
 
     this.resolveController = new ResolveController(
       {
+        blockchainService: this.blockchainService,
         validationService: this.validationService,
         requestValidationService: this.requestValidationService,
+        dataService: this.dataService,
+        ualService: this.ualService,
       },
       this.logger
     );
