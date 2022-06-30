@@ -45,8 +45,8 @@ class ResolveController {
       options.outputFormat.toLowerCase() === "json-ld"
     ) {
       result.data = await this.dataService.fromNQuads(response.data.data);
-      result.data = await this.dataService.compact(data);
-      result.data = await this.dataService.frame(data);
+      result.data = await this.dataService.compact(result.data);
+      result.data = await this.dataService.frame(result.data);
     }
 
     return result;
