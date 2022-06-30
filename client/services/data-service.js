@@ -28,7 +28,7 @@ class DataService {
   }
 
   async fromNQuads(nquads) {
-    const json = await jsonld.fromRDF(nquads, {
+    const json = await jsonld.fromRDF(nquads.join("\n"), {
       algorithm: "URDNA2015",
       format: "application/n-quads",
     });
