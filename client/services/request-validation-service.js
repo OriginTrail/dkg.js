@@ -46,7 +46,7 @@ class RequestValidationService {
     }
   }
 
-  validatePublishRequest(content, walletInformation, options) {
+  validatePublishRequest(content, options, walletInformation) {
     this.validateVisibility(options.visibility);
     this.validateKeywords(options.keywords);
     this.validateContent(content);

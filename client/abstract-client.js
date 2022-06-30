@@ -173,13 +173,15 @@ class AbstractClient {
     );
 
     try {
-      const response = await this._resolveRequest(request);
+      let response = await this._resolveRequest(request);
 
-      return this._getResult({
+      response = await this._getResult({
         ...options,
         handler_id: response.data.handlerId,
         operation: "resolve",
       });
+
+      return this.resolveController.handleResolveResult(response, options);
     } catch (e) {
       throw e;
     }

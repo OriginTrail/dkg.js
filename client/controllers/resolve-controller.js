@@ -10,7 +10,7 @@ class ResolveController {
   async generateResolveRequest(id, options) {
     this.requestValidationService.validateResolveRequest(id, options);
 
-    const request = { id: options.id };
+    const request = { id };
 
     return request;
   }
@@ -39,9 +39,11 @@ class ResolveController {
     }
     let data = response.data;
     if (!options.resultType || options.resultType.toLowerCase() === "json-ld") {
-      data = this.dataService.fromNQuads(response.data);
+      data = await this.dataService.fromNQuads(response.data);
+      data = await this.dataService.compact(data);
     }
-    return data;
+
+    return { status: response.status, data };
   }
 }
 
