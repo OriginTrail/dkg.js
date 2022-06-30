@@ -16,7 +16,9 @@ class ResolveController {
   }
 
   async handleResolveResult(response, options) {
+    const result = { status: response.status };
     if (options.validateOutput) {
+      result.valid = false;
       const nquadsArray = response.data.metadata.concat(response.data.data);
       const calculatedAssertionId =
         this.validationService.calculateRootHash(nquadsArray);
@@ -29,23 +31,25 @@ class ResolveController {
         );
         metadataJson = await this.dataService.compact(metadataJson);
         if (metadataJson.issuer !== issuer) {
-          throw Error("Issuer mismatch. Resolved data can't be trusted.");
+          this.logger.info("Issuer mismatch. Resolved data can't be trusted.");
+        } else {
+          result.valid = true;
         }
       } else {
-        throw Error("Root hash mismatch. Resolved data can't be trusted.");
+        this.logger.info("Root hash mismatch. Resolved data can't be trusted.");
       }
     }
-    let data = response.data.data;
+    result.data = response.data.data;
     if (
       !options.outputFormat ||
       options.outputFormat.toLowerCase() === "json-ld"
     ) {
-      data = await this.dataService.fromNQuads(response.data.data);
-      data = await this.dataService.compact(data);
-      data = await this.dataService.frame(data);
+      result.data = await this.dataService.fromNQuads(response.data.data);
+      result.data = await this.dataService.compact(data);
+      result.data = await this.dataService.frame(data);
     }
 
-    return { status: response.status, data };
+    return result;
   }
 
   async getAssertionIssuer(assertionId) {
