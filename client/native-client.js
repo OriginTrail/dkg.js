@@ -15,14 +15,14 @@ class NativeClient extends AbstractClient {
    * @param {string} options.visibility
    * @param {string[]} options.keywords
    */
-  async publish(content, walletInformation = {}, options = {}) {
+  async publish(content, options = {}, walletInformation = {}) {
     options.method = PUBLISH_METHOD.PUBLISH;
 
     try {
       const response = await this._publishRequest(
         content,
-        walletInformation,
-        options
+        options,
+        walletInformation
       );
       const result = await this._getResult({
         ...options,

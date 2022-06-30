@@ -10,18 +10,18 @@ class PublishController {
     this.dataService = config.dataService;
   }
 
-  async generatePublishRequest(content, walletInformation, options) {
+  async generatePublishRequest(content, options, walletInformation) {
     this.requestValidationService.validatePublishRequest(
       content,
-      walletInformation,
-      options
+      options,
+      walletInformation
     );
     const balanceOf = await this.balanceOf(walletInformation.publicKey);
     if (balanceOf < options.tokenAmount) {
       throw Error("Insufficient funds");
     }
 
-    const compacted = await this.dataService.compact(options.content);
+    const compacted = await this.dataService.compact(content);
 
     const request = { metadata: {}, data: [] };
     request.data = await this.dataService.canonize(compacted);

@@ -132,11 +132,11 @@ class AbstractClient {
     });
   }
 
-  async _publishRequest(content, walletInformation, options) {
+  async _publishRequest(content, options, walletInformation) {
     const request = await this.publishController.generatePublishRequest(
       content,
-      walletInformation,
-      options
+      options,
+      walletInformation
     );
 
     this.logger.debug("Sending publish request.");

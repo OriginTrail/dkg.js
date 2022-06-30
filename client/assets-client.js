@@ -10,21 +10,21 @@ class AssetsClient extends AbstractClient {
 
   /**
    * @param {object} content
-   * @param {object} walletInformation
-   * @param {string} walletInformation.publicKey
-   * @param {string} walletInformation.privateKey
    * @param {object} options
    * @param {string} options.visibility
    * @param {string[]} options.keywords
+   * @param {object} walletInformation
+   * @param {string} walletInformation.publicKey
+   * @param {string} walletInformation.privateKey
    */
-  async create(content, walletInformation = {}, options = {}) {
+  async create(content, options = {}, walletInformation = {}) {
     options.method = PUBLISH_METHOD.PUBLISH;
 
     try {
       const response = await this._publishRequest(
         content,
-        walletInformation,
-        options
+        options,
+        walletInformation
       );
       return await this._getResult({
         handler_id: response.data.handlerId,
