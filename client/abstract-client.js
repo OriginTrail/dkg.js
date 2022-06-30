@@ -23,7 +23,7 @@ class AbstractClient {
     rpcEndpoints: [
       "https://matic-mumbai.chainstacklabs.com",
       "https://rpc-mumbai.matic.today",
-      "https://matic-testnet-archive-rpc.bwarelabs.com"
+      "https://matic-testnet-archive-rpc.bwarelabs.com",
     ],
   };
   STATUSES = {
@@ -132,8 +132,12 @@ class AbstractClient {
     });
   }
 
-  async _publishRequest(options, walletInformation) {
-    const request = await this.publishController.generatePublishRequest(options, walletInformation);
+  async _publishRequest(content, walletInformation, options) {
+    const request = await this.publishController.generatePublishRequest(
+      content,
+      walletInformation,
+      options
+    );
 
     this.logger.debug("Sending publish request.");
 
@@ -155,10 +159,15 @@ class AbstractClient {
 
   /**
    * @param {object} options
-   * @param {string} options.id - assertion id
+   * @param {string} id - UAL | assertion id
+   * @param {string} options.resultType - 'json-ld' | 'nquads'
+   * @param {boolean} options.responseValidation - response validation
    */
-  async resolve(options) {
-    const request = await this.resolveController.generateResolveRequest(options);
+  async resolve(id, options) {
+    const request = await this.resolveController.generateResolveRequest(
+      id,
+      options
+    );
 
     try {
       const response = await this._resolveRequest(request);
@@ -432,7 +441,11 @@ class AbstractClient {
         this.logger.error(e);
         throw e;
       }
-    } while (response.data.status !== this.STATUSES.PUBLISH_END && response.data.status !== this.STATUSES.FAILED && response.data.status !== this.STATUSES.RESOLVE_END);
+    } while (
+      response.data.status !== this.STATUSES.PUBLISH_END &&
+      response.data.status !== this.STATUSES.FAILED &&
+      response.data.status !== this.STATUSES.RESOLVE_END
+    );
     if (response.data.status === this.STATUSES.FAILED) {
       throw Error(
         `Get ${options.operation} failed. Reason: ${response.data.message}.`

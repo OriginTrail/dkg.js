@@ -1,5 +1,6 @@
-const { MAX_FILE_SIZE } = require("../../constants");
+const { MAX_FILE_SIZE, PUBLISH_METHOD } = require("../../constants");
 const publishAllowedVisibilityParams = ["public", "private"];
+const resolveAllowedResultTypes = ["json-ld, n-quads"];
 
 class RequestValidationService {
   constructor(config, logger) {
@@ -10,8 +11,9 @@ class RequestValidationService {
   validateContent(content) {
     // TODO checks if it is json
     if (!content) throw Error("No content provided");
-    if (typeof content !== 'object' || Array.isArray(content)) throw Error("Provided content is not a JSON object");
-      if (Buffer.byteLength(JSON.stringify(content), "utf-8") > MAX_FILE_SIZE)
+    if (typeof content !== "object" || Array.isArray(content))
+      throw Error("Provided content is not a JSON object");
+    if (Buffer.byteLength(JSON.stringify(content), "utf-8") > MAX_FILE_SIZE)
       throw Error(`File size limit is ${MAX_FILE_SIZE / (1024 * 1024)}MB.`);
   }
 
@@ -44,16 +46,16 @@ class RequestValidationService {
     }
   }
 
-  validatePublishRequest(options, walletInformation) {
+  validatePublishRequest(content, walletInformation, options) {
     this.validateVisibility(options.visibility);
     this.validateKeywords(options.keywords);
-    this.validateContent(options.content);
+    this.validateContent(content);
     this.validatePublicKey(walletInformation.publicKey);
     this.validatePrivateKey(walletInformation.privateKey);
 
     // TODO update with assetUpdate method
     // TODO validate UAL format
-    if (options.method === "update" && !options.ual)
+    if (options.method === PUBLISH_METHOD.UPDATE && !options.ual)
       throw Error("No ual provided");
   }
 
@@ -63,8 +65,31 @@ class RequestValidationService {
     if (!id) throw Error("No id provided");
   }
 
-  validateResolveRequest(options) {
-    this.validateResolveId(options.id);
+  validateResultType(resultType) {
+    if (
+      resultType &&
+      !resolveAllowedResultTypes.includes(resultType.toLowerCase())
+    )
+      throw Error(
+        `Please set resultType to one of these values : ${resolveAllowedResultTypes}`
+      );
+  }
+
+  validateResponseValidation(responseValidation) {
+    if (
+      responseValidation &&
+      !(
+        typeof responseValidation === "boolean" ||
+        ["true", "false"].includes(responseValidation)
+      )
+    )
+      throw Error(`responseValidation must be of type boolean`);
+  }
+
+  validateResolveRequest(id, options) {
+    this.validateResolveId(id);
+    this.validateResultType(options.resultType);
+    this.validateResponseValidation(options.responseValidation);
   }
 }
 

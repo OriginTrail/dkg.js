@@ -8,19 +8,26 @@ class NativeClient extends AbstractClient {
 
   /**
    * @param {object} content
+   * @param {object} walletInformation
+   * @param {string} walletInformation.publicKey
+   * @param {string} walletInformation.privateKey
    * @param {object} options
-   * @param {string[]} options.keywords (optional)
+   * @param {string} options.visibility
+   * @param {string[]} options.keywords
    */
-  async publish(content, options = {}) {
-    options.content = content;
+  async publish(content, walletInformation = {}, options = {}) {
     options.method = PUBLISH_METHOD.PUBLISH;
 
     try {
-      const response = await this._publishRequest(options);
+      const response = await this._publishRequest(
+        content,
+        walletInformation,
+        options
+      );
       const result = await this._getResult({
         ...options,
         handler_id: response.data.handlerId,
-        operation: options.method
+        operation: options.method,
       });
       return result;
     } catch (e) {

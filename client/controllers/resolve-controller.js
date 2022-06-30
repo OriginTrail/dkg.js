@@ -3,14 +3,45 @@ class ResolveController {
     this.logger = logger;
     this.validationService = config.validationService;
     this.requestValidationService = config.requestValidationService;
+    this.dataService = config.dataService;
+    this.blockchainService = config.blockchainService;
   }
 
-  async generateResolveRequest(options) {
-    this.requestValidationService.validateResolveRequest(options);
+  async generateResolveRequest(id, options) {
+    this.requestValidationService.validateResolveRequest(id, options);
 
     const request = { id: options.id };
 
     return request;
+  }
+
+  async handleResolveResult(response, options) {
+    if (options.responseValidation) {
+      const nquadsArray = response.metadata.concat(response.data);
+      const calculatedAssertionId =
+        this.validationService.calculateRootHash(nquadsArray);
+
+      const issuer = await this.blockchainService.getAssertionIssuer(
+        calculatedAssertionId
+      );
+
+      if (issuer) {
+        this.logger.debug("Root hash matches");
+        const metadataJson = await this.dataService.fromNQuads(
+          response.metadata
+        );
+        if (metadataJson.issuer === issuer) {
+          this.logger.info("Issuer matches");
+        }
+      } else {
+        this.logger.error("Root hash mismatch");
+      }
+    }
+    let data = response.data;
+    if (!options.resultType || options.resultType.toLowerCase() === "json-ld") {
+      data = this.dataService.fromNQuads(response.data);
+    }
+    return data;
   }
 }
 
