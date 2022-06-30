@@ -17,7 +17,7 @@ class ResolveController {
 
   async handleResolveResult(response, options) {
     if (options.responseValidation) {
-      const nquadsArray = response.metadata.concat(response.data);
+      const nquadsArray = response.data.metadata.concat(response.data.data);
       const calculatedAssertionId =
         this.validationService.calculateRootHash(nquadsArray);
 
@@ -28,7 +28,7 @@ class ResolveController {
       if (issuer) {
         this.logger.debug("Root hash matches");
         const metadataJson = await this.dataService.fromNQuads(
-          response.metadata
+          response.data.metadata
         );
         if (metadataJson.issuer === issuer) {
           this.logger.info("Issuer matches");
@@ -37,10 +37,11 @@ class ResolveController {
         this.logger.error("Root hash mismatch");
       }
     }
-    let data = response.data;
+    let data = response.data.data;
     if (!options.resultType || options.resultType.toLowerCase() === "json-ld") {
-      data = await this.dataService.fromNQuads(response.data);
+      data = await this.dataService.fromNQuads(response.data.data);
       data = await this.dataService.compact(data);
+      data = await this.dataService.frame(data);
     }
 
     return { status: response.status, data };

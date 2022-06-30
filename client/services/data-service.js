@@ -35,6 +35,10 @@ class DataService {
 
     return json;
   }
+
+  async frame(json) {
+    return jsonld.frame(json, { "@context": "https://schema.org" });
+  }
 }
 
 module.exports = DataService;
