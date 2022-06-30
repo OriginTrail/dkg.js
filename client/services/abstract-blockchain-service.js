@@ -2,6 +2,7 @@ const BigNumber = require("big-number");
 const axios = require("axios");
 const Hub = require("../../build/contracts/Hub.json");
 const UAIRegistry = require("../../build/contracts/UAIRegistry.json");
+const AssertionRegistry = require("../../build/contracts/AssertionRegistry.json");
 const Token = require("../../build/contracts/ERC20Token.json");
 
 class AbstractBlockchainService {
@@ -47,6 +48,17 @@ class AbstractBlockchainService {
     );
 
     this.TokenContract = new this.web3.eth.Contract(Token.abi, TokenAddress);
+
+    const AssertionRegistryContractAddress = await this.callContractFunction(
+      this.hubContract,
+      "getContractAddress",
+      ["AssertionRegistry"]
+    );
+
+    this.AssertionRegistryContract = new this.web3.eth.Contract(
+      AssertionRegistry.abi,
+      AssertionRegistryContractAddress
+    );
 
     this.initialized = true;
   }
@@ -141,7 +153,7 @@ class AbstractBlockchainService {
 
   async getAssertionIssuer(assertionId) {
     const issuer = await this.callContractFunction(
-      this.DKGContract,
+      this.AssertionRegistryContract,
       "getAssertionIssuer",
       [`0x${assertionId}`]
     );

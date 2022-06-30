@@ -21,20 +21,18 @@ class ResolveController {
       const calculatedAssertionId =
         this.validationService.calculateRootHash(nquadsArray);
 
-      const issuer = await this.blockchainService.getAssertionIssuer(
-        calculatedAssertionId
-      );
+      const issuer = await this.getAssertionIssuer(calculatedAssertionId);
 
       if (issuer) {
-        this.logger.debug("Root hash matches");
-        const metadataJson = await this.dataService.fromNQuads(
+        let metadataJson = await this.dataService.fromNQuads(
           response.data.metadata
         );
-        if (metadataJson.issuer === issuer) {
-          this.logger.info("Issuer matches");
+        metadataJson = await this.dataService.compact(metadataJson);
+        if (metadataJson.issuer !== issuer) {
+          throw Error("Issuer mismatch. Resolved data can't be trusted.");
         }
       } else {
-        this.logger.error("Root hash mismatch");
+        throw Error("Root hash mismatch. Resolved data can't be trusted.");
       }
     }
     let data = response.data.data;
@@ -48,6 +46,14 @@ class ResolveController {
     }
 
     return { status: response.status, data };
+  }
+
+  async getAssertionIssuer(assertionId) {
+    if (!this.blockchainService.isInitialized()) {
+      await this.blockchainService.initializeContracts();
+    }
+
+    return this.blockchainService.getAssertionIssuer(assertionId);
   }
 }
 
