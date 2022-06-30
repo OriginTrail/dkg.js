@@ -16,7 +16,7 @@ class ResolveController {
   }
 
   async handleResolveResult(response, options) {
-    if (options.responseValidation) {
+    if (options.validateOutput) {
       const nquadsArray = response.data.metadata.concat(response.data.data);
       const calculatedAssertionId =
         this.validationService.calculateRootHash(nquadsArray);

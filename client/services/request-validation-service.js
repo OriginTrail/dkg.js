@@ -75,16 +75,16 @@ class RequestValidationService {
       );
   }
 
-  validateResponseValidation(responseValidation) {
+  validateValidateOutput(validateOutput) {
     if (
-      responseValidation &&
+      validateOutput &&
       !(
-        typeof responseValidation === "boolean" ||
-        ["true", "false"].includes(responseValidation)
+        typeof validateOutput === "boolean" ||
+        ["true", "false"].includes(validateOutput)
       )
     )
       throw Error(
-        `Please set responseValidation to one of these values : ${[
+        `Please set validateOutput to one of these values : ${[
           "true",
           "false",
         ]}`
@@ -94,7 +94,7 @@ class RequestValidationService {
   validateResolveRequest(id, options) {
     this.validateResolveId(id);
     this.validateOutputFormat(options.outputFormat);
-    this.validateResponseValidation(options.responseValidation);
+    this.validateValidateOutput(options.validateOutput);
   }
 }
 
