@@ -89,11 +89,13 @@ class AbstractBlockchainService {
       ...args
     ).encodeABI();
 
+    const defaultGasPrice = this.web3.utils.toWei("50", "Gwei");
+
     return {
       from: options.publicKey,
       to: contractInstance.options.address,
       data: encodedABI,
-      gasPrice: gasPrice || this.web3.utils.toWei("20", "Gwei"),
+      gasPrice: defaultGasPrice > gasPrice ? defaultGasPrice : gasPrice,
       gas: gasLimit || this.web3.utils.toWei("900", "Kwei"),
     };
   }
@@ -143,7 +145,9 @@ class AbstractBlockchainService {
       [`0x${stateCommitHash}`, 0, length, 2400, `0x${signature}`],
       options
     );
-    const UAI = parseInt(transactionReceipt.logs[4].topics[1], 16);
+    const UAI = parseInt(
+      transactionReceipt.events.AssetCreated.returnValues.UAI
+    );
 
     return {
       UAI,

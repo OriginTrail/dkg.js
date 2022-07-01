@@ -16,7 +16,12 @@ class PublishController {
       options,
       walletInformation
     );
+
+    if (!walletInformation.publicKey) {
+      walletInformation.publicKey = await this.blockchainService.getAccount();
+    }
     const balanceOf = await this.balanceOf(walletInformation.publicKey);
+
     if (balanceOf < options.tokenAmount) {
       throw Error("Insufficient funds");
     }
@@ -29,9 +34,7 @@ class PublishController {
     request.metadata = {
       "@context": "https://schema.org/",
       type: compacted.type ?? "Thing",
-      issuer:
-        walletInformation.publicKey ??
-        (await this.blockchainService.getAccount()),
+      issuer: walletInformation.publicKey,
       visibility: options.visibility,
       keywords: options.keywords,
     };

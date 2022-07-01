@@ -13,12 +13,7 @@
                 port: 8900,
                 loglevel: "trace",
             });
-
-             // SET & GET
-            options = {
-                keywords: ['13128adwadwda2111231331', "24.06.2022"],
-                visibility: 'public'
-            };
+            
 
             const content =
             {
@@ -67,8 +62,26 @@
                     }
                 ]
             }
-            const result = await dkg.assets.create(content, options)
-            console.log(JSON.stringify(result, null, 2));
+            let options = {
+                keywords: ['keyword', Date.now().toString()],
+                visibility: 'public'
+            };
+            const publishResult = await dkg.assets.create(content, options)
+            console.log(JSON.stringify(publishResult, null, 2));
+
+            if (
+                publishResult?.data?.ual &&
+                publishResult?.data?.assertionId
+            ) {
+                options = {
+                    outputFormat: "json-ld",
+                    validateOutput: true,
+                };
+
+                const resolveResult = await dkg.resolve(`${publishResult.data.ual}/${publishResult?.data?.assertionId
+}`, options)
+                console.log(JSON.stringify(resolve, null, 2));
+            }
 
             // const id = "a5e68af2a724ee33ccf714bb6be8f5a1a6f894d200bc8de72a1653a4f461b563"
             // const result = await dkg.resolve({id})
