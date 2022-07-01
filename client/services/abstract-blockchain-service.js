@@ -145,14 +145,16 @@ class AbstractBlockchainService {
       [`0x${stateCommitHash}`, 0, length, 2400, `0x${signature}`],
       options
     );
-    const UAI = parseInt(
-      transactionReceipt.events.AssetCreated.returnValues.UAI
-    );
+    const UAI = this.extractUAIFromTxReceipt(transactionReceipt);
 
     return {
       UAI,
       blockchain: this.config.networkId,
     };
+  }
+
+  extractUAIFromTxReceipt(transactionReceipt) {
+    // overridden by subclasses
   }
 
   async getAssertionIssuer(assertionId) {

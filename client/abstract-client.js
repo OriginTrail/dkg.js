@@ -172,8 +172,6 @@ class AbstractClient {
       options
     );
 
-    console.log(JSON.stringify(request, null, 2));
-
     try {
       let response = await this._resolveRequest(request);
 

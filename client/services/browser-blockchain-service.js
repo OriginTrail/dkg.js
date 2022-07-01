@@ -29,6 +29,10 @@ class BrowserBlockchainService extends AbstractBlockchainService {
     return await this.web3.eth.personal.sign(message, await this.getAccount());
   }
 
+  extractUAIFromTxReceipt(transactionReceipt) {
+    return parseInt(transactionReceipt.events.AssetCreated.returnValues.UAI);
+  }
+
   async getAccount() {
     if (!this.account) {
       const accounts = await window.ethereum

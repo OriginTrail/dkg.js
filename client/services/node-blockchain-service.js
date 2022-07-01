@@ -24,9 +24,13 @@ class NodeBlockchainService extends AbstractBlockchainService {
     return publicKey === result;
   }
 
+  extractUAIFromTxReceipt(transactionReceipt) {
+    return parseInt(transactionReceipt.logs[4].topics[1], 16);
+  }
+
   async executeContractFunction(contractInstance, functionName, args, options) {
-    let result
-    while(!result) {
+    let result;
+    while (!result) {
       try {
         const tx = await this.prepareTransaction(
           contractInstance,
@@ -34,12 +38,12 @@ class NodeBlockchainService extends AbstractBlockchainService {
           args,
           options
         );
-  
+
         const signedTransaction = await this.web3.eth.accounts.signTransaction(
           tx,
           options.privateKey
         );
-  
+
         result = await this.web3.eth.sendSignedTransaction(
           signedTransaction.rawTransaction
         );
@@ -47,7 +51,7 @@ class NodeBlockchainService extends AbstractBlockchainService {
         await this.handleError(error, functionName);
       }
     }
-    return result
+    return result;
   }
 
   async handleError(error, functionName) {
@@ -61,8 +65,8 @@ class NodeBlockchainService extends AbstractBlockchainService {
     if (!isRpcError)
       this.logger.error(
         `Unable to execute smart contract function ${functionName}. Error ${error.message}.`
-      )
-      throw error
+      );
+    throw error;
   }
 
   async restartService() {
