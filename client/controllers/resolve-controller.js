@@ -30,7 +30,7 @@ class ResolveController {
           response.data.metadata
         );
         metadataJson = await this.dataService.compact(metadataJson);
-        if (metadataJson.issuer !== issuer) {
+        if (metadataJson.issuer.toLowerCase() !== issuer.toLowerCase()) {
           this.logger.info("Issuer mismatch. Resolved data can't be trusted.");
         } else {
           result.valid = true;

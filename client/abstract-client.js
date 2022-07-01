@@ -193,7 +193,7 @@ class AbstractClient {
     return axios({
       method: "get",
       url: `${this.nodeBaseUrl}/resolve`,
-      data: request,
+      params: request,
     });
   }
 
