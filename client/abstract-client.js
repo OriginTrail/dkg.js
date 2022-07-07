@@ -182,8 +182,13 @@ class AbstractClient {
         operation: "resolve",
       });
 
+      response = await this.resolveController.handleResolveResult(
+        response,
+        options
+      );
+
       return {
-        ...this.resolveController.handleResolveResult(response, options),
+        ...response,
         handler_id,
       };
     } catch (e) {
