@@ -21,16 +21,21 @@ class AssetsClient extends AbstractClient {
     options.method = PUBLISH_METHOD.PUBLISH;
 
     try {
-      const response = await this._publishRequest(
+      let response = await this._publishRequest(
         content,
         options,
         walletInformation
       );
-      return await this._getResult({
-        handler_id: response.data.handlerId,
+      const handler_id = response.data.handlerId;
+      response = await this._getResult({
+        handler_id,
         operation: options.method,
         ...options,
       });
+      return {
+        ...response,
+        handler_id,
+      };
     } catch (e) {
       throw e;
     }
