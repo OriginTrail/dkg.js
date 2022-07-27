@@ -28,7 +28,7 @@ class NodeBlockchainService {
             options.tokenAmount
         ]);
         let receipt = await this.executeContractFunction(this.AssetRegistryContract, 'createAsset', requestData);
-        this.getTransactionResponse(receipt);
+        const UAI = await this.getTransactionResponse(receipt);
     }
 
     generateCreateAssetRequest(assertion, assertionId, options) {
@@ -124,13 +124,6 @@ class NodeBlockchainService {
             ['Token'],
         );
         this.TokenContract = new this.web3.eth.Contract(ERC20TokenABI, tokenAddress);
-
-        const profileAddress = await this.callContractFunction(
-            this.hubContract,
-            'getContractAddress',
-            ['Profile'],
-        );
-        this.ProfileContract = new this.web3.eth.Contract(ProfileABI, profileAddress);
     }
 
     async getTransactionResponse(receipt) {
@@ -172,6 +165,8 @@ class NodeBlockchainService {
         //         console.error(e)
         //     }
         // })
+
+        return "0x0000000000000000000000000000000000000000000000000000000000000006";
     }
 }
 
