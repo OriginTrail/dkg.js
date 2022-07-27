@@ -1,14 +1,10 @@
 import axios from "axios";
 import Utilities from '../../utilities.js';
+import { OPERATION_STATUSES } from '../../../constants.js';
 
 class HttpService {
     maxNumberOfRetries = 5;
     frequency = 5;
-    STATUSES = {
-        pending: "PENDING",
-        completed: "COMPLETED",
-        failed: "FAILED",
-    };
 
     constructor(config) {
         this.config = config;
@@ -27,13 +23,26 @@ class HttpService {
         });
     }
 
-    async getPublishResult(operationId, options) {
+    get(assertionId) {
+        let requestBody = this.prepareGetAssertionRequest(assertionId);
+        return axios({
+            method: "post",
+            url: `${this.config.endpoint}:${this.config.port}/get`,
+            data: requestBody,
+        }).then(response => {
+            return response.data.operation_id;
+        }).catch(e => {
+            throw Error("Unable to get assertion.")
+        });
+    }
+
+    async getOperationResult(operationId, options) {
         await Utilities.sleepForMilliseconds(500);
         if (!operationId) {
             throw Error("Operation ID is missing, unable to fetch the operation results.");
         }
         let response = {
-            status: this.STATUSES.pending,
+            status: OPERATION_STATUSES.pending,
         };
         let retries = 0;
         let maxNumberOfRetries = options.maxNumberOfRetries
@@ -43,7 +52,7 @@ class HttpService {
 
         let axios_config = {
             method: "get",
-            url: `${this.config.endpoint}:${this.config.port}/publish/${operationId}`,
+            url: `${this.config.endpoint}:${this.config.port}/${options.operation}/${operationId}`,
         };
         do {
             if (retries > maxNumberOfRetries) {
@@ -60,10 +69,10 @@ class HttpService {
                 // this.logger.error(e);
                 throw e;
             }
-        } while (response.data.status !== this.STATUSES.completed && response.data.status !== this.STATUSES.failed);
-        if (response.data.status === this.STATUSES.failed) {
+        } while (response.data.status !== OPERATION_STATUSES.completed && response.data.status !== OPERATION_STATUSES.failed);
+        if (response.data.status === OPERATION_STATUSES.failed) {
             throw Error(
-                `Publish operation failed. Reason: ${response.data.data.errorMessage}.`
+                `${Utilities.capitalizeFirstLetter(options.operation)} operation failed. Reason: ${response.data.data.errorMessage}`
             );
         }
         return response.data;
@@ -76,6 +85,12 @@ class HttpService {
             "options": {
                 "ual" : UAL
             }
+        };
+    }
+
+    prepareGetAssertionRequest(assertionId) {
+        return {
+            "id": assertionId
         };
     }
 }

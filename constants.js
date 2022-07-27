@@ -38,3 +38,15 @@ export const VISIBILITY = {
 };
 export const DEFAULT_PUBLISH_VISIBILITY = VISIBILITY.public;
 export const DEFAULT_COMMIT_OFFSET = 0;
+
+export const OPERATIONS = {
+    publish : "publish",
+    get : "get",
+    update : "update",
+}
+
+export const OPERATION_STATUSES = {
+    pending: "PENDING",
+    completed: "COMPLETED",
+    failed: "FAILED",
+};

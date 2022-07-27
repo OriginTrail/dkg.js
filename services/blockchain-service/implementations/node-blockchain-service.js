@@ -14,7 +14,17 @@ import {UAIRegistryABI} from '../contracts/UAIRegistryABI.js';
 import {HubABI} from '../contracts/HubABI.js';
 import {ERC20TokenABI} from '../contracts/ERC20TokenABI.js';
 
-class NodeBlockchainService extends BlockchainServiceBase{
+const events = {};
+AssetRegistryABI.filter((obj) => obj.type === "event").forEach((event) => {
+    const concatInputs = event.inputs.reduce((i1, i2) => i1.type + "," + i2.type);
+
+    events[event.name] = {
+        hash: Web3.utils.keccak256(event.name + "(" + concatInputs + ")"),
+        inputs: event.inputs,
+    };
+});
+
+class NodeBlockchainService extends BlockchainServiceBase {
     constructor(config) {
         super(config);
         this.config = config;
@@ -29,16 +39,15 @@ class NodeBlockchainService extends BlockchainServiceBase{
             options.tokenAmount
         ]);
         let receipt = await this.executeContractFunction(this.AssetRegistryContract, 'createAsset', requestData);
-        const UAIHex = await this.getTransactionResponse(receipt);
-        return Utilities.toNumber(UAIHex);
+        let {UAI} = await this.decodeEventLogs(receipt, "AssetCreated");
+        return UAI;
     }
 
     async getAssetCommitHash(UAI, options) {
         this.getBlockchain(options);
         this.web3 = new Web3(this.blockchain.rpc);
         await this.initializeContracts();
-        let receipt = await this.executeContractFunction(this.AssetRegistryContract, 'getCommitHash', [UAI, this.getCommitOffset(options)]);
-        console.log(receipt, 'recepip');
+        return await this.callContractFunction(this.AssetRegistryContract, 'getCommitHash', [UAI, this.getCommitOffset(options)]);
     }
 
     generateCreateAssetRequest(assertion, assertionId, options) {
@@ -147,52 +156,27 @@ class NodeBlockchainService extends BlockchainServiceBase{
         this.TokenContract = new this.web3.eth.Contract(ERC20TokenABI, tokenAddress);
     }
 
-    async getTransactionResponse(receipt) {
-
-        receipt.logs.forEach((row, index) => {
-
-            // console.log(row.topics);
-
-            // try {
-            //     let item = this.web3.eth.abi.decodeLog([
-            //             {
-            //                 "internalType": "uint256",
-            //                 "name": "_UAI",
-            //                 "type": "uint256"
-            //             }
-            //         ],
-            //         row.data,
-            //         row.topics
-            //     );
-            //     console.log(item, 'item')
-            // } catch (e) {
-            //     console.error(e);
-            // }
-        })
-
-        // receipt.logs.forEach((row, index) => {
-        //     try {
-        //         const typesArray = [
-        //             {
-        //                 "internalType": "uint256",
-        //                 "name": "_UAI",
-        //                 "type": "uint256"
-        //             }
-        //         ];
-        //         const data = row.data;
-        //         const decodedParameters = this.web3.eth.abi.decodeParameters(typesArray, data);
-        //         console.log(JSON.stringify(decodedParameters, null, 4));
-        //     } catch (e) {
-        //         console.error(e)
-        //     }
-        // })
-
-        return "0x0000000000000000000000000000000000000000000000000000000000000006";
-    }
-
     generateUAL(options, UAI) {
         this.getBlockchain(options);
         return this.deriveUAL(this.blockchain.title, this.blockchain.hubContract, UAI);
+    }
+
+    async decodeEventLogs(receipt, eventName) {
+        let result;
+        const {hash, inputs} = events[eventName];
+        receipt.logs.forEach((row) => {
+            if (row.topics[0] === hash)
+                try {
+                    result = this.web3.eth.abi.decodeLog(
+                        inputs,
+                        row.data,
+                        row.topics.slice(1)
+                    );
+                } catch (e) {
+                    console.error(e);
+                }
+        });
+        return result;
     }
 
     getCommitOffset(options) {
@@ -201,7 +185,6 @@ class NodeBlockchainService extends BlockchainServiceBase{
         }
         return DEFAULT_COMMIT_OFFSET;
     }
-
 }
 
 export {NodeBlockchainService};

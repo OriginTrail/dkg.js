@@ -32,5 +32,8 @@ export default {
             UAI: blockchainSegments[1],
             assertionId: blockchainSegments.length > 2 ? blockchainSegments[2] : null,
         };
+    },
+    capitalizeFirstLetter(str) {
+        return str[0].toUpperCase() + str.slice(1);
     }
 }
