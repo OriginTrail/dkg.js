@@ -3,6 +3,7 @@
   "version": "6.0.0-beta.2.7",
   "description": "Javascript library for interaction with the OriginTrail Decentralized Knowledge Graph",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "npm run test",
     "build": "npx webpack --config webpack.config.js"
@@ -28,6 +29,7 @@
   "homepage": "https://github.com/OriginTrail/dkg.js/tree/master#readme",
   "dependencies": {
     "assert": "^2.0.0",
+    "assertion-tools": "file:../assertion-tools",
     "axios": "^0.26.1",
     "big-number": "^2.0.0",
     "buffer": "^6.0.3",
