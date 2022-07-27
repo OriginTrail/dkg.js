@@ -66,11 +66,16 @@ async function main() {
     let getAssertionOptions = {
         operation: 'get'
     }
+    let transferAssetOptions = {
+        blockchain: "ethereum",
+        wallet: "0xd6879C0A03aDD8cFc43825A42a3F3CF44DB7D2b9",
+    }
 
     try {
         divider();
 
         let { UAL, assertionId } = await dkg.asset.create(assetData, publishOptions);
+        console.log('======================== ASSET CREATED');
         console.log(UAL, 'UAL');
         console.log(assertionId, 'assertionId');
 
@@ -78,18 +83,35 @@ async function main() {
 
         let getAssetResult = await dkg.asset.get(UAL, getOptions);
         const assertion = getAssetResult.assertion;
+        console.log('======================== ASSET RESOLVED');
         console.log(assertion, 'GET ASSET');
 
         divider();
 
         await dkg.asset.update(UAL, updateAssetData, publishOptions);
-        console.log('ASSET UPDATED');
+        console.log('======================== ASSET UPDATED');
 
         divider();
 
         let getAssetResult1 = await dkg.asset.get(UAL, getOptions);
         const assertion1 = getAssetResult1.assertion;
-        console.log(assertion1, 'ASSET AFTER UPDATE');
+        console.log('======================== ASSET AFTER UPDATE');
+        console.log(assertion1);
+
+        divider();
+
+        const newOwner = "0x2ACa90078563133db78085F66e6B8Cf5531623Ad";
+        await dkg.asset.transfer(UAL, newOwner, transferAssetOptions);
+        console.log(`======================== ASSET TRANSFERRED TO ${newOwner}`);
+
+        divider();
+
+        try {
+            await dkg.asset.update(UAL, updateAssetData, publishOptions);
+        } catch (e) {
+            console.error(e);
+        }
+
 
         //NOTE: Create assertion is currently blocked
         // const createAssertionResult = await dkg.assertion.create(assertionData, assertionPublishOptions);

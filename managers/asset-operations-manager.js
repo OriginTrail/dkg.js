@@ -49,8 +49,12 @@ class AssetOperationsManager {
         return {UAL: UAL, assertionId: assertionId, status: operationResult.status};
     }
 
-    transfer() {
-
+    async transfer(UAL, to, options) {
+        this.validationService.validateAssetTransferRequest(UAL, to);
+        let {
+            UAI
+        } = Utilities.resolveUAL(UAL);
+        return await this.blockchainService.transferAsset(UAL, UAI, to, options);
     }
 
 }

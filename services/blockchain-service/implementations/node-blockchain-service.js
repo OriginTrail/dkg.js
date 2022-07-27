@@ -55,6 +55,14 @@ class NodeBlockchainService extends BlockchainServiceBase {
         return await this.executeContractFunction(this.AssetRegistryContract, 'updateAsset', requestData);
     }
 
+    async transferAsset(UAL, UAI, to, options) {
+        this.getBlockchain(options);
+        this.web3 = new Web3(this.blockchain.rpc);
+        await this.initializeContracts();
+        const from = this.blockchain.wallet;
+        return await this.executeContractFunction(this.UAIRegistryContract, 'transfer', [from, to, UAI]);
+    }
+
     async createAssertion(requestData, options) {
         this.getBlockchain(options);
         this.web3 = new Web3(this.blockchain.rpc);
@@ -121,8 +129,7 @@ class NodeBlockchainService extends BlockchainServiceBase {
                     createdTransaction.rawTransaction,
                 );
             } catch (error) {
-                result = true;
-                console.log(error, 'err');
+                throw Error(error);
                 // await this.handleError(error, functionName);
             }
         }

@@ -14,6 +14,10 @@ class ValidationService {
         if(!UAL) throw Error("UAL is missing.");
     }
 
+    validateAssetTransferRequest(UAL, newOwner) {
+        if(!UAL || !newOwner) throw Error("Wrong parameters for the transfer.");
+    }
+
     validateJSON(content) {
         try {
             JSON.parse(JSON.stringify(content));
