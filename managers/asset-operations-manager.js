@@ -21,15 +21,13 @@ class AssetOperationsManager {
         const UAL = this.blockchainService.generateUAL(options, UAI);
         let operationId = await this.nodeApiService.publish(assertionId, assertion, UAL);
         let operationResult = await this.nodeApiService.getOperationResult(operationId, options);
-        return {UAL: UAL, status: operationResult.status};
+        return {UAL: UAL, assertionId: assertionId, status: operationResult.status};
     }
 
     async get(UAL, options) {
         this.validationService.validateGetRequest(UAL, options);
         options.operation = OPERATIONS.get;
         let {
-            blockchain,
-            contract,
             UAI
         } = Utilities.resolveUAL(UAL);
         const assertionId = await this.blockchainService.getAssetCommitHash(UAI, options);

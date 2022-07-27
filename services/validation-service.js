@@ -8,7 +8,6 @@ class ValidationService {
         this.validateJSON(content);
         this.validateSize(content);
         this.validateVisibility(options.visibility);
-        this.validateKeywords(options.keywords);
     }
 
     validateGetRequest(UAL, options) {

@@ -29,8 +29,21 @@ async function main() {
         "born": "1940-10-09",
         "spouse": "http://dbpedia.org/resource/Cynthia_Lennon"
     };
+    let assertionData = {
+        "@context": "https://json-ld.org/contexts/person.jsonld",
+        "@id": `http://dbpedia.org/resource/StevanNesovic-${Math.random()}`,
+        "name": "Stevan Nesovic",
+        "born": "1991-10-04",
+    };
     let publishOptions = {
-        keywords: ['stevan', "nesovic"],
+        visibility: 'public',
+        holdingTimeInYears: 1,
+        tokenAmount: 10,
+        blockchain: "ethereum",
+        wallet: "0xd6879C0A03aDD8cFc43825A42a3F3CF44DB7D2b9",
+        maxNumberOfRetries: 5
+    };
+    let assertionPublishOptions = {
         visibility: 'public',
         holdingTimeInYears: 1,
         tokenAmount: 10,
@@ -51,9 +64,9 @@ async function main() {
     try {
         divider();
 
-        let createAssetResult = await dkg.asset.create(assetData, publishOptions);
-        const UAL = createAssetResult.UAL;
+        let { UAL, assertionId } = await dkg.asset.create(assetData, publishOptions);
         console.log(UAL, 'UAL');
+        console.log(assertionId, 'assertionId');
 
         divider();
 
@@ -63,7 +76,11 @@ async function main() {
 
         divider();
 
-        const assertionId = "0xb9ed79297feddadb9e7a950cfa63a705b5957a782f827fe3e6c66f746f6ff704";
+        //TODO: Create assertion is currently blocked
+
+        // const createAssertionResult = await dkg.assertion.create(assertionData, assertionPublishOptions);
+        // console.log(createAssertionResult, 'create assertion result');
+
         let getAssertionResult = await dkg.assertion.get(assertionId, getAssertionOptions)
         console.log(getAssertionResult, 'GET ASSERTION');
 

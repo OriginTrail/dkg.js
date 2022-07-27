@@ -1,11 +1,16 @@
 import {formatAssertion, calculateRoot} from 'assertion-tools';
+import {OPERATIONS} from "../constants.js";
 class AssertionOperationsManager {
     constructor(config, services) {
         this.nodeApiService = services.nodeApiService;
+        this.validationService = services.validationService;
     }
 
-    create() {
-
+    async create(content, options) {
+        this.validationService.validatePublishRequest(content, options);
+        options.operation = OPERATIONS.publish;
+        const assertion = await formatAssertion(content);
+        const assertionId = calculateRoot(assertion);
     }
 
     async get(assertionId, options) {
