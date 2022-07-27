@@ -29,7 +29,7 @@
   "homepage": "https://github.com/OriginTrail/dkg.js/tree/master#readme",
   "dependencies": {
     "assert": "^2.0.0",
-    "assertion-tools": "file:../assertion-tools",
+    "assertion-tools": "^1.0.3",
     "axios": "^0.26.1",
     "big-number": "^2.0.0",
     "buffer": "^6.0.3",

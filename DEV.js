@@ -112,7 +112,7 @@ async function main() {
             console.error(e);
         }
 
-
+        //  ASSERTIONS
         //NOTE: Create assertion is currently blocked
         // const createAssertionResult = await dkg.assertion.create(assertionData, assertionPublishOptions);
         // console.log(createAssertionResult, 'create assertion result');
