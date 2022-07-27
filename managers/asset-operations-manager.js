@@ -33,7 +33,7 @@ class AssetOperationsManager {
             UAI
         } = Utilities.resolveUAL(UAL);
         const assertionId = await this.blockchainService.getAssetCommitHash(UAI, options);
-        let assertion = await this.assertion.get(assertionId, options);
+        return await this.assertion.get(assertionId, options);
     }
 
     update() {

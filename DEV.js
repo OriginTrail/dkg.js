@@ -46,13 +46,12 @@ async function main() {
     }
 
     try {
-        // let createAssetResult = await dkg.asset.create(assetData, publishOptions);
-        // const UAL = createAssetResult.UAL;
-        // console.log(UAL);
+        let createAssetResult = await dkg.asset.create(assetData, publishOptions);
+        const UAL = createAssetResult.UAL;
 
-
-        const UAL = "did:ethereum:0xf21dd87cfc5cf5d073398833afe5efc543b78a00/2";
         let getAssetResult = await dkg.asset.get(UAL, getOptions);
+        const assertion = getAssetResult.assertion;
+        console.log(assertion);
 
     } catch (e) {
         console.error(e);

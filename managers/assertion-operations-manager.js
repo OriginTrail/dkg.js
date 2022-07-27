@@ -11,15 +11,12 @@ class AssertionOperationsManager {
     async get(assertionId, options) {
         let operationId = await this.nodeApiService.get(assertionId);
         let operationResult = await this.nodeApiService.getOperationResult(operationId, options);
-        try {
-            let assertion = operationResult.data.assertion;
-            const rootHash = calculateRoot(assertion);
-            if(rootHash === assertionId) {
-
-            }
-        } catch (e) {
-            throw Error("Unable to get assertion");
+        let assertion = operationResult.data.assertion;
+        const rootHash = calculateRoot(assertion);
+        if(rootHash === assertionId) {
+            return {assertion: assertion, status: operationResult.status};
         }
+        throw Error("Calculated root hashes don't match!");
     }
 }
 
