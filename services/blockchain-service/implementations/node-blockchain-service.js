@@ -10,6 +10,7 @@ import {
     VISIBILITY
 } from "../../../constants.js";
 import {AssetRegistryABI} from '../contracts/AssetRegistryABI.js';
+import {AssertionRegistryABI} from '../contracts/AssertionRegistryABI.js';
 import {UAIRegistryABI} from '../contracts/UAIRegistryABI.js';
 import {HubABI} from '../contracts/HubABI.js';
 import {ERC20TokenABI} from '../contracts/ERC20TokenABI.js';
@@ -43,6 +44,28 @@ class NodeBlockchainService extends BlockchainServiceBase {
         return UAI;
     }
 
+    async updateAsset(requestData, options) {
+        this.getBlockchain(options);
+        this.web3 = new Web3(this.blockchain.rpc);
+        await this.initializeContracts();
+        await this.executeContractFunction(this.TokenContract, 'increaseAllowance', [
+            this.AssetRegistryContract.options.address,
+            options.tokenAmount
+        ]);
+        return await this.executeContractFunction(this.AssetRegistryContract, 'updateAsset', requestData);
+    }
+
+    async createAssertion(requestData, options) {
+        this.getBlockchain(options);
+        this.web3 = new Web3(this.blockchain.rpc);
+        await this.initializeContracts();
+        await this.executeContractFunction(this.TokenContract, 'increaseAllowance', [
+            this.AssetRegistryContract.options.address,
+            options.tokenAmount
+        ]);
+        return await this.executeContractFunction(this.AssetRegistryContract, 'createAsset', requestData);
+    }
+
     async getAssetCommitHash(UAI, options) {
         this.getBlockchain(options);
         this.web3 = new Web3(this.blockchain.rpc);
@@ -57,6 +80,17 @@ class NodeBlockchainService extends BlockchainServiceBase {
             const tokenAmount = (options.tokenAmount) ? options.tokenAmount : PUBLISH_TOKEN_AMOUNT;
             const visibility = (options.visibility) ? VISIBILITY[options.visibility] : DEFAULT_PUBLISH_VISIBILITY;
             return [assertionId, assertionSize, visibility, holdingTimeInYears, tokenAmount];
+        } catch (e) {
+            throw Error("Invalid request parameters.")
+        }
+    }
+
+    generateUpdateAssetRequest(UAI, assertion, assertionId, options) {
+        try {
+            const assertionSize = Utilities.getAssertionSizeInKb(assertion);
+            const holdingTimeInYears = (options.holdingTimeInYears) ? options.holdingTimeInYears : HOLDING_TIME_IN_YEARS;
+            const tokenAmount = (options.tokenAmount) ? options.tokenAmount : PUBLISH_TOKEN_AMOUNT;
+            return [UAI, assertionId, assertionSize, holdingTimeInYears, tokenAmount];
         } catch (e) {
             throw Error("Invalid request parameters.")
         }
@@ -140,6 +174,13 @@ class NodeBlockchainService extends BlockchainServiceBase {
             ['AssetRegistry'],
         );
         this.AssetRegistryContract = new this.web3.eth.Contract(AssetRegistryABI, assetRegistryAddress);
+
+        const AssertionRegistryAddress = await this.callContractFunction(
+            this.hubContract,
+            'getContractAddress',
+            ['AssertionRegistry'],
+        );
+        this.AssertionRegistryContract = new this.web3.eth.Contract(AssertionRegistryABI, AssertionRegistryAddress);
 
         const UAIRegistryAddress = await this.callContractFunction(
             this.hubContract,

@@ -29,9 +29,15 @@ async function main() {
         "born": "1940-10-09",
         "spouse": "http://dbpedia.org/resource/Cynthia_Lennon"
     };
+    let updateAssetData = {
+        "@context": "https://json-ld.org/contexts/person.jsonld",
+        "@id": `http://dbpedia.org/resource/Michael_Jordan${Math.random()}`,
+        "name": "Michael Jordan",
+        "born": "1991-10-04",
+    };
     let assertionData = {
         "@context": "https://json-ld.org/contexts/person.jsonld",
-        "@id": `http://dbpedia.org/resource/StevanNesovic-${Math.random()}`,
+        "@id": `http://dbpedia.org/resource/Stevan_Nesovic-${Math.random()}`,
         "name": "Stevan Nesovic",
         "born": "1991-10-04",
     };
@@ -76,13 +82,21 @@ async function main() {
 
         divider();
 
-        //TODO: Create assertion is currently blocked
+        await dkg.asset.update(UAL, updateAssetData, publishOptions);
+        console.log('ASSET UPDATED');
 
+        divider();
+
+        let getAssetResult1 = await dkg.asset.get(UAL, getOptions);
+        const assertion1 = getAssetResult1.assertion;
+        console.log(assertion1, 'ASSET AFTER UPDATE');
+
+        //NOTE: Create assertion is currently blocked
         // const createAssertionResult = await dkg.assertion.create(assertionData, assertionPublishOptions);
         // console.log(createAssertionResult, 'create assertion result');
 
-        let getAssertionResult = await dkg.assertion.get(assertionId, getAssertionOptions)
-        console.log(getAssertionResult, 'GET ASSERTION');
+        // let getAssertionResult = await dkg.assertion.get(assertionId, getAssertionOptions)
+        // console.log(getAssertionResult, 'GET ASSERTION');
 
     } catch (e) {
         console.error(e);

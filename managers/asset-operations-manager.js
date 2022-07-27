@@ -34,8 +34,19 @@ class AssetOperationsManager {
         return await this.assertion.get(assertionId, options);
     }
 
-    update() {
-
+    async update(UAL, content, options) {
+        this.validationService.validatePublishRequest(content, options);
+        options.operation = OPERATIONS.publish;
+        const assertion = await formatAssertion(content);
+        const assertionId = calculateRoot(assertion);
+        let {
+            UAI
+        } = Utilities.resolveUAL(UAL);
+        let requestData = this.blockchainService.generateUpdateAssetRequest(UAI, assertion, assertionId, options);
+        await this.blockchainService.updateAsset(requestData, options);
+        let operationId = await this.nodeApiService.publish(assertionId, assertion, UAL);
+        let operationResult = await this.nodeApiService.getOperationResult(operationId, options);
+        return {UAL: UAL, assertionId: assertionId, status: operationResult.status};
     }
 
     transfer() {

@@ -1,6 +1,6 @@
 import axios from "axios";
 import Utilities from '../../utilities.js';
-import { OPERATION_STATUSES } from '../../../constants.js';
+import {OPERATION_STATUSES} from '../../../constants.js';
 
 class HttpService {
     maxNumberOfRetries = 5;
@@ -79,13 +79,15 @@ class HttpService {
     }
 
     preparePublishRequest(assertionId, assertion, UAL) {
-        return {
+        let publishRequest = {
             "assertion_id": assertionId,
-            "assertion": assertion,
-            "options": {
-                "ual" : UAL
-            }
+            "assertion": assertion
         };
+        if (UAL) {
+            publishRequest.options = {};
+            publishRequest.options.ual = UAL;
+        }
+        return publishRequest;
     }
 
     prepareGetAssertionRequest(assertionId) {
