@@ -44,18 +44,38 @@ async function main() {
         blockchain: "ethereum",
         maxNumberOfRetries: 5
     }
+    let getAssertionOptions = {
+        operation: 'get'
+    }
 
     try {
+        divider();
+
         let createAssetResult = await dkg.asset.create(assetData, publishOptions);
         const UAL = createAssetResult.UAL;
+        console.log(UAL, 'UAL');
+
+        divider();
 
         let getAssetResult = await dkg.asset.get(UAL, getOptions);
         const assertion = getAssetResult.assertion;
-        console.log(assertion);
+        console.log(assertion, 'GET ASSET');
+
+        divider();
+
+        const assertionId = "0xb9ed79297feddadb9e7a950cfa63a705b5957a782f827fe3e6c66f746f6ff704";
+        let getAssertionResult = await dkg.assertion.get(assertionId, getAssertionOptions)
+        console.log(getAssertionResult, 'GET ASSERTION');
 
     } catch (e) {
         console.error(e);
     }
+}
+
+function divider() {
+    console.log('==================================================');
+    console.log('==================================================');
+    console.log('==================================================');
 }
 
 
