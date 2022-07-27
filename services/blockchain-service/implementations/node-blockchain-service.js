@@ -1,26 +1,27 @@
 import Web3 from 'web3';
-import axios from 'axios';
 import Utilities from "../../utilities.js";
+import {BlockchainServiceBase} from "../blockchain-service-base.js";
 import {
     HOLDING_TIME_IN_YEARS,
     PUBLISH_TOKEN_AMOUNT,
     DEFAULT_PUBLISH_VISIBILITY,
-    DEFAULT_BLOCKCHAIN,
+    DEFAULT_COMMIT_OFFSET,
     AVAILABLE_BLOCKCHAINS,
     VISIBILITY
 } from "../../../constants.js";
 import {AssetRegistryABI} from '../contracts/AssetRegistryABI.js';
+import {UAIRegistryABI} from '../contracts/UAIRegistryABI.js';
 import {HubABI} from '../contracts/HubABI.js';
 import {ERC20TokenABI} from '../contracts/ERC20TokenABI.js';
-import {ProfileABI} from '../contracts/ProfileABI.js';
 
-class NodeBlockchainService {
+class NodeBlockchainService extends BlockchainServiceBase{
     constructor(config) {
+        super(config);
         this.config = config;
     }
 
     async createAsset(requestData, options) {
-        this.blockchain = this.getBlockchain(options);
+        this.getBlockchain(options);
         this.web3 = new Web3(this.blockchain.rpc);
         await this.initializeContracts();
         await this.executeContractFunction(this.TokenContract, 'increaseAllowance', [
@@ -28,7 +29,16 @@ class NodeBlockchainService {
             options.tokenAmount
         ]);
         let receipt = await this.executeContractFunction(this.AssetRegistryContract, 'createAsset', requestData);
-        const UAI = await this.getTransactionResponse(receipt);
+        const UAIHex = await this.getTransactionResponse(receipt);
+        return Utilities.toNumber(UAIHex);
+    }
+
+    async getAssetCommitHash(UAI, options) {
+        this.getBlockchain(options);
+        this.web3 = new Web3(this.blockchain.rpc);
+        await this.initializeContracts();
+        let receipt = await this.executeContractFunction(this.AssetRegistryContract, 'getCommitHash', [UAI, this.getCommitOffset(options)]);
+        console.log(receipt, 'recepip');
     }
 
     generateCreateAssetRequest(assertion, assertionId, options) {
@@ -93,12 +103,16 @@ class NodeBlockchainService {
     getBlockchain(options) {
         if (options.blockchain && this.blockchainIsAvailable(options)) {
             if (this.config.blockchainConfig[options.blockchain]) {
-                return this.config.blockchainConfig[options.blockchain];
+                this.blockchain = this.config.blockchainConfig[options.blockchain];
+                this.blockchain.title = options.blockchain;
+                return this.blockchain;
             }
             throw Error("Blockchain configuration is missing.")
         } else {
             if (this.config.blockchainConfig[this.config.blockchain]) {
-                return this.config.blockchainConfig[this.config.blockchain];
+                this.blockchain = this.config.blockchainConfig[this.config.blockchain];
+                this.blockchain.title = this.config.blockchain;
+                return this.blockchain;
             }
             throw Error("Blockchain configuration is missing.")
         }
@@ -118,6 +132,13 @@ class NodeBlockchainService {
         );
         this.AssetRegistryContract = new this.web3.eth.Contract(AssetRegistryABI, assetRegistryAddress);
 
+        const UAIRegistryAddress = await this.callContractFunction(
+            this.hubContract,
+            'getContractAddress',
+            ['UAIRegistry'],
+        );
+        this.UAIRegistryContract = new this.web3.eth.Contract(UAIRegistryABI, UAIRegistryAddress);
+
         const tokenAddress = await this.callContractFunction(
             this.hubContract,
             'getContractAddress',
@@ -130,7 +151,7 @@ class NodeBlockchainService {
 
         receipt.logs.forEach((row, index) => {
 
-            console.log(row.topics);
+            // console.log(row.topics);
 
             // try {
             //     let item = this.web3.eth.abi.decodeLog([
@@ -168,6 +189,19 @@ class NodeBlockchainService {
 
         return "0x0000000000000000000000000000000000000000000000000000000000000006";
     }
+
+    generateUAL(options, UAI) {
+        this.getBlockchain(options);
+        return this.deriveUAL(this.blockchain.title, this.blockchain.hubContract, UAI);
+    }
+
+    getCommitOffset(options) {
+        if(options.commitOffset) {
+            return options.commitOffset;
+        }
+        return DEFAULT_COMMIT_OFFSET;
+    }
+
 }
 
 export {NodeBlockchainService};

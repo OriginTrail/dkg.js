@@ -3,12 +3,16 @@ import {MAX_FILE_SIZE} from "../constants.js";
 const publishAllowedVisibilityParams = ["public", "private"];
 
 class ValidationService {
-    
+
     validatePublishRequest(content, options) {
         this.validateJSON(content);
         this.validateSize(content);
         this.validateVisibility(options.visibility);
         this.validateKeywords(options.keywords);
+    }
+
+    validateGetRequest(UAL, options) {
+        if(!UAL) throw Error("UAL is missing.");
     }
 
     validateJSON(content) {

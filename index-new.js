@@ -38,11 +38,11 @@ class DkgClient extends GraphOperationsManager {
     initializeNodeApiService(config) {
         if (config.communicationType) {
             if(NodeApiInterface[config.communicationType]) {
-                return new NodeApiInterface[config.communicationType];
+                return new NodeApiInterface[config.communicationType](config);
             }
-            return new this.defaultCommunicationType;
+            return new this.defaultCommunicationType(config);
         }
-        return new this.defaultCommunicationType;
+        return new this.defaultCommunicationType(config);
     }
 
     initializeBlockchainService(config) {

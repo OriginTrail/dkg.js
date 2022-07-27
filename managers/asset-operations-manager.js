@@ -1,4 +1,5 @@
-import { formatAssertion, calculateRoot } from 'assertion-tools';
+import {formatAssertion, calculateRoot} from 'assertion-tools';
+import Utilities from '../services/utilities.js'
 
 class AssetOperationsManager {
     constructor(config, services) {
@@ -9,20 +10,26 @@ class AssetOperationsManager {
 
     async create(content, options) {
         this.validationService.validatePublishRequest(content, options);
-        try {
-            const assertion = await formatAssertion(content);
-            const assertionId = calculateRoot(assertion);
-            let requestData = this.blockchainService.generateCreateAssetRequest(assertion, assertionId, options);
-            await this.blockchainService.createAsset(requestData, options);
-            // this.nodeApiService.publish(content, options);
-            return requestData;
-        } catch (e) {
-            console.error(e);
-        }
+        const assertion = await formatAssertion(content);
+        const assertionId = calculateRoot(assertion);
+        let requestData = this.blockchainService.generateCreateAssetRequest(assertion, assertionId, options);
+        const UAI = await this.blockchainService.createAsset(requestData, options);
+        const UAL = this.blockchainService.generateUAL(options, UAI);
+        // let operationId = await this.nodeApiService.publish(assertionId, assertion, UAL);
+        // let operationResult = await this.nodeApiService.getPublishResult(operationId, options);
+        // return { UAL : UAL, status: operationResult.status };
+        return {UAL: UAL, status: "COMPLETED"};
     }
 
-    get() {
-
+    get(UAL, options) {
+        this.validationService.validateGetRequest(UAL, options);
+        let {
+            blockchain,
+            contract,
+            UAI,
+            assertionId,
+        } = Utilities.resolveUAL(UAL);
+        this.blockchainService.getAssetCommitHash(UAI, options);
     }
 
     update() {
@@ -34,4 +41,5 @@ class AssetOperationsManager {
     }
 
 }
-export { AssetOperationsManager };
+
+export {AssetOperationsManager};

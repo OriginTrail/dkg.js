@@ -1,12 +1,12 @@
 import {DkgClient as DKG} from './index-new.js';
 
 const OT_NODE_HOSTNAME = 'http://localhost';
-const OT_NODE_PORT = '8081';
+const OT_NODE_PORT = '8903';
 
 let options = {
     endpoint: OT_NODE_HOSTNAME,
     port: OT_NODE_PORT,
-    communicationType: 'sockets',
+    communicationType: 'http',
     useSSL: false,
     loglevel: 'trace',
     blockchain: 'ethereum',
@@ -35,10 +35,26 @@ async function main() {
         holdingTimeInYears: 1,
         tokenAmount: 10,
         blockchain: "ethereum",
-        wallet: "0xd6879C0A03aDD8cFc43825A42a3F3CF44DB7D2b9"
+        wallet: "0xd6879C0A03aDD8cFc43825A42a3F3CF44DB7D2b9",
+        maxNumberOfRetries: 5
     };
-    let assetCreate = await dkg.asset.create(assetData, publishOptions);
-    console.log(assetCreate, 'asset create');
+    let getOptions = {
+        validate: true,
+        commitOffset: 0,
+        blockchain: "ethereum",
+    }
+
+    try {
+        // let createAssetResult = await dkg.asset.create(assetData, publishOptions);
+        // const UAL = createAssetResult.UAL;
+
+        const UAL = "did:ethereum:0xf21dd87cfc5cf5d073398833afe5efc543b78a00/6";
+
+        let getAssetResult = await dkg.asset.get(UAL, getOptions);
+
+    } catch (e) {
+        console.error(e);
+    }
 }
 
 

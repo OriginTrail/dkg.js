@@ -37,3 +37,4 @@ export const VISIBILITY = {
     "private" : 0
 };
 export const DEFAULT_PUBLISH_VISIBILITY = VISIBILITY.public;
+export const DEFAULT_COMMIT_OFFSET = 0;

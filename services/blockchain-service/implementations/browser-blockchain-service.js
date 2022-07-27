@@ -5,10 +5,12 @@ import {
     DEFAULT_PUBLISH_VISIBILITY,
     VISIBILITY
 } from "../../../constants.js";
+import {BlockchainServiceBase} from "../blockchain-service-base.js";
 
-class BrowserBlockchainService {
-    constructor(props) {
-        console.log(props);
+class BrowserBlockchainService extends BlockchainServiceBase{
+    constructor(config) {
+        super(config);
+        console.log(config);
     }
 
     createAsset(assertionId, assertionSize, holdingTimeInYears, tokenAmount) {
