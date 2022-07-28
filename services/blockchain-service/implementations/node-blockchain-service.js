@@ -1,19 +1,13 @@
-import Web3 from 'web3';
-import Utilities from "../../utilities.js";
-import {BlockchainServiceBase} from "../blockchain-service-base.js";
-import {
-    HOLDING_TIME_IN_YEARS,
-    PUBLISH_TOKEN_AMOUNT,
-    DEFAULT_PUBLISH_VISIBILITY,
-    DEFAULT_COMMIT_OFFSET,
-    AVAILABLE_BLOCKCHAINS,
-    VISIBILITY
-} from "../../../constants.js";
-import {AssetRegistryABI} from '../contracts/AssetRegistryABI.js';
-import {AssertionRegistryABI} from '../contracts/AssertionRegistryABI.js';
-import {UAIRegistryABI} from '../contracts/UAIRegistryABI.js';
-import {HubABI} from '../contracts/HubABI.js';
-import {ERC20TokenABI} from '../contracts/ERC20TokenABI.js';
+const Web3 = require('web3')
+const Utilities = require('../../utilities.js')
+const constants = require('../../../constants.js')
+const BlockchainServiceBase = require('../blockchain-service-base.js');
+
+const AssetRegistryABI = require('../contracts/AssetRegistryABI.json')
+const AssertionRegistryABI = require('../contracts/AssertionRegistryABI.json')
+const UAIRegistryABI = require('../contracts/UAIRegistryABI.json')
+const HubABI = require('../contracts/HubABI.json');
+const ERC20TokenABI = require('../contracts/ERC20TokenABI.json');
 
 const events = {};
 AssetRegistryABI.filter((obj) => obj.type === "event").forEach((event) => {
@@ -84,9 +78,9 @@ class NodeBlockchainService extends BlockchainServiceBase {
     generateCreateAssetRequest(assertion, assertionId, options) {
         try {
             const assertionSize = Utilities.getAssertionSizeInKb(assertion);
-            const holdingTimeInYears = (options.holdingTimeInYears) ? options.holdingTimeInYears : HOLDING_TIME_IN_YEARS;
-            const tokenAmount = (options.tokenAmount) ? options.tokenAmount : PUBLISH_TOKEN_AMOUNT;
-            const visibility = (options.visibility) ? VISIBILITY[options.visibility] : DEFAULT_PUBLISH_VISIBILITY;
+            const holdingTimeInYears = (options.holdingTimeInYears) ? options.holdingTimeInYears : constants.HOLDING_TIME_IN_YEARS;
+            const tokenAmount = (options.tokenAmount) ? options.tokenAmount : constants.PUBLISH_TOKEN_AMOUNT;
+            const visibility = (options.visibility) ? constants.VISIBILITY[options.visibility] : constants.DEFAULT_PUBLISH_VISIBILITY;
             return [assertionId, assertionSize, visibility, holdingTimeInYears, tokenAmount];
         } catch (e) {
             throw Error("Invalid request parameters.")
@@ -96,8 +90,8 @@ class NodeBlockchainService extends BlockchainServiceBase {
     generateUpdateAssetRequest(UAI, assertion, assertionId, options) {
         try {
             const assertionSize = Utilities.getAssertionSizeInKb(assertion);
-            const holdingTimeInYears = (options.holdingTimeInYears) ? options.holdingTimeInYears : HOLDING_TIME_IN_YEARS;
-            const tokenAmount = (options.tokenAmount) ? options.tokenAmount : PUBLISH_TOKEN_AMOUNT;
+            const holdingTimeInYears = (options.holdingTimeInYears) ? options.holdingTimeInYears : constants.HOLDING_TIME_IN_YEARS;
+            const tokenAmount = (options.tokenAmount) ? options.tokenAmount : constants.PUBLISH_TOKEN_AMOUNT;
             return [UAI, assertionId, assertionSize, holdingTimeInYears, tokenAmount];
         } catch (e) {
             throw Error("Invalid request parameters.")
@@ -169,7 +163,7 @@ class NodeBlockchainService extends BlockchainServiceBase {
     }
 
     blockchainIsAvailable(options) {
-        return AVAILABLE_BLOCKCHAINS.find((b) => b === options.blockchain);
+        return constants.AVAILABLE_BLOCKCHAINS.find((b) => b === options.blockchain);
     }
 
     async initializeContracts() {
@@ -231,8 +225,7 @@ class NodeBlockchainService extends BlockchainServiceBase {
         if(options.commitOffset) {
             return options.commitOffset;
         }
-        return DEFAULT_COMMIT_OFFSET;
+        return constants.DEFAULT_COMMIT_OFFSET;
     }
 }
-
-export {NodeBlockchainService};
+module.exports = NodeBlockchainService;

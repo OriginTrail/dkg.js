@@ -1,6 +1,6 @@
-import axios from "axios";
-import Utilities from '../../utilities.js';
-import {OPERATION_STATUSES} from '../../../constants.js';
+const axios = require('axios');
+const Utilities = require('../../utilities.js')
+const constants = require('../../../constants.js')
 
 class HttpService {
     maxNumberOfRetries = 5;
@@ -42,7 +42,7 @@ class HttpService {
             throw Error("Operation ID is missing, unable to fetch the operation results.");
         }
         let response = {
-            status: OPERATION_STATUSES.pending,
+            status: constants.OPERATION_STATUSES.pending,
         };
         let retries = 0;
         let maxNumberOfRetries = options.maxNumberOfRetries
@@ -69,8 +69,8 @@ class HttpService {
                 // this.logger.error(e);
                 throw e;
             }
-        } while (response.data.status !== OPERATION_STATUSES.completed && response.data.status !== OPERATION_STATUSES.failed);
-        if (response.data.status === OPERATION_STATUSES.failed) {
+        } while (response.data.status !== constants.OPERATION_STATUSES.completed && response.data.status !== constants.OPERATION_STATUSES.failed);
+        if (response.data.status === constants.OPERATION_STATUSES.failed) {
             throw Error(
                 `${Utilities.capitalizeFirstLetter(options.operation)} operation failed. Reason: ${response.data.data.errorMessage}`
             );
@@ -96,5 +96,4 @@ class HttpService {
         };
     }
 }
-
-export {HttpService};
+module.exports = HttpService;

@@ -1,5 +1,4 @@
-import {MAX_FILE_SIZE} from "../constants.js";
-
+const constants = require('../constants.js')
 const publishAllowedVisibilityParams = ["public", "private"];
 
 class ValidationService {
@@ -30,8 +29,8 @@ class ValidationService {
 
     validateSize(content) {
         if (!content) throw Error("No content provided");
-        if (Buffer.byteLength(JSON.stringify(content), "utf-8") > MAX_FILE_SIZE)
-            throw Error(`File size limit is ${MAX_FILE_SIZE / (1024 * 1024)}MB.`);
+        if (Buffer.byteLength(JSON.stringify(content), "utf-8") > constants.MAX_FILE_SIZE)
+            throw Error(`File size limit is ${constants.MAX_FILE_SIZE / (1024 * 1024)}MB.`);
     }
 
     validateVisibility(visibility) {
@@ -51,5 +50,4 @@ class ValidationService {
             throw Error("all keywords must be non empty strings");
     }
 }
-
-export {ValidationService};
+module.exports = ValidationService;

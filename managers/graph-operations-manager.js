@@ -2,4 +2,4 @@ class GraphOperationsManager {
     constructor(props) {
     }
 }
-export { GraphOperationsManager };
+module.exports = GraphOperationsManager;

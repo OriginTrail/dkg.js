@@ -1,4 +1,4 @@
-import {DkgClient as DKG} from './index-new.js';
+const DkgClient = require('./index-new');
 
 const OT_NODE_HOSTNAME = 'http://localhost';
 const OT_NODE_PORT = '8901';
@@ -19,7 +19,7 @@ let options = {
         }
     }
 };
-const dkg = new DKG(options);
+const dkg = new DkgClient(options);
 
 async function main() {
     let assetData = {

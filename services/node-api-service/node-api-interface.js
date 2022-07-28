@@ -1,6 +1,6 @@
-import {SocketService} from './implementations/socket-service.js';
-import {HttpService} from './implementations/http-service.js';
-export default {
+const SocketService = require('./implementations/socket-service.js')
+const HttpService = require('./implementations/http-service.js')
+module.exports = {
     "sockets": SocketService,
     "https": HttpService,
     "http": HttpService,

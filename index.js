@@ -1,26 +1,55 @@
-const AssetOperationsManager = require('./managers/asset-operations-manager')
-const AssertionOperationsManager = require('./managers/asset-operations-manager')
-const IndexOperationsManager = require('./managers/asset-operations-manager')
-const GraphOperationsManager = require('./managers/asset-operations-manager')
-const BlockchainService = require('./services/blockchain-service');
+// managers
+const AssetOperationsManager = require('./managers/asset-operations-manager.js')
+const AssertionOperationsManager = require('./managers/assertion-operations-manager.js')
+const IndexOperationsManager = require('./managers/index-operations-manager.js')
+const GraphOperationsManager = require('./managers/graph-operations-manager.js')
+// interfaces
+const NodeApiInterface = require('./services/node-api-service/node-api-interface.js')
+const BlockchainInterface = require('./services/blockchain-service/blockchain-interface.js');
+// services
+const ValidationService = require('./services/validation-service.js')
+const Utilities = require('./services/utilities.js');
 
 class DkgClient extends GraphOperationsManager {
-  constructor(props) {
-    super(props);
-    this.initializeServices();
-    this.asset = new AssetOperationsManager(props, {
-      blockchainService: this.blockchainService,
-    });
-    this.assertion = new AssertionOperationsManager(props, {
-      blockchainService: this.blockchainService,
-    });
-    this.index = new IndexOperationsManager(props, {
-      blockchainService: this.blockchainService,
-    });
-  }
+    defaultCommunicationType = NodeApiInterface.default;
 
-  initializeServices() {
-    this.blockchainService = new BlockchainService();
-  }
+    constructor(config) {
+        super(config);
+        this.initializeServices(config);
+        this.assertion = new AssertionOperationsManager(config, this.getServices());
+        this.asset = new AssetOperationsManager(config, this.getServices());
+        this.index = new IndexOperationsManager(config, this.getServices());
+    }
+
+    initializeServices(config) {
+        this.blockchainService = this.initializeBlockchainService(config);
+        this.nodeApiService = this.initializeNodeApiService(config);
+        this.validationService = new ValidationService();
+    }
+
+    getServices() {
+        return {
+            blockchainService: this.blockchainService,
+            nodeApiService: this.nodeApiService,
+            validationService: this.validationService,
+        }
+    }
+
+    initializeNodeApiService(config) {
+        if (config.communicationType) {
+            if(NodeApiInterface[config.communicationType]) {
+                return new NodeApiInterface[config.communicationType](config);
+            }
+            return new this.defaultCommunicationType(config);
+        }
+        return new this.defaultCommunicationType(config);
+    }
+
+    initializeBlockchainService(config) {
+        if(Utilities.nodeSupported()) {
+            return new BlockchainInterface.node(config);
+        }
+        return new BlockchainInterface.browser(config);
+    }
 }
 module.exports = DkgClient;

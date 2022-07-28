@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>DKG Client demo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <!-- import CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <link rel="stylesheet"
+          href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/styles/default.min.css">
+    <style>
+        .form {
+            margin-top: 30px;
+            width: 500px;
+        }
+
+        .el-notification__content p {
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+<div id="app" class="container pt-5">
+    <h1>DKG Client demo</h1>
+    <div class="row">
+        <div class="col-6">
+            <div class="form">
+                <h3>Asset data</h3>
+                <p>Context</p>
+                <el-input :disabled="disabled" class="mb-3" placeholder="Please input"
+                          v-model="assetData['@context']"></el-input>
+                <p>ID</p>
+                <el-input :disabled="disabled" class="mb-3" placeholder="Please input"
+                          v-model="assetData['@id']"></el-input>
+                <p>Name</p>
+                <el-input :disabled="disabled" class="mb-3" placeholder="Please input"
+                          v-model="assetData.name"></el-input>
+                <p>Born</p>
+                <el-input :disabled="disabled" class="mb-3" placeholder="Please input"
+                          v-model="assetData.born"></el-input>
+            </div>
+            <el-button type="primary" @click="publish">Publish</el-button>
+        </div>
+        <div class="col-6">
+            <el-table
+                    :data="tableData"
+                    style="width: 100%">
+                <el-table-column
+                        prop="assertionId"
+                        label="Assertion ID">
+                </el-table-column>
+                <el-table-column
+                        prop="UAL"
+                        label="UAL">
+                </el-table-column>
+                <el-table-column label="Operations">
+                    <template slot-scope="scope">
+                        <el-button
+                                type="primary"
+                                size="mini"
+                                @click="get">GET
+                        </el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </div>
+    </div>
+    <div class="mt-5">
+        <el-input placeholder="Please input" v-model="getUAL" class="input-with-select">
+            <el-button type="primary" slot="prepend" @click="get">GET</el-button>
+        </el-input>
+    </div>
+    <div class="row mt-3">
+        <pre>
+            <code class="language-javascript">
+            {{ resolveResult }}
+            </code>
+        </pre>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+        crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+<script src="./dist/dkg.min.js"></script>
+<script>
+    window.addEventListener('load', async function () {
+
+        const OT_NODE_HOSTNAME = 'http://localhost';
+        const OT_NODE_PORT = '8901';
+        const options = {
+            endpoint: OT_NODE_HOSTNAME,
+            port: OT_NODE_PORT,
+            communicationType: 'http',
+            useSSL: false,
+            loglevel: 'trace',
+            blockchain: 'ethereum'
+        };
+        window.DkgClient = new DKG(options);
+    });
+</script>
+<!-- import Vue before Element -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.1.9/vue.js"></script>
+<!-- import JavaScript -->
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+
+<script>
+    new Vue({
+        el: '#app',
+        data: function () {
+            return {
+                disabled: false,
+                resolveResult: [],
+                getUAL: '',
+                tableData: [
+                    {
+                        assertionId: '',
+                        UAL: ''
+                    }
+                ],
+                assetData: {
+                    "@context": "https://json-ld.org/contexts/person.jsonld",
+                    "@id": `http://dbpedia.org/resource/John_Lennon_${Math.random()}`,
+                    "name": "John",
+                    "born": "1940-10-09",
+                },
+                publishOptions: {
+                    visibility: 'public',
+                    holdingTimeInYears: 1,
+                    tokenAmount: 10,
+                    blockchain: "ethereum",
+                    wallet: "0xd6879C0A03aDD8cFc43825A42a3F3CF44DB7D2b9",
+                    maxNumberOfRetries: 5
+                },
+                getOptions: {
+                    validate: true,
+                    commitOffset: 0,
+                    blockchain: "ethereum",
+                    maxNumberOfRetries: 5
+                },
+                visible: false
+            }
+        },
+        methods: {
+            async publish() {
+                this.disabled = true;
+                let loading = this.notification("Asset", "Creating new asset", "el-icon-loading", 0);
+                let {UAL, assertionId} = await DkgClient.asset.create(this.assetData, this.publishOptions);
+                loading.close();
+                this.notification("Asset", `Asset with UAL ${UAL} created!`, "el-icon-success", 4000);
+                this.disabled = false;
+                this.tableData.push({assertionId: assertionId, UAL: UAL});
+            },
+            async get() {
+                let loading = this.notification("Asset", "Resolving asset..", "el-icon-loading", 0);
+                let { assertion } = await DkgClient.asset.get(this.getUAL, this.getOptions);
+                this.resolveResult = assertion;
+                loading.close();
+                this.notification("Asset", `Asset with UAL ${this.getUAL} resolved!`, "el-icon-success", 4000);
+                console.log(this.resolveResult, 'getAssetResult');
+            },
+            notification(title, message, icon, duration) {
+                return this.$notify({
+                    title: title,
+                    message: message,
+                    iconClass: icon,
+                    duration: duration
+                })
+            }
+        }
+    })
+</script>
+</body>
+</html>

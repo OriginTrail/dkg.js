@@ -1,4 +1,4 @@
-import Utilities from '../utilities.js';
+const Utilities = require('../utilities.js')
 
 class BlockchainServiceBase {
     constructor() {
@@ -9,5 +9,4 @@ class BlockchainServiceBase {
     }
 
 }
-
-export { BlockchainServiceBase }
+module.exports = BlockchainServiceBase;

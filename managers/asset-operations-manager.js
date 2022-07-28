@@ -1,7 +1,7 @@
-import {formatAssertion, calculateRoot} from 'assertion-tools';
-import Utilities from '../services/utilities.js'
-import {AssertionOperationsManager} from "./assertion-operations-manager.js";
-import {OPERATIONS} from '../constants.js'
+const AssertionTools = require('assertion-tools')
+const Utilities = require('../services/utilities.js')
+const AssertionOperationsManager = require('./assertion-operations-manager.js')
+const constants = require('../constants.js')
 
 class AssetOperationsManager {
     constructor(config, services) {
@@ -13,9 +13,9 @@ class AssetOperationsManager {
 
     async create(content, options) {
         this.validationService.validatePublishRequest(content, options);
-        options.operation = OPERATIONS.publish;
-        const assertion = await formatAssertion(content);
-        const assertionId = calculateRoot(assertion);
+        options.operation = constants.OPERATIONS.publish;
+        const assertion = await AssertionTools.formatAssertion(content);
+        const assertionId = AssertionTools.calculateRoot(assertion);
         let requestData = this.blockchainService.generateCreateAssetRequest(assertion, assertionId, options);
         const UAI = await this.blockchainService.createAsset(requestData, options);
         const UAL = this.blockchainService.generateUAL(options, UAI);
@@ -26,7 +26,7 @@ class AssetOperationsManager {
 
     async get(UAL, options) {
         this.validationService.validateGetRequest(UAL, options);
-        options.operation = OPERATIONS.get;
+        options.operation = constants.OPERATIONS.get;
         let {
             UAI
         } = Utilities.resolveUAL(UAL);
@@ -36,9 +36,9 @@ class AssetOperationsManager {
 
     async update(UAL, content, options) {
         this.validationService.validatePublishRequest(content, options);
-        options.operation = OPERATIONS.publish;
-        const assertion = await formatAssertion(content);
-        const assertionId = calculateRoot(assertion);
+        options.operation = constants.OPERATIONS.publish;
+        const assertion = await AssertionTools.formatAssertion(content);
+        const assertionId = AssertionTools.calculateRoot(assertion);
         let {
             UAI
         } = Utilities.resolveUAL(UAL);
@@ -58,5 +58,4 @@ class AssetOperationsManager {
     }
 
 }
-
-export {AssetOperationsManager};
+module.exports = AssetOperationsManager;

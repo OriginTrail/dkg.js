@@ -1,6 +1,6 @@
-import {BrowserBlockchainService} from './implementations/browser-blockchain-service.js';
-import {NodeBlockchainService} from './implementations/node-blockchain-service.js';
-export default {
+const BrowserBlockchainService = require('./implementations/browser-blockchain-service.js')
+const NodeBlockchainService = require('./implementations/node-blockchain-service.js')
+module.exports = {
     "browser": BrowserBlockchainService,
     "node": NodeBlockchainService,
 }

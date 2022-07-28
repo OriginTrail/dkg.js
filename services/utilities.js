@@ -1,4 +1,4 @@
-export default {
+module.exports = {
     getAssertionSizeInKb(content) {
         return Buffer.byteLength(JSON.stringify(content), "utf-8");
     },

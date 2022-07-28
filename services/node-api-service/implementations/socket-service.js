@@ -10,5 +10,4 @@ class SocketService {
         console.log('sockets get operation result');
     }
 }
-
-export {SocketService};
+module.exports = SocketService;
