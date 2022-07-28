@@ -1,4 +1,4 @@
-const DkgClient = require('./index-new');
+const DkgClient = require('./index.js');
 
 const OT_NODE_HOSTNAME = 'http://localhost';
 const OT_NODE_PORT = '8901';

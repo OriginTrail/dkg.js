@@ -5,7 +5,6 @@ const webpack = require('webpack')
 module.exports = {
   mode: "development",
   entry: "./index.js",
-  watch: true,
   output: {
     path: path.resolve(__dirname, "dist"),
     filename: "dkg.min.js",
