@@ -53,7 +53,7 @@ class BrowserBlockchainService extends BlockchainServiceBase{
         return "tu smo u browseru";
     }
 
-    initializeWeb3() {
+   initializeWeb3() {
         if (window.Web3) {
             if (
                 typeof window.Web3 === "undefined" ||
