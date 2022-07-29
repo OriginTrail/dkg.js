@@ -35,5 +35,11 @@ module.exports = {
     },
     capitalizeFirstLetter(str) {
         return str[0].toUpperCase() + str.slice(1);
+    },
+    getOperationStatusObject(operationResult, operationId) {
+        return {
+            operationId: operationId,
+            status: operationResult.status
+        }
     }
 }

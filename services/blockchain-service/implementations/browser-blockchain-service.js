@@ -53,7 +53,7 @@ class BrowserBlockchainService extends BlockchainServiceBase{
         return "tu smo u browseru";
     }
 
-    initializeWeb3() {
+   initializeWeb3() {
         if (window.Web3) {
             if (
                 typeof window.Web3 === "undefined" ||
@@ -110,17 +110,13 @@ class BrowserBlockchainService extends BlockchainServiceBase{
     }
 
     async callContractFunction(contractInstance, functionName, args) {
-        let result;
-        while (!result) {
-            try {
-                result = await contractInstance.methods[functionName](...args).call();
-            } catch (error) {
-                result = true;
-                console.log(error, 'err');
-                // await this.handleError(error, functionName);
-            }
+        try {
+            return await contractInstance.methods[functionName](...args).call();
+        } catch (error) {
+            console.log(error, 'err');
+            return false;
+            // await this.handleError(error, functionName);
         }
-        return result;
     }
 
     async executeContractFunction(contractInstance, functionName, args) {

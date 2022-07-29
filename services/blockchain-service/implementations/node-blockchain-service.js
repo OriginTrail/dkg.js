@@ -57,6 +57,10 @@ class NodeBlockchainService extends BlockchainServiceBase {
         return await this.executeContractFunction(this.UAIRegistryContract, 'transfer', [from, to, UAI]);
     }
 
+    async getAssetOwner(UAI) {
+        return await this.UAIRegistryContract.methods.ownerOf(UAI).call();
+    }
+
     async createAssertion(requestData, options) {
         this.getBlockchain(options);
         this.web3 = new Web3(this.blockchain.rpc);
@@ -99,49 +103,41 @@ class NodeBlockchainService extends BlockchainServiceBase {
     }
 
     async executeContractFunction(contractInstance, functionName, args) {
-        let result;
-        while (!result) {
-            try {
-                const gasLimit = await contractInstance.methods[functionName](...args).estimateGas({
-                    from: this.blockchain.wallet,
-                });
+        try {
+            const gasLimit = await contractInstance.methods[functionName](...args).estimateGas({
+                from: this.blockchain.wallet,
+            });
 
-                const encodedABI = contractInstance.methods[functionName](...args).encodeABI();
-                const tx = {
-                    from: this.blockchain.wallet,
-                    to: contractInstance.options.address,
-                    data: encodedABI,
-                    gasPrice: this.web3.utils.toWei('100', 'Gwei'),
-                    gas: gasLimit || this.web3.utils.toWei('900', 'Kwei'),
-                };
+            const encodedABI = contractInstance.methods[functionName](...args).encodeABI();
+            const tx = {
+                from: this.blockchain.wallet,
+                to: contractInstance.options.address,
+                data: encodedABI,
+                gasPrice: this.web3.utils.toWei('100', 'Gwei'),
+                gas: gasLimit || this.web3.utils.toWei('900', 'Kwei'),
+            };
 
-                const createdTransaction = await this.web3.eth.accounts.signTransaction(
-                    tx,
-                    this.blockchain.privateKey,
-                );
-                result = await this.web3.eth.sendSignedTransaction(
-                    createdTransaction.rawTransaction,
-                );
-            } catch (error) {
-                throw Error(error);
-                // await this.handleError(error, functionName);
-            }
+            const createdTransaction = await this.web3.eth.accounts.signTransaction(
+                tx,
+                this.blockchain.privateKey,
+            );
+            return await this.web3.eth.sendSignedTransaction(
+                createdTransaction.rawTransaction,
+            );
+        } catch (error) {
+            throw Error(error);
+            // await this.handleError(error, functionName);
         }
-        return result;
     }
 
     async callContractFunction(contractInstance, functionName, args) {
-        let result;
-        while (!result) {
-            try {
-                result = await contractInstance.methods[functionName](...args).call();
-            } catch (error) {
-                result = true;
-                console.log(error, 'err');
-                // await this.handleError(error, functionName);
-            }
+        try {
+            return  await contractInstance.methods[functionName](...args).call();
+        } catch (error) {
+            console.log(error, 'err');
+            return false;
+            // await this.handleError(error, functionName);
         }
-        return result;
     }
 
     getBlockchain(options) {
@@ -222,10 +218,11 @@ class NodeBlockchainService extends BlockchainServiceBase {
     }
 
     getCommitOffset(options) {
-        if(options.commitOffset) {
+        if (options.commitOffset) {
             return options.commitOffset;
         }
         return constants.DEFAULT_COMMIT_OFFSET;
     }
 }
+
 module.exports = NodeBlockchainService;

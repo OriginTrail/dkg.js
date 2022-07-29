@@ -35,6 +35,12 @@ async function main() {
         "name": "Michael Jordan",
         "born": "1991-10-04",
     };
+    let updateAssetData2 = {
+        "@context": "https://json-ld.org/contexts/person.jsonld",
+        "@id": `http://dbpedia.org/resource/Kobe_Bryant${Math.random()}`,
+        "name": "Kobe Bryant",
+        "born": "1991-10-04",
+    };
     let assertionData = {
         "@context": "https://json-ld.org/contexts/person.jsonld",
         "@id": `http://dbpedia.org/resource/Stevan_Nesovic-${Math.random()}`,
@@ -74,40 +80,41 @@ async function main() {
     try {
         divider();
 
-        let { UAL, assertionId } = await dkg.asset.create(assetData, publishOptions);
+        let createAssetResult = await dkg.asset.create(assetData, publishOptions);
         console.log('======================== ASSET CREATED');
-        console.log(UAL, 'UAL');
-        console.log(assertionId, 'assertionId');
+        console.log(createAssetResult);
 
         divider();
 
-        let getAssetResult = await dkg.asset.get(UAL, getOptions);
+        let getAssetResult = await dkg.asset.get(createAssetResult.UAL, getOptions);
         const assertion = getAssetResult.assertion;
         console.log('======================== ASSET RESOLVED');
-        console.log(assertion, 'GET ASSET');
+        console.log(getAssetResult);
 
         divider();
 
-        await dkg.asset.update(UAL, updateAssetData, publishOptions);
+        let updateAssetResult = await dkg.asset.update(createAssetResult.UAL, updateAssetData, publishOptions);
         console.log('======================== ASSET UPDATED');
+        console.log(updateAssetResult);
 
         divider();
 
-        let getAssetResult1 = await dkg.asset.get(UAL, getOptions);
-        const assertion1 = getAssetResult1.assertion;
+        let getAssetResultAfterUpdate = await dkg.asset.get(createAssetResult.UAL, getOptions);
+        const assertion1 = getAssetResultAfterUpdate.assertion;
         console.log('======================== ASSET AFTER UPDATE');
-        console.log(assertion1);
+        console.log(getAssetResultAfterUpdate);
 
         divider();
 
         const newOwner = "0x2ACa90078563133db78085F66e6B8Cf5531623Ad";
-        await dkg.asset.transfer(UAL, newOwner, transferAssetOptions);
+        let transferResult = await dkg.asset.transfer(createAssetResult.UAL, newOwner, transferAssetOptions);
         console.log(`======================== ASSET TRANSFERRED TO ${newOwner}`);
+        console.log(transferResult);
 
         divider();
 
         try {
-            await dkg.asset.update(UAL, updateAssetData, publishOptions);
+            await dkg.asset.update(createAssetResult.UAL, updateAssetData2, publishOptions);
         } catch (e) {
             console.error(e);
         }
