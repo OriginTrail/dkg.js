@@ -21,7 +21,7 @@ class AssetOperationsManager {
         const UAL = this.blockchainService.generateUAL(options, UAI);
         let operationId = await this.nodeApiService.publish(assertionId, assertion, UAL);
         let operationResult = await this.nodeApiService.getOperationResult(operationId, options);
-        return {UAL: UAL, assertionId: assertionId, status: operationResult.status};
+        return {UAL: UAL, assertionId: assertionId, operation: Utilities.getOperationStatusObject(operationResult, operationId)};
     }
 
     async get(UAL, options) {
@@ -46,7 +46,7 @@ class AssetOperationsManager {
         await this.blockchainService.updateAsset(requestData, options);
         let operationId = await this.nodeApiService.publish(assertionId, assertion, UAL);
         let operationResult = await this.nodeApiService.getOperationResult(operationId, options);
-        return {UAL: UAL, assertionId: assertionId, status: operationResult.status};
+        return {UAL: UAL, assertionId: assertionId, operation: Utilities.getOperationStatusObject(operationResult, operationId)};
     }
 
     async transfer(UAL, to, options) {
@@ -54,7 +54,9 @@ class AssetOperationsManager {
         let {
             UAI
         } = Utilities.resolveUAL(UAL);
-        return await this.blockchainService.transferAsset(UAL, UAI, to, options);
+        await this.blockchainService.transferAsset(UAL, UAI, to, options);
+        const owner = await this.blockchainService.getAssetOwner(UAI);
+        return {UAL: UAL, owner: owner,operation: Utilities.getOperationStatusObject({status: 'COMPLETED'}, null)};
     }
 
 }

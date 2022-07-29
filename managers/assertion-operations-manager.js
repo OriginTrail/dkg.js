@@ -1,5 +1,6 @@
 const AssertionTools = require('assertion-tools')
 const constants = require('../constants.js')
+const Utilities = require("../services/utilities.js");
 
 class AssertionOperationsManager {
     constructor(config, services) {
@@ -17,7 +18,7 @@ class AssertionOperationsManager {
         await this.blockchainService.createAssertion(requestData, options);
         let operationId = await this.nodeApiService.publish(assertionId, assertion);
         let operationResult = await this.nodeApiService.getOperationResult(operationId, options);
-        return {assertionId: assertionId, status: operationResult.status};
+        return {assertionId: assertionId, operation: Utilities.getOperationStatusObject(operationResult, operationId)};
     }
 
     async get(assertionId, options) {
@@ -26,7 +27,7 @@ class AssertionOperationsManager {
         let assertion = operationResult.data.assertion;
         const rootHash = AssertionTools.calculateRoot(assertion);
         if(rootHash === assertionId) {
-            return {assertion: assertion, status: operationResult.status};
+            return {assertion: assertion, assertionId: assertionId, operation: Utilities.getOperationStatusObject(operationResult, operationId)};
         }
         throw Error("Calculated root hashes don't match!");
     }
