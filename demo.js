@@ -2,6 +2,7 @@ const DkgClient = require('./index.js');
 
 const OT_NODE_HOSTNAME = 'http://localhost';
 const OT_NODE_PORT = '8901';
+const BLOCKCHAIN = process.argv[2];
 
 let options = {
     endpoint: OT_NODE_HOSTNAME,
@@ -9,11 +10,17 @@ let options = {
     communicationType: 'http',
     useSSL: false,
     loglevel: 'trace',
-    blockchain: 'ethereum',
+    blockchain: BLOCKCHAIN,
     blockchainConfig: {
-        ethereum: {
+        ganache: {
             "rpc": "http://localhost:7545",
             "hubContract": "0xF21dD87cFC5cF5D073398833AFe5EFC543b78a00",
+            "wallet": "0xd6879C0A03aDD8cFc43825A42a3F3CF44DB7D2b9",
+            "privateKey": "02b39cac1532bef9dba3e36ec32d3de1e9a88f1dda597d3ac6e2130aed9adc4e"
+        },
+        polygon: {
+            "rpc": "https://polygon-mumbai.infura.io/v3/cd1922142cd94f3ca09289f67899f902",
+            "hubContract": "0xdaa16AC171CfE8Df6F79C06E7EEAb2249E2C9Ec8",
             "wallet": "0xd6879C0A03aDD8cFc43825A42a3F3CF44DB7D2b9",
             "privateKey": "02b39cac1532bef9dba3e36ec32d3de1e9a88f1dda597d3ac6e2130aed9adc4e"
         }
@@ -51,7 +58,7 @@ async function main() {
         visibility: 'public',
         holdingTimeInYears: 1,
         tokenAmount: 10,
-        blockchain: "ethereum",
+        blockchain: BLOCKCHAIN,
         wallet: "0xd6879C0A03aDD8cFc43825A42a3F3CF44DB7D2b9",
         maxNumberOfRetries: 5
     };
@@ -59,21 +66,21 @@ async function main() {
         visibility: 'public',
         holdingTimeInYears: 1,
         tokenAmount: 10,
-        blockchain: "ethereum",
+        blockchain: BLOCKCHAIN,
         wallet: "0xd6879C0A03aDD8cFc43825A42a3F3CF44DB7D2b9",
         maxNumberOfRetries: 5
     };
     let getOptions = {
         validate: true,
         commitOffset: 0,
-        blockchain: "ethereum",
+        blockchain: BLOCKCHAIN,
         maxNumberOfRetries: 5
     }
     let getAssertionOptions = {
         operation: 'get'
     }
     let transferAssetOptions = {
-        blockchain: "ethereum",
+        blockchain: BLOCKCHAIN,
         wallet: "0xd6879C0A03aDD8cFc43825A42a3F3CF44DB7D2b9",
     }
 
@@ -129,6 +136,7 @@ async function main() {
 
     } catch (e) {
         console.error(e);
+        process.exit();
     }
 }
 

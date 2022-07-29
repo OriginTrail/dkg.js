@@ -26,9 +26,15 @@
 <body>
 <div id="app" class="container pt-5">
     <h1>DKG Client demo</h1>
+    <h3 class="mt-3">Current network: {{ selectedNetwork }}</h3>
     <div class="row">
         <div class="col-6">
             <div class="form">
+                <h3>Select network</h3>
+                <select class="form-select mb-4" aria-label="Default select example" v-model="selectedNetwork">
+                    <option value="ganache">Ganache</option>
+                    <option value="polygon">Polygon</option>
+                </select>
                 <h3>Asset data</h3>
                 <p>Context</p>
                 <el-input :disabled="disabled" class="mb-3" placeholder="Please input"
@@ -89,20 +95,7 @@
 <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
 <script src="./dist/dkg.min.js"></script>
 <script>
-    window.addEventListener('load', async function () {
 
-        const OT_NODE_HOSTNAME = 'http://localhost';
-        const OT_NODE_PORT = '8901';
-        const options = {
-            endpoint: OT_NODE_HOSTNAME,
-            port: OT_NODE_PORT,
-            communicationType: 'http',
-            useSSL: false,
-            loglevel: 'trace',
-            blockchain: 'ethereum'
-        };
-        window.DkgClient = new DKG(options);
-    });
 </script>
 <!-- import Vue before Element -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.1.9/vue.js"></script>
@@ -113,6 +106,7 @@
         el: '#app',
         data: function () {
             return {
+                selectedNetwork: 'ganache',
                 disabled: false,
                 resolveResult: [],
                 getUAL: '',
@@ -132,20 +126,38 @@
                     visibility: 'public',
                     holdingTimeInYears: 1,
                     tokenAmount: 10,
-                    blockchain: "ethereum",
-                    wallet: "0xd6879C0A03aDD8cFc43825A42a3F3CF44DB7D2b9",
                     maxNumberOfRetries: 5
                 },
                 getOptions: {
                     validate: true,
                     commitOffset: 0,
-                    blockchain: "ethereum",
                     maxNumberOfRetries: 5
                 },
                 visible: false
             }
         },
+        watch: {
+            selectedNetwork(value) {
+                this.initializeDKGClient(value);
+            }
+        },
+        mounted() {
+            this.initializeDKGClient(this.selectedNetwork);
+        },
         methods: {
+            initializeDKGClient(blockchain) {
+                const OT_NODE_HOSTNAME = 'http://localhost';
+                const OT_NODE_PORT = '8901';
+                const options = {
+                    endpoint: OT_NODE_HOSTNAME,
+                    port: OT_NODE_PORT,
+                    communicationType: 'http',
+                    useSSL: false,
+                    loglevel: 'trace',
+                    blockchain: blockchain
+                };
+                window.DkgClient = new DKG(options);
+            },
             async publish() {
                 this.disabled = true;
                 let loading = this.notification("Asset", "Creating new asset", "el-icon-loading", 0);

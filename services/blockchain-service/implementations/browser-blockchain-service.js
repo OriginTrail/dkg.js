@@ -113,8 +113,8 @@ class BrowserBlockchainService extends BlockchainServiceBase{
         try {
             return await contractInstance.methods[functionName](...args).call();
         } catch (error) {
-            console.log(error, 'err');
-            return false;
+            console.error(error, 'err');
+            return null;
             // await this.handleError(error, functionName);
         }
     }

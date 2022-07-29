@@ -142,6 +142,53 @@ class NodeBlockchainService extends BlockchainServiceBase {
   }
 
   async executeContractFunction(contractInstance, functionName, args) {
+    switch (this.blockchain.title) {
+      case "ganache":
+        return this.executeCFunctionGanache(contractInstance, functionName, args);
+      default:
+        return this.executeCFunctionDefault(contractInstance, functionName, args);
+    }
+  }
+
+  async callContractFunction(contractInstance, functionName, args) {
+    try {
+      return await contractInstance.methods[functionName](...args).call();
+    } catch (error) {
+      console.error(error, "err");
+      return null;
+      // await this.handleError(error, functionName);
+    }
+  }
+
+  async executeCFunctionGanache(contractInstance, functionName, args) {
+    try {
+      const gasLimit = await contractInstance.methods[functionName](...args).estimateGas({
+        from: this.blockchain.wallet,
+      });
+
+      const encodedABI = contractInstance.methods[functionName](...args).encodeABI();
+      const tx = {
+        from: this.blockchain.wallet,
+        to: contractInstance.options.address,
+        data: encodedABI,
+        gasPrice: this.web3.utils.toWei('100', 'Gwei'),
+        gas: gasLimit || this.web3.utils.toWei('900', 'Kwei'),
+      };
+
+      const createdTransaction = await this.web3.eth.accounts.signTransaction(
+          tx,
+          this.blockchain.privateKey,
+      );
+      return await this.web3.eth.sendSignedTransaction(
+          createdTransaction.rawTransaction,
+      );
+    } catch (error) {
+      throw Error(error);
+      // await this.handleError(error, functionName);
+    }
+  }
+
+  async executeCFunctionDefault(contractInstance, functionName, args) {
     try {
       const gasLimit = await contractInstance.methods[functionName](
         ...args
@@ -181,16 +228,6 @@ class NodeBlockchainService extends BlockchainServiceBase {
       });
     } catch (error) {
       throw Error(error);
-      // await this.handleError(error, functionName);
-    }
-  }
-
-  async callContractFunction(contractInstance, functionName, args) {
-    try {
-      return await contractInstance.methods[functionName](...args).call();
-    } catch (error) {
-      console.log(error, "err");
-      return false;
       // await this.handleError(error, functionName);
     }
   }

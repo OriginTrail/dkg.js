@@ -21,16 +21,20 @@ const PUBLISH_METHOD = {
 };
 
 const BLOCKCHAINS = {
-    "ethereum" : {
+    ganache : {
         "rpc": "http://localhost:7545",
         "hubContract": "0xF21dD87cFC5cF5D073398833AFe5EFC543b78a00"
+    },
+    polygon : {
+        "rpc": "https://polygon-mumbai.infura.io/v3/cd1922142cd94f3ca09289f67899f902",
+        "hubContract": "0xdaa16AC171CfE8Df6F79C06E7EEAb2249E2C9Ec8"
     }
 }
 
 const HOLDING_TIME_IN_YEARS = 2;
 const PUBLISH_TOKEN_AMOUNT = 15;
 
-const AVAILABLE_BLOCKCHAINS = ["ethereum", "polygon"];
+const AVAILABLE_BLOCKCHAINS = ["ganache", "ethereum", "polygon"];
 const VISIBILITY = {
     "public" : 1,
     "private" : 0
