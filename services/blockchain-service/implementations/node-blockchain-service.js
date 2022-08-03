@@ -1,4 +1,5 @@
 const Web3 = require("web3");
+const { setTimeout } = require("timers/promises");
 const Utilities = require("../../utilities.js");
 const constants = require("../../../constants.js");
 const BlockchainServiceBase = require("../blockchain-service-base.js");
@@ -141,23 +142,6 @@ class NodeBlockchainService extends BlockchainServiceBase {
     }
   }
 
-  async executeContractFunction(contractInstance, functionName, args) {
-    switch (this.blockchain.title) {
-      case "ganache":
-        return this.executeCFunctionGanache(
-          contractInstance,
-          functionName,
-          args
-        );
-      default:
-        return this.executeCFunctionDefault(
-          contractInstance,
-          functionName,
-          args
-        );
-    }
-  }
-
   async callContractFunction(contractInstance, functionName, args) {
     try {
       return await contractInstance.methods[functionName](...args).call();
@@ -168,7 +152,7 @@ class NodeBlockchainService extends BlockchainServiceBase {
     }
   }
 
-  async executeCFunctionGanache(contractInstance, functionName, args) {
+  async executeContractFunction(contractInstance, functionName, args) {
     try {
       const gasLimit = await contractInstance.methods[functionName](
         ...args
@@ -191,56 +175,12 @@ class NodeBlockchainService extends BlockchainServiceBase {
         tx,
         this.blockchain.privateKey
       );
-      return await this.web3.eth.sendSignedTransaction(
+      const transactionReceipt = await this.web3.eth.sendSignedTransaction(
         createdTransaction.rawTransaction
       );
-    } catch (error) {
-      throw Error(error);
-      // await this.handleError(error, functionName);
-    }
-  }
+      await setTimeout(10 * 1000);
 
-  async executeCFunctionDefault(contractInstance, functionName, args) {
-    try {
-      const gasLimit = await contractInstance.methods[functionName](
-        ...args
-      ).estimateGas({
-        from: this.blockchain.wallet,
-      });
-
-      const encodedABI = contractInstance.methods[functionName](
-        ...args
-      ).encodeABI();
-      const tx = {
-        from: this.blockchain.wallet,
-        to: contractInstance.options.address,
-        data: encodedABI,
-        gasPrice: this.web3.utils.toWei("100", "Gwei"),
-        gas: gasLimit || this.web3.utils.toWei("900", "Kwei"),
-      };
-
-      const createdTransaction = await this.web3.eth.accounts.signTransaction(
-        tx,
-        this.blockchain.privateKey
-      );
-      const blocks = new Set();
-
-      return new Promise((resolve, reject) => {
-        const tx = this.web3.eth.sendSignedTransaction(
-          createdTransaction.rawTransaction
-        );
-
-        tx.on("confirmation", (confNumber, receipt, latestBlockHash) => {
-          blocks.add(latestBlockHash);
-          if (
-            blocks.size === 4 ||
-            confNumber === this.web3.eth.transactionConfirmationBlocks
-          ) {
-            tx.off("confirmation");
-            resolve(receipt);
-          }
-        });
-      });
+      return transactionReceipt;
     } catch (error) {
       throw Error(error);
       // await this.handleError(error, functionName);
