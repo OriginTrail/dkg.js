@@ -1,5 +1,4 @@
 const Web3 = require("web3");
-const { setTimeout } = require("timers/promises");
 const Utilities = require("../../utilities.js");
 const constants = require("../../../constants.js");
 const BlockchainServiceBase = require("../blockchain-service-base.js");
@@ -178,7 +177,7 @@ class NodeBlockchainService extends BlockchainServiceBase {
       const transactionReceipt = await this.web3.eth.sendSignedTransaction(
         createdTransaction.rawTransaction
       );
-      await setTimeout(10 * 1000);
+      await new Promise(r => setTimeout(r, 10000));
 
       return transactionReceipt;
     } catch (error) {
