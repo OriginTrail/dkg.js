@@ -1,6 +1,7 @@
 const axios = require('axios');
 const Utilities = require('../../utilities.js')
-const constants = require('../../../constants.js')
+const {OPERATION_STATUSES, PUBLISH_TYPES} = require('../../../constants.js');
+const utilities = require('../../utilities.js');
 
 class HttpService {
     maxNumberOfRetries = 5;
@@ -10,14 +11,19 @@ class HttpService {
         this.config = config;
     }
 
-    publish(assertionId, assertion, UAL) {
-        let requestBody = this.preparePublishRequest(assertionId, assertion, UAL);
+    publish(publishType, assertionId, assertion, UAL) {
+        let requestBody = this.preparePublishRequest(
+          publishType,
+          assertionId,
+          assertion,
+          UAL
+        );
         return axios({
             method: "post",
             url: `${this.config.endpoint}:${this.config.port}/publish`,
             data: requestBody,
         }).then(response => {
-            return response.data.operation_id;
+            return response.data.operationId;
         }).catch(e => {
             throw Error("Unable to publish.")
         });
@@ -30,7 +36,7 @@ class HttpService {
             url: `${this.config.endpoint}:${this.config.port}/get`,
             data: requestBody,
         }).then(response => {
-            return response.data.operation_id;
+            return response.data.operationId;
         }).catch(e => {
             throw Error("Unable to get assertion.")
         });
@@ -42,7 +48,7 @@ class HttpService {
             throw Error("Operation ID is missing, unable to fetch the operation results.");
         }
         let response = {
-            status: constants.OPERATION_STATUSES.pending,
+            status: OPERATION_STATUSES.pending,
         };
         let retries = 0;
         let maxNumberOfRetries = options.maxNumberOfRetries
@@ -69,8 +75,8 @@ class HttpService {
                 // this.logger.error(e);
                 throw e;
             }
-        } while (response.data.status !== constants.OPERATION_STATUSES.completed && response.data.status !== constants.OPERATION_STATUSES.failed);
-        if (response.data.status === constants.OPERATION_STATUSES.failed) {
+        } while (response.data.status !== OPERATION_STATUSES.completed && response.data.status !== OPERATION_STATUSES.failed);
+        if (response.data.status === OPERATION_STATUSES.failed) {
             throw Error(
                 `${Utilities.capitalizeFirstLetter(options.operation)} operation failed. Reason: ${response.data.data.errorMessage}`
             );
@@ -78,16 +84,26 @@ class HttpService {
         return response.data;
     }
 
-    preparePublishRequest(assertionId, assertion, UAL) {
+    preparePublishRequest(publishType, assertionId, assertion, UAL) {
         let publishRequest = {
-            "assertion_id": assertionId,
-            "assertion": assertion
+          publishType,
+          assertionId,
+          assertion,
         };
-        if (UAL) {
-            publishRequest.options = {};
-            publishRequest.options.ual = UAL;
+        switch (publishType) {
+          case PUBLISH_TYPES.ASSET:
+            const { blockchain, contract, UAI } = utilities.resolveUAL(UAL);
+            publishRequest = {
+              ...publishRequest,
+              blockchain,
+              contract,
+              tokenId: parseInt(UAI),
+            };
+            break;
+          default:
+            throw Error("Publish type not yet implemented");
         }
-        return publishRequest;
+        return publishRequest
     }
 
     prepareGetAssertionRequest(assertionId) {

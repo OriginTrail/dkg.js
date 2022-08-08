@@ -1,7 +1,7 @@
 const AssertionTools = require('assertion-tools')
 const Utilities = require('../services/utilities.js')
 const AssertionOperationsManager = require('./assertion-operations-manager.js')
-const constants = require('../constants.js')
+const {OPERATIONS, PUBLISH_TYPES} = require('../constants.js')
 
 class AssetOperationsManager {
     constructor(config, services) {
@@ -13,20 +13,20 @@ class AssetOperationsManager {
 
     async create(content, options) {
         this.validationService.validatePublishRequest(content, options);
-        options.operation = constants.OPERATIONS.publish;
+        options.operation = OPERATIONS.publish;
         const assertion = await AssertionTools.formatAssertion(content);
         const assertionId = AssertionTools.calculateRoot(assertion);
         let requestData = this.blockchainService.generateCreateAssetRequest(assertion, assertionId, options);
         const UAI = await this.blockchainService.createAsset(requestData, options);
         const UAL = this.blockchainService.generateUAL(options, UAI);
-        let operationId = await this.nodeApiService.publish(assertionId, assertion, UAL);
+        let operationId = await this.nodeApiService.publish(PUBLISH_TYPES.ASSET, assertionId, assertion, UAL);
         let operationResult = await this.nodeApiService.getOperationResult(operationId, options);
         return {UAL: UAL, assertionId: assertionId, operation: Utilities.getOperationStatusObject(operationResult, operationId)};
     }
 
     async get(UAL, options) {
         this.validationService.validateGetRequest(UAL, options);
-        options.operation = constants.OPERATIONS.get;
+        options.operation = OPERATIONS.get;
         let {
             UAI
         } = Utilities.resolveUAL(UAL);
@@ -36,7 +36,7 @@ class AssetOperationsManager {
 
     async update(UAL, content, options) {
         this.validationService.validatePublishRequest(content, options);
-        options.operation = constants.OPERATIONS.publish;
+        options.operation = OPERATIONS.publish;
         const assertion = await AssertionTools.formatAssertion(content);
         const assertionId = AssertionTools.calculateRoot(assertion);
         let {
@@ -44,7 +44,7 @@ class AssetOperationsManager {
         } = Utilities.resolveUAL(UAL);
         let requestData = this.blockchainService.generateUpdateAssetRequest(UAI, assertion, assertionId, options);
         await this.blockchainService.updateAsset(requestData, options);
-        let operationId = await this.nodeApiService.publish(assertionId, assertion, UAL);
+        let operationId = await this.nodeApiService.publish(PUBLISH_TYPES.ASSET, assertionId, assertion, UAL);
         let operationResult = await this.nodeApiService.getOperationResult(operationId, options);
         return {UAL: UAL, assertionId: assertionId, operation: Utilities.getOperationStatusObject(operationResult, operationId)};
     }
