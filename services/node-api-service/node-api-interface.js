@@ -4,5 +4,5 @@ module.exports = {
     "sockets": SocketService,
     "https": HttpService,
     "http": HttpService,
-    "default": SocketService
+    "default": HttpService
 }
