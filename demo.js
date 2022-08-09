@@ -77,6 +77,12 @@ async function main() {
   try {
     divider();
 
+    const nodeInfo = await dkg.node.info();
+    console.log("======================== NODE INFO RECEIVED");
+    console.log(nodeInfo);
+
+    divider();
+
     let createAssetResult = await dkg.asset.create(assetData, publishOptions);
     console.log("======================== ASSET CREATED");
     console.log(createAssetResult);
