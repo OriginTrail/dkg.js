@@ -92,7 +92,7 @@ async function main() {
     let getAssetResult = await dkg.asset.get(createAssetResult.UAL, getOptions);
     const assertion = getAssetResult.assertion;
     console.log("======================== ASSET RESOLVED");
-    console.log(getAssetResult);
+    console.log(JSON.stringify(getAssetResult, null, 2));
 
     divider();
 
