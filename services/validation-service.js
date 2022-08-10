@@ -12,9 +12,6 @@ class ValidationService {
 
   validateGetRequest(UAL, options) {
     if (!UAL) throw Error("UAL is missing.");
-    if (options?.validate) {
-      this.validateBlockchain(options.blockchain, OPERATIONS.get);
-    }
     if(options?.outputFormat) {
       this.validateOutputFormat(options.outputFormat)
     }
