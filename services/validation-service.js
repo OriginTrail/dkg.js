@@ -12,7 +12,7 @@ class ValidationService {
 
   validateGetRequest(UAL, options) {
     if (!UAL) throw Error("UAL is missing.");
-    this.validateValid(options?.validate);
+    this.validateValidate(options?.validate);
     this.validateOutputFormat(options?.outputFormat);
   }
 
