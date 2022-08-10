@@ -94,13 +94,6 @@ class HttpService {
       response.data.status !== OPERATION_STATUSES.completed &&
       response.data.status !== OPERATION_STATUSES.failed
     );
-    if (response.data.status === OPERATION_STATUSES.failed) {
-      throw Error(
-        `${Utilities.capitalizeFirstLetter(
-          options.operation
-        )} operation failed. Reason: ${response.data.data.errorMessage}`
-      );
-    }
     return response.data;
   }
 
