@@ -53,12 +53,13 @@ class AssetOperationsManager {
     options.operation = OPERATIONS.get;
     let { blockchain, contract, UAI } = Utilities.resolveUAL(UAL);
 
-    if(!options.blockchain) {
-      options.blockchain = BLOCKCHAINS[blockchain];
-      options.blockchain.hubContractAddress = contract;
-    }
+    options.blockchain = BLOCKCHAINS[blockchain];
+    options.blockchain.hubContractAddress = contract;
 
-    const assertionId = await blockchainService.getAssetCommitHash(UAI, options);
+    const assertionId = await blockchainService.getAssetCommitHash(
+      UAI,
+      options
+    );
 
     return assertion.get(assertionId, options);
   }
