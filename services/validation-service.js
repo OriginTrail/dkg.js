@@ -1,4 +1,4 @@
-const { MAX_FILE_SIZE, BLOCKCHAINS, OPERATIONS } = require("../constants.js");
+const { MAX_FILE_SIZE, BLOCKCHAINS, OPERATIONS, GET_OUTPUT_FORMATS } = require("../constants.js");
 const utilities = require("./utilities.js");
 const publishAllowedVisibilityParams = ["public", "private"];
 
@@ -14,6 +14,9 @@ class ValidationService {
     if (!UAL) throw Error("UAL is missing.");
     if (options?.validate) {
       this.validateBlockchain(options.blockchain, OPERATIONS.get);
+    }
+    if(options?.outputFormat) {
+      this.validateOutputFormat(options.outputFormat)
     }
   }
 
@@ -43,6 +46,15 @@ class ValidationService {
       throw Error(
         `Please set visibility to one of these values : ${publishAllowedVisibilityParams}`
       );
+  }
+
+  validateOutputFormat(outputFormat) {
+    if (
+      outputFormat &&
+      GET_OUTPUT_FORMATS.JSON_LD !== outputFormat &&
+      GET_OUTPUT_FORMATS.N_QUADS !== outputFormat
+    )
+      throw Error("Unknown output format");
   }
 
   validateBlockchain(blockchain, operation) {

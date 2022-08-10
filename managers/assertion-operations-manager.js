@@ -1,6 +1,10 @@
 const AssertionTools = require("assertion-tools");
 const jsonld = require("jsonld");
-const { OPERATIONS, PUBLISH_TYPES } = require("../constants.js");
+const {
+  OPERATIONS,
+  PUBLISH_TYPES,
+  GET_OUTPUT_FORMATS,
+} = require("../constants.js");
 const Utilities = require("../services/utilities.js");
 
 let nodeApiService;
@@ -43,7 +47,7 @@ class AssertionOperationsManager {
     };
   }
 
-  async get(assertionId, options) {
+  async get(assertionId, options = {}) {
     let operationId = await nodeApiService.get(assertionId);
     let operationResult = await nodeApiService.getOperationResult(
       operationId,
@@ -63,7 +67,7 @@ class AssertionOperationsManager {
 
       if (
         !options.outputFormat ||
-        options.outputFormat.toLowerCase() === "json-ld"
+        options.outputFormat.toLowerCase() === GET_OUTPUT_FORMATS.JSON_LD
       ) {
         result.assertion = await jsonld.fromRDF(result.assertion.join("\n"), {
           algorithm: "URDNA2015",

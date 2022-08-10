@@ -48,7 +48,7 @@ class AssetOperationsManager {
     };
   }
 
-  async get(UAL, options) {
+  async get(UAL, options = {}) {
     validationService.validateGetRequest(UAL, options);
     options.operation = OPERATIONS.get;
     let { blockchain, contract, UAI } = Utilities.resolveUAL(UAL);

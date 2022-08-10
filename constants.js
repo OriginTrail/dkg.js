@@ -56,3 +56,8 @@ module.exports.OPERATION_STATUSES = {
   completed: "COMPLETED",
   failed: "FAILED",
 };
+
+module.exports.GET_OUTPUT_FORMATS = {
+  N_QUADS: "n-quads",
+  JSON_LD: "json-ld",
+};
