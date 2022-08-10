@@ -38,7 +38,6 @@ module.exports.BLOCKCHAINS = {
 module.exports.HOLDING_TIME_IN_YEARS = 2;
 module.exports.PUBLISH_TOKEN_AMOUNT = 15;
 
-module.exports.AVAILABLE_BLOCKCHAINS = ["ganache", "polygon", "otp"];
 module.exports.VISIBILITY = {
   public: 1,
   private: 0,
@@ -56,4 +55,9 @@ module.exports.OPERATION_STATUSES = {
   pending: "PENDING",
   completed: "COMPLETED",
   failed: "FAILED",
+};
+
+module.exports.GET_OUTPUT_FORMATS = {
+  N_QUADS: "n-quads",
+  JSON_LD: "json-ld",
 };

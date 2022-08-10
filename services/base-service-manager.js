@@ -1,9 +1,9 @@
 // interfaces
-const NodeApiInterface = require("./services/node-api-service/node-api-interface.js");
-const BlockchainInterface = require("./services/blockchain-service/blockchain-interface.js");
+const NodeApiInterface = require("./node-api-service/node-api-interface.js");
+const BlockchainInterface = require("./blockchain-service/blockchain-interface.js");
 // services
-const ValidationService = require("./services/validation-service.js");
-const Utilities = require("./services/utilities.js");
+const ValidationService = require("./validation-service.js");
+const Utilities = require("./utilities.js");
 
 class BaseServiceManager {
   constructor(config) {

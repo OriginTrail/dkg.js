@@ -1,6 +1,10 @@
 const AssertionTools = require("assertion-tools");
 const jsonld = require("jsonld");
-const { OPERATIONS, PUBLISH_TYPES } = require("../constants.js");
+const {
+  OPERATIONS,
+  PUBLISH_TYPES,
+  GET_OUTPUT_FORMATS,
+} = require("../constants.js");
 const Utilities = require("../services/utilities.js");
 
 let nodeApiService;
@@ -43,39 +47,39 @@ class AssertionOperationsManager {
     };
   }
 
-  async get(assertionId, options) {
+  async get(assertionId, options = {}) {
     let operationId = await nodeApiService.get(assertionId);
     let operationResult = await nodeApiService.getOperationResult(
       operationId,
       options
     );
-    let assertion = operationResult.data.assertion;
-    const rootHash = AssertionTools.calculateRoot(assertion);
-    if (rootHash === assertionId) {
-      const result = {
-        assertion: assertion,
-        assertionId: assertionId,
-        operation: Utilities.getOperationStatusObject(
-          operationResult,
-          operationId
-        ),
-      };
-
-      if (
-        !options.outputFormat ||
-        options.outputFormat.toLowerCase() === "json-ld"
-      ) {
-        result.assertion = await jsonld.fromRDF(result.assertion.join("\n"), {
-          algorithm: "URDNA2015",
-          format: "application/n-quads",
-        });
-        result.assertion = await jsonld.compact(result.assertion, {
-          "@context": "http://schema.org/",
-        });
-      }
-      return result;
+    const assertion = operationResult.data.assertion;
+    if (options.validate === false) {
+      const rootHash = AssertionTools.calculateRoot(assertion);
+      if (rootHash !== assertionId)
+        throw Error("Calculated root hashes don't match!");
     }
-    throw Error("Calculated root hashes don't match!");
+
+    const result = {
+      assertion: assertion,
+      assertionId: assertionId,
+      operation: Utilities.getOperationStatusObject(
+        operationResult,
+        operationId
+      ),
+    };
+
+    if (options.outputFormat === GET_OUTPUT_FORMATS.N_QUADS) return result;
+
+    result.assertion = await jsonld.fromRDF(result.assertion.join("\n"), {
+      algorithm: "URDNA2015",
+      format: "application/n-quads",
+    });
+    result.assertion = await jsonld.compact(result.assertion, {
+      "@context": "http://schema.org/",
+    });
+
+    return result;
   }
 }
 
