@@ -12,7 +12,7 @@ class ValidationService {
 
   validateGetRequest(UAL, options) {
     if (!UAL) throw Error("UAL is missing.");
-    this.validateValid(options?.valid);
+    this.validateValid(options?.validate);
     this.validateOutputFormat(options?.outputFormat);
   }
 
@@ -44,8 +44,8 @@ class ValidationService {
       );
   }
 
-  validateValid(valid) {
-    if(valid && typeof valid !== "boolean") throw Error("Valid option must be boolean")
+  validateValidate(validate) {
+    if(validate && typeof validate !== "boolean") throw Error("Valid option must be boolean")
   }
 
   validateOutputFormat(outputFormat) {
