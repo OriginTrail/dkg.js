@@ -38,7 +38,6 @@ module.exports.BLOCKCHAINS = {
 module.exports.HOLDING_TIME_IN_YEARS = 2;
 module.exports.PUBLISH_TOKEN_AMOUNT = 15;
 
-module.exports.AVAILABLE_BLOCKCHAINS = ["ganache", "polygon", "otp"];
 module.exports.VISIBILITY = {
   public: 1,
   private: 0,

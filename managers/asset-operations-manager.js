@@ -1,7 +1,7 @@
 const AssertionTools = require("assertion-tools");
 const Utilities = require("../services/utilities.js");
 const AssertionOperationsManager = require("./assertion-operations-manager.js");
-const { OPERATIONS, PUBLISH_TYPES } = require("../constants.js");
+const { OPERATIONS, PUBLISH_TYPES, BLOCKCHAINS } = require("../constants.js");
 
 let nodeApiService;
 let validationService;
@@ -52,10 +52,9 @@ class AssetOperationsManager {
     validationService.validateGetRequest(UAL, options);
     options.operation = OPERATIONS.get;
     let { UAI } = Utilities.resolveUAL(UAL);
-    const assertionId = await blockchainService.getAssetCommitHash(
-      UAI,
-      options
-    );
+
+    const assertionId = await blockchainService.getAssetCommitHash(UAI, options);
+
     return assertion.get(assertionId, options);
   }
 
@@ -93,7 +92,7 @@ class AssetOperationsManager {
   }
 
   async transfer(UAL, to, options) {
-    validationService.validateAssetTransferRequest(UAL, to);
+    validationService.validateAssetTransferRequest(UAL, to, options);
     let { UAI } = Utilities.resolveUAL(UAL);
     await blockchainService.transferAsset(UAL, UAI, to, options);
     const owner = await blockchainService.getAssetOwner(UAI);

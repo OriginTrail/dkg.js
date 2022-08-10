@@ -13,9 +13,9 @@ class DkgClient extends GraphOperationsManager {
     const baseServiceManager = new BaseServiceManager(config);
     const services = baseServiceManager.getServices();
 
-    this.assertion = new AssertionOperationsManager(config, services);
+    // this.assertion = new AssertionOperationsManager(config, services);
     this.asset = new AssetOperationsManager(config, services);
-    this.index = new IndexOperationsManager(config, services);
+    // this.index = new IndexOperationsManager(config, services);
     this.node = new NodeOperationsManager(config, services);
   }
 }
