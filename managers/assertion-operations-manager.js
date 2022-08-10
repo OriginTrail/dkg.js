@@ -53,33 +53,33 @@ class AssertionOperationsManager {
       operationId,
       options
     );
-    let assertion = operationResult.data.assertion;
-    const rootHash = AssertionTools.calculateRoot(assertion);
-    if (rootHash === assertionId) {
-      const result = {
-        assertion: assertion,
-        assertionId: assertionId,
-        operation: Utilities.getOperationStatusObject(
-          operationResult,
-          operationId
-        ),
-      };
-
-      if (
-        !options.outputFormat ||
-        options.outputFormat.toLowerCase() === GET_OUTPUT_FORMATS.JSON_LD
-      ) {
-        result.assertion = await jsonld.fromRDF(result.assertion.join("\n"), {
-          algorithm: "URDNA2015",
-          format: "application/n-quads",
-        });
-        result.assertion = await jsonld.compact(result.assertion, {
-          "@context": "http://schema.org/",
-        });
-      }
-      return result;
+    const assertion = operationResult.data.assertion;
+    if (options.validate === false) {
+      const rootHash = AssertionTools.calculateRoot(assertion);
+      if (rootHash !== assertionId)
+        throw Error("Calculated root hashes don't match!");
     }
-    throw Error("Calculated root hashes don't match!");
+
+    const result = {
+      assertion: assertion,
+      assertionId: assertionId,
+      operation: Utilities.getOperationStatusObject(
+        operationResult,
+        operationId
+      ),
+    };
+
+    if (options.outputFormat === GET_OUTPUT_FORMATS.N_QUADS) return result;
+
+    result.assertion = await jsonld.fromRDF(result.assertion.join("\n"), {
+      algorithm: "URDNA2015",
+      format: "application/n-quads",
+    });
+    result.assertion = await jsonld.compact(result.assertion, {
+      "@context": "http://schema.org/",
+    });
+
+    return result;
   }
 }
 

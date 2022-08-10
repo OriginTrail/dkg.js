@@ -12,9 +12,8 @@ class ValidationService {
 
   validateGetRequest(UAL, options) {
     if (!UAL) throw Error("UAL is missing.");
-    if(options?.outputFormat) {
-      this.validateOutputFormat(options.outputFormat)
-    }
+    this.validateValid(options?.valid);
+    this.validateOutputFormat(options?.outputFormat);
   }
 
   validateAssetTransferRequest(UAL, newOwner, options) {
@@ -43,6 +42,10 @@ class ValidationService {
       throw Error(
         `Please set visibility to one of these values : ${publishAllowedVisibilityParams}`
       );
+  }
+
+  validateValid(valid) {
+    if(valid && typeof valid !== "boolean") throw Error("Valid option must be boolean")
   }
 
   validateOutputFormat(outputFormat) {
