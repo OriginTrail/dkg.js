@@ -51,7 +51,12 @@ class AssetOperationsManager {
   async get(UAL, options) {
     validationService.validateGetRequest(UAL, options);
     options.operation = OPERATIONS.get;
-    let { UAI } = Utilities.resolveUAL(UAL);
+    let { blockchain, contract, UAI } = Utilities.resolveUAL(UAL);
+
+    if(!options.blockchain) {
+      options.blockchain = BLOCKCHAINS[blockchain];
+      options.blockchain.hubContractAddress = contract;
+    }
 
     const assertionId = await blockchainService.getAssetCommitHash(UAI, options);
 
