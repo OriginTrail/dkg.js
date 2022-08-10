@@ -33,14 +33,12 @@ async function main() {
     "@id": `http://dbpedia.org/resource/Michael_Jordan${Math.random()}`,
     name: "Michael Jordan",
     born: "1991-10-04",
-    blockchain,
   };
   let updateAssetData2 = {
     "@context": "https://json-ld.org/contexts/person.jsonld",
     "@id": `http://dbpedia.org/resource/Kobe_Bryant${Math.random()}`,
     name: "Kobe Bryant",
     born: "1991-10-04",
-    blockchain,
   };
   let publishOptions = {
     visibility: "public",
