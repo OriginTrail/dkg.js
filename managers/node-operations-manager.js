@@ -1,10 +1,12 @@
+let nodeApiService;
+
 class NodeOperationsManager {
   constructor(config, services) {
-    this.nodeApiService = services.nodeApiService;
+    nodeApiService = services.nodeApiService;
   }
 
   async info() {
-    const response = await this.nodeApiService.info();
+    const response = await nodeApiService.info();
 
     return response.data;
   }

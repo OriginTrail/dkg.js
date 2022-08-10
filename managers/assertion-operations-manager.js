@@ -3,30 +3,34 @@ const jsonld = require("jsonld");
 const { OPERATIONS, PUBLISH_TYPES } = require("../constants.js");
 const Utilities = require("../services/utilities.js");
 
+let nodeApiService;
+let validationService;
+let blockchainService;
+
 class AssertionOperationsManager {
   constructor(config, services) {
-    this.nodeApiService = services.nodeApiService;
-    this.validationService = services.validationService;
-    this.blockchainService = services.blockchainService;
+    nodeApiService = services.nodeApiService;
+    validationService = services.validationService;
+    blockchainService = services.blockchainService;
   }
 
   async create(content, options) {
-    this.validationService.validatePublishRequest(content, options);
+    validationService.validatePublishRequest(content, options);
     options.operation = OPERATIONS.publish;
     const assertion = await AssertionTools.formatAssertion(content);
     const assertionId = AssertionTools.calculateRoot(assertion);
-    let requestData = this.blockchainService.generateCreateAssetRequest(
+    let requestData = blockchainService.generateCreateAssetRequest(
       assertion,
       assertionId,
       options
     );
     await this.blockchainService.createAssertion(requestData, options);
-    let operationId = await this.nodeApiService.publish(
+    let operationId = await nodeApiService.publish(
       PUBLISH_TYPES.ASSERTION,
       assertionId,
       assertion
     );
-    let operationResult = await this.nodeApiService.getOperationResult(
+    let operationResult = await nodeApiService.getOperationResult(
       operationId,
       options
     );
@@ -40,8 +44,8 @@ class AssertionOperationsManager {
   }
 
   async get(assertionId, options) {
-    let operationId = await this.nodeApiService.get(assertionId);
-    let operationResult = await this.nodeApiService.getOperationResult(
+    let operationId = await nodeApiService.get(assertionId);
+    let operationResult = await nodeApiService.getOperationResult(
       operationId,
       options
     );
