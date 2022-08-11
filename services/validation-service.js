@@ -85,5 +85,9 @@ class ValidationService {
     if (!keywords.every((i) => typeof i === "string" && i !== ""))
       throw Error("all keywords must be non empty strings");
   }
+
+  validateGetOwnerRequest(UAL) {
+    if (!UAL) throw Error("UAL is missing.");
+  }
 }
 module.exports = ValidationService;

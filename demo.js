@@ -11,6 +11,12 @@ const blockchain = {
   privateKey: PRIVATE_KEY,
 };
 
+// const blockchain = {
+//   name: "ganache",
+//   publicKey: PUBLIC_KEY,
+//   privateKey: PRIVATE_KEY,
+// };
+
 let options = {
   endpoint: OT_NODE_HOSTNAME,
   port: OT_NODE_PORT,
@@ -67,6 +73,13 @@ async function main() {
     let createAssetResult = await dkg.asset.create(assetData, publishOptions);
     console.log("======================== ASSET CREATED");
     console.log(createAssetResult);
+
+    divider();
+
+    let ownerResult = await dkg.asset.getOwner(createAssetResult.UAL);
+    console.log("======================== GET ASSET OWNER");
+    console.log(ownerResult);
+
 
     divider();
 
