@@ -111,5 +111,19 @@ class AssetOperationsManager {
       ),
     };
   }
+
+  async getOwner(UAL) {
+    validationService.validateGetOwnerRequest(UAL);
+    let { UAI } = Utilities.resolveUAL(UAL);
+    const owner = await blockchainService.getAssetOwner(UAI);
+    return {
+      UAL: UAL,
+      owner: owner,
+      operation: Utilities.getOperationStatusObject(
+          { status: "COMPLETED" },
+          null
+      ),
+    };
+  }
 }
 module.exports = AssetOperationsManager;
