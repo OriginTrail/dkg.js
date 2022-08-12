@@ -1,7 +1,7 @@
 const Web3 = require("web3");
 const { BLOCKCHAINS } = require("../../../constants.js");
 const BlockchainServiceBase = require("../blockchain-service-base.js");
-const AssetRegistryABI = require("../contracts/AssetRegistryABI.json");
+const AssetRegistryABI = require("dkg-evm-module/build/contracts/AssetRegistryABI.json");
 
 const events = {};
 AssetRegistryABI.filter((obj) => obj.type === "event").forEach((event) => {

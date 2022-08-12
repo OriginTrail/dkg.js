@@ -1,10 +1,10 @@
 const Utilities = require("../utilities");
 const constants = require("../../constants");
-const AssetRegistryABI = require("./contracts/AssetRegistryABI.json");
-const AssertionRegistryABI = require("./contracts/AssertionRegistryABI.json");
-const UAIRegistryABI = require("./contracts/UAIRegistryABI.json");
-const HubABI = require("./contracts/HubABI.json");
-const ERC20TokenABI = require("./contracts/ERC20TokenABI.json");
+const AssetRegistryABI = require("dkg-evm-module/build/contracts/AssetRegistryABI.json");
+const AssertionRegistryABI = require("dkg-evm-module/build/contracts/AssertionRegistryABI.json");
+const UAIRegistryABI = require("dkg-evm-module/build/contracts/UAIRegistryABI.json");
+const HubABI = require("dkg-evm-module/build/contracts/HubABI.json");
+const ERC20TokenABI = require("dkg-evm-module/build/contracts/ERC20TokenABI.json");
 
 class BlockchainServiceBase {
   constructor() {}
