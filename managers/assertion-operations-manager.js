@@ -75,9 +75,6 @@ class AssertionOperationsManager {
       algorithm: "URDNA2015",
       format: "application/n-quads",
     });
-    result.assertion = await jsonld.compact(result.assertion, {
-      "@context": "http://schema.org/",
-    });
 
     return result;
   }
