@@ -39,7 +39,7 @@ module.exports = {
     getOperationStatusObject(operationResult, operationId) {
         return {
             operationId: operationId,
-            status: operationResult.status
+            ...operationResult
         }
     }
 }
