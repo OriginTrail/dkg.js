@@ -24,7 +24,7 @@ class NodeBlockchainService extends BlockchainServiceBase {
   }
 
   initializeWeb3(blockchainRpc) {
-    if (blockchainRpc.startsWith("wss")) {
+    if (blockchainRpc.startsWith("ws")) {
       const provider = new Web3.providers.WebsocketProvider(
         blockchainRpc,
         WEBSOCKET_PROVIDER_OPTIONS
