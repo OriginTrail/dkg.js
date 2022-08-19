@@ -71,7 +71,7 @@ class AssertionOperationsManager {
 
     if (options.outputFormat === GET_OUTPUT_FORMATS.N_QUADS) return result;
 
-    if(!result?.assertion) {
+    if(result?.assertion) {
       result.assertion = await jsonld.fromRDF(result.assertion.join("\n"), {
         algorithm: "URDNA2015",
         format: "application/n-quads",
