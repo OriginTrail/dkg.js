@@ -29,7 +29,7 @@ class NodeBlockchainService extends BlockchainServiceBase {
         blockchainRpc,
         WEBSOCKET_PROVIDER_OPTIONS
       );
-      return new Web3(blockchainRpc, provider);
+      return new Web3(provider);
     } else {
       return new Web3(blockchainRpc);
     }
