@@ -36,12 +36,17 @@ class BrowserBlockchainService extends BlockchainServiceBase {
     }
   }
 
-  async executeContractFunction(contractInstance, functionName, args) {
+  async executeContractFunction(
+    contractInstance,
+    functionName,
+    args,
+    blockchain
+  ) {
     const tx = await this.prepareTransaction(
       contractInstance,
       functionName,
       args,
-      { publicKey: await this.getAccount() }
+      { name: blockchain.name, publicKey: await this.getAccount() }
     );
 
     const result = await contractInstance.methods[functionName](...args).send(
@@ -73,7 +78,8 @@ class BrowserBlockchainService extends BlockchainServiceBase {
     return await this.executeContractFunction(
       this.UAIRegistryContract,
       "transfer",
-      [await this.getAccount(), to, UAI]
+      [await this.getAccount(), to, UAI],
+      blockchain
     );
   }
 }

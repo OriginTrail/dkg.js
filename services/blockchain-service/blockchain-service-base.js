@@ -28,11 +28,11 @@ class BlockchainServiceBase {
     return contractInstance.methods[functionName](...args).call();
   }
 
-  async prepareTransaction(contractInstance, functionName, args, options) {
+  async prepareTransaction(contractInstance, functionName, args, blockchain) {
     const gasLimit = await contractInstance.methods[functionName](
       ...args
     ).estimateGas({
-      from: options.publicKey,
+      from: blockchain.publicKey,
     });
 
     const encodedABI = await contractInstance.methods[functionName](
@@ -40,10 +40,13 @@ class BlockchainServiceBase {
     ).encodeABI();
 
     return {
-      from: options.publicKey,
+      from: blockchain.publicKey,
       to: contractInstance.options.address,
       data: encodedABI,
-      gasPrice: this.web3.utils.toWei("100", "Gwei"),
+      gasPrice:
+        blockchain.name === "otp"
+          ? this.web3.eth.getGasPrice()
+          : this.web3.utils.toWei("100", "Gwei"),
       gas: gasLimit || this.web3.utils.toWei("900", "Kwei"),
     };
   }

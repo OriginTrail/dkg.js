@@ -39,19 +39,19 @@ class NodeBlockchainService extends BlockchainServiceBase {
     contractInstance,
     functionName,
     args,
-    blockchainKeys
+    blockchain
   ) {
     try {
       const tx = await this.prepareTransaction(
         contractInstance,
         functionName,
         args,
-        blockchainKeys
+        blockchain
       );
 
       const createdTransaction = await this.web3.eth.accounts.signTransaction(
         tx,
-        blockchainKeys.privateKey
+        blockchain.privateKey
       );
       const transactionReceipt = await this.web3.eth.sendSignedTransaction(
         createdTransaction.rawTransaction
