@@ -1,12 +1,22 @@
-const NativeClient = require('./client/native-client')
-const AssetsClient = require('./client/assets-client')
+// managers
+const AssetOperationsManager = require("./managers/asset-operations-manager.js");
+const AssertionOperationsManager = require("./managers/assertion-operations-manager.js");
+const IndexOperationsManager = require("./managers/index-operations-manager.js");
+const GraphOperationsManager = require("./managers/graph-operations-manager.js");
+const NodeOperationsManager = require("./managers/node-operations-manager.js");
 
-class DkgClient extends NativeClient {
-  constructor(props) {
-    super(props);
+const BaseServiceManager = require("./services/base-service-manager.js");
 
-    this.assets = new AssetsClient(props)
+class DkgClient extends GraphOperationsManager {
+  constructor(config) {
+    super(config);
+    const baseServiceManager = new BaseServiceManager(config);
+    const services = baseServiceManager.getServices();
+
+    // this.assertion = new AssertionOperationsManager(config, services);
+    this.asset = new AssetOperationsManager(config, services);
+    // this.index = new IndexOperationsManager(config, services);
+    this.node = new NodeOperationsManager(config, services);
   }
-
 }
 module.exports = DkgClient;
