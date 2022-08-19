@@ -45,7 +45,7 @@ class BlockchainServiceBase {
       data: encodedABI,
       gasPrice:
         blockchain.name === "otp"
-          ? this.web3.eth.getGasPrice()
+          ? await this.web3.eth.getGasPrice()
           : this.web3.utils.toWei("100", "Gwei"),
       gas: gasLimit || this.web3.utils.toWei("900", "Kwei"),
     };
