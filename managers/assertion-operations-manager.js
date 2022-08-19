@@ -71,13 +71,15 @@ class AssertionOperationsManager {
 
     if (options.outputFormat === GET_OUTPUT_FORMATS.N_QUADS) return result;
 
-    result.assertion = await jsonld.fromRDF(result.assertion.join("\n"), {
-      algorithm: "URDNA2015",
-      format: "application/n-quads",
-    });
-    result.assertion = await jsonld.compact(result.assertion, {
-      "@context": "http://schema.org/",
-    });
+    if(!result?.assertion) {
+      result.assertion = await jsonld.fromRDF(result.assertion.join("\n"), {
+        algorithm: "URDNA2015",
+        format: "application/n-quads",
+      });
+      result.assertion = await jsonld.compact(result.assertion, {
+        "@context": "http://schema.org/",
+      });
+    }
 
     return result;
   }
