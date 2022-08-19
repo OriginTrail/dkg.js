@@ -48,7 +48,7 @@ class AssertionOperationsManager {
   }
 
   async get(assertionId, options = {}) {
-    let operationId = await nodeApiService.get(assertionId);
+    let operationId = await nodeApiService.get(assertionId, options);
     let operationResult = await nodeApiService.getOperationResult(
       operationId,
       options

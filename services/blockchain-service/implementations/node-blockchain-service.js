@@ -92,7 +92,7 @@ class NodeBlockchainService extends BlockchainServiceBase {
 
   async transferAsset(UAL, UAI, to, options) {
     const blockchain = this.getBlockchain(options);
-    this.web3 = this.initializeWeb3(blockchain.rpc);
+    this.web3 = this.web3 ?? this.initializeWeb3(blockchain.rpc);
     await this.initializeContracts(blockchain.hubContract);
     return await this.executeContractFunction(
       this.UAIRegistryContract,

@@ -130,7 +130,7 @@ class BlockchainServiceBase {
 
   async createAsset(requestData, options) {
     const blockchain = this.getBlockchain(options);
-    this.web3 = this.initializeWeb3(blockchain.rpc);
+    this.web3 = this.web3 ?? this.initializeWeb3(blockchain.rpc);
     await this.initializeContracts(blockchain.hubContract);
     await this.executeContractFunction(
       this.TokenContract,
@@ -150,7 +150,7 @@ class BlockchainServiceBase {
 
   async updateAsset(requestData, options) {
     const blockchain = this.getBlockchain(options);
-    this.web3 = this.initializeWeb3(blockchain.rpc);
+    this.web3 = this.web3 ?? this.initializeWeb3(blockchain.rpc);
     await this.initializeContracts(blockchain.hubContract);
     await this.executeContractFunction(
       this.TokenContract,
@@ -168,7 +168,7 @@ class BlockchainServiceBase {
 
   async getAssetCommitHash(UAI, options) {
     const blockchain = this.getBlockchain(options);
-    this.web3 = this.initializeWeb3(blockchain.rpc);
+    this.web3 = this.web3 ?? this.initializeWeb3(blockchain.rpc);
     await this.initializeContracts(blockchain.hubContract);
     return this.callContractFunction(
       this.AssetRegistryContract,
