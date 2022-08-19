@@ -1,7 +1,11 @@
 const Web3 = require("web3");
-const { BLOCKCHAINS } = require("../../../constants.js");
+const {
+  BLOCKCHAINS,
+  WEBSOCKET_PROVIDER_OPTIONS,
+} = require("../../../constants.js");
 const BlockchainServiceBase = require("../blockchain-service-base.js");
-const AssetRegistryABI = require("dkg-evm-module/build/contracts/AssetRegistry.json").abi;
+const AssetRegistryABI =
+  require("dkg-evm-module/build/contracts/AssetRegistry.json").abi;
 
 const events = {};
 AssetRegistryABI.filter((obj) => obj.type === "event").forEach((event) => {
@@ -20,7 +24,15 @@ class NodeBlockchainService extends BlockchainServiceBase {
   }
 
   initializeWeb3(blockchainRpc) {
-    return new Web3(blockchainRpc);
+    if (blockchainRpc.startsWith("wss")) {
+      const provider = new Web3.providers.WebsocketProvider(
+        blockchainRpc,
+        WEBSOCKET_PROVIDER_OPTIONS
+      );
+      return new Web3(blockchainRpc, provider);
+    } else {
+      return new Web3(blockchainRpc);
+    }
   }
 
   getBlockchain(options) {
@@ -56,7 +68,7 @@ class NodeBlockchainService extends BlockchainServiceBase {
       const transactionReceipt = await this.web3.eth.sendSignedTransaction(
         createdTransaction.rawTransaction
       );
-      
+
       return transactionReceipt;
     } catch (error) {
       throw Error(error);

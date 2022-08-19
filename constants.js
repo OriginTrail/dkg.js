@@ -35,6 +35,18 @@ module.exports.BLOCKCHAINS = {
   },
 };
 
+module.exports.WEBSOCKET_PROVIDER_OPTIONS = {
+  reconnect: {
+    auto: true,
+    delay: 1000, // ms
+    maxAttempts: 3,
+  },
+  clientConfig: {
+    keepalive: true,
+    keepaliveInterval: 30 * 1000, // ms
+  },
+};
+
 module.exports.HOLDING_TIME_IN_YEARS = 2;
 module.exports.PUBLISH_TOKEN_AMOUNT = 15;
 
