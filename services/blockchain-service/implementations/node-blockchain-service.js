@@ -1,7 +1,11 @@
 const Web3 = require("web3");
-const { BLOCKCHAINS } = require("../../../constants.js");
+const {
+  BLOCKCHAINS,
+  WEBSOCKET_PROVIDER_OPTIONS,
+} = require("../../../constants.js");
 const BlockchainServiceBase = require("../blockchain-service-base.js");
-const AssetRegistryABI = require("../contracts/AssetRegistryABI.json");
+const AssetRegistryABI =
+  require("dkg-evm-module/build/contracts/AssetRegistry.json").abi;
 
 const events = {};
 AssetRegistryABI.filter((obj) => obj.type === "event").forEach((event) => {
@@ -20,7 +24,15 @@ class NodeBlockchainService extends BlockchainServiceBase {
   }
 
   initializeWeb3(blockchainRpc) {
-    return new Web3(blockchainRpc);
+    if (blockchainRpc.startsWith("ws")) {
+      const provider = new Web3.providers.WebsocketProvider(
+        blockchainRpc,
+        WEBSOCKET_PROVIDER_OPTIONS
+      );
+      return new Web3(provider);
+    } else {
+      return new Web3(blockchainRpc);
+    }
   }
 
   getBlockchain(options) {
@@ -39,24 +51,24 @@ class NodeBlockchainService extends BlockchainServiceBase {
     contractInstance,
     functionName,
     args,
-    blockchainKeys
+    blockchain
   ) {
     try {
       const tx = await this.prepareTransaction(
         contractInstance,
         functionName,
         args,
-        blockchainKeys
+        blockchain
       );
 
       const createdTransaction = await this.web3.eth.accounts.signTransaction(
         tx,
-        blockchainKeys.privateKey
+        blockchain.privateKey
       );
       const transactionReceipt = await this.web3.eth.sendSignedTransaction(
         createdTransaction.rawTransaction
       );
-      
+
       return transactionReceipt;
     } catch (error) {
       throw Error(error);
@@ -80,7 +92,7 @@ class NodeBlockchainService extends BlockchainServiceBase {
 
   async transferAsset(UAL, UAI, to, options) {
     const blockchain = this.getBlockchain(options);
-    this.web3 = this.initializeWeb3(blockchain.rpc);
+    this.web3 = this.web3 ?? this.initializeWeb3(blockchain.rpc);
     await this.initializeContracts(blockchain.hubContract);
     return await this.executeContractFunction(
       this.UAIRegistryContract,

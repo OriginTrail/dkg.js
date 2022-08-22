@@ -48,7 +48,7 @@ class AssertionOperationsManager {
   }
 
   async get(assertionId, options = {}) {
-    let operationId = await nodeApiService.get(assertionId);
+    let operationId = await nodeApiService.get(assertionId, options);
     let operationResult = await nodeApiService.getOperationResult(
       operationId,
       options
@@ -71,13 +71,10 @@ class AssertionOperationsManager {
 
     if (options.outputFormat === GET_OUTPUT_FORMATS.N_QUADS) return result;
 
-    result.assertion = await jsonld.fromRDF(result.assertion.join("\n"), {
-      algorithm: "URDNA2015",
-      format: "application/n-quads",
-    });
-    result.assertion = await jsonld.compact(result.assertion, {
-      "@context": "http://schema.org/",
-    });
+      result.assertion = await jsonld.fromRDF(result.assertion.join("\n"), {
+        algorithm: "URDNA2015",
+        format: "application/n-quads",
+      });
 
     return result;
   }

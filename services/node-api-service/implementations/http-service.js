@@ -20,16 +20,17 @@ class HttpService {
       });
   }
 
-  publish(publishType, assertionId, assertion, UAL) {
+  publish(publishType, assertionId, assertion, UAL, options) {
     let requestBody = this.preparePublishRequest(
       publishType,
       assertionId,
       assertion,
       UAL
     );
+    const endpoint = options.endpoint ?? this.config.endpoint;
     return axios({
       method: "post",
-      url: `${this.config.endpoint}:${this.config.port}/publish`,
+      url: `${endpoint}:${this.config.port}/publish`,
       data: requestBody,
     })
       .then((response) => {
@@ -40,11 +41,12 @@ class HttpService {
       });
   }
 
-  get(assertionId) {
+  get(assertionId, options) {
     let requestBody = this.prepareGetAssertionRequest(assertionId);
+    const endpoint = options.endpoint ?? this.config.endpoint;
     return axios({
       method: "post",
-      url: `${this.config.endpoint}:${this.config.port}/get`,
+      url: `${endpoint}:${this.config.port}/get`,
       data: requestBody,
     })
       .then((response) => {
@@ -71,9 +73,10 @@ class HttpService {
       : this.maxNumberOfRetries;
     let frequency = options.frequency ? options.frequency : this.frequency;
 
+    const endpoint = options.endpoint ?? this.config.endpoint;
     let axios_config = {
       method: "get",
-      url: `${this.config.endpoint}:${this.config.port}/${options.operation}/${operationId}`,
+      url: `${endpoint}:${this.config.port}/${options.operation}/${operationId}`,
     };
     do {
       if (retries > maxNumberOfRetries) {

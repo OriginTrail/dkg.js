@@ -1,10 +1,10 @@
 const Utilities = require("../utilities");
 const constants = require("../../constants");
-const AssetRegistryABI = require("./contracts/AssetRegistryABI.json");
-const AssertionRegistryABI = require("./contracts/AssertionRegistryABI.json");
-const UAIRegistryABI = require("./contracts/UAIRegistryABI.json");
-const HubABI = require("./contracts/HubABI.json");
-const ERC20TokenABI = require("./contracts/ERC20TokenABI.json");
+const AssetRegistryABI = require("dkg-evm-module/build/contracts/AssetRegistry.json").abi;
+const AssertionRegistryABI = require("dkg-evm-module/build/contracts/AssertionRegistry.json").abi;
+const UAIRegistryABI = require("dkg-evm-module/build/contracts/UAIRegistry.json").abi;
+const HubABI = require("dkg-evm-module/build/contracts/Hub.json").abi;
+const ERC20TokenABI = require("dkg-evm-module/build/contracts/ERC20Token.json").abi;
 
 class BlockchainServiceBase {
   constructor() {}
@@ -28,11 +28,11 @@ class BlockchainServiceBase {
     return contractInstance.methods[functionName](...args).call();
   }
 
-  async prepareTransaction(contractInstance, functionName, args, options) {
+  async prepareTransaction(contractInstance, functionName, args, blockchain) {
     const gasLimit = await contractInstance.methods[functionName](
       ...args
     ).estimateGas({
-      from: options.publicKey,
+      from: blockchain.publicKey,
     });
 
     const encodedABI = await contractInstance.methods[functionName](
@@ -40,10 +40,13 @@ class BlockchainServiceBase {
     ).encodeABI();
 
     return {
-      from: options.publicKey,
+      from: blockchain.publicKey,
       to: contractInstance.options.address,
       data: encodedABI,
-      gasPrice: this.web3.utils.toWei("100", "Gwei"),
+      gasPrice:
+        blockchain.name === "otp"
+          ? await this.web3.eth.getGasPrice()
+          : this.web3.utils.toWei("100", "Gwei"),
       gas: gasLimit || this.web3.utils.toWei("900", "Kwei"),
     };
   }
@@ -127,7 +130,7 @@ class BlockchainServiceBase {
 
   async createAsset(requestData, options) {
     const blockchain = this.getBlockchain(options);
-    this.web3 = this.initializeWeb3(blockchain.rpc);
+    this.web3 = this.web3 ?? this.initializeWeb3(blockchain.rpc);
     await this.initializeContracts(blockchain.hubContract);
     await this.executeContractFunction(
       this.TokenContract,
@@ -147,7 +150,7 @@ class BlockchainServiceBase {
 
   async updateAsset(requestData, options) {
     const blockchain = this.getBlockchain(options);
-    this.web3 = this.initializeWeb3(blockchain.rpc);
+    this.web3 = this.web3 ?? this.initializeWeb3(blockchain.rpc);
     await this.initializeContracts(blockchain.hubContract);
     await this.executeContractFunction(
       this.TokenContract,
@@ -165,7 +168,7 @@ class BlockchainServiceBase {
 
   async getAssetCommitHash(UAI, options) {
     const blockchain = this.getBlockchain(options);
-    this.web3 = this.initializeWeb3(blockchain.rpc);
+    this.web3 = this.web3 ?? this.initializeWeb3(blockchain.rpc);
     await this.initializeContracts(blockchain.hubContract);
     return this.callContractFunction(
       this.AssetRegistryContract,
