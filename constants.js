@@ -30,8 +30,20 @@ module.exports.BLOCKCHAINS = {
     hubContract: "0xdaa16AC171CfE8Df6F79C06E7EEAb2249E2C9Ec8",
   },
   otp: {
-    rpc: "wss://parachain-tempnet-01.origin-trail.network",
-    hubContract: "0x6e002616ADf12D4Cc908976eB16a7646B6cD6596",
+    rpc: "wss://lofar.origin-trail.network",
+    hubContract: "0x256736AEb3f19AC6738E9F4D10C9B61da71CEB9F",
+  },
+};
+
+module.exports.WEBSOCKET_PROVIDER_OPTIONS = {
+  reconnect: {
+    auto: true,
+    delay: 1000, // ms
+    maxAttempts: 3,
+  },
+  clientConfig: {
+    keepalive: true,
+    keepaliveInterval: 30 * 1000, // ms
   },
 };
 

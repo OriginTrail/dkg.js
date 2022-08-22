@@ -16,7 +16,7 @@ class AssetOperationsManager {
     assertion = new AssertionOperationsManager(config, services);
   }
 
-  async create(content, options) {
+  async create(content, options = {}) {
     validationService.validatePublishRequest(content, options);
     options.operation = OPERATIONS.publish;
     const assertion = await AssertionTools.formatAssertion(content);
@@ -32,7 +32,8 @@ class AssetOperationsManager {
       PUBLISH_TYPES.ASSET,
       assertionId,
       assertion,
-      UAL
+      UAL,
+      options
     );
     let operationResult = await nodeApiService.getOperationResult(
       operationId,
@@ -64,7 +65,7 @@ class AssetOperationsManager {
     return assertion.get(assertionId, options);
   }
 
-  async update(UAL, content, options) {
+  async update(UAL, content, options = {}) {
     validationService.validatePublishRequest(content, options);
     options.operation = OPERATIONS.publish;
     const assertion = await AssertionTools.formatAssertion(content);
@@ -81,7 +82,8 @@ class AssetOperationsManager {
       PUBLISH_TYPES.ASSET,
       assertionId,
       assertion,
-      UAL
+      UAL,
+      options
     );
     let operationResult = await nodeApiService.getOperationResult(
       operationId,
@@ -97,7 +99,7 @@ class AssetOperationsManager {
     };
   }
 
-  async transfer(UAL, to, options) {
+  async transfer(UAL, to, options = {}) {
     validationService.validateAssetTransferRequest(UAL, to, options);
     let { UAI } = Utilities.resolveUAL(UAL);
     await blockchainService.transferAsset(UAL, UAI, to, options);
