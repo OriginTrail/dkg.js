@@ -53,28 +53,37 @@ class AssertionOperationsManager {
       operationId,
       options
     );
-    const assertion = operationResult.data.assertion;
-    if (options.validate === false) {
-      const rootHash = AssertionTools.calculateRoot(assertion);
-      if (rootHash !== assertionId)
-        throw Error("Calculated root hashes don't match!");
+    let assertion = operationResult.data.assertion;
+    try {
+      if (options.validate === false) {
+        const rootHash = AssertionTools.calculateRoot(assertion);
+        if (rootHash !== assertionId)
+          throw Error("Calculated root hashes don't match!");
+      }
+      if (options.outputFormat !== GET_OUTPUT_FORMATS.N_QUADS) {
+        assertion = await jsonld.fromRDF(assertion.join("\n"), {
+          algorithm: "URDNA2015",
+          format: "application/n-quads",
+        });
+      }
+    } catch (error) {
+      operationResult = {
+        ...operationResult,
+        data: {
+          errorType: "DKG_CLIENT_ERROR",
+          errorMessage: error.message,
+        },
+      };
     }
 
     const result = {
-      assertion: assertion,
-      assertionId: assertionId,
+      assertion,
+      assertionId,
       operation: Utilities.getOperationStatusObject(
         operationResult,
         operationId
       ),
     };
-
-    if (options.outputFormat === GET_OUTPUT_FORMATS.N_QUADS) return result;
-
-      result.assertion = await jsonld.fromRDF(result.assertion.join("\n"), {
-        algorithm: "URDNA2015",
-        format: "application/n-quads",
-      });
 
     return result;
   }

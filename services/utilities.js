@@ -39,13 +39,12 @@ module.exports = {
     return str[0].toUpperCase() + str.slice(1);
   },
   getOperationStatusObject(operationResult, operationId) {
-    const operationData =
-      operationResult.status === OPERATION_STATUSES.failed
-        ? operationResult.data
-        : {status: operationResult.status};
+    const operationData = operationResult.data.errorType
+      ? { status: operationResult.status, ...operationResult.data }
+      : { status: operationResult.status };
 
     return {
-      operationId: operationId,
+      operationId,
       ...operationData,
     };
   },
