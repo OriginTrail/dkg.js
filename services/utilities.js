@@ -42,7 +42,7 @@ module.exports = {
     const operationData =
       operationResult.status === OPERATION_STATUSES.completed
         ? { status: operationResult.status }
-        : operationResult.data;
+        : { ...operationResult };
 
     return {
       operationId,

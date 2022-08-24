@@ -80,9 +80,14 @@ class HttpService {
     };
     do {
       if (retries > maxNumberOfRetries) {
-        response.data.data.errorMessage =
-          "Unable to get results. Max number of retries reached.";
-          response.data.data.errorType = "DKG_CLIENT_ERROR"
+        response.data = {
+          ...response.data,
+          data: {
+            errorType: "DKG_CLIENT_ERROR",
+            errorMessage:
+              "Unable to get results. Max number of retries reached.",
+          },
+        };
         break;
       }
       retries++;
