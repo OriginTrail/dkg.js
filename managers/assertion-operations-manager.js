@@ -71,7 +71,7 @@ class AssertionOperationsManager {
         ...operationResult,
         data: {
           errorType: "DKG_CLIENT_ERROR",
-          errorMessage: error.errorMessage,
+          errorMessage: error.message,
         },
       };
     }
