@@ -16,8 +16,8 @@ class HttpService {
       method: "get",
       url: `${this.config.endpoint}:${this.config.port}/info`,
     }).catch((e) => {
-        throw Error(`Unable to get node info: ${e.message}`);
-      });
+      throw Error(`Unable to get node info: ${e.message}`);
+    });
   }
 
   publish(publishType, assertionId, assertion, UAL, options) {
@@ -80,7 +80,10 @@ class HttpService {
     };
     do {
       if (retries > maxNumberOfRetries) {
-        throw Error("Unable to get results. Max number of retries reached.");
+        response.data.data.errorMessage =
+          "Unable to get results. Max number of retries reached.";
+          response.data.data.errorType = "DKG_CLIENT_ERROR"
+        break;
       }
       retries++;
       await Utilities.sleepForMilliseconds(frequency * 1000);

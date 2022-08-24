@@ -40,12 +40,12 @@ module.exports = {
   },
   getOperationStatusObject(operationResult, operationId) {
     const operationData =
-      operationResult.status === OPERATION_STATUSES.failed
-        ? operationResult.data
-        : {status: operationResult.status};
+      operationResult.status === OPERATION_STATUSES.completed
+        ? { status: operationResult.status }
+        : operationResult.data;
 
     return {
-      operationId: operationId,
+      operationId,
       ...operationData,
     };
   },
