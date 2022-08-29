@@ -114,15 +114,15 @@ class AssetOperationsManager {
     };
   }
 
-  async getOwner(UAL) {
+  async getOwner(UAL, options) {
     validationService.validateGetOwnerRequest(UAL);
     let { UAI } = Utilities.resolveUAL(UAL);
-    const owner = await blockchainService.getAssetOwner(UAI);
+    const owner = await blockchainService.getAssetOwner(UAI, options);
     return {
       UAL: UAL,
       owner: owner,
       operation: Utilities.getOperationStatusObject(
-          { status: "COMPLETED" },
+          { data: {}, status: "COMPLETED" },
           null
       ),
     };
