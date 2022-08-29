@@ -60,6 +60,9 @@ async function main() {
   let transferAssetOptions = {
     blockchain,
   };
+  let getAssetOwnerOptions = {
+    blockchain
+  }
 
   try {
     divider();
@@ -76,7 +79,7 @@ async function main() {
 
     divider();
 
-    let ownerResult = await dkg.asset.getOwner(createAssetResult.UAL);
+    let ownerResult = await dkg.asset.getOwner(ual, getAssetOwnerOptions);
     console.log("======================== GET ASSET OWNER");
     console.log(ownerResult);
 

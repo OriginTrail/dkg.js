@@ -177,7 +177,12 @@ class BlockchainServiceBase {
     );
   }
 
-  async getAssetOwner(UAI) {
+  async getAssetOwner(UAI, options = null) {
+    if(options) {
+      const blockchain = this.getBlockchain(options);
+      this.web3 = this.web3 ?? this.initializeWeb3(blockchain.rpc);
+      await this.initializeContracts(blockchain.hubContract);
+    }
     return await this.UAIRegistryContract.methods.ownerOf(UAI).call();
   }
 
