@@ -79,7 +79,7 @@ async function main() {
 
     divider();
 
-    let ownerResult = await dkg.asset.getOwner(ual, getAssetOwnerOptions);
+    let ownerResult = await dkg.asset.getOwner(createAssetResult.UAL, getAssetOwnerOptions);
     console.log("======================== GET ASSET OWNER");
     console.log(ownerResult);
 
