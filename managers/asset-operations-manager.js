@@ -3,39 +3,34 @@ const Utilities = require("../services/utilities.js");
 const AssertionOperationsManager = require("./assertion-operations-manager.js");
 const { OPERATIONS, PUBLISH_TYPES, BLOCKCHAINS } = require("../constants.js");
 
-let nodeApiService;
-let validationService;
-let blockchainService;
-let assertion;
-
 class AssetOperationsManager {
   constructor(config, services) {
-    nodeApiService = services.nodeApiService;
-    validationService = services.validationService;
-    blockchainService = services.blockchainService;
-    assertion = new AssertionOperationsManager(config, services);
+    this.nodeApiService = services.nodeApiService;
+    this.validationService = services.validationService;
+    this.blockchainService = services.blockchainService;
+    this.assertionOperationsManager = new AssertionOperationsManager(config, services);
   }
 
   async create(content, options = {}) {
-    validationService.validatePublishRequest(content, options);
+    this.validationService.validatePublishRequest(content, options);
     options.operation = OPERATIONS.publish;
     const assertion = await AssertionTools.formatAssertion(content);
     const assertionId = AssertionTools.calculateRoot(assertion);
-    let requestData = blockchainService.generateCreateAssetRequest(
+    let requestData = this.blockchainService.generateCreateAssetRequest(
       assertion,
       assertionId,
       options
     );
-    const UAI = await blockchainService.createAsset(requestData, options);
-    const UAL = blockchainService.generateUAL(options, UAI);
-    let operationId = await nodeApiService.publish(
+    const UAI = await this.blockchainService.createAsset(requestData, options);
+    const UAL = this.blockchainService.generateUAL(options, UAI);
+    let operationId = await this.nodeApiService.publish(
       PUBLISH_TYPES.ASSET,
       assertionId,
       assertion,
       UAL,
       options
     );
-    let operationResult = await nodeApiService.getOperationResult(
+    let operationResult = await this.nodeApiService.getOperationResult(
       operationId,
       options
     );
@@ -50,42 +45,42 @@ class AssetOperationsManager {
   }
 
   async get(UAL, options = {}) {
-    validationService.validateGetRequest(UAL, options);
+    this.validationService.validateGetRequest(UAL, options);
     options.operation = OPERATIONS.get;
     let { blockchain, contract, UAI } = Utilities.resolveUAL(UAL);
 
     options.blockchain = BLOCKCHAINS[blockchain];
     options.blockchain.hubContract = contract;
 
-    const assertionId = await blockchainService.getAssetCommitHash(
+    const assertionId = await this.blockchainService.getAssetCommitHash(
       UAI,
       options
     );
 
-    return assertion.get(assertionId, options);
+    return this.assertionOperationsManager.get(assertionId, options);
   }
 
   async update(UAL, content, options = {}) {
-    validationService.validatePublishRequest(content, options);
+    this.validationService.validatePublishRequest(content, options);
     options.operation = OPERATIONS.publish;
     const assertion = await AssertionTools.formatAssertion(content);
     const assertionId = AssertionTools.calculateRoot(assertion);
     let { UAI } = Utilities.resolveUAL(UAL);
-    let requestData = blockchainService.generateUpdateAssetRequest(
+    let requestData = this.blockchainService.generateUpdateAssetRequest(
       UAI,
       assertion,
       assertionId,
       options
     );
-    await blockchainService.updateAsset(requestData, options);
-    let operationId = await nodeApiService.publish(
+    await this.blockchainService.updateAsset(requestData, options);
+    let operationId = await this.nodeApiService.publish(
       PUBLISH_TYPES.ASSET,
       assertionId,
       assertion,
       UAL,
       options
     );
-    let operationResult = await nodeApiService.getOperationResult(
+    let operationResult = await this.nodeApiService.getOperationResult(
       operationId,
       options
     );
@@ -100,10 +95,10 @@ class AssetOperationsManager {
   }
 
   async transfer(UAL, to, options = {}) {
-    validationService.validateAssetTransferRequest(UAL, to, options);
+    this.validationService.validateAssetTransferRequest(UAL, to, options);
     let { UAI } = Utilities.resolveUAL(UAL);
-    await blockchainService.transferAsset(UAL, UAI, to, options);
-    const owner = await blockchainService.getAssetOwner(UAI);
+    await this.blockchainService.transferAsset(UAL, UAI, to, options);
+    const owner = await this.blockchainService.getAssetOwner(UAI);
     return {
       UAL: UAL,
       owner: owner,
@@ -115,9 +110,9 @@ class AssetOperationsManager {
   }
 
   async getOwner(UAL, options) {
-    validationService.validateGetOwnerRequest(UAL);
+    this.validationService.validateGetOwnerRequest(UAL);
     let { UAI } = Utilities.resolveUAL(UAL);
-    const owner = await blockchainService.getAssetOwner(UAI, options);
+    const owner = await this.blockchainService.getAssetOwner(UAI, options);
     return {
       UAL: UAL,
       owner: owner,
