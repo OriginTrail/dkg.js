@@ -7,34 +7,30 @@ const {
 } = require("../constants.js");
 const Utilities = require("../services/utilities.js");
 
-let nodeApiService;
-let validationService;
-let blockchainService;
-
 class AssertionOperationsManager {
   constructor(config, services) {
-    nodeApiService = services.nodeApiService;
-    validationService = services.validationService;
-    blockchainService = services.blockchainService;
+    this.nodeApiService = services.nodeApiService;
+    this.validationService = services.validationService;
+    this.blockchainService = services.blockchainService;
   }
 
   async create(content, options) {
-    validationService.validatePublishRequest(content, options);
+    this.validationService.validatePublishRequest(content, options);
     options.operation = OPERATIONS.publish;
     const assertion = await AssertionTools.formatAssertion(content);
     const assertionId = AssertionTools.calculateRoot(assertion);
-    let requestData = blockchainService.generateCreateAssetRequest(
+    let requestData = this.blockchainService.generateCreateAssetRequest(
       assertion,
       assertionId,
       options
     );
     await this.blockchainService.createAssertion(requestData, options);
-    let operationId = await nodeApiService.publish(
+    let operationId = await this.nodeApiService.publish(
       PUBLISH_TYPES.ASSERTION,
       assertionId,
       assertion
     );
-    let operationResult = await nodeApiService.getOperationResult(
+    let operationResult = await this.nodeApiService.getOperationResult(
       operationId,
       options
     );
@@ -48,8 +44,8 @@ class AssertionOperationsManager {
   }
 
   async get(assertionId, options = {}) {
-    let operationId = await nodeApiService.get(assertionId, options);
-    let operationResult = await nodeApiService.getOperationResult(
+    let operationId = await this.nodeApiService.get(assertionId, options);
+    let operationResult = await this.nodeApiService.getOperationResult(
       operationId,
       options
     );
