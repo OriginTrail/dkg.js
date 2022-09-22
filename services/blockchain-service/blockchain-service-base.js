@@ -5,6 +5,8 @@ const AssertionRegistryABI = require("dkg-evm-module/build/contracts/AssertionRe
 const UAIRegistryABI = require("dkg-evm-module/build/contracts/UAIRegistry.json").abi;
 const HubABI = require("dkg-evm-module/build/contracts/Hub.json").abi;
 const ERC20TokenABI = require("dkg-evm-module/build/contracts/ERC20Token.json").abi;
+const OPERATIONS_STEP_STATUS = require('../../constants.js').OPERATIONS_STEP_STATUS;
+const emptyHooks = require('../../util/empty-hooks.js');
 
 class BlockchainServiceBase {
   constructor() {}
@@ -128,7 +130,7 @@ class BlockchainServiceBase {
     }
   }
 
-  async createAsset(requestData, options) {
+  async createAsset(requestData, options, stepHooks = emptyHooks) {
     const blockchain = this.getBlockchain(options);
     this.web3 = this.web3 ?? this.initializeWeb3(blockchain.rpc);
     await this.initializeContracts(blockchain.hubContract);
@@ -138,6 +140,11 @@ class BlockchainServiceBase {
       [this.AssetRegistryContract.options.address, options.tokenAmount],
       blockchain
     );
+
+    stepHooks.afterHook({
+      status: OPERATIONS_STEP_STATUS.INCREASE_ALLOWANCE_COMPLETED,
+    });
+
     let receipt = await this.executeContractFunction(
       this.AssetRegistryContract,
       "createAsset",
@@ -145,6 +152,12 @@ class BlockchainServiceBase {
       blockchain
     );
     const { UAI } = await this.decodeEventLogs(receipt, "AssetCreated");
+
+    stepHooks.afterHook({
+      status: OPERATIONS_STEP_STATUS.CREATE_ASSET_COMPLETED,
+      data: { UAI }
+    });
+
     return UAI;
   }
 

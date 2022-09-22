@@ -1,7 +1,8 @@
 const AssertionTools = require("assertion-tools");
 const Utilities = require("../services/utilities.js");
 const AssertionOperationsManager = require("./assertion-operations-manager.js");
-const { OPERATIONS, PUBLISH_TYPES, BLOCKCHAINS } = require("../constants.js");
+const { OPERATIONS, PUBLISH_TYPES, BLOCKCHAINS, OPERATIONS_STEP_STATUS } = require("../constants.js");
+const emptyHooks = require("../util/empty-hooks");
 
 class AssetOperationsManager {
   constructor(config, services) {
@@ -11,7 +12,7 @@ class AssetOperationsManager {
     this.assertionOperationsManager = new AssertionOperationsManager(config, services);
   }
 
-  async create(content, options = {}) {
+  async create(content, options = {}, stepHooks = emptyHooks) {
     this.validationService.validatePublishRequest(content, options);
     options.operation = OPERATIONS.publish;
     const assertion = await AssertionTools.formatAssertion(content);
@@ -21,8 +22,10 @@ class AssetOperationsManager {
       assertionId,
       options
     );
-    const UAI = await this.blockchainService.createAsset(requestData, options);
+
+    const UAI = await this.blockchainService.createAsset(requestData, options, stepHooks);
     const UAL = this.blockchainService.generateUAL(options, UAI);
+
     let operationId = await this.nodeApiService.publish(
       PUBLISH_TYPES.ASSET,
       assertionId,
@@ -30,10 +33,20 @@ class AssetOperationsManager {
       UAL,
       options
     );
+
     let operationResult = await this.nodeApiService.getOperationResult(
       operationId,
       options
     );
+
+    stepHooks.afterHook({
+      status: OPERATIONS_STEP_STATUS.CREATE_ASSET_COMPLETED,
+      data: {
+        operationId,
+        operationResult
+      }
+    });
+
     return {
       UAL: UAL,
       assertionId: assertionId,
