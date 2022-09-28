@@ -32,15 +32,9 @@
     "axios": "^0.27.2",
     "dkg-evm-module": "^1.0.2",
     "jsonld": "^8.1.0",
-    "web3": "^1.7.3"
+    "web3": "^1.8.0"
   },
   "devDependencies": {
-    "assert": "^2.0.0",
-    "stream-browserify": "^3.0.0",
-    "stream-http": "^3.2.0",
-    "url": "^0.11.0",
-    "crypto-browserify": "^3.12.0",
-    "https-browserify": "^1.0.0",
     "terser-webpack-plugin": "^5.3.6",
     "webpack": "^5.69.0",
     "webpack-cli": "^4.9.2"
