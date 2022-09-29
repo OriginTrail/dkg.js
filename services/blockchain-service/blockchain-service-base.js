@@ -41,14 +41,21 @@ class BlockchainServiceBase {
       ...args
     ).encodeABI();
 
+    let gasPrice;
+
+    if(blockchain.name === "otp") {
+      // hotfix: gasPrice is multiplied by 175mil in order
+      // to get the medium gasPrice amount from metamask
+      gasPrice = (await this.web3.eth.getGasPrice()) * 175_000_000;
+    } else {
+      gasPrice = this.web3.utils.toWei("100", "Gwei")
+    }
+
     return {
       from: blockchain.publicKey,
       to: contractInstance.options.address,
       data: encodedABI,
-      gasPrice:
-        blockchain.name === "otp"
-          ? await this.web3.eth.getGasPrice()
-          : this.web3.utils.toWei("100", "Gwei"),
+      gasPrice,
       gas: gasLimit || this.web3.utils.toWei("900", "Kwei"),
     };
   }
