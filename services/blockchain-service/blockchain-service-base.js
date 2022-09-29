@@ -41,12 +41,14 @@ class BlockchainServiceBase {
       ...args
     ).encodeABI();
 
-    let gasPrice = blockchain.name === "otp"
-        ? await this.web3.eth.getGasPrice()
-        : this.web3.utils.toWei("100", "Gwei");
+    let gasPrice;
 
-    if(blockchain.name==="otp") {
-      gasPrice = gasPrice * 175_000_000;
+    if(blockchain.name === "otp") {
+      // hotfix: gasPrice is multiplied by 175mil in order
+      // to get the medium gasPrice amount from metamask
+      gasPrice = (await this.web3.eth.getGasPrice()) * 175_000_000;
+    } else {
+      gasPrice = this.web3.utils.toWei("100", "Gwei")
     }
 
     return {
