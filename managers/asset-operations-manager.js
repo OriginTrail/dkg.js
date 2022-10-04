@@ -62,8 +62,8 @@ class AssetOperationsManager {
     options.operation = OPERATIONS.get;
     let { blockchain, contract, UAI } = Utilities.resolveUAL(UAL);
 
-    options.blockchain = BLOCKCHAINS[blockchain];
     options.blockchain.hubContract = contract;
+    options.blockchain.rpc = options.blockchain.rpc ?? BLOCKCHAINS[blockchain].rpc;
 
     const assertionId = await this.blockchainService.getAssetCommitHash(
       UAI,

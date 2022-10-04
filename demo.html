@@ -136,7 +136,8 @@
                     commitOffset: 0,
                     maxNumberOfRetries: 5,
                     blockchain : {
-                        name: "ganache"
+                        name: "ganache",
+                        rpc: "http://localhost:7545"
                     }
                 },
                 visible: false
@@ -173,9 +174,7 @@
             },
             async get() {
                 let loading = this.notification("Asset", "Resolving asset..", "el-icon-loading", 0);
-                let options = {};
-                console.log(options, 'alo');
-                let { assertion } = await DkgClient.asset.get(this.getUAL, options);
+                let { assertion } = await DkgClient.asset.get(this.getUAL, this.getOptions);
                 this.resolveResult = assertion;
                 loading.close();
                 this.notification("Asset", `Asset with UAL ${this.getUAL} resolved!`, "el-icon-success", 4000);

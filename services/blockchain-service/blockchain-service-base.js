@@ -186,9 +186,7 @@ class BlockchainServiceBase {
   }
 
   async getAssetCommitHash(UAI, options) {
-    console.log(options, 'options 2');
     const blockchain = this.getBlockchain(options);
-    console.log(blockchain, ' blockchain');
     this.web3 = this.web3 ?? this.initializeWeb3(blockchain.rpc);
     await this.initializeContracts(blockchain.hubContract);
     return this.callContractFunction(
