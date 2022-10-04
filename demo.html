@@ -134,7 +134,10 @@
                 getOptions: {
                     validate: true,
                     commitOffset: 0,
-                    maxNumberOfRetries: 5
+                    maxNumberOfRetries: 5,
+                    blockchain : {
+                        name: "ganache"
+                    }
                 },
                 visible: false
             }
@@ -170,7 +173,9 @@
             },
             async get() {
                 let loading = this.notification("Asset", "Resolving asset..", "el-icon-loading", 0);
-                let { assertion } = await DkgClient.asset.get(this.getUAL, this.getOptions);
+                let options = {};
+                console.log(options, 'alo');
+                let { assertion } = await DkgClient.asset.get(this.getUAL, options);
                 this.resolveResult = assertion;
                 loading.close();
                 this.notification("Asset", `Asset with UAL ${this.getUAL} resolved!`, "el-icon-success", 4000);

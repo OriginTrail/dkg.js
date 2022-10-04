@@ -56,6 +56,7 @@ async function main() {
     validate: true,
     commitOffset: 0,
     maxNumberOfRetries: 5,
+    blockchain
   };
   let transferAssetOptions = {
     blockchain,
