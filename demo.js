@@ -1,21 +1,21 @@
-const DkgClient = require("./index.js");
+const DKG = require("./index.js");
 
 const OT_NODE_HOSTNAME = "http://localhost";
-const OT_NODE_PORT = "8900";
-const PUBLIC_KEY = "";
-const PRIVATE_KEY = "";
-
-const blockchain = {
-  name: "otp",
-  publicKey: PUBLIC_KEY,
-  privateKey: PRIVATE_KEY,
-};
+const OT_NODE_PORT = "8901";
+const PUBLIC_KEY = "0xd6879C0A03aDD8cFc43825A42a3F3CF44DB7D2b9";
+const PRIVATE_KEY = "02b39cac1532bef9dba3e36ec32d3de1e9a88f1dda597d3ac6e2130aed9adc4e";
 
 // const blockchain = {
-//   name: "ganache",
+//   name: "otp",
 //   publicKey: PUBLIC_KEY,
 //   privateKey: PRIVATE_KEY,
 // };
+
+const blockchain = {
+  name: "ganache",
+  publicKey: PUBLIC_KEY,
+  privateKey: PRIVATE_KEY,
+};
 
 let options = {
   endpoint: OT_NODE_HOSTNAME,
@@ -23,7 +23,7 @@ let options = {
   useSSL: false,
   loglevel: "trace",
 };
-const dkg = new DkgClient(options);
+const dkg = new DKG(options);
 
 async function main() {
   let assetData = {
