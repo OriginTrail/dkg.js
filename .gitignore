@@ -1,5 +1,6 @@
 node_modules/
 .idea/
+dist/
 
 assets-demo.js
 frontendMock.html
