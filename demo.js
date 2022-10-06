@@ -1,7 +1,7 @@
-const DKG = require("./index.js");
+const DkgClient = require("./index.js");
 
 const OT_NODE_HOSTNAME = "http://localhost";
-const OT_NODE_PORT = "8901";
+const OT_NODE_PORT = "8900";
 const PUBLIC_KEY = "";
 const PRIVATE_KEY = "";
 
@@ -26,7 +26,7 @@ let options = {
     token: ""
   }
 };
-const dkg = new DKG(options);
+const dkg = new DkgClient(options);
 
 async function main() {
   let assetData = {
