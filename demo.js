@@ -4,6 +4,7 @@ const OT_NODE_HOSTNAME = "http://localhost";
 const OT_NODE_PORT = "8900";
 const PUBLIC_KEY = "";
 const PRIVATE_KEY = "";
+const AUTH_TOKEN = "";
 
 const blockchain = {
   name: "otp",
@@ -23,7 +24,7 @@ let options = {
   useSSL: false,
   loglevel: "trace",
   auth: {
-    token: ""
+    token: AUTH_TOKEN
   }
 };
 const dkg = new DkgClient(options);
