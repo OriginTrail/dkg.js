@@ -5,17 +5,17 @@ const OT_NODE_PORT = "8900";
 const PUBLIC_KEY = "";
 const PRIVATE_KEY = "";
 
-// const blockchain = {
-//   name: "otp",
-//   publicKey: PUBLIC_KEY,
-//   privateKey: PRIVATE_KEY,
-// };
-
 const blockchain = {
-  name: "ganache",
+  name: "otp",
   publicKey: PUBLIC_KEY,
   privateKey: PRIVATE_KEY,
 };
+
+// const blockchain = {
+//   name: "ganache",
+//   publicKey: PUBLIC_KEY,
+//   privateKey: PRIVATE_KEY,
+// };
 
 let options = {
   endpoint: OT_NODE_HOSTNAME,
