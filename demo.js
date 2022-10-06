@@ -23,7 +23,7 @@ let options = {
   useSSL: false,
   loglevel: "trace",
   auth: {
-    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE2NjUwNDEyODMsImV4cCI6MTc1OTcxNDA4MywianRpIjoiYmFjZWM5YjEtNzA0OS00MTQ1LWIwZDUtMzNlM2FiYWU0OGRiIn0.dhAOa82MdGfPhp7MDuSNpBrKVHYwHsQRd2k32zJ6Xng"
+    token: ""
   }
 };
 const dkg = new DKG(options);
