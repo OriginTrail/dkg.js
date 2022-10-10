@@ -21,7 +21,7 @@ const blockchain = {
 let options = {
   endpoint: OT_NODE_HOSTNAME,
   port: OT_NODE_PORT,
-  useSSL: true,
+  useSSL: false,
   loglevel: "trace",
   auth: {
     token: AUTH_TOKEN
