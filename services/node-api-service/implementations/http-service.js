@@ -15,6 +15,7 @@ class HttpService {
     return axios({
       method: "get",
       url: `${this.config.endpoint}:${this.config.port}/info`,
+      headers: this.prepareRequestConfig()
     }).catch((e) => {
       throw Error(`Unable to get node info: ${e.message}`);
     });
@@ -32,6 +33,7 @@ class HttpService {
       method: "post",
       url: `${endpoint}:${this.config.port}/publish`,
       data: requestBody,
+      headers: this.prepareRequestConfig()
     })
       .then((response) => {
         return response.data.operationId;
@@ -48,6 +50,7 @@ class HttpService {
       method: "post",
       url: `${endpoint}:${this.config.port}/get`,
       data: requestBody,
+      headers: this.prepareRequestConfig()
     })
       .then((response) => {
         return response.data.operationId;
@@ -77,6 +80,7 @@ class HttpService {
     let axios_config = {
       method: "get",
       url: `${endpoint}:${this.config.port}/${options.operation}/${operationId}`,
+      headers: this.prepareRequestConfig()
     };
     do {
       if (retries > maxNumberOfRetries) {
@@ -134,6 +138,13 @@ class HttpService {
     return {
       id: assertionId,
     };
+  }
+
+  prepareRequestConfig() {
+    if(this.config?.auth?.token) {
+      return { Authorization: `Bearer ${this.config.auth.token}` };
+    }
+    return {};
   }
 }
 module.exports = HttpService;

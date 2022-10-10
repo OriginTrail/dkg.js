@@ -1,5 +1,7 @@
 const constants = require("../../../constants.js");
 const BlockchainServiceBase = require("../blockchain-service-base.js");
+const Web3 = require("web3");
+const {WEBSOCKET_PROVIDER_OPTIONS} = require("../../../constants.js");
 
 class BrowserBlockchainService extends BlockchainServiceBase {
   constructor(config) {
@@ -13,26 +15,32 @@ class BrowserBlockchainService extends BlockchainServiceBase {
       hubContract:
         options.blockchain.hubContract ??
         constants.BLOCKCHAINS[options.blockchain.name].hubContract,
+      rpc: options.blockchain.rpc ?? constants.BLOCKCHAINS[options.blockchain.name].rpc,
     };
   }
 
-  initializeWeb3() {
-    if (window.Web3) {
-      if (
-        typeof window.Web3 === "undefined" ||
-        !window.Web3 ||
-        !window.ethereum
-      ) {
-        this.logger.error(
-          "No web3 implementation injected, please inject your own Web3 implementation to use metamask"
-        );
-        return;
-      }
+  initializeWeb3(blockchainRpc) {
+    if (
+      typeof window.Web3 === "undefined" ||
+      !window.Web3
+    ) {
+      this.logger.error(
+        "No web3 implementation injected, please inject your own Web3 implementation."
+      );
+      return;
+    }
+    if(window.ethereum) {
       return new window.Web3(window.ethereum);
     } else {
-      this.logger.error(
-        "Non-Ethereum browser detected. You should consider installing MetaMask."
-      );
+      if (blockchainRpc.startsWith("ws")) {
+        const provider = new window.Web3.providers.WebsocketProvider(
+            blockchainRpc,
+            WEBSOCKET_PROVIDER_OPTIONS
+        );
+        return new Web3(provider);
+      } else {
+        return new window.Web3(blockchainRpc);
+      }
     }
   }
 
@@ -57,6 +65,9 @@ class BrowserBlockchainService extends BlockchainServiceBase {
 
   async getAccount() {
     if (!this.account) {
+      if(!window.ethereum) {
+        throw Error("This operation can be performed only by using Metamask accounts.");
+      }
       const accounts = await window.ethereum
         .request({ method: "eth_requestAccounts" })
         .catch(() => {

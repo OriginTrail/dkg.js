@@ -126,12 +126,18 @@
                     visibility: 'public',
                     holdingTimeInYears: 1,
                     tokenAmount: 10,
-                    maxNumberOfRetries: 5
+                    maxNumberOfRetries: 5,
+                    blockchain : {
+                        name: "otp"
+                    }
                 },
                 getOptions: {
                     validate: true,
                     commitOffset: 0,
-                    maxNumberOfRetries: 5
+                    maxNumberOfRetries: 5,
+                    blockchain : {
+                        name: "otp"
+                    }
                 },
                 visible: false
             }
