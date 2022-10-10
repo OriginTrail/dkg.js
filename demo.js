@@ -1,4 +1,4 @@
-const DkgClient = require("./index.js");
+const DKG = require("./index.js");
 
 const OT_NODE_HOSTNAME = "http://localhost";
 const OT_NODE_PORT = "8900";
@@ -8,7 +8,8 @@ const AUTH_TOKEN = "";
 
 const blockchain = {
   name: "otp",
-  publicKey: PUBLIC_KEY,
+  publicKey: PUBLIC_KEY
+  ,
   privateKey: PRIVATE_KEY,
 };
 
@@ -21,13 +22,13 @@ const blockchain = {
 let options = {
   endpoint: OT_NODE_HOSTNAME,
   port: OT_NODE_PORT,
-  useSSL: false,
+  useSSL: true,
   loglevel: "trace",
   auth: {
     token: AUTH_TOKEN
   }
 };
-const dkg = new DkgClient(options);
+const DkgClient = new DKG(options);
 
 async function main() {
   let assetData = {
@@ -72,32 +73,32 @@ async function main() {
   try {
     divider();
 
-    const nodeInfo = await dkg.node.info();
+    const nodeInfo = await DkgClient.node.info();
     console.log("======================== NODE INFO RECEIVED");
     console.log(nodeInfo);
 
     divider();
 
-    let createAssetResult = await dkg.asset.create(assetData, publishOptions);
+    let createAssetResult = await DkgClient.asset.create(assetData, publishOptions);
     console.log("======================== ASSET CREATED");
     console.log(createAssetResult);
 
     divider();
 
-    let ownerResult = await dkg.asset.getOwner(createAssetResult.UAL, getAssetOwnerOptions);
+    let ownerResult = await DkgClient.asset.getOwner(createAssetResult.UAL, getAssetOwnerOptions);
     console.log("======================== GET ASSET OWNER");
     console.log(ownerResult);
 
 
     divider();
 
-    let getAssetResult = await dkg.asset.get(createAssetResult.UAL, getOptions);
+    let getAssetResult = await DkgClient.asset.get(createAssetResult.UAL, getOptions);
     console.log("======================== ASSET RESOLVED");
     console.log(JSON.stringify(getAssetResult, null, 2));
 
     divider();
 
-    let updateAssetResult = await dkg.asset.update(
+    let updateAssetResult = await DkgClient.asset.update(
       createAssetResult.UAL,
       updateAssetData,
       publishOptions
@@ -107,7 +108,7 @@ async function main() {
 
     divider();
 
-    let getAssetResultAfterUpdate = await dkg.asset.get(
+    let getAssetResultAfterUpdate = await DkgClient.asset.get(
       createAssetResult.UAL,
       getOptions
     );
@@ -117,7 +118,7 @@ async function main() {
     divider();
 
     const newOwner = "0x2ACa90078563133db78085F66e6B8Cf5531623Ad";
-    let transferResult = await dkg.asset.transfer(
+    let transferResult = await DkgClient.asset.transfer(
       createAssetResult.UAL,
       newOwner,
       transferAssetOptions
@@ -128,7 +129,7 @@ async function main() {
     divider();
 
     try {
-      await dkg.asset.update(
+      await DkgClient.asset.update(
         createAssetResult.UAL,
         updateAssetData2,
         publishOptions

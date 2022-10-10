@@ -12,11 +12,13 @@ class HttpService {
   }
 
   info() {
-    return axios({
+    let config = {
       method: "get",
       url: `${this.config.endpoint}:${this.config.port}/info`,
       headers: this.prepareRequestConfig()
-    }).catch((e) => {
+    };
+    console.log(config, 'cong');
+    return axios(config).catch((e) => {
       throw Error(`Unable to get node info: ${e.message}`);
     });
   }
