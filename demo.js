@@ -8,8 +8,7 @@ const AUTH_TOKEN = "";
 
 const blockchain = {
   name: "otp",
-  publicKey: PUBLIC_KEY
-  ,
+  publicKey: PUBLIC_KEY,
   privateKey: PRIVATE_KEY,
 };
 
