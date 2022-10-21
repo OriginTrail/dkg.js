@@ -8,6 +8,7 @@ class ValidationService {
     this.validateSize(content);
     this.validateVisibility(options.visibility);
     this.validateBlockchain(options.blockchain);
+    this.validateLocalStore(options.localStore);
   }
 
   validateGetRequest(UAL, options) {
@@ -44,8 +45,14 @@ class ValidationService {
       );
   }
 
+  validateLocalStore(localStore) {
+    if (localStore && typeof localStore !== "boolean")
+      throw Error("LocalStore option must be boolean");
+  }
+
   validateValidate(validate) {
-    if(validate && typeof validate !== "boolean") throw Error("Valid option must be boolean")
+    if (validate && typeof validate !== "boolean")
+      throw Error("Valid option must be boolean");
   }
 
   validateOutputFormat(outputFormat) {

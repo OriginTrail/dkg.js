@@ -26,7 +26,8 @@ class HttpService {
       publishType,
       assertionId,
       assertion,
-      UAL
+      UAL,
+      options.localStore
     );
     const endpoint = options.endpoint ?? this.config.endpoint;
     return axios({
@@ -112,7 +113,7 @@ class HttpService {
     return response.data;
   }
 
-  preparePublishRequest(publishType, assertionId, assertion, UAL) {
+  preparePublishRequest(publishType, assertionId, assertion, UAL, localStore) {
     let publishRequest = {
       publishType,
       assertionId,
@@ -126,6 +127,7 @@ class HttpService {
           blockchain,
           contract,
           tokenId: parseInt(UAI),
+          localStore,
         };
         break;
       default:
