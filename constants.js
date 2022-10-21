@@ -23,7 +23,7 @@ module.exports.PUBLISH_TYPES = {
 module.exports.BLOCKCHAINS = {
   ganache: {
     rpc: "http://localhost:7545",
-    hubContract: "0xF21dD87cFC5cF5D073398833AFe5EFC543b78a00",
+    hubContract: "0x209679fA3B658Cd0fC74473aF28243bfe78a9b12",
   },
   polygon: {
     rpc: "https://matic-mumbai.chainstacklabs.com",
