@@ -35,6 +35,9 @@ class BaseServiceManager {
     if (Utilities.nodeSupported()) {
       return new BlockchainInterface.node(config);
     }
+    if(!Utilities.nodeSupported() && !window.ethereum && config.blockchain?.privateKey) {
+      return new BlockchainInterface.node(config);
+    }
     return new BlockchainInterface.browser(config);
   }
 }

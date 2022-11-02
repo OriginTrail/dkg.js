@@ -34,6 +34,7 @@
                 <select class="form-select mb-4" aria-label="Default select example" v-model="selectedNetwork">
                     <option value="ganache">Ganache</option>
                     <option value="polygon">Polygon</option>
+                    <option value="otp">OTP Devnet</option>
                 </select>
                 <h3>Asset data</h3>
                 <p>Context</p>
@@ -158,7 +159,12 @@
                     endpoint: OT_NODE_HOSTNAME,
                     port: OT_NODE_PORT,
                     useSSL: false,
-                    loglevel: 'trace'
+                    loglevel: 'trace',
+                    blockchain: {
+                        name: "ganache",
+                        publicKey: "",
+                        privateKey: "",
+                    }
                 };
                 window.DkgClient = new DKG(options);
             },
