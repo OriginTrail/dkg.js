@@ -42,8 +42,8 @@ class NodeBlockchainService extends BlockchainServiceBase {
       hubContract:
         options.blockchain.hubContract ??
         BLOCKCHAINS[options.blockchain.name].hubContract,
-      publicKey: options.blockchain.publicKey,
-      privateKey: options.blockchain.privateKey,
+      publicKey: this.config.blockchain.publicKey ?? options.blockchain.publicKey,
+      privateKey: this.config.blockchain.privateKey ?? options.blockchain.privateKey,
     };
   }
 
@@ -60,7 +60,6 @@ class NodeBlockchainService extends BlockchainServiceBase {
         args,
         blockchain
       );
-
       const createdTransaction = await this.web3.eth.accounts.signTransaction(
         tx,
         blockchain.privateKey

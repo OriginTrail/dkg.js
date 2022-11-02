@@ -34,6 +34,7 @@
                 <select class="form-select mb-4" aria-label="Default select example" v-model="selectedNetwork">
                     <option value="ganache">Ganache</option>
                     <option value="polygon">Polygon</option>
+                    <option value="otp">OTP Devnet</option>
                 </select>
                 <h3>Asset data</h3>
                 <p>Context</p>
@@ -106,7 +107,7 @@
         el: '#app',
         data: function () {
             return {
-                selectedNetwork: 'ganache',
+                selectedNetwork: 'otp',
                 disabled: false,
                 resolveResult: [],
                 getUAL: '',
@@ -152,13 +153,18 @@
         },
         methods: {
             initializeDKGClient(blockchain) {
-                const OT_NODE_HOSTNAME = 'http://localhost';
-                const OT_NODE_PORT = '8901';
+                const OT_NODE_HOSTNAME = 'https://v6-pegasus-node-30.origin-trail.network';
+                const OT_NODE_PORT = '8900';
                 const options = {
                     endpoint: OT_NODE_HOSTNAME,
                     port: OT_NODE_PORT,
                     useSSL: false,
-                    loglevel: 'trace'
+                    loglevel: 'trace',
+                    blockchain: {
+                        name: "otp",
+                        publicKey: "0xBCc7F04c73214D160AA6C892FcA6DB881fb3E0F5",
+                        privateKey: "0x8ab3477bf3a1e0af66ab468fafd6cf982df99a59fee405d99861e7faf4db1f7b",
+                    }
                 };
                 window.DkgClient = new DKG(options);
             },

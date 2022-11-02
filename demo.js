@@ -1,22 +1,22 @@
 const DKG = require("./index.js");
 
 const OT_NODE_HOSTNAME = "http://localhost";
-const OT_NODE_PORT = "8900";
-const PUBLIC_KEY = "";
-const PRIVATE_KEY = "";
+const OT_NODE_PORT = "8901";
+const PUBLIC_KEY = "0xBCc7F04c73214D160AA6C892FcA6DB881fb3E0F5";
+const PRIVATE_KEY = "0x8ab3477bf3a1e0af66ab468fafd6cf982df99a59fee405d99861e7faf4db1f7b";
 const AUTH_TOKEN = "";
 
-const blockchain = {
-  name: "otp",
-  publicKey: PUBLIC_KEY,
-  privateKey: PRIVATE_KEY,
-};
-
 // const blockchain = {
-//   name: "ganache",
+//   name: "otp",
 //   publicKey: PUBLIC_KEY,
 //   privateKey: PRIVATE_KEY,
 // };
+
+const blockchain = {
+  name: "ganache",
+  publicKey: PUBLIC_KEY,
+  privateKey: PRIVATE_KEY,
+};
 
 let options = {
   endpoint: OT_NODE_HOSTNAME,
