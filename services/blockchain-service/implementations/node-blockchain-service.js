@@ -42,8 +42,8 @@ class NodeBlockchainService extends BlockchainServiceBase {
       hubContract:
         options.blockchain.hubContract ??
         BLOCKCHAINS[options.blockchain.name].hubContract,
-      publicKey: this.config.blockchain.publicKey ?? options.blockchain.publicKey,
-      privateKey: this.config.blockchain.privateKey ?? options.blockchain.privateKey,
+      publicKey: this.config.blockchain?.publicKey ?? options.blockchain.publicKey,
+      privateKey: this.config.blockchain?.privateKey ?? options.blockchain.privateKey,
     };
   }
 
