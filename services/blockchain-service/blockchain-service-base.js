@@ -143,7 +143,10 @@ class BlockchainServiceBase {
     await this.executeContractFunction(
       this.TokenContract,
       "increaseAllowance",
-      [this.AssetRegistryContract.options.address, options.tokenAmount],
+      [
+        this.AssetRegistryContract.options.address,
+        options.tokenAmount ?? constants.PUBLISH_TOKEN_AMOUNT,
+      ],
       blockchain
     );
 
