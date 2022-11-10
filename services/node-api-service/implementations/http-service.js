@@ -61,6 +61,21 @@ class HttpService {
       });
   }
 
+  async query(data, options) {
+    const endpoint = options.endpoint ?? this.config.endpoint;
+
+    return axios({
+      method: "post",
+      url: `${endpoint}:${this.config.port}/query`,
+      data: {query: data.query,type: data.type},
+      headers: this.prepareRequestConfig()
+    }).then((response) => {
+      return response.data.operationId;
+    }).catch((e) => {
+      throw Error(`Unable to get assertion: ${e.message}`);
+    });
+  }
+
   async getOperationResult(operationId, options) {
     await Utilities.sleepForMilliseconds(500);
     if (!operationId) {
