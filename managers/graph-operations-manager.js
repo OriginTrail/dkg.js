@@ -1,5 +1,6 @@
 class GraphOperationsManager {
     constructor(config, services) {
+        this.config = config;
         this.nodeApiService = services.nodeApiService;
     }
 
