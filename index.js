@@ -7,16 +7,16 @@ const NodeOperationsManager = require("./managers/node-operations-manager.js");
 
 const BaseServiceManager = require("./services/base-service-manager.js");
 
-class DkgClient extends GraphOperationsManager {
+class DkgClient {
   constructor(config) {
-    super(config);
     const baseServiceManager = new BaseServiceManager(config);
     const services = baseServiceManager.getServices();
-
     // this.assertion = new AssertionOperationsManager(config, services);
     this.asset = new AssetOperationsManager(config, services);
     // this.index = new IndexOperationsManager(config, services);
     this.node = new NodeOperationsManager(config, services);
+
+    this.graph = new GraphOperationsManager(config, services);
   }
 }
 module.exports = DkgClient;
