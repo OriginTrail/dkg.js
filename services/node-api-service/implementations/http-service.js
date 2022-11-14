@@ -72,7 +72,7 @@ class HttpService {
     }).then((response) => {
       return response.data.operationId;
     }).catch((e) => {
-      throw Error(`Unable to get assertion: ${e.message}`);
+      throw Error(`Unable to query: ${e.message}`);
     });
   }
 
