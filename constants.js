@@ -47,7 +47,9 @@ module.exports.WEBSOCKET_PROVIDER_OPTIONS = {
   },
 };
 
-module.exports.HOLDING_TIME_IN_YEARS = 2;
+module.exports.PUBLISH_TRIPLES_NUMBER = 10;
+module.exports.PUBLISH_CHUNKS_NUMBER = 10;
+module.exports.PUBLISH_EPOCHS_NUM = 5;
 module.exports.PUBLISH_TOKEN_AMOUNT = 15;
 
 module.exports.VISIBILITY = {

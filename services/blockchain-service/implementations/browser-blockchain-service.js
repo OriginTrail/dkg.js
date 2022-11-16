@@ -82,12 +82,12 @@ class BrowserBlockchainService extends BlockchainServiceBase {
     return receipt.events[eventName].returnValues;
   }
 
-  async transferAsset(UAL, UAI, to, options) {
+  async transferAsset(UAI, to, options) {
     const blockchain = this.getBlockchain(options);
     this.web3 = this.web3 ?? this.initializeWeb3(blockchain.rpc);
     await this.initializeContracts(blockchain.hubContract);
     return await this.executeContractFunction(
-      this.UAIRegistryContract,
+      this.ContentAssetContract,
       "transfer",
       [await this.getAccount(), to, UAI],
       blockchain

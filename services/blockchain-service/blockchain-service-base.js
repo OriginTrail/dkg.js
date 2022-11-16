@@ -1,8 +1,8 @@
 const Utilities = require("../utilities");
 const constants = require("../../constants");
-const AssetRegistryABI = require("dkg-evm-module/build/contracts/AssetRegistry.json").abi;
+const ServiceAgreementStorageABI = require('dkg-evm-module/build/contracts/ServiceAgreementStorage.json').abi;
+const ContentAssetABI = require("dkg-evm-module/build/contracts/ContentAsset.json").abi;
 const AssertionRegistryABI = require("dkg-evm-module/build/contracts/AssertionRegistry.json").abi;
-const UAIRegistryABI = require("dkg-evm-module/build/contracts/UAIRegistry.json").abi;
 const HubABI = require("dkg-evm-module/build/contracts/Hub.json").abi;
 const ERC20TokenABI = require("dkg-evm-module/build/contracts/ERC20Token.json").abi;
 const OPERATIONS_STEP_STATUS = require('../../constants.js').OPERATIONS_STEP_STATUS;
@@ -62,14 +62,24 @@ class BlockchainServiceBase {
   async initializeContracts(hubContract) {
     this.hubContract = new this.web3.eth.Contract(HubABI, hubContract);
 
-    const assetRegistryAddress = await this.callContractFunction(
+    const serviceAgreementStorageContract = await this.callContractFunction(
       this.hubContract,
       "getContractAddress",
-      ["AssetRegistry"]
+      ["ServiceAgreementStorage"]
     );
-    this.AssetRegistryContract = new this.web3.eth.Contract(
-      AssetRegistryABI,
-      assetRegistryAddress
+    this.ServiceAgreementStorageContract = new this.web3.eth.Contract(
+      ServiceAgreementStorageABI,
+      serviceAgreementStorageContract
+    );
+
+    const contentAssetContract = await this.callContractFunction(
+      this.hubContract,
+      "getContractAddress",
+      ["ContentAsset"]
+    );
+    this.ContentAssetContract = new this.web3.eth.Contract(
+      ContentAssetABI,
+      contentAssetContract
     );
 
     const AssertionRegistryAddress = await this.callContractFunction(
@@ -80,16 +90,6 @@ class BlockchainServiceBase {
     this.AssertionRegistryContract = new this.web3.eth.Contract(
       AssertionRegistryABI,
       AssertionRegistryAddress
-    );
-
-    const UAIRegistryAddress = await this.callContractFunction(
-      this.hubContract,
-      "getContractAddress",
-      ["UAIRegistry"]
-    );
-    this.UAIRegistryContract = new this.web3.eth.Contract(
-      UAIRegistryABI,
-      UAIRegistryAddress
     );
 
     const tokenAddress = await this.callContractFunction(
@@ -106,19 +106,11 @@ class BlockchainServiceBase {
   generateCreateAssetRequest(assertion, assertionId, options) {
     try {
       const assertionSize = Utilities.getAssertionSizeInKb(assertion);
-      const holdingTimeInYears =
-        options.holdingTimeInYears ?? constants.HOLDING_TIME_IN_YEARS;
+      const triplesNumber = options.triplesNumber ?? constants.PUBLISH_TRIPLES_NUMBER;
+      const chunksNumber = options.chunksNumber ?? constants.PUBLISH_CHUNKS_NUMBER;
+      const epochsNum = options.epochsNum ?? constants.PUBLISH_EPOCHS_NUM;
       const tokenAmount = options.tokenAmount ?? constants.PUBLISH_TOKEN_AMOUNT;
-      const visibility = options.visibility
-        ? constants.VISIBILITY[options.visibility]
-        : constants.DEFAULT_PUBLISH_VISIBILITY;
-      return [
-        assertionId,
-        assertionSize,
-        visibility,
-        holdingTimeInYears,
-        tokenAmount,
-      ];
+      return [assertionId, assertionSize, triplesNumber, chunksNumber, epochsNum, tokenAmount];
     } catch (e) {
       throw Error("Invalid request parameters.");
     }
@@ -127,10 +119,11 @@ class BlockchainServiceBase {
   generateUpdateAssetRequest(UAI, assertion, assertionId, options) {
     try {
       const assertionSize = Utilities.getAssertionSizeInKb(assertion);
-      const holdingTimeInYears =
-        options.holdingTimeInYears ?? constants.HOLDING_TIME_IN_YEARS;
+      const triplesNumber = options.triplesNumber ?? constants.PUBLISH_TRIPLES_NUMBER;
+      const chunksNumber = options.chunksNumber ?? constants.PUBLISH_CHUNKS_NUMBER;
+      const epochsNum = options.epochsNum ?? constants.PUBLISH_EPOCHS_NUM;
       const tokenAmount = options.tokenAmount ?? constants.PUBLISH_TOKEN_AMOUNT;
-      return [UAI, assertionId, assertionSize, holdingTimeInYears, tokenAmount];
+      return [UAI, assertionId, assertionSize, triplesNumber, chunksNumber, epochsNum, tokenAmount];
     } catch (e) {
       throw Error("Invalid request parameters.");
     }
@@ -144,7 +137,7 @@ class BlockchainServiceBase {
       this.TokenContract,
       "increaseAllowance",
       [
-        this.AssetRegistryContract.options.address,
+        this.ServiceAgreementStorageContract.options.address,
         options.tokenAmount ?? constants.PUBLISH_TOKEN_AMOUNT,
       ],
       blockchain
@@ -154,20 +147,34 @@ class BlockchainServiceBase {
       status: OPERATIONS_STEP_STATUS.INCREASE_ALLOWANCE_COMPLETED,
     });
 
-    let receipt = await this.executeContractFunction(
-      this.AssetRegistryContract,
-      "createAsset",
-      requestData,
-      blockchain
-    );
-    const { UAI } = await this.decodeEventLogs(receipt, "AssetCreated");
+    try {
+      let receipt = await this.executeContractFunction(
+        this.ContentAssetContract,
+        "createAsset",
+        requestData,
+        blockchain
+      );
+      console.log(blockchain);
+      console.log(receipt);
+      const { assetContractAddress, UAI, stateCommitHash } = await this.decodeEventLogs(receipt, "AssetCreated");
 
-    stepHooks.afterHook({
-      status: OPERATIONS_STEP_STATUS.CREATE_ASSET_COMPLETED,
-      data: { UAI }
-    });
+      stepHooks.afterHook({
+        status: OPERATIONS_STEP_STATUS.CREATE_ASSET_COMPLETED,
+        data: { UAI }
+      });
 
-    return UAI;
+      return UAI;
+    } catch(e) {
+      await this.executeContractFunction(
+        this.TokenContract,
+        "decreaseAllowance",
+        [
+          this.ServiceAgreementStorageContract.options.address,
+          options.tokenAmount ?? constants.PUBLISH_TOKEN_AMOUNT,
+        ],
+        blockchain
+      );
+    }
   }
 
   async updateAsset(requestData, options) {
@@ -177,26 +184,44 @@ class BlockchainServiceBase {
     await this.executeContractFunction(
       this.TokenContract,
       "increaseAllowance",
-      [this.AssetRegistryContract.options.address, options.tokenAmount],
+      [this.ServiceAgreementStorageContract.options.address, options.tokenAmount],
       blockchain
     );
-    return this.executeContractFunction(
-      this.AssetRegistryContract,
-      "updateAsset",
-      requestData,
-      blockchain
-    );
+
+    try {
+      return this.executeContractFunction(
+        this.ContentAssetContract,
+        "updateAsset",
+        requestData,
+        blockchain
+      );
+    } catch(e) {
+      await this.executeContractFunction(
+        this.TokenContract,
+        "decreaseAllowance",
+        [this.ServiceAgreementStorageContract.options.address, options.tokenAmount],
+        blockchain
+      );
+    }
   }
 
-  async getAssetCommitHash(UAI, options) {
-    const blockchain = this.getBlockchain(options);
-    this.web3 = this.web3 ?? this.initializeWeb3(blockchain.rpc);
-    await this.initializeContracts(blockchain.hubContract);
-    return this.callContractFunction(
-      this.AssetRegistryContract,
-      "getCommitHash",
-      [UAI, this.getCommitOffset(options)]
-    );
+  async getAssertionsLength(UAI, options = null) {
+    if(options) {
+      const blockchain = this.getBlockchain(options);
+      this.web3 = this.web3 ?? this.initializeWeb3(blockchain.rpc);
+      await this.initializeContracts(blockchain.hubContract);
+    }
+    return await this.ContentAssetContract.methods.getAssertionsLength(UAI).call();
+  }
+
+  async getLatestAssertion(UAI, options = null) {
+    if(options) {
+      const blockchain = this.getBlockchain(options);
+      this.web3 = this.web3 ?? this.initializeWeb3(blockchain.rpc);
+      await this.initializeContracts(blockchain.hubContract);
+    }
+    const assertionsLength = await this.ContentAssetContract.methods.getAssertionsLength(UAI).call();
+    return await this.ContentAssetContract.methods.getAssertionByIndex(UAI, assertionsLength - 1).call();
   }
 
   async getAssetOwner(UAI, options = null) {
@@ -205,7 +230,7 @@ class BlockchainServiceBase {
       this.web3 = this.web3 ?? this.initializeWeb3(blockchain.rpc);
       await this.initializeContracts(blockchain.hubContract);
     }
-    return await this.UAIRegistryContract.methods.ownerOf(UAI).call();
+    return await this.ContentAssetContract.methods.ownerOf(UAI).call();
   }
 
   deriveUAL(blockchain, contract, UAI) {

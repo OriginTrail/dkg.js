@@ -6,7 +6,6 @@ class ValidationService {
   validatePublishRequest(content, options) {
     this.validateJSON(content);
     this.validateSize(content);
-    this.validateVisibility(options.visibility);
     this.validateBlockchain(options.blockchain);
     this.validateLocalStore(options.localStore);
   }
@@ -36,13 +35,6 @@ class ValidationService {
     if (!content) throw Error("No content provided");
     if (Buffer.byteLength(JSON.stringify(content), "utf-8") > MAX_FILE_SIZE)
       throw Error(`File size limit is ${MAX_FILE_SIZE / (1024 * 1024)}MB.`);
-  }
-
-  validateVisibility(visibility) {
-    if (!publishAllowedVisibilityParams.includes(visibility))
-      throw Error(
-        `Please set visibility to one of these values : ${publishAllowedVisibilityParams}`
-      );
   }
 
   validateLocalStore(localStore) {

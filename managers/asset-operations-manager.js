@@ -24,6 +24,7 @@ class AssetOperationsManager {
     );
 
     const UAI = await this.blockchainService.createAsset(requestData, options, stepHooks);
+    console.log(UAI);
     const UAL = this.blockchainService.generateUAL(options, UAI);
 
     let operationId = await this.nodeApiService.publish(
@@ -65,10 +66,7 @@ class AssetOperationsManager {
     options.blockchain.hubContract = contract;
     options.blockchain.rpc = options.blockchain.rpc ?? BLOCKCHAINS[blockchain].rpc;
 
-    const assertionId = await this.blockchainService.getAssetCommitHash(
-      UAI,
-      options
-    );
+    const assertionId = await this.blockchainService.getLatestAssertion(UAI);
 
     return this.assertionOperationsManager.get(assertionId, options);
   }

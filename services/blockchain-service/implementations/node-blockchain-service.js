@@ -4,11 +4,10 @@ const {
   WEBSOCKET_PROVIDER_OPTIONS,
 } = require("../../../constants.js");
 const BlockchainServiceBase = require("../blockchain-service-base.js");
-const AssetRegistryABI =
-  require("dkg-evm-module/build/contracts/AssetRegistry.json").abi;
+const ContentAssetABI = require("dkg-evm-module/build/contracts/ContentAsset.json").abi;
 
 const events = {};
-AssetRegistryABI.filter((obj) => obj.type === "event").forEach((event) => {
+ContentAssetABI.filter((obj) => obj.type === "event").forEach((event) => {
   const concatInputs = event.inputs.reduce((i1, i2) => i1.type + "," + i2.type);
 
   events[event.name] = {
@@ -89,12 +88,12 @@ class NodeBlockchainService extends BlockchainServiceBase {
     return result;
   }
 
-  async transferAsset(UAL, UAI, to, options) {
+  async transferAsset(UAI, to, options) {
     const blockchain = this.getBlockchain(options);
     this.web3 = this.web3 ?? this.initializeWeb3(blockchain.rpc);
     await this.initializeContracts(blockchain.hubContract);
     return await this.executeContractFunction(
-      this.UAIRegistryContract,
+      this.ContentAssetContract,
       "transfer",
       [blockchain.publicKey, to, UAI],
       blockchain
