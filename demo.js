@@ -54,12 +54,14 @@ async function main() {
     epochsNum: 5,
     tokenAmount: 10,
     maxNumberOfRetries: 5,
+    hashFunctionId: 0,
     blockchain,
   };
   let getOptions = {
     validate: true,
     commitOffset: 0,
     maxNumberOfRetries: 5,
+    hashFunctionId: 0,
     blockchain
   };
   let transferAssetOptions = {

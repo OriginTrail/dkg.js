@@ -14,7 +14,10 @@ class BrowserBlockchainService extends BlockchainServiceBase {
       name: options.blockchain.name,
       hubContract:
         options.blockchain.hubContract ??
-        constants.BLOCKCHAINS[options.blockchain.name].hubContract,
+        BLOCKCHAINS[options.blockchain.name].hubContract,
+      assetContract:
+        options.blockchain.assetContract ??
+        constants.BLOCKCHAINS[options.blockchain.name].assetContract,
       rpc: options.blockchain.rpc ?? constants.BLOCKCHAINS[options.blockchain.name].rpc,
     };
   }

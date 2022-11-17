@@ -74,7 +74,7 @@ class BlockchainServiceBase {
 
     const contentAssetContract = await this.callContractFunction(
       this.hubContract,
-      "getContractAddress",
+      "getAssetContractAddress",
       ["ContentAsset"]
     );
     this.ContentAssetContract = new this.web3.eth.Contract(
@@ -154,16 +154,15 @@ class BlockchainServiceBase {
         requestData,
         blockchain
       );
-      console.log(blockchain);
-      console.log(receipt);
-      const { assetContractAddress, UAI, stateCommitHash } = await this.decodeEventLogs(receipt, "AssetCreated");
+
+      const { assetContract, tokenId, stateCommitHash } = await this.decodeEventLogs(receipt, "AssetCreated");
 
       stepHooks.afterHook({
         status: OPERATIONS_STEP_STATUS.CREATE_ASSET_COMPLETED,
-        data: { UAI }
+        data: { tokenId }
       });
 
-      return UAI;
+      return tokenId;
     } catch(e) {
       await this.executeContractFunction(
         this.TokenContract,
@@ -240,7 +239,7 @@ class BlockchainServiceBase {
   generateUAL(options, UAI) {
     const blockchain = this.getBlockchain(options);
 
-    return this.deriveUAL(blockchain.name, blockchain.hubContract, UAI);
+    return this.deriveUAL(blockchain.name, blockchain.assetContract, UAI);
   }
 
   getCommitOffset(options) {

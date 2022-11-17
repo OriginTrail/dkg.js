@@ -24,7 +24,7 @@ class AssetOperationsManager {
     );
 
     const UAI = await this.blockchainService.createAsset(requestData, options, stepHooks);
-    console.log(UAI);
+
     const UAL = this.blockchainService.generateUAL(options, UAI);
 
     let operationId = await this.nodeApiService.publish(

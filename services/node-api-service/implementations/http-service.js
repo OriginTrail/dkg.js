@@ -27,6 +27,7 @@ class HttpService {
       assertionId,
       assertion,
       UAL,
+      options.hashFunctionId,
       options.localStore
     );
     const endpoint = options.endpoint ?? this.config.endpoint;
@@ -45,7 +46,7 @@ class HttpService {
   }
 
   get(assertionId, options) {
-    let requestBody = this.prepareGetAssertionRequest(assertionId);
+    let requestBody = this.prepareGetAssertionRequest(assertionId, options.hashFunctionId);
     const endpoint = options.endpoint ?? this.config.endpoint;
     return axios({
       method: "post",
@@ -128,7 +129,7 @@ class HttpService {
     return response.data;
   }
 
-  preparePublishRequest(publishType, assertionId, assertion, UAL, localStore) {
+  preparePublishRequest(publishType, assertionId, assertion, UAL, hashFunctionId, localStore) {
     let publishRequest = {
       publishType,
       assertionId,
@@ -142,6 +143,7 @@ class HttpService {
           blockchain,
           contract,
           tokenId: parseInt(UAI),
+          hashFunctionId,
           localStore,
         };
         break;
@@ -151,9 +153,10 @@ class HttpService {
     return publishRequest;
   }
 
-  prepareGetAssertionRequest(assertionId) {
+  prepareGetAssertionRequest(assertionId, hashFunctionId) {
     return {
       id: assertionId,
+      hashFunctionId,
     };
   }
 

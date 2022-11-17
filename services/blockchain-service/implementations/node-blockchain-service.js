@@ -8,7 +8,7 @@ const ContentAssetABI = require("dkg-evm-module/build/contracts/ContentAsset.jso
 
 const events = {};
 ContentAssetABI.filter((obj) => obj.type === "event").forEach((event) => {
-  const concatInputs = event.inputs.reduce((i1, i2) => i1.type + "," + i2.type);
+  const concatInputs = event.inputs.map((input) => input.internalType);
 
   events[event.name] = {
     hash: Web3.utils.keccak256(event.name + "(" + concatInputs + ")"),
@@ -41,6 +41,9 @@ class NodeBlockchainService extends BlockchainServiceBase {
       hubContract:
         options.blockchain.hubContract ??
         BLOCKCHAINS[options.blockchain.name].hubContract,
+      assetContract:
+        options.blockchain.assetContract ??
+        BLOCKCHAINS[options.blockchain.name].assetContract,
       publicKey: this.config.blockchain?.publicKey ?? options.blockchain.publicKey,
       privateKey: this.config.blockchain?.privateKey ?? options.blockchain.privateKey,
     };
