@@ -16,6 +16,10 @@ class AssetOperationsManager {
     this.validationService.validatePublishRequest(content, options);
     options.operation = OPERATIONS.publish;
     const assertion = await AssertionTools.formatAssertion(content);
+    options.size = AssertionTools.getAssertionSizeInBytes(assertion);
+    options.chunksNumber = AssertionTools.getAssertionChunksNumber(assertion);
+    options.triplesNumber = AssertionTools.getAssertionTriplesNumber(assertion);
+
     const assertionId = AssertionTools.calculateRoot(assertion);
     let requestData = this.blockchainService.generateCreateAssetRequest(
       assertion,

@@ -49,8 +49,6 @@ async function main() {
   };
 
   let publishOptions = {
-    triplesNumber: 3,
-    chunksNumber: 3,
     epochsNum: 5,
     tokenAmount: 10,
     maxNumberOfRetries: 5,
