@@ -4,6 +4,7 @@
   "description": "Javascript library for interaction with the OriginTrail Decentralized Knowledge Graph",
   "main": "index.js",
   "scripts": {
+    "compile-contracts": "cd ./node_modules/dkg-evm-module && truffle compile",
     "test": "npm run test",
     "build": "npx webpack --config webpack.config.js",
     "watch": "npx webpack --config webpack.config.js --watch --progress"
