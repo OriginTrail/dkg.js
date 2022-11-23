@@ -44,8 +44,7 @@ class BlockchainServiceBase {
     let gasPrice;
 
     if(blockchain.name === "otp") {
-      // hotfix: amount needs to be multiplied until getGasPrice on otp is fixed
-      gasPrice = (await this.web3.eth.getGasPrice()) * 1_000_000;
+      gasPrice = await this.web3.eth.getGasPrice();
     } else {
       gasPrice = this.web3.utils.toWei("100", "Gwei")
     }
