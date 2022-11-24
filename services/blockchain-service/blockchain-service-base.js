@@ -102,11 +102,9 @@ class BlockchainServiceBase {
     );
   }
 
-  generateCreateAssetRequest(assertion, assertionId, options) {
+  generateCreateAssetRequest(assertion, assertionId, triplesNumber, chunksNumber, options) {
     try {
       const assertionSize = Utilities.getAssertionSizeInKb(assertion);
-      const triplesNumber = options.triplesNumber ?? constants.PUBLISH_TRIPLES_NUMBER;
-      const chunksNumber = options.chunksNumber ?? constants.PUBLISH_CHUNKS_NUMBER;
       const epochsNum = options.epochsNum ?? constants.PUBLISH_EPOCHS_NUM;
       const tokenAmount = options.tokenAmount ?? constants.PUBLISH_TOKEN_AMOUNT;
       return [assertionId, assertionSize, triplesNumber, chunksNumber, epochsNum, tokenAmount];

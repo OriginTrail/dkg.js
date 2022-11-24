@@ -29,6 +29,8 @@ class AssetOperationsManager {
     let requestData = this.blockchainService.generateCreateAssetRequest(
       assertion,
       assertionId,
+      assertion.length,
+      assertion.length,
       options
     );
 

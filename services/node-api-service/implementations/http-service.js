@@ -129,7 +129,7 @@ class HttpService {
     return response.data;
   }
 
-  preparePublishRequest(publishType, assertionId, assertion, UAL, hashFunctionId, localStore) {
+  preparePublishRequest(publishType, assertionId, assertion, UAL, hashFunctionId = 0, localStore) {
     let publishRequest = {
       publishType,
       assertionId,
@@ -153,7 +153,7 @@ class HttpService {
     return publishRequest;
   }
 
-  prepareGetAssertionRequest(UAL, hashFunctionId) {
+  prepareGetAssertionRequest(UAL, hashFunctionId = 0) {
     return {
       id: UAL,
       hashFunctionId,
