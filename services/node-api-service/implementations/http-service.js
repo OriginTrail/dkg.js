@@ -45,8 +45,8 @@ class HttpService {
       });
   }
 
-  get(assertionId, options) {
-    let requestBody = this.prepareGetAssertionRequest(assertionId, options.hashFunctionId);
+  get(UAL, options) {
+    let requestBody = this.prepareGetAssertionRequest(UAL, 0);
     const endpoint = options.endpoint ?? this.config.endpoint;
     return axios({
       method: "post",
@@ -153,9 +153,9 @@ class HttpService {
     return publishRequest;
   }
 
-  prepareGetAssertionRequest(assertionId, hashFunctionId) {
+  prepareGetAssertionRequest(UAL, hashFunctionId) {
     return {
-      id: assertionId,
+      id: UAL,
       hashFunctionId,
     };
   }
