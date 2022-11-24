@@ -21,8 +21,6 @@ class AssertionOperationsManager {
     let requestData = this.blockchainService.generateCreateAssetRequest(
       assertion,
       assertionId,
-      assertion.length,
-      assertion.length,
       options
     );
     await this.blockchainService.createAssertion(requestData, options);

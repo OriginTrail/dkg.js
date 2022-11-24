@@ -1,12 +1,18 @@
+const { assertionMetadata } = require("assertion-tools");
 const Utilities = require("../utilities");
 const constants = require("../../constants");
-const ServiceAgreementStorageABI = require('dkg-evm-module/build/contracts/ServiceAgreementStorage.json').abi;
-const ContentAssetABI = require("dkg-evm-module/build/contracts/ContentAsset.json").abi;
-const AssertionRegistryABI = require("dkg-evm-module/build/contracts/AssertionRegistry.json").abi;
+const ServiceAgreementStorageABI =
+  require("dkg-evm-module/build/contracts/ServiceAgreementStorage.json").abi;
+const ContentAssetABI =
+  require("dkg-evm-module/build/contracts/ContentAsset.json").abi;
+const AssertionRegistryABI =
+  require("dkg-evm-module/build/contracts/AssertionRegistry.json").abi;
 const HubABI = require("dkg-evm-module/build/contracts/Hub.json").abi;
-const ERC20TokenABI = require("dkg-evm-module/build/contracts/ERC20Token.json").abi;
-const OPERATIONS_STEP_STATUS = require('../../constants.js').OPERATIONS_STEP_STATUS;
-const emptyHooks = require('../../util/empty-hooks.js');
+const ERC20TokenABI =
+  require("dkg-evm-module/build/contracts/ERC20Token.json").abi;
+const OPERATIONS_STEP_STATUS =
+  require("../../constants.js").OPERATIONS_STEP_STATUS;
+const emptyHooks = require("../../util/empty-hooks.js");
 
 class BlockchainServiceBase {
   constructor() {}
@@ -43,10 +49,10 @@ class BlockchainServiceBase {
 
     let gasPrice;
 
-    if(blockchain.name === "otp") {
+    if (blockchain.name === "otp") {
       gasPrice = await this.web3.eth.getGasPrice();
     } else {
-      gasPrice = this.web3.utils.toWei("100", "Gwei")
+      gasPrice = this.web3.utils.toWei("100", "Gwei");
     }
 
     return {
@@ -102,12 +108,24 @@ class BlockchainServiceBase {
     );
   }
 
-  generateCreateAssetRequest(assertion, assertionId, triplesNumber, chunksNumber, options) {
+  generateCreateAssetRequest(assertion, assertionId, options) {
     try {
-      const assertionSize = Utilities.getAssertionSizeInKb(assertion);
+      const assertionSize =
+        assertionMetadata.getAssertionSizeInBytes(assertion) / 1000;
+      const triplesNumber =
+        assertionMetadata.getAssertionTriplesNumber(assertion);
+      const chunksNumber =
+        assertionMetadata.getAssertionChunksNumber(assertion);
       const epochsNum = options.epochsNum ?? constants.PUBLISH_EPOCHS_NUM;
       const tokenAmount = options.tokenAmount ?? constants.PUBLISH_TOKEN_AMOUNT;
-      return [assertionId, assertionSize, triplesNumber, chunksNumber, epochsNum, tokenAmount];
+      return [
+        assertionId,
+        assertionSize,
+        triplesNumber,
+        chunksNumber,
+        epochsNum,
+        tokenAmount,
+      ];
     } catch (e) {
       throw Error("Invalid request parameters.");
     }
@@ -115,12 +133,23 @@ class BlockchainServiceBase {
 
   generateUpdateAssetRequest(UAI, assertion, assertionId, options) {
     try {
-      const assertionSize = Utilities.getAssertionSizeInKb(assertion);
-      const triplesNumber = options.triplesNumber ?? constants.PUBLISH_TRIPLES_NUMBER;
-      const chunksNumber = options.chunksNumber ?? constants.PUBLISH_CHUNKS_NUMBER;
+      const assertionSize =
+        assertionMetadata.getAssertionSizeInBytes(assertion) / 1000;
+      const triplesNumber =
+        assertionMetadata.getAssertionTriplesNumber(assertion);
+      const chunksNumber =
+        assertionMetadata.getAssertionChunksNumber(assertion);
       const epochsNum = options.epochsNum ?? constants.PUBLISH_EPOCHS_NUM;
       const tokenAmount = options.tokenAmount ?? constants.PUBLISH_TOKEN_AMOUNT;
-      return [UAI, assertionId, assertionSize, triplesNumber, chunksNumber, epochsNum, tokenAmount];
+      return [
+        UAI,
+        assertionId,
+        assertionSize,
+        triplesNumber,
+        chunksNumber,
+        epochsNum,
+        tokenAmount,
+      ];
     } catch (e) {
       throw Error("Invalid request parameters.");
     }
@@ -152,15 +181,16 @@ class BlockchainServiceBase {
         blockchain
       );
 
-      const { assetContract, tokenId, stateCommitHash } = await this.decodeEventLogs(receipt, "AssetCreated");
+      const { assetContract, tokenId, stateCommitHash } =
+        await this.decodeEventLogs(receipt, "AssetCreated");
 
       stepHooks.afterHook({
         status: OPERATIONS_STEP_STATUS.CREATE_ASSET_COMPLETED,
-        data: { tokenId }
+        data: { tokenId },
       });
 
       return tokenId;
-    } catch(e) {
+    } catch (e) {
       await this.executeContractFunction(
         this.TokenContract,
         "decreaseAllowance",
@@ -180,7 +210,10 @@ class BlockchainServiceBase {
     await this.executeContractFunction(
       this.TokenContract,
       "increaseAllowance",
-      [this.ServiceAgreementStorageContract.options.address, options.tokenAmount],
+      [
+        this.ServiceAgreementStorageContract.options.address,
+        options.tokenAmount,
+      ],
       blockchain
     );
 
@@ -191,37 +224,46 @@ class BlockchainServiceBase {
         requestData,
         blockchain
       );
-    } catch(e) {
+    } catch (e) {
       await this.executeContractFunction(
         this.TokenContract,
         "decreaseAllowance",
-        [this.ServiceAgreementStorageContract.options.address, options.tokenAmount],
+        [
+          this.ServiceAgreementStorageContract.options.address,
+          options.tokenAmount,
+        ],
         blockchain
       );
     }
   }
 
   async getAssertionsLength(UAI, options = null) {
-    if(options) {
+    if (options) {
       const blockchain = this.getBlockchain(options);
       this.web3 = this.web3 ?? this.initializeWeb3(blockchain.rpc);
       await this.initializeContracts(blockchain.hubContract);
     }
-    return await this.ContentAssetContract.methods.getAssertionsLength(UAI).call();
+    return await this.ContentAssetContract.methods
+      .getAssertionsLength(UAI)
+      .call();
   }
 
   async getLatestAssertion(UAI, options = null) {
-    if(options) {
+    if (options) {
       const blockchain = this.getBlockchain(options);
       this.web3 = this.web3 ?? this.initializeWeb3(blockchain.rpc);
       await this.initializeContracts(blockchain.hubContract);
     }
-    const assertionsLength = await this.ContentAssetContract.methods.getAssertionsLength(UAI).call();
-    return await this.ContentAssetContract.methods.getAssertionByIndex(UAI, assertionsLength - 1).call();
+    const assertionsLength = await this.ContentAssetContract.methods
+      .getAssertionsLength(UAI)
+      .call();
+    return await this.ContentAssetContract.methods
+      .getAssertionByIndex(UAI, assertionsLength - 1)
+      .call();
   }
 
   async getAssetOwner(UAI, options = null) {
-    if(options) {
+    if (options) {
       const blockchain = this.getBlockchain(options);
       this.web3 = this.web3 ?? this.initializeWeb3(blockchain.rpc);
       await this.initializeContracts(blockchain.hubContract);
