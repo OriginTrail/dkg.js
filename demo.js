@@ -1,11 +1,10 @@
 const DKG = require("./index.js");
 
-const OT_NODE_HOSTNAME = "http://localhost";
+const OT_NODE_HOSTNAME = "https://v6-development-node-01.origin-trail.network";
 const OT_NODE_PORT = "8900";
 const PUBLIC_KEY = "0xd6879C0A03aDD8cFc43825A42a3F3CF44DB7D2b9";
-const PRIVATE_KEY = "0x02b39cac1532bef9dba3e36ec32d3de1e9a88f1dda597d3ac6e2130aed9adc4e";
-
-
+const PRIVATE_KEY =
+  "0x02b39cac1532bef9dba3e36ec32d3de1e9a88f1dda597d3ac6e2130aed9adc4e";
 
 // const blockchain = {
 //   name: "otp",
@@ -14,7 +13,7 @@ const PRIVATE_KEY = "0x02b39cac1532bef9dba3e36ec32d3de1e9a88f1dda597d3ac6e2130ae
 // };
 
 const blockchain = {
-  name: "ganache",
+  name: "otp",
   publicKey: PUBLIC_KEY,
   privateKey: PRIVATE_KEY,
 };
@@ -57,14 +56,14 @@ async function main() {
   let getOptions = {
     validate: true,
     maxNumberOfRetries: 5,
-    blockchain
+    blockchain,
   };
   let transferAssetOptions = {
     blockchain,
   };
   let getAssetOwnerOptions = {
-    blockchain
-  }
+    blockchain,
+  };
 
   try {
     divider();
@@ -75,20 +74,28 @@ async function main() {
 
     divider();
 
-    let createAssetResult = await DkgClient.asset.create(assetData, publishOptions);
+    let createAssetResult = await DkgClient.asset.create(
+      assetData,
+      publishOptions
+    );
     console.log("======================== ASSET CREATED");
     console.log(createAssetResult);
 
     divider();
 
-    let ownerResult = await DkgClient.asset.getOwner(createAssetResult.UAL, getAssetOwnerOptions);
+    let ownerResult = await DkgClient.asset.getOwner(
+      createAssetResult.UAL,
+      getAssetOwnerOptions
+    );
     console.log("======================== GET ASSET OWNER");
     console.log(ownerResult);
 
-
     divider();
 
-    let getAssetResult = await DkgClient.asset.get(createAssetResult.UAL, getOptions);
+    let getAssetResult = await DkgClient.asset.get(
+      createAssetResult.UAL,
+      getOptions
+    );
     console.log("======================== ASSET RESOLVED");
     console.log(JSON.stringify(getAssetResult, null, 2));
 
