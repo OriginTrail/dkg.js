@@ -1,5 +1,4 @@
 const AssertionTools = require("assertion-tools");
-const jsonld = require("jsonld");
 const {
   OPERATIONS,
   PUBLISH_TYPES,

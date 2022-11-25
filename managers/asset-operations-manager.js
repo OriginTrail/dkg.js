@@ -1,6 +1,7 @@
 const AssertionTools = require("assertion-tools");
 const Utilities = require("../services/utilities.js");
 const AssertionOperationsManager = require("./assertion-operations-manager.js");
+const jsonld = require("jsonld");
 const {
   OPERATIONS,
   PUBLISH_TYPES,
