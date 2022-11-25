@@ -66,6 +66,7 @@ class BlockchainServiceBase {
 
   async initializeContracts(hubContract) {
     this.hubContract = new this.web3.eth.Contract(HubABI, hubContract);
+    console.log("initialized hub")
 
     const serviceAgreementStorageContract = await this.callContractFunction(
       this.hubContract,
@@ -76,16 +77,19 @@ class BlockchainServiceBase {
       ServiceAgreementStorageABI,
       serviceAgreementStorageContract
     );
+    console.log("initialized ServiceAgreementStorageContract");
 
     const contentAssetContract = await this.callContractFunction(
       this.hubContract,
       "getAssetContractAddress",
       ["ContentAsset"]
     );
+    console.log("contentAssetContract ", contentAssetContract);
     this.ContentAssetContract = new this.web3.eth.Contract(
       ContentAssetABI,
       contentAssetContract
     );
+    console.log("initialized ContentAssetContract");
 
     const AssertionRegistryAddress = await this.callContractFunction(
       this.hubContract,
@@ -96,6 +100,7 @@ class BlockchainServiceBase {
       AssertionRegistryABI,
       AssertionRegistryAddress
     );
+    console.log("initialized AssertionRegistryContract");
 
     const tokenAddress = await this.callContractFunction(
       this.hubContract,
@@ -106,12 +111,13 @@ class BlockchainServiceBase {
       ERC20TokenABI,
       tokenAddress
     );
+    console.log("initialized TokenContract");
   }
 
   generateCreateAssetRequest(assertion, assertionId, options) {
     try {
       const assertionSize =
-        assertionMetadata.getAssertionSizeInBytes(assertion) / 1000;
+        assertionMetadata.getAssertionSizeInBytes(assertion);
       const triplesNumber =
         assertionMetadata.getAssertionTriplesNumber(assertion);
       const chunksNumber =
@@ -134,7 +140,7 @@ class BlockchainServiceBase {
   generateUpdateAssetRequest(UAI, assertion, assertionId, options) {
     try {
       const assertionSize =
-        assertionMetadata.getAssertionSizeInBytes(assertion) / 1000;
+        assertionMetadata.getAssertionSizeInBytes(assertion);
       const triplesNumber =
         assertionMetadata.getAssertionTriplesNumber(assertion);
       const chunksNumber =
@@ -159,6 +165,7 @@ class BlockchainServiceBase {
     const blockchain = this.getBlockchain(options);
     this.web3 = this.web3 ?? this.initializeWeb3(blockchain.rpc);
     await this.initializeContracts(blockchain.hubContract);
+    console.log("executing function ", "increase allowance");
     await this.executeContractFunction(
       this.TokenContract,
       "increaseAllowance",
@@ -189,8 +196,11 @@ class BlockchainServiceBase {
         data: { tokenId },
       });
 
+      console.log(tokenId)
+
       return tokenId;
     } catch (e) {
+      console.log(e.message)
       await this.executeContractFunction(
         this.TokenContract,
         "decreaseAllowance",

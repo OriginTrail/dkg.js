@@ -24,15 +24,16 @@ module.exports.BLOCKCHAINS = {
   ganache: {
     rpc: "http://localhost:7545",
     hubContract: "0x209679fA3B658Cd0fC74473aF28243bfe78a9b12",
-    assetContract: "0xDbD6D05A0aE1944C73Fb1D08C7548436fD43ba52",  // Content Asset
+    assetContract: "0xDbD6D05A0aE1944C73Fb1D08C7548436fD43ba52", // Content Asset
   },
   polygon: {
     rpc: "https://matic-mumbai.chainstacklabs.com",
-    hubContract: "0xdaa16AC171CfE8Df6F79C06E7EEAb2249E2C9Ec8",  // TODO: change to Asset Contract
+    hubContract: "0xdaa16AC171CfE8Df6F79C06E7EEAb2249E2C9Ec8", // TODO: change to Asset Contract
   },
   otp: {
     rpc: "wss://lofar.origin-trail.network",
-    hubContract: "0xc9184C1A0CE150a882DC3151Def25075bdAf069C",  // TODO: change to Asset Contract
+    hubContract: "0xffF0C45A53b3Ef9f1F49b683A68aEB374f51140f",
+    assetContract: "0xCFdDD7f10fe0E972E87F94E5B746Af5Fb3505E5B",
   },
 };
 
