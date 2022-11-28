@@ -15,10 +15,27 @@ class HttpService {
     return axios({
       method: "get",
       url: `${this.config.endpoint}:${this.config.port}/info`,
-      headers: this.prepareRequestConfig()
+      headers: this.prepareRequestConfig(),
     }).catch((e) => {
       throw Error(`Unable to get node info: ${e.message}`);
     });
+  }
+
+  async getBidSuggestion(blockchain, epochsNumber, assertionSize, options) {
+    const endpoint = options.endpoint ?? this.config.endpoint;
+    
+    return axios({
+      method: "get",
+      url: `${endpoint}:${this.config.port}/bid-suggestion`,
+      data: { blockchain, epochsNumber, assertionSize },
+      headers: this.prepareRequestConfig(),
+    })
+      .then((response) => {
+        return response.data.bidSuggestion;
+      })
+      .catch((e) => {
+        throw Error(`Unable to get bid suggestion: ${e.message}`);
+      });
   }
 
   publish(publishType, assertionId, assertion, UAL, options) {
@@ -35,7 +52,7 @@ class HttpService {
       method: "post",
       url: `${endpoint}:${this.config.port}/publish`,
       data: requestBody,
-      headers: this.prepareRequestConfig()
+      headers: this.prepareRequestConfig(),
     })
       .then((response) => {
         return response.data.operationId;
@@ -52,7 +69,7 @@ class HttpService {
       method: "post",
       url: `${endpoint}:${this.config.port}/get`,
       data: requestBody,
-      headers: this.prepareRequestConfig()
+      headers: this.prepareRequestConfig(),
     })
       .then((response) => {
         return response.data.operationId;
@@ -68,13 +85,15 @@ class HttpService {
     return axios({
       method: "post",
       url: `${endpoint}:${this.config.port}/query`,
-      data: {query: data.query,type: data.type},
-      headers: this.prepareRequestConfig()
-    }).then((response) => {
-      return response.data.operationId;
-    }).catch((e) => {
-      throw Error(`Unable to query: ${e.message}`);
-    });
+      data: { query: data.query, type: data.type },
+      headers: this.prepareRequestConfig(),
+    })
+      .then((response) => {
+        return response.data.operationId;
+      })
+      .catch((e) => {
+        throw Error(`Unable to query: ${e.message}`);
+      });
   }
 
   async getOperationResult(operationId, options) {
@@ -97,7 +116,7 @@ class HttpService {
     let axios_config = {
       method: "get",
       url: `${endpoint}:${this.config.port}/${options.operation}/${operationId}`,
-      headers: this.prepareRequestConfig()
+      headers: this.prepareRequestConfig(),
     };
     do {
       if (retries > maxNumberOfRetries) {
@@ -129,7 +148,14 @@ class HttpService {
     return response.data;
   }
 
-  preparePublishRequest(publishType, assertionId, assertion, UAL, hashFunctionId = 0, localStore) {
+  preparePublishRequest(
+    publishType,
+    assertionId,
+    assertion,
+    UAL,
+    hashFunctionId = 0,
+    localStore
+  ) {
     let publishRequest = {
       publishType,
       assertionId,
@@ -161,7 +187,7 @@ class HttpService {
   }
 
   prepareRequestConfig() {
-    if(this.config?.auth?.token) {
+    if (this.config?.auth?.token) {
       return { Authorization: `Bearer ${this.config.auth.token}` };
     }
     return {};

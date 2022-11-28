@@ -82,7 +82,7 @@ class BlockchainServiceBase {
       "getAssetContractAddress",
       ["ContentAsset"]
     );
-    
+
     this.ContentAssetContract = new this.web3.eth.Contract(
       ContentAssetABI,
       contentAssetContract
@@ -118,14 +118,12 @@ class BlockchainServiceBase {
       const chunksNumber =
         assertionMetadata.getAssertionChunksNumber(assertion);
       const epochsNum = options.epochsNum ?? constants.PUBLISH_EPOCHS_NUM;
-      const tokenAmount = options.tokenAmount ?? constants.PUBLISH_TOKEN_AMOUNT;
       return [
         assertionId,
         assertionSize,
         triplesNumber,
         chunksNumber,
         epochsNum,
-        tokenAmount,
       ];
     } catch (e) {
       throw Error("Invalid request parameters.");
@@ -141,7 +139,6 @@ class BlockchainServiceBase {
       const chunksNumber =
         assertionMetadata.getAssertionChunksNumber(assertion);
       const epochsNum = options.epochsNum ?? constants.PUBLISH_EPOCHS_NUM;
-      const tokenAmount = options.tokenAmount ?? constants.PUBLISH_TOKEN_AMOUNT;
       return [
         UAI,
         assertionId,
@@ -149,24 +146,26 @@ class BlockchainServiceBase {
         triplesNumber,
         chunksNumber,
         epochsNum,
-        tokenAmount,
       ];
     } catch (e) {
       throw Error("Invalid request parameters.");
     }
   }
 
-  async createAsset(requestData, options, stepHooks = emptyHooks) {
+  async createAsset(
+    requestData,
+    bidSuggestion,
+    options,
+    stepHooks = emptyHooks
+  ) {
     const blockchain = this.getBlockchain(options);
     this.web3 = this.web3 ?? this.initializeWeb3(blockchain.rpc);
+    const bid = this.web3.utils.toWei(bidSuggestion.toString(), "ether");
     await this.initializeContracts(blockchain.hubContract);
     await this.executeContractFunction(
       this.TokenContract,
       "increaseAllowance",
-      [
-        this.ServiceAgreementStorageContract.options.address,
-        options.tokenAmount ?? constants.PUBLISH_TOKEN_AMOUNT,
-      ],
+      [this.ServiceAgreementStorageContract.options.address, bid],
       blockchain
     );
 
@@ -178,11 +177,11 @@ class BlockchainServiceBase {
       let receipt = await this.executeContractFunction(
         this.ContentAssetContract,
         "createAsset",
-        requestData,
+        [...requestData, bid],
         blockchain
       );
 
-      const { assetContract, tokenId, stateCommitHash } =
+      const { tokenId } =
         await this.decodeEventLogs(receipt, "AssetCreated");
 
       stepHooks.afterHook({
@@ -195,27 +194,22 @@ class BlockchainServiceBase {
       await this.executeContractFunction(
         this.TokenContract,
         "decreaseAllowance",
-        [
-          this.ServiceAgreementStorageContract.options.address,
-          options.tokenAmount ?? constants.PUBLISH_TOKEN_AMOUNT,
-        ],
+        [this.ServiceAgreementStorageContract.options.address, bid],
         blockchain
       );
       throw e;
     }
   }
 
-  async updateAsset(requestData, options) {
+  async updateAsset(requestData, bidSuggestion, options) {
     const blockchain = this.getBlockchain(options);
     this.web3 = this.web3 ?? this.initializeWeb3(blockchain.rpc);
+    const bid = this.web3.utils.toWei(INIT_ASK_AMOUNT.toString(), "ether");
     await this.initializeContracts(blockchain.hubContract);
     await this.executeContractFunction(
       this.TokenContract,
       "increaseAllowance",
-      [
-        this.ServiceAgreementStorageContract.options.address,
-        options.tokenAmount,
-      ],
+      [this.ServiceAgreementStorageContract.options.address, bid],
       blockchain
     );
 
@@ -223,17 +217,14 @@ class BlockchainServiceBase {
       return this.executeContractFunction(
         this.ContentAssetContract,
         "updateAsset",
-        requestData,
+        [...requestData, bid],
         blockchain
       );
     } catch (e) {
       await this.executeContractFunction(
         this.TokenContract,
         "decreaseAllowance",
-        [
-          this.ServiceAgreementStorageContract.options.address,
-          options.tokenAmount,
-        ],
+        [this.ServiceAgreementStorageContract.options.address, bid],
         blockchain
       );
     }

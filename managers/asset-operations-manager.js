@@ -33,8 +33,16 @@ class AssetOperationsManager {
       options
     );
 
+    const bidSuggestion = await this.nodeApiService.getBidSuggestion(
+      options.blockchain.name,
+      options.epochsNum ?? constants.PUBLISH_EPOCHS_NUM,
+      AssertionTools.assertionMetadata.getAssertionSizeInBytes(assertion),
+      options
+    );
+
     const UAI = await this.blockchainService.createAsset(
       requestData,
+      bidSuggestion,
       options,
       stepHooks
     );
