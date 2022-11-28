@@ -141,7 +141,13 @@ class AssetOperationsManager {
       assertionId,
       options
     );
-    await this.blockchainService.updateAsset(requestData, options);
+    const bidSuggestion = await this.nodeApiService.getBidSuggestion(
+      options.blockchain.name,
+      options.epochsNum ?? constants.PUBLISH_EPOCHS_NUM,
+      AssertionTools.assertionMetadata.getAssertionSizeInBytes(assertion),
+      options
+    );
+    await this.blockchainService.updateAsset(requestData, bidSuggestion, options);
     let operationId = await this.nodeApiService.publish(
       PUBLISH_TYPES.ASSET,
       assertionId,

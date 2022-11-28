@@ -204,7 +204,7 @@ class BlockchainServiceBase {
   async updateAsset(requestData, bidSuggestion, options) {
     const blockchain = this.getBlockchain(options);
     this.web3 = this.web3 ?? this.initializeWeb3(blockchain.rpc);
-    const bid = this.web3.utils.toWei(INIT_ASK_AMOUNT.toString(), "ether");
+    const bid = this.web3.utils.toWei(bidSuggestion.toString(), "ether");
     await this.initializeContracts(blockchain.hubContract);
     await this.executeContractFunction(
       this.TokenContract,
