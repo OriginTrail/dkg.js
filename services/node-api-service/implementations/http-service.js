@@ -27,7 +27,7 @@ class HttpService {
     return axios({
       method: "get",
       url: `${endpoint}:${this.config.port}/bid-suggestion`,
-      data: { blockchain, epochsNumber, assertionSize },
+      params: { blockchain, epochsNumber, assertionSize },
       headers: this.prepareRequestConfig(),
     })
       .then((response) => {
