@@ -1,12 +1,10 @@
 const { assertionMetadata } = require("assertion-tools");
 const Utilities = require("../utilities");
 const constants = require("../../constants");
-const ServiceAgreementStorageABI =
-  require("dkg-evm-module/build/contracts/ServiceAgreementStorage.json").abi;
+const ServiceAgreementABI =
+  require("dkg-evm-module/build/contracts/ServiceAgreement.json").abi;
 const ContentAssetABI =
   require("dkg-evm-module/build/contracts/ContentAsset.json").abi;
-const AssertionRegistryABI =
-  require("dkg-evm-module/build/contracts/AssertionRegistry.json").abi;
 const HubABI = require("dkg-evm-module/build/contracts/Hub.json").abi;
 const ERC20TokenABI =
   require("dkg-evm-module/build/contracts/ERC20Token.json").abi;
@@ -60,24 +58,24 @@ class BlockchainServiceBase {
       to: contractInstance.options.address,
       data: encodedABI,
       gasPrice,
-      gas: gasLimit || this.web3.utils.toWei("900", "Kwei"),
+      gas: gasLimit ?? this.web3.utils.toWei("900", "Kwei"),
     };
   }
 
   async initializeContracts(hubContract) {
     this.hubContract = new this.web3.eth.Contract(HubABI, hubContract);
 
-    const serviceAgreementStorageContract = await this.callContractFunction(
+    const serviceAgreementContractAddress = await this.callContractFunction(
       this.hubContract,
       "getContractAddress",
-      ["ServiceAgreementStorage"]
+      ["ServiceAgreement"]
     );
     this.ServiceAgreementStorageContract = new this.web3.eth.Contract(
-      ServiceAgreementStorageABI,
-      serviceAgreementStorageContract
+      ServiceAgreementABI,
+      serviceAgreementContractAddress
     );
 
-    const contentAssetContract = await this.callContractFunction(
+    const contentAssetContractAddress = await this.callContractFunction(
       this.hubContract,
       "getAssetContractAddress",
       ["ContentAsset"]
@@ -85,17 +83,7 @@ class BlockchainServiceBase {
 
     this.ContentAssetContract = new this.web3.eth.Contract(
       ContentAssetABI,
-      contentAssetContract
-    );
-
-    const AssertionRegistryAddress = await this.callContractFunction(
-      this.hubContract,
-      "getContractAddress",
-      ["AssertionRegistry"]
-    );
-    this.AssertionRegistryContract = new this.web3.eth.Contract(
-      AssertionRegistryABI,
-      AssertionRegistryAddress
+      contentAssetContractAddress
     );
 
     const tokenAddress = await this.callContractFunction(
@@ -165,7 +153,7 @@ class BlockchainServiceBase {
     await this.executeContractFunction(
       this.TokenContract,
       "increaseAllowance",
-      [this.ServiceAgreementStorageContract.options.address, bid],
+      [this.ServiceAgreementContract.options.address, bid],
       blockchain
     );
 
@@ -181,8 +169,7 @@ class BlockchainServiceBase {
         blockchain
       );
 
-      const { tokenId } =
-        await this.decodeEventLogs(receipt, "AssetCreated");
+      const { tokenId } = await this.decodeEventLogs(receipt, "AssetCreated");
 
       stepHooks.afterHook({
         status: OPERATIONS_STEP_STATUS.CREATE_ASSET_COMPLETED,
@@ -194,7 +181,7 @@ class BlockchainServiceBase {
       await this.executeContractFunction(
         this.TokenContract,
         "decreaseAllowance",
-        [this.ServiceAgreementStorageContract.options.address, bid],
+        [this.ServiceAgreementContract.options.address, bid],
         blockchain
       );
       throw e;
@@ -209,7 +196,7 @@ class BlockchainServiceBase {
     await this.executeContractFunction(
       this.TokenContract,
       "increaseAllowance",
-      [this.ServiceAgreementStorageContract.options.address, bid],
+      [this.ServiceAgreementContract.options.address, bid],
       blockchain
     );
 
@@ -224,34 +211,32 @@ class BlockchainServiceBase {
       await this.executeContractFunction(
         this.TokenContract,
         "decreaseAllowance",
-        [this.ServiceAgreementStorageContract.options.address, bid],
+        [this.ServiceAgreementContract.options.address, bid],
         blockchain
       );
     }
   }
 
-  async getAssertionsLength(UAI, options = null) {
+  async getAssertionIdsLength(UAI, options = null) {
     if (options) {
       const blockchain = this.getBlockchain(options);
       this.web3 = this.web3 ?? this.initializeWeb3(blockchain.rpc);
       await this.initializeContracts(blockchain.hubContract);
     }
     return await this.ContentAssetContract.methods
-      .getAssertionsLength(UAI)
+      .getAssertionIdsLength(UAI)
       .call();
   }
 
-  async getLatestAssertion(UAI, options = null) {
+  async getLatestAssertionId(UAI, options = null) {
     if (options) {
       const blockchain = this.getBlockchain(options);
       this.web3 = this.web3 ?? this.initializeWeb3(blockchain.rpc);
       await this.initializeContracts(blockchain.hubContract);
     }
-    const assertionsLength = await this.ContentAssetContract.methods
-      .getAssertionsLength(UAI)
-      .call();
+
     return await this.ContentAssetContract.methods
-      .getAssertionByIndex(UAI, assertionsLength - 1)
+      .getLatestAssertionId(UAI)
       .call();
   }
 
@@ -272,13 +257,6 @@ class BlockchainServiceBase {
     const blockchain = this.getBlockchain(options);
 
     return this.deriveUAL(blockchain.name, blockchain.assetContract, UAI);
-  }
-
-  getCommitOffset(options) {
-    if (options.commitOffset) {
-      return options.commitOffset;
-    }
-    return constants.DEFAULT_COMMIT_OFFSET;
   }
 }
 module.exports = BlockchainServiceBase;
