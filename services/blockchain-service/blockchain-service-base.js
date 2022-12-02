@@ -165,7 +165,7 @@ class BlockchainServiceBase {
       let receipt = await this.executeContractFunction(
         this.ContentAssetContract,
         "createAsset",
-        [[...requestData, bid]],
+        [[...requestData, bid, 1]],
         blockchain
       );
 
@@ -204,7 +204,7 @@ class BlockchainServiceBase {
       return this.executeContractFunction(
         this.ContentAssetContract,
         "updateAsset",
-        [[...requestData, bid]],
+        [[...requestData, bid, 1]],
         blockchain
       );
     } catch (e) {
