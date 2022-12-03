@@ -28,7 +28,7 @@ module.exports = {
     return {
       blockchain: segments[1],
       contract: blockchainSegments[0],
-      UAI: blockchainSegments[1],
+      tokenId: blockchainSegments[1],
       assertionId: blockchainSegments.length > 2 ? blockchainSegments[2] : null,
     };
   },

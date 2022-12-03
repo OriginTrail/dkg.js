@@ -1,7 +1,9 @@
-const constants = require("../../../constants.js");
 const BlockchainServiceBase = require("../blockchain-service-base.js");
 const Web3 = require("web3");
-const {WEBSOCKET_PROVIDER_OPTIONS} = require("../../../constants.js");
+const {
+  WEBSOCKET_PROVIDER_OPTIONS,
+  BLOCKCHAINS,
+} = require("../../../constants.js");
 
 class BrowserBlockchainService extends BlockchainServiceBase {
   constructor(config) {
@@ -17,42 +19,38 @@ class BrowserBlockchainService extends BlockchainServiceBase {
         BLOCKCHAINS[options.blockchain.name].hubContract,
       assetContract:
         options.blockchain.assetContract ??
-        constants.BLOCKCHAINS[options.blockchain.name].assetContract,
-      rpc: options.blockchain.rpc ?? constants.BLOCKCHAINS[options.blockchain.name].rpc,
+        BLOCKCHAINS[options.blockchain.name].assetContract,
+      rpc: options.blockchain.rpc ?? BLOCKCHAINS[options.blockchain.name].rpc,
     };
   }
 
-  initializeWeb3(blockchainRpc) {
-    if (
-      typeof window.Web3 === "undefined" ||
-      !window.Web3
-    ) {
+  initializeWeb3(blockchainName, blockchainRpc) {
+    if (typeof window.Web3 === "undefined" || !window.Web3) {
       this.logger.error(
         "No web3 implementation injected, please inject your own Web3 implementation."
       );
       return;
     }
-    if(window.ethereum) {
-      return new window.Web3(window.ethereum);
+    if (window.ethereum) {
+      this[blockchainName].web3 = window.Web3(window.ethereum);
     } else {
       if (blockchainRpc.startsWith("ws")) {
         const provider = new window.Web3.providers.WebsocketProvider(
-            blockchainRpc,
-            WEBSOCKET_PROVIDER_OPTIONS
+          blockchainRpc,
+          WEBSOCKET_PROVIDER_OPTIONS
         );
-        return new Web3(provider);
+        this[blockchainName].web3 = new Web3(provider);
       } else {
-        return new window.Web3(blockchainRpc);
+        this[blockchainName].web3 = new window.Web3(blockchainRpc);
       }
     }
   }
 
-  async executeContractFunction(
-    contractInstance,
-    functionName,
-    args,
-    blockchain
-  ) {
+  async executeContractFunction(contractName, functionName, args, blockchain) {
+    const contractInstance = this.getContractInstance(
+      blockchain.name,
+      contractName
+    );
     const tx = await this.prepareTransaction(
       contractInstance,
       functionName,
@@ -60,22 +58,24 @@ class BrowserBlockchainService extends BlockchainServiceBase {
       { name: blockchain.name, publicKey: await this.getAccount() }
     );
 
-    const result = await contractInstance.methods[functionName](...args).send(
-      tx
-    );
-    return result;
+    return contractInstance.methods[functionName](...args).send(tx);
   }
 
   async getAccount() {
     if (!this.account) {
-      if(!window.ethereum) {
-        throw Error("This operation can be performed only by using Metamask accounts.");
+      if (!window.ethereum) {
+        throw Error(
+          "This operation can be performed only by using Metamask accounts."
+        );
       }
       const accounts = await window.ethereum
-        .request({ method: "eth_requestAccounts" })
-        .catch(() => {
-          this.logger.error("There was an error fetching your accounts");
-        });
+        .request({
+          method: "eth_requestAccounts",
+        })
+        .catch(() =>
+          this.logger.error("There was an error fetching your accounts")
+        );
+
       this.account = accounts[0];
     }
     return this.account;
@@ -85,15 +85,12 @@ class BrowserBlockchainService extends BlockchainServiceBase {
     return receipt.events[eventName].returnValues;
   }
 
-  async transferAsset(UAI, to, options) {
-    const blockchain = this.getBlockchain(options);
-    this.web3 = this.web3 ?? this.initializeWeb3(blockchain.rpc);
-    await this.initializeContracts(blockchain.hubContract);
-    return await this.executeContractFunction(
-      this.ContentAssetContract,
-      "transfer",
-      [await this.getAccount(), to, UAI],
-      blockchain
+  async transferAsset(tokenId, to, options) {
+    return this.executeContractFunction(
+      "ContentAsset",
+      "transferFrom",
+      [await this.getAccount(), to, tokenId],
+      this.getBlockchain(options)
     );
   }
 }

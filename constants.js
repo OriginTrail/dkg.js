@@ -24,7 +24,7 @@ module.exports.BLOCKCHAINS = {
   ganache: {
     rpc: "http://localhost:7545",
     hubContract: "0x209679fA3B658Cd0fC74473aF28243bfe78a9b12",
-    assetContract: "0xDbD6D05A0aE1944C73Fb1D08C7548436fD43ba52", // Content Asset
+    assetContract: "0x69563CB612e47980A04b35354F0A223e889EE4E9", // Content Asset
   },
   polygon: {
     rpc: "https://matic-mumbai.chainstacklabs.com",
