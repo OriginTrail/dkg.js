@@ -1,4 +1,8 @@
-const AssertionTools = require("assertion-tools");
+const {
+  assertionMetadata,
+  formatAssertion,
+  calculateRoot,
+} = require("assertion-tools");
 const Utilities = require("../services/utilities.js");
 const AssertionOperationsManager = require("./assertion-operations-manager.js");
 const jsonld = require("jsonld");
@@ -22,34 +26,48 @@ class AssetOperationsManager {
     );
   }
 
-  async create(content, options = {}, stepHooks = emptyHooks) {
+  async create(content, opts = {}, stepHooks = emptyHooks) {
+    const options = JSON.parse(JSON.stringify(opts));
+
     this.validationService.validatePublishRequest(content, options);
-    options.operation = OPERATIONS.publish;
-    const assertion = await AssertionTools.formatAssertion(content);
-    const assertionId = AssertionTools.calculateRoot(assertion);
-    let requestData = this.blockchainService.generateCreateAssetRequest(
-      assertion,
-      assertionId,
-      options
-    );
 
-    const bidSuggestion = await this.nodeApiService.getBidSuggestion(
-      options.blockchain.name,
-      options.epochsNum ?? constants.PUBLISH_EPOCHS_NUM,
-      AssertionTools.assertionMetadata.getAssertionSizeInBytes(assertion),
-      options
-    );
+    const assertion = await formatAssertion(content);
+    const assertionId = calculateRoot(assertion);
+    const tokenAmount =
+      options.tokenAmount ??
+      (await this.nodeApiService.getBidSuggestion(
+        options.blockchain.name,
+        options.epochsNum,
+        assertionMetadata.getAssertionSizeInBytes(assertion),
+        options
+      ));
 
-    const UAI = await this.blockchainService.createAsset(
-      requestData,
-      bidSuggestion,
+    const tokenId = await this.blockchainService.createAsset(
+      {
+        assertionId,
+        assertionSize: assertionMetadata.getAssertionSizeInBytes(assertion),
+        triplesNumber: assertionMetadata.getAssertionTriplesNumber(assertion),
+        chunksNumber: assertionMetadata.getAssertionChunksNumber(assertion),
+        epochsNum: options.epochsNum,
+        tokenAmount: this.blockchainService.convertToWei(tokenAmount),
+        scoreFunctionId: options.scoreFunctionId ?? 1,
+      },
       options,
       stepHooks
     );
 
-    const UAL = this.blockchainService.generateUAL(options, UAI);
+    const blockchain = this.blockchainService.getBlockchain(options)
+    const UAL = Utilities.deriveUAL(
+      blockchain.name,
+      await this.blockchainService.getContractAddress(
+        blockchain.name,
+        "ContentAsset",
+        blockchain.rpc
+      ),
+      tokenId
+    );
 
-    let operationId = await this.nodeApiService.publish(
+    const operationId = await this.nodeApiService.publish(
       PUBLISH_TYPES.ASSET,
       assertionId,
       assertion,
@@ -57,9 +75,9 @@ class AssetOperationsManager {
       options
     );
 
-    let operationResult = await this.nodeApiService.getOperationResult(
+    const operationResult = await this.nodeApiService.getOperationResult(
       operationId,
-      options
+      { ...options, operation: OPERATIONS.publish }
     );
 
     stepHooks.afterHook({
@@ -71,8 +89,8 @@ class AssetOperationsManager {
     });
 
     return {
-      UAL: UAL,
-      assertionId: assertionId,
+      UAL,
+      assertionId,
       operation: Utilities.getOperationStatusObject(
         operationResult,
         operationId
@@ -80,43 +98,40 @@ class AssetOperationsManager {
     };
   }
 
-  async get(UAL, options = {}) {
+  async get(UAL, opts = {}) {
+    const options = JSON.parse(JSON.stringify(opts));
     this.validationService.validateGetRequest(UAL, options);
-    options.operation = OPERATIONS.get;
-    let { blockchain, contract, UAI } = Utilities.resolveUAL(UAL);
+    const { tokenId } = Utilities.resolveUAL(UAL);
 
-    options.blockchain.hubContract = contract;
-    options.blockchain.rpc =
-      options.blockchain.rpc ?? BLOCKCHAINS[blockchain].rpc;
-
-    const assertionId = await this.blockchainService.getLatestAssertion(UAI);
+    const assertionId = await this.blockchainService.getLatestAssertionId(tokenId, options);
 
     let operationId = await this.nodeApiService.get(UAL, options);
     let operationResult = await this.nodeApiService.getOperationResult(
       operationId,
-      options
+      { ...options, operation: OPERATIONS.get }
     );
     let assertion = operationResult.data.assertion;
-    try {
-      if (options.validate === false) {
-        const rootHash = AssertionTools.calculateRoot(assertion);
-        if (rootHash !== assertionId)
-          throw Error("Calculated root hashes don't match!");
+    if (assertion) {
+      try {
+        if (options.validate === true) {
+          if (calculateRoot(assertion) !== assertionId)
+            throw Error("Calculated root hashes don't match!");
+        }
+        if (options.outputFormat !== GET_OUTPUT_FORMATS.N_QUADS) {
+          assertion = await jsonld.fromRDF(assertion.join("\n"), {
+            algorithm: "URDNA2015",
+            format: "application/n-quads",
+          });
+        }
+      } catch (error) {
+        operationResult = {
+          ...operationResult,
+          data: {
+            errorType: "DKG_CLIENT_ERROR",
+            errorMessage: error.message,
+          },
+        };
       }
-      if (options.outputFormat !== GET_OUTPUT_FORMATS.N_QUADS) {
-        assertion = await jsonld.fromRDF(assertion.join("\n"), {
-          algorithm: "URDNA2015",
-          format: "application/n-quads",
-        });
-      }
-    } catch (error) {
-      operationResult = {
-        ...operationResult,
-        data: {
-          errorType: "DKG_CLIENT_ERROR",
-          errorMessage: error.message,
-        },
-      };
     }
 
     return {
@@ -129,25 +144,34 @@ class AssetOperationsManager {
     };
   }
 
-  async update(UAL, content, options = {}) {
+  async update(UAL, content, opts = {}) {
+    const options = JSON.parse(JSON.stringify(opts));
     this.validationService.validatePublishRequest(content, options);
-    options.operation = OPERATIONS.publish;
-    const assertion = await AssertionTools.formatAssertion(content);
-    const assertionId = AssertionTools.calculateRoot(assertion);
-    let { UAI } = Utilities.resolveUAL(UAL);
-    let requestData = this.blockchainService.generateUpdateAssetRequest(
-      UAI,
-      assertion,
-      assertionId,
+
+    const assertion = await formatAssertion(content);
+    const assertionId = calculateRoot(assertion);
+    const tokenAmount =
+      options.tokenAmount ??
+      (await this.nodeApiService.getBidSuggestion(
+        options.blockchain.name,
+        options.epochsNum,
+        assertionMetadata.getAssertionSizeInBytes(assertion),
+        options
+      ));
+
+    await this.blockchainService.updateAsset(
+      Utilities.resolveUAL(UAL).tokenId,
+      {
+        assertionId,
+        assertionSize: assertionMetadata.getAssertionSizeInBytes(assertion),
+        triplesNumber: assertionMetadata.getAssertionTriplesNumber(assertion),
+        chunksNumber: assertionMetadata.getAssertionChunksNumber(assertion),
+        epochsNum: options.epochsNum,
+        tokenAmount: this.blockchainService.convertToWei(tokenAmount),
+        scoreFunctionId: options.scoreFunctionId ?? 1,
+      },
       options
     );
-    const bidSuggestion = await this.nodeApiService.getBidSuggestion(
-      options.blockchain.name,
-      options.epochsNum ?? constants.PUBLISH_EPOCHS_NUM,
-      AssertionTools.assertionMetadata.getAssertionSizeInBytes(assertion),
-      options
-    );
-    await this.blockchainService.updateAsset(requestData, bidSuggestion, options);
     let operationId = await this.nodeApiService.publish(
       PUBLISH_TYPES.ASSET,
       assertionId,
@@ -157,11 +181,11 @@ class AssetOperationsManager {
     );
     let operationResult = await this.nodeApiService.getOperationResult(
       operationId,
-      options
+      { ...options, operation: OPERATIONS.publish }
     );
     return {
-      UAL: UAL,
-      assertionId: assertionId,
+      UAL,
+      assertionId,
       operation: Utilities.getOperationStatusObject(
         operationResult,
         operationId
@@ -169,11 +193,12 @@ class AssetOperationsManager {
     };
   }
 
-  async transfer(UAL, to, options = {}) {
+  async transfer(UAL, to, opts = {}) {
+    const options = JSON.parse(JSON.stringify(opts));
     this.validationService.validateAssetTransferRequest(UAL, to, options);
-    let { UAI } = Utilities.resolveUAL(UAL);
-    await this.blockchainService.transferAsset(UAL, UAI, to, options);
-    const owner = await this.blockchainService.getAssetOwner(UAI);
+    const { tokenId } = Utilities.resolveUAL(UAL);
+    await this.blockchainService.transferAsset(tokenId, to, options);
+    const owner = await this.blockchainService.getAssetOwner(tokenId, options);
     return {
       UAL: UAL,
       owner: owner,
@@ -184,10 +209,11 @@ class AssetOperationsManager {
     };
   }
 
-  async getOwner(UAL, options) {
+  async getOwner(UAL, opts = {}) {
+    const options = JSON.parse(JSON.stringify(opts));
     this.validationService.validateGetOwnerRequest(UAL);
-    let { UAI } = Utilities.resolveUAL(UAL);
-    const owner = await this.blockchainService.getAssetOwner(UAI, options);
+    let { tokenId } = Utilities.resolveUAL(UAL);
+    const owner = await this.blockchainService.getAssetOwner(tokenId, options);
     return {
       UAL: UAL,
       owner: owner,

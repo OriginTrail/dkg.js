@@ -63,7 +63,7 @@ class HttpService {
   }
 
   get(UAL, options) {
-    let requestBody = this.prepareGetAssertionRequest(UAL, 0);
+    let requestBody = this.prepareGetAssertionRequest(UAL, 1);
     const endpoint = options.endpoint ?? this.config.endpoint;
     return axios({
       method: "post",
@@ -107,10 +107,9 @@ class HttpService {
       status: OPERATION_STATUSES.pending,
     };
     let retries = 0;
-    let maxNumberOfRetries = options.maxNumberOfRetries
-      ? options.maxNumberOfRetries
-      : this.maxNumberOfRetries;
-    let frequency = options.frequency ? options.frequency : this.frequency;
+    let maxNumberOfRetries =
+      options.maxNumberOfRetries ?? this.maxNumberOfRetries;
+    let frequency = options.frequency ?? this.frequency;
 
     const endpoint = options.endpoint ?? this.config.endpoint;
     let axios_config = {
@@ -153,7 +152,7 @@ class HttpService {
     assertionId,
     assertion,
     UAL,
-    hashFunctionId = 0,
+    hashFunctionId = 1,
     localStore
   ) {
     let publishRequest = {
@@ -163,12 +162,12 @@ class HttpService {
     };
     switch (publishType) {
       case PUBLISH_TYPES.ASSET:
-        const { blockchain, contract, UAI } = utilities.resolveUAL(UAL);
+        const { blockchain, contract, tokenId } = utilities.resolveUAL(UAL);
         publishRequest = {
           ...publishRequest,
           blockchain,
           contract,
-          tokenId: parseInt(UAI),
+          tokenId: parseInt(tokenId),
           hashFunctionId,
           localStore,
         };
@@ -179,7 +178,7 @@ class HttpService {
     return publishRequest;
   }
 
-  prepareGetAssertionRequest(UAL, hashFunctionId = 0) {
+  prepareGetAssertionRequest(UAL, hashFunctionId = 1) {
     return {
       id: UAL,
       hashFunctionId,

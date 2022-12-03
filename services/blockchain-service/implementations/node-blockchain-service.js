@@ -4,33 +4,35 @@ const {
   WEBSOCKET_PROVIDER_OPTIONS,
 } = require("../../../constants.js");
 const BlockchainServiceBase = require("../blockchain-service-base.js");
-const ContentAssetABI = require("dkg-evm-module/build/contracts/ContentAsset.json").abi;
-
-const events = {};
-ContentAssetABI.filter((obj) => obj.type === "event").forEach((event) => {
-  const concatInputs = event.inputs.map((input) => input.internalType);
-
-  events[event.name] = {
-    hash: Web3.utils.keccak256(event.name + "(" + concatInputs + ")"),
-    inputs: event.inputs,
-  };
-});
 
 class NodeBlockchainService extends BlockchainServiceBase {
   constructor(config) {
     super(config);
     this.config = config;
+    this.events = {};
+    
+    this.abis.ContentAsset.filter((obj) => obj.type === "event").forEach(
+      (event) => {
+        const concatInputs = event.inputs.map((input) => input.internalType);
+
+        this.events[event.name] = {
+          hash: Web3.utils.keccak256(event.name + "(" + concatInputs + ")"),
+          inputs: event.inputs,
+        };
+      }
+    );
   }
 
-  initializeWeb3(blockchainRpc) {
+  initializeWeb3(blockchainName, blockchainRpc) {
     if (blockchainRpc.startsWith("ws")) {
       const provider = new Web3.providers.WebsocketProvider(
         blockchainRpc,
         WEBSOCKET_PROVIDER_OPTIONS
       );
-      return new Web3(provider);
+
+      this[blockchainName].web3 = new Web3(provider);
     } else {
-      return new Web3(blockchainRpc);
+      this[blockchainName].web3 = new Web3(blockchainRpc);
     }
   }
 
@@ -38,51 +40,50 @@ class NodeBlockchainService extends BlockchainServiceBase {
     return {
       name: options.blockchain.name,
       rpc: options.blockchain.rpc ?? BLOCKCHAINS[options.blockchain.name].rpc,
-      hubContract:
-        options.blockchain.hubContract ??
-        BLOCKCHAINS[options.blockchain.name].hubContract,
-      assetContract:
-        options.blockchain.assetContract ??
-        BLOCKCHAINS[options.blockchain.name].assetContract,
-      publicKey: this.config.blockchain?.publicKey ?? options.blockchain.publicKey,
-      privateKey: this.config.blockchain?.privateKey ?? options.blockchain.privateKey,
+      publicKey:
+        this.config.blockchain?.publicKey ?? options.blockchain.publicKey,
+      privateKey:
+        this.config.blockchain?.privateKey ?? options.blockchain.privateKey,
     };
   }
 
-  async executeContractFunction(
-    contractInstance,
-    functionName,
-    args,
-    blockchain
-  ) {
-    try {
+  async executeContractFunction(contractName, functionName, args, blockchain) {
+      const web3Instance = await this.getWeb3Instance(
+        blockchain.name,
+        blockchain.rpc
+      );
+
+      const contractInstance = await this.getContractInstance(
+        blockchain.name,
+        contractName,
+        blockchain.rpc
+      );
       const tx = await this.prepareTransaction(
         contractInstance,
         functionName,
         args,
         blockchain
       );
-      const createdTransaction = await this.web3.eth.accounts.signTransaction(
+      const createdTransaction = await web3Instance.eth.accounts.signTransaction(
         tx,
         blockchain.privateKey
       );
-      const transactionReceipt = await this.web3.eth.sendSignedTransaction(
+
+      return web3Instance.eth.sendSignedTransaction(
         createdTransaction.rawTransaction
       );
-
-      return transactionReceipt;
-    } catch (error) {
-      throw Error(error);
-      // await this.handleError(error, functionName);
-    }
   }
 
-  async decodeEventLogs(receipt, eventName) {
+  async decodeEventLogs(receipt, eventName, blockchain) {
+    const web3Instance = await this.getWeb3Instance(
+      blockchain.name,
+      blockchain.rpc
+    );
     let result;
-    const { hash, inputs } = events[eventName];
+    const { hash, inputs } = this.events[eventName];
     receipt.logs.forEach((row) => {
       if (row.topics[0] === hash)
-        result = this.web3.eth.abi.decodeLog(
+        result = web3Instance.eth.abi.decodeLog(
           inputs,
           row.data,
           row.topics.slice(1)
@@ -91,14 +92,13 @@ class NodeBlockchainService extends BlockchainServiceBase {
     return result;
   }
 
-  async transferAsset(UAI, to, options) {
+  async transferAsset(tokenId, to, options) {
     const blockchain = this.getBlockchain(options);
-    this.web3 = this.web3 ?? this.initializeWeb3(blockchain.rpc);
-    await this.initializeContracts(blockchain.hubContract);
-    return await this.executeContractFunction(
-      this.ContentAssetContract,
-      "transfer",
-      [blockchain.publicKey, to, UAI],
+
+    return this.executeContractFunction(
+      "ContentAsset",
+      "transferFrom",
+      [blockchain.publicKey, to, tokenId],
       blockchain
     );
   }
