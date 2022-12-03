@@ -48,7 +48,7 @@ async function main() {
   };
 
   let publishOptions = {
-    epochsNum: 5,
+    epochsNum: 2,
     maxNumberOfRetries: 30,
     frequency: 1,
     blockchain,
@@ -105,7 +105,7 @@ async function main() {
     let updateAssetResult = await DkgClient.asset.update(
       createAssetResult.UAL,
       updateAssetData,
-      { ...publishOptions, tokenAmount: 20 }
+      { ...publishOptions, tokenAmount: 20, epochsNum: 3 }
     );
     console.log("======================== ASSET UPDATED");
     console.log(updateAssetResult);
