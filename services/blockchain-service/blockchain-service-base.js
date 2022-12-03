@@ -8,7 +8,7 @@ class BlockchainServiceBase {
   constructor() {
     this.abis = {};
     this.abis.Hub = require("dkg-evm-module/build/contracts/Hub.json").abi;
-    this.abis.ServiceAgreement =
+    this.abis.ServiceAgreementV1 =
       require("dkg-evm-module/build/contracts/ServiceAgreementV1.json").abi;
     this.abis.ContentAsset =
       require("dkg-evm-module/build/contracts/ContentAsset.json").abi;
@@ -143,15 +143,15 @@ class BlockchainServiceBase {
   async createAsset(requestData, options, stepHooks = emptyHooks) {
     const blockchain = this.getBlockchain(options);
 
-    const serviceAgreementAddress = await this.getContractAddress(
+    const serviceAgreementV1Address = await this.getContractAddress(
       blockchain.name,
-      "ServiceAgreement",
+      "ServiceAgreementV1",
       blockchain.rpc
     );
     await this.executeContractFunction(
       "Token",
       "increaseAllowance",
-      [serviceAgreementAddress, requestData.tokenAmount],
+      [serviceAgreementV1Address, requestData.tokenAmount],
       blockchain
     );
 
@@ -183,7 +183,7 @@ class BlockchainServiceBase {
       await this.executeContractFunction(
         "Token",
         "decreaseAllowance",
-        [serviceAgreementAddress, requestData.tokenAmount],
+        [serviceAgreementV1Address, requestData.tokenAmount],
         blockchain
       );
       throw e;
@@ -193,16 +193,16 @@ class BlockchainServiceBase {
   async updateAsset(tokenId, requestData, options) {
     const blockchain = this.getBlockchain(options);
 
-    const serviceAgreementAddress = await this.getContractAddress(
+    const serviceAgreementV1Address = await this.getContractAddress(
       blockchain.name,
-      "ServiceAgreement",
+      "ServiceAgreementV1",
       blockchain.rpc
     );
 
     await this.executeContractFunction(
       "Token",
       "increaseAllowance",
-      [serviceAgreementAddress, requestData.tokenAmount],
+      [serviceAgreementV1Address, requestData.tokenAmount],
       blockchain
     );
 
@@ -217,7 +217,7 @@ class BlockchainServiceBase {
       await this.executeContractFunction(
         "Token",
         "decreaseAllowance",
-        [serviceAgreementAddress, requestData.tokenAmount],
+        [serviceAgreementV1Address, requestData.tokenAmount],
         blockchain
       );
     }
