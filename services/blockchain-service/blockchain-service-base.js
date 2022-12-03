@@ -143,17 +143,15 @@ class BlockchainServiceBase {
   async createAsset(requestData, options, stepHooks = emptyHooks) {
     const blockchain = this.getBlockchain(options);
 
+    const serviceAgreementAddress = await this.getContractAddress(
+      blockchain.name,
+      "ServiceAgreement",
+      blockchain.rpc
+    );
     await this.executeContractFunction(
       "Token",
       "increaseAllowance",
-      [
-        await this.getContractAddress(
-          blockchain.name,
-          "ServiceAgreement",
-          blockchain.rpc
-        ),
-        requestData.tokenAmount,
-      ],
+      [serviceAgreementAddress, requestData.tokenAmount],
       blockchain
     );
 
@@ -185,14 +183,7 @@ class BlockchainServiceBase {
       await this.executeContractFunction(
         "Token",
         "decreaseAllowance",
-        [
-          await this.getContractAddress(
-            blockchain.name,
-            "ServiceAgreement",
-            blockchain.rpc
-          ),
-          requestData.tokenAmount,
-        ],
+        [serviceAgreementAddress, requestData.tokenAmount],
         blockchain
       );
       throw e;
@@ -202,17 +193,16 @@ class BlockchainServiceBase {
   async updateAsset(tokenId, requestData, options) {
     const blockchain = this.getBlockchain(options);
 
+    const serviceAgreementAddress = await this.getContractAddress(
+      blockchain.name,
+      "ServiceAgreement",
+      blockchain.rpc
+    );
+
     await this.executeContractFunction(
       "Token",
       "increaseAllowance",
-      [
-        await this.getContractAddress(
-          blockchain.name,
-          "ServiceAgreement",
-          blockchain.rpc
-        ),
-        requestData.tokenAmount,
-      ],
+      [serviceAgreementAddress, requestData.tokenAmount],
       blockchain
     );
 
@@ -227,14 +217,7 @@ class BlockchainServiceBase {
       await this.executeContractFunction(
         "Token",
         "decreaseAllowance",
-        [
-          await this.getContractAddress(
-            blockchain.name,
-            "ServiceAgreement",
-            blockchain.rpc
-          ),
-          requestData.tokenAmount,
-        ],
+        [serviceAgreementAddress, requestData.tokenAmount],
         blockchain
       );
     }
