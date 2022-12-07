@@ -30,7 +30,7 @@ module.exports.BLOCKCHAINS = {
     hubContract: "0xdaa16AC171CfE8Df6F79C06E7EEAb2249E2C9Ec8", // TODO: change to Asset Contract
   },
   otp: {
-    rpc: "wss://lofar-testnet.origin-trail.network",
+    rpc: "https://lofar-testnet.origin-trail.network",
     hubContract: "0x8c6B1947983c8a06343aa3A4b60BAd6Aad083BB9",
   },
 };
