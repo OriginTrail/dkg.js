@@ -4,6 +4,10 @@ const OPERATIONS_STEP_STATUS =
   require("../../constants.js").OPERATIONS_STEP_STATUS;
 const emptyHooks = require("../../util/empty-hooks.js");
 
+const FIXED_GAS_LIMIT_METHODS = {
+  createAsset: 370000,
+};
+
 class BlockchainServiceBase {
   constructor() {
     this.abis = {};
@@ -53,11 +57,16 @@ class BlockchainServiceBase {
       blockchain.name,
       blockchain.rpc
     );
-    const gasLimit = await contractInstance.methods[functionName](
-      ...args
-    ).estimateGas({
-      from: blockchain.publicKey,
-    });
+    let gasLimit;
+    if (FIXED_GAS_LIMIT_METHODS[functionName]) {
+      gasLimit = FIXED_GAS_LIMIT_METHODS[functionName];
+    } else {
+      gasLimit = await contractInstance.methods[functionName](
+          ...args
+      ).estimateGas({
+        from: blockchain.publicKey,
+      });
+    }
 
     const encodedABI = await contractInstance.methods[functionName](
       ...args
