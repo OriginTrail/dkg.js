@@ -14,7 +14,7 @@ class BlockchainServiceBase {
     this.abis.Hub = require("dkg-evm-module/build/contracts/Hub.json").abi;
     this.abis.ServiceAgreementV1 =
       require("dkg-evm-module/build/contracts/ServiceAgreementV1.json").abi;
-    this.abis.ContentAsset =
+    this.abis.ContentAsset1 =
       require("dkg-evm-module/build/contracts/ContentAsset.json").abi;
     this.abis.Token =
       require("dkg-evm-module/build/contracts/ERC20Token.json").abi;
@@ -111,7 +111,7 @@ class BlockchainServiceBase {
       this[blockchainName].contractAddresses[contractName] =
         await this.callContractFunction(
           "Hub",
-          contractName.endsWith("Asset")
+          contractName.includes("ContentAsset")
             ? "getAssetContractAddress"
             : "getContractAddress",
           [contractName],
@@ -169,7 +169,7 @@ class BlockchainServiceBase {
 
     try {
       const receipt = await this.executeContractFunction(
-        "ContentAsset",
+        "ContentAsset1",
         "createAsset",
         [Object.values(requestData)],
         blockchain
@@ -216,7 +216,7 @@ class BlockchainServiceBase {
 
     try {
       return this.executeContractFunction(
-        "ContentAsset",
+        "ContentAsset1",
         "updateAsset",
         [tokenId, Object.values(requestData)],
         blockchain
@@ -235,7 +235,7 @@ class BlockchainServiceBase {
     const blockchain = this.getBlockchain(options);
 
     return this.callContractFunction(
-      "ContentAsset",
+      "ContentAsset1",
       "getAssertionIdsLength",
       [tokenId],
       blockchain
@@ -246,7 +246,7 @@ class BlockchainServiceBase {
     const blockchain = this.getBlockchain(options);
 
     return this.callContractFunction(
-      "ContentAsset",
+      "ContentAsset1",
       "getLatestAssertionId",
       [tokenId],
       blockchain
@@ -257,7 +257,7 @@ class BlockchainServiceBase {
     const blockchain = this.getBlockchain(options);
 
     return this.callContractFunction(
-      "ContentAsset",
+      "ContentAsset1",
       "ownerOf",
       [tokenId],
       blockchain

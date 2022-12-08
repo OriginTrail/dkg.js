@@ -10,7 +10,7 @@ class NodeBlockchainService extends BlockchainServiceBase {
     super(config);
     this.config = config;
     this.events = {};
-    
+
     this.abis.ContentAsset.filter((obj) => obj.type === "event").forEach(
       (event) => {
         const concatInputs = event.inputs.map((input) => input.internalType);
@@ -96,7 +96,7 @@ class NodeBlockchainService extends BlockchainServiceBase {
     const blockchain = this.getBlockchain(options);
 
     return this.executeContractFunction(
-      "ContentAsset",
+      "ContentAsset1",
       "transferFrom",
       [blockchain.publicKey, to, tokenId],
       blockchain
