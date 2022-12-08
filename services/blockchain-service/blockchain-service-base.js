@@ -5,7 +5,7 @@ const OPERATIONS_STEP_STATUS =
 const emptyHooks = require("../../util/empty-hooks.js");
 
 const FIXED_GAS_LIMIT_METHODS = {
-  createAsset: 400000,
+  //createAsset: 400000,
 };
 
 class BlockchainServiceBase {
@@ -14,7 +14,7 @@ class BlockchainServiceBase {
     this.abis.Hub = require("dkg-evm-module/build/contracts/Hub.json").abi;
     this.abis.ServiceAgreementV1 =
       require("dkg-evm-module/build/contracts/ServiceAgreementV1.json").abi;
-    this.abis.ContentAsset1 =
+    this.abis.ContentAsset =
       require("dkg-evm-module/build/contracts/ContentAsset.json").abi;
     this.abis.Token =
       require("dkg-evm-module/build/contracts/ERC20Token.json").abi;
@@ -169,7 +169,7 @@ class BlockchainServiceBase {
 
     try {
       const receipt = await this.executeContractFunction(
-        "ContentAsset1",
+        "ContentAsset",
         "createAsset",
         [Object.values(requestData)],
         blockchain
@@ -216,7 +216,7 @@ class BlockchainServiceBase {
 
     try {
       return this.executeContractFunction(
-        "ContentAsset1",
+        "ContentAsset",
         "updateAsset",
         [tokenId, Object.values(requestData)],
         blockchain
@@ -235,7 +235,7 @@ class BlockchainServiceBase {
     const blockchain = this.getBlockchain(options);
 
     return this.callContractFunction(
-      "ContentAsset1",
+      "ContentAsset",
       "getAssertionIdsLength",
       [tokenId],
       blockchain
@@ -246,7 +246,7 @@ class BlockchainServiceBase {
     const blockchain = this.getBlockchain(options);
 
     return this.callContractFunction(
-      "ContentAsset1",
+      "ContentAsset",
       "getLatestAssertionId",
       [tokenId],
       blockchain
@@ -257,7 +257,7 @@ class BlockchainServiceBase {
     const blockchain = this.getBlockchain(options);
 
     return this.callContractFunction(
-      "ContentAsset1",
+      "ContentAsset",
       "ownerOf",
       [tokenId],
       blockchain

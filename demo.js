@@ -2,8 +2,9 @@ const DKG = require("./index.js");
 
 const OT_NODE_HOSTNAME = "http://localhost";
 const OT_NODE_PORT = "8900";
-const PUBLIC_KEY = "";
-const PRIVATE_KEY = "";
+const PUBLIC_KEY = "0xBaF76aC0d0ef9a2FFF76884d54C9D3e270290a43";
+const PRIVATE_KEY =
+  "0x9b9af041edc816692276ac3c8f1d5565e3c01ddff80ec982943a29bd8d1d8863";
 
 // const blockchain = {
 //   name: "otp",
@@ -101,25 +102,6 @@ async function main() {
 
     divider();
 
-    let updateAssetResult = await DkgClient.asset.update(
-      createAssetResult.UAL,
-      updateAssetData,
-      { ...publishOptions, tokenAmount: 20, epochsNum: 3 }
-    );
-    console.log("======================== ASSET UPDATED");
-    console.log(updateAssetResult);
-
-    divider();
-
-    let getAssetResultAfterUpdate = await DkgClient.asset.get(
-      createAssetResult.UAL,
-      getOptions
-    );
-    console.log("======================== ASSET AFTER UPDATE");
-    console.log(JSON.stringify(getAssetResultAfterUpdate, null, 2));
-
-    divider();
-
     const newOwner = "0x2ACa90078563133db78085F66e6B8Cf5531623Ad";
     let transferResult = await DkgClient.asset.transfer(
       createAssetResult.UAL,
@@ -130,16 +112,6 @@ async function main() {
     console.log(transferResult);
 
     divider();
-
-    try {
-      await DkgClient.asset.update(
-        createAssetResult.UAL,
-        updateAssetData2,
-        publishOptions
-      );
-    } catch (e) {
-      console.error(e);
-    }
   } catch (e) {
     console.error(e);
     process.exit();
