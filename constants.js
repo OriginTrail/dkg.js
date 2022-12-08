@@ -31,7 +31,7 @@ module.exports.BLOCKCHAINS = {
   },
   otp: {
     rpc: "https://lofar-testnet.origin-trail.network",
-    hubContract: "0x8c6B1947983c8a06343aa3A4b60BAd6Aad083BB9",
+    hubContract: "0x2588eF1D66570c2B97ea1bE3313437aF0caC8BC2",
   },
 };
 

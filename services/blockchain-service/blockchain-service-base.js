@@ -14,6 +14,8 @@ class BlockchainServiceBase {
     this.abis.Hub = require("dkg-evm-module/build/contracts/Hub.json").abi;
     this.abis.ServiceAgreementV1 =
       require("dkg-evm-module/build/contracts/ServiceAgreementV1.json").abi;
+    this.abis.ContentAssetStorage =
+      require("dkg-evm-module/build/contracts/ContentAssetStorage.json").abi;
     this.abis.ContentAsset =
       require("dkg-evm-module/build/contracts/ContentAsset.json").abi;
     this.abis.Token =
@@ -111,8 +113,8 @@ class BlockchainServiceBase {
       this[blockchainName].contractAddresses[contractName] =
         await this.callContractFunction(
           "Hub",
-          contractName.includes("ContentAsset")
-            ? "getAssetContractAddress"
+          contractName.includes("AssetStorage")
+            ? "getAssetStorageAddress"
             : "getContractAddress",
           [contractName],
           {
@@ -235,7 +237,7 @@ class BlockchainServiceBase {
     const blockchain = this.getBlockchain(options);
 
     return this.callContractFunction(
-      "ContentAsset",
+      "ContentAssetStorage",
       "getAssertionIdsLength",
       [tokenId],
       blockchain
@@ -246,7 +248,7 @@ class BlockchainServiceBase {
     const blockchain = this.getBlockchain(options);
 
     return this.callContractFunction(
-      "ContentAsset",
+      "ContentAssetStorage",
       "getLatestAssertionId",
       [tokenId],
       blockchain
@@ -257,7 +259,7 @@ class BlockchainServiceBase {
     const blockchain = this.getBlockchain(options);
 
     return this.callContractFunction(
-      "ContentAsset",
+      "ContentAssetStorage",
       "ownerOf",
       [tokenId],
       blockchain

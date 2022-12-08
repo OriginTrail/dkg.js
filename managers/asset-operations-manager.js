@@ -64,7 +64,7 @@ class AssetOperationsManager {
       blockchain.name,
       await this.blockchainService.getContractAddress(
         blockchain.name,
-        "ContentAsset",
+        "ContentAssetStorage",
         blockchain.rpc
       ),
       tokenId

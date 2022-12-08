@@ -87,7 +87,7 @@ class BrowserBlockchainService extends BlockchainServiceBase {
 
   async transferAsset(tokenId, to, options) {
     return this.executeContractFunction(
-      "ContentAsset",
+      "ContentAssetStorage",
       "transferFrom",
       [await this.getAccount(), to, tokenId],
       this.getBlockchain(options)
