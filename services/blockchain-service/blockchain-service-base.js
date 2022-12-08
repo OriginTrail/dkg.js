@@ -5,7 +5,7 @@ const OPERATIONS_STEP_STATUS =
 const emptyHooks = require("../../util/empty-hooks.js");
 
 const FIXED_GAS_LIMIT_METHODS = {
-  createAsset: 370000,
+  createAsset: 400000,
 };
 
 class BlockchainServiceBase {
