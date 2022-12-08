@@ -1,22 +1,21 @@
 const DKG = require("./index.js");
 
-const OT_NODE_HOSTNAME = "https://v6-development-node-35.origin-trail.network";
+const OT_NODE_HOSTNAME = "http://localhost";
 const OT_NODE_PORT = "8900";
-const PUBLIC_KEY = "0xEBE0346cd7f309046b854637ECC4edF1bccC23C4";
-const PRIVATE_KEY =
-  "0x62af5a5b4be6f8e567d21c273eb396525f7521e59ca0381c70015851b28629b2";
-
-const blockchain = {
-  name: "otp",
-  publicKey: PUBLIC_KEY,
-  privateKey: PRIVATE_KEY,
-};
+const PUBLIC_KEY = "";
+const PRIVATE_KEY = "";
 
 // const blockchain = {
-//   name: "ganache",
+//   name: "otp",
 //   publicKey: PUBLIC_KEY,
 //   privateKey: PRIVATE_KEY,
 // };
+
+const blockchain = {
+  name: "ganache",
+  publicKey: PUBLIC_KEY,
+  privateKey: PRIVATE_KEY,
+};
 
 let options = {
   endpoint: OT_NODE_HOSTNAME,
@@ -82,65 +81,65 @@ async function main() {
     console.log("======================== ASSET CREATED");
     console.log(createAssetResult);
 
-    // divider();
-    //
-    // let ownerResult = await DkgClient.asset.getOwner(
-    //   createAssetResult.UAL,
-    //   getAssetOwnerOptions
-    // );
-    // console.log("======================== GET ASSET OWNER");
-    // console.log(ownerResult);
-    //
-    // divider();
-    //
-    // let getAssetResult = await DkgClient.asset.get(
-    //   createAssetResult.UAL,
-    //   getOptions
-    // );
-    // console.log("======================== ASSET RESOLVED");
-    // console.log(JSON.stringify(getAssetResult, null, 2));
-    //
-    // divider();
-    //
-    // let updateAssetResult = await DkgClient.asset.update(
-    //   createAssetResult.UAL,
-    //   updateAssetData,
-    //   { ...publishOptions, tokenAmount: 20, epochsNum: 3 }
-    // );
-    // console.log("======================== ASSET UPDATED");
-    // console.log(updateAssetResult);
-    //
-    // divider();
-    //
-    // let getAssetResultAfterUpdate = await DkgClient.asset.get(
-    //   createAssetResult.UAL,
-    //   getOptions
-    // );
-    // console.log("======================== ASSET AFTER UPDATE");
-    // console.log(JSON.stringify(getAssetResultAfterUpdate, null, 2));
-    //
-    // divider();
-    //
-    // const newOwner = "0x2ACa90078563133db78085F66e6B8Cf5531623Ad";
-    // let transferResult = await DkgClient.asset.transfer(
-    //   createAssetResult.UAL,
-    //   newOwner,
-    //   transferAssetOptions
-    // );
-    // console.log(`======================== ASSET TRANSFERRED TO ${newOwner}`);
-    // console.log(transferResult);
-    //
-    // divider();
-    //
-    // try {
-    //   await DkgClient.asset.update(
-    //     createAssetResult.UAL,
-    //     updateAssetData2,
-    //     publishOptions
-    //   );
-    // } catch (e) {
-    //   console.error(e);
-    // }
+    divider();
+
+    let ownerResult = await DkgClient.asset.getOwner(
+      createAssetResult.UAL,
+      getAssetOwnerOptions
+    );
+    console.log("======================== GET ASSET OWNER");
+    console.log(ownerResult);
+
+    divider();
+
+    let getAssetResult = await DkgClient.asset.get(
+      createAssetResult.UAL,
+      getOptions
+    );
+    console.log("======================== ASSET RESOLVED");
+    console.log(JSON.stringify(getAssetResult, null, 2));
+
+    divider();
+
+    let updateAssetResult = await DkgClient.asset.update(
+      createAssetResult.UAL,
+      updateAssetData,
+      { ...publishOptions, tokenAmount: 20, epochsNum: 3 }
+    );
+    console.log("======================== ASSET UPDATED");
+    console.log(updateAssetResult);
+
+    divider();
+
+    let getAssetResultAfterUpdate = await DkgClient.asset.get(
+      createAssetResult.UAL,
+      getOptions
+    );
+    console.log("======================== ASSET AFTER UPDATE");
+    console.log(JSON.stringify(getAssetResultAfterUpdate, null, 2));
+
+    divider();
+
+    const newOwner = "0x2ACa90078563133db78085F66e6B8Cf5531623Ad";
+    let transferResult = await DkgClient.asset.transfer(
+      createAssetResult.UAL,
+      newOwner,
+      transferAssetOptions
+    );
+    console.log(`======================== ASSET TRANSFERRED TO ${newOwner}`);
+    console.log(transferResult);
+
+    divider();
+
+    try {
+      await DkgClient.asset.update(
+        createAssetResult.UAL,
+        updateAssetData2,
+        publishOptions
+      );
+    } catch (e) {
+      console.error(e);
+    }
   } catch (e) {
     console.error(e);
     process.exit();
