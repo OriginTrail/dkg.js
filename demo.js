@@ -2,30 +2,27 @@ const DKG = require("./index.js");
 
 const OT_NODE_HOSTNAME = "http://localhost";
 const OT_NODE_PORT = "8900";
-const PUBLIC_KEY = "";
-const PRIVATE_KEY = "";
-const AUTH_TOKEN = "";
-
-const blockchain = {
-  name: "otp",
-  publicKey: PUBLIC_KEY,
-  privateKey: PRIVATE_KEY,
-};
+const PUBLIC_KEY = "0xBaF76aC0d0ef9a2FFF76884d54C9D3e270290a43";
+const PRIVATE_KEY =
+  "0x9b9af041edc816692276ac3c8f1d5565e3c01ddff80ec982943a29bd8d1d8863";
 
 // const blockchain = {
-//   name: "ganache",
+//   name: "otp",
 //   publicKey: PUBLIC_KEY,
 //   privateKey: PRIVATE_KEY,
 // };
 
+const blockchain = {
+  name: "ganache",
+  publicKey: PUBLIC_KEY,
+  privateKey: PRIVATE_KEY,
+};
+
 let options = {
   endpoint: OT_NODE_HOSTNAME,
   port: OT_NODE_PORT,
-  useSSL: false,
+  useSSL: true,
   loglevel: "trace",
-  auth: {
-    token: AUTH_TOKEN
-  }
 };
 const DkgClient = new DKG(options);
 
@@ -49,25 +46,25 @@ async function main() {
     name: "Kobe Bryant",
     born: "1991-10-04",
   };
+
   let publishOptions = {
-    visibility: "public",
-    holdingTimeInYears: 1,
-    tokenAmount: 10,
-    maxNumberOfRetries: 5,
+    epochsNum: 2,
+    maxNumberOfRetries: 30,
+    frequency: 1,
     blockchain,
   };
   let getOptions = {
     validate: true,
-    commitOffset: 0,
-    maxNumberOfRetries: 5,
-    blockchain
+    maxNumberOfRetries: 30,
+    frequency: 1,
+    blockchain,
   };
   let transferAssetOptions = {
     blockchain,
   };
   let getAssetOwnerOptions = {
-    blockchain
-  }
+    blockchain,
+  };
 
   try {
     divider();
@@ -78,41 +75,30 @@ async function main() {
 
     divider();
 
-    let createAssetResult = await DkgClient.asset.create(assetData, publishOptions);
+    let createAssetResult = await DkgClient.asset.create(
+      assetData,
+      publishOptions
+    );
     console.log("======================== ASSET CREATED");
     console.log(createAssetResult);
 
     divider();
 
-    let ownerResult = await DkgClient.asset.getOwner(createAssetResult.UAL, getAssetOwnerOptions);
+    let ownerResult = await DkgClient.asset.getOwner(
+      createAssetResult.UAL,
+      getAssetOwnerOptions
+    );
     console.log("======================== GET ASSET OWNER");
     console.log(ownerResult);
 
-
     divider();
 
-    let getAssetResult = await DkgClient.asset.get(createAssetResult.UAL, getOptions);
-    console.log("======================== ASSET RESOLVED");
-    console.log(JSON.stringify(getAssetResult, null, 2));
-
-    divider();
-
-    let updateAssetResult = await DkgClient.asset.update(
-      createAssetResult.UAL,
-      updateAssetData,
-      publishOptions
-    );
-    console.log("======================== ASSET UPDATED");
-    console.log(updateAssetResult);
-
-    divider();
-
-    let getAssetResultAfterUpdate = await DkgClient.asset.get(
+    let getAssetResult = await DkgClient.asset.get(
       createAssetResult.UAL,
       getOptions
     );
-    console.log("======================== ASSET AFTER UPDATE");
-    console.log(JSON.stringify(getAssetResultAfterUpdate, null, 2));
+    console.log("======================== ASSET RESOLVED");
+    console.log(JSON.stringify(getAssetResult, null, 2));
 
     divider();
 
@@ -126,16 +112,6 @@ async function main() {
     console.log(transferResult);
 
     divider();
-
-    try {
-      await DkgClient.asset.update(
-        createAssetResult.UAL,
-        updateAssetData2,
-        publishOptions
-      );
-    } catch (e) {
-      console.error(e);
-    }
   } catch (e) {
     console.error(e);
     process.exit();

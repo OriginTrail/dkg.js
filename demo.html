@@ -124,10 +124,10 @@
                     "born": "1940-10-09",
                 },
                 publishOptions: {
-                    visibility: 'public',
-                    holdingTimeInYears: 1,
-                    tokenAmount: 10,
-                    maxNumberOfRetries: 5,
+                    epochsNum: 2,
+                    maxNumberOfRetries: 30,
+                    frequency: 1,
+                    tokenAmount: 15,
                     blockchain : {
                         name: "otp"
                     }
@@ -153,17 +153,15 @@
         },
         methods: {
             initializeDKGClient(blockchain) {
-                const OT_NODE_HOSTNAME = 'http://localhost';
-                const OT_NODE_PORT = '8901';
+                const OT_NODE_HOSTNAME = 'https://v6-pegasus-node-12.origin-trail.network';
+                const OT_NODE_PORT = '8900';
                 const options = {
                     endpoint: OT_NODE_HOSTNAME,
                     port: OT_NODE_PORT,
                     useSSL: false,
                     loglevel: 'trace',
                     blockchain: {
-                        name: "ganache",
-                        publicKey: "",
-                        privateKey: "",
+                        name: "otp"
                     }
                 };
                 window.DkgClient = new DKG(options);

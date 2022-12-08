@@ -27,11 +27,11 @@ module.exports.BLOCKCHAINS = {
   },
   polygon: {
     rpc: "https://matic-mumbai.chainstacklabs.com",
-    hubContract: "0xdaa16AC171CfE8Df6F79C06E7EEAb2249E2C9Ec8",
+    hubContract: "0xdaa16AC171CfE8Df6F79C06E7EEAb2249E2C9Ec8", // TODO: change to Asset Contract
   },
   otp: {
-    rpc: "wss://lofar.origin-trail.network",
-    hubContract: "0xc9184C1A0CE150a882DC3151Def25075bdAf069C",
+    rpc: "https://lofar-testnet.origin-trail.network",
+    hubContract: "0x2588eF1D66570c2B97ea1bE3313437aF0caC8BC2",
   },
 };
 
@@ -47,15 +47,10 @@ module.exports.WEBSOCKET_PROVIDER_OPTIONS = {
   },
 };
 
-module.exports.HOLDING_TIME_IN_YEARS = 2;
+module.exports.PUBLISH_TRIPLES_NUMBER = 10;
+module.exports.PUBLISH_CHUNKS_NUMBER = 10;
+module.exports.PUBLISH_EPOCHS_NUM = 5;
 module.exports.PUBLISH_TOKEN_AMOUNT = 15;
-
-module.exports.VISIBILITY = {
-  public: 1,
-  private: 0,
-};
-module.exports.DEFAULT_PUBLISH_VISIBILITY = this.VISIBILITY.public;
-module.exports.DEFAULT_COMMIT_OFFSET = 0;
 
 module.exports.OPERATIONS = {
   publish: "publish",

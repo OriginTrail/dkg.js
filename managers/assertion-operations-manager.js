@@ -1,9 +1,7 @@
 const AssertionTools = require("assertion-tools");
-const jsonld = require("jsonld");
 const {
   OPERATIONS,
   PUBLISH_TYPES,
-  GET_OUTPUT_FORMATS,
 } = require("../constants.js");
 const Utilities = require("../services/utilities.js");
 
@@ -41,47 +39,6 @@ class AssertionOperationsManager {
         operationId
       ),
     };
-  }
-
-  async get(assertionId, options = {}) {
-    let operationId = await this.nodeApiService.get(assertionId, options);
-    let operationResult = await this.nodeApiService.getOperationResult(
-      operationId,
-      options
-    );
-    let assertion = operationResult.data.assertion;
-    try {
-      if (options.validate === false) {
-        const rootHash = AssertionTools.calculateRoot(assertion);
-        if (rootHash !== assertionId)
-          throw Error("Calculated root hashes don't match!");
-      }
-      if (options.outputFormat !== GET_OUTPUT_FORMATS.N_QUADS) {
-        assertion = await jsonld.fromRDF(assertion.join("\n"), {
-          algorithm: "URDNA2015",
-          format: "application/n-quads",
-        });
-      }
-    } catch (error) {
-      operationResult = {
-        ...operationResult,
-        data: {
-          errorType: "DKG_CLIENT_ERROR",
-          errorMessage: error.message,
-        },
-      };
-    }
-
-    const result = {
-      assertion,
-      assertionId,
-      operation: Utilities.getOperationStatusObject(
-        operationResult,
-        operationId
-      ),
-    };
-
-    return result;
   }
 }
 
