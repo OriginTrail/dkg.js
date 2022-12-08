@@ -32,7 +32,7 @@ class BrowserBlockchainService extends BlockchainServiceBase {
       return;
     }
     if (window.ethereum) {
-      this[blockchainName].web3 = window.Web3(window.ethereum);
+      this[blockchainName].web3 = new window.Web3(window.ethereum);
     } else {
       if (blockchainRpc.startsWith("ws")) {
         const provider = new window.Web3.providers.WebsocketProvider(
@@ -47,7 +47,7 @@ class BrowserBlockchainService extends BlockchainServiceBase {
   }
 
   async executeContractFunction(contractName, functionName, args, blockchain) {
-    const contractInstance = this.getContractInstance(
+    const contractInstance = await this.getContractInstance(
       blockchain.name,
       contractName
     );

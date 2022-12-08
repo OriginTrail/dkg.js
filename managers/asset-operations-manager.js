@@ -27,6 +27,7 @@ class AssetOperationsManager {
   }
 
   async create(content, opts = {}, stepHooks = emptyHooks) {
+
     const options = JSON.parse(JSON.stringify(opts));
 
     this.validationService.validatePublishRequest(content, options);

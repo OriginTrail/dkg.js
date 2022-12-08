@@ -88,7 +88,6 @@ class BlockchainServiceBase {
       gas: gasLimit ?? Web3.utils.toWei("900", "Kwei"),
     };
   }
-
   async getWeb3Instance(blockchainName, blockchainRpc) {
     if (!this[blockchainName].web3) {
       this.initializeWeb3(blockchainName, blockchainRpc);
