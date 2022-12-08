@@ -64,7 +64,7 @@ class AssetOperationsManager {
       blockchain.name,
       await this.blockchainService.getContractAddress(
         blockchain.name,
-        "ContentAsset1",
+        "ContentAsset",
         blockchain.rpc
       ),
       tokenId
@@ -147,7 +147,7 @@ class AssetOperationsManager {
     };
   }
 
-  async update(UAL, content, opts = {}) {
+  /* async update(UAL, content, opts = {}) {
     const options = JSON.parse(JSON.stringify(opts));
     this.validationService.validatePublishRequest(content, options);
 
@@ -194,7 +194,7 @@ class AssetOperationsManager {
         operationId
       ),
     };
-  }
+  } */
 
   async transfer(UAL, to, opts = {}) {
     const options = JSON.parse(JSON.stringify(opts));
