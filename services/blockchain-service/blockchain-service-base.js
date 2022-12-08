@@ -14,7 +14,9 @@ class BlockchainServiceBase {
     this.abis.Hub = require("dkg-evm-module/build/contracts/Hub.json").abi;
     this.abis.ServiceAgreementV1 =
       require("dkg-evm-module/build/contracts/ServiceAgreementV1.json").abi;
-    this.abis.ContentAsset1 =
+    this.abis.ContentAssetStorage =
+      require("dkg-evm-module/build/contracts/ContentAssetStorage.json").abi;
+    this.abis.ContentAsset =
       require("dkg-evm-module/build/contracts/ContentAsset.json").abi;
     this.abis.Token =
       require("dkg-evm-module/build/contracts/ERC20Token.json").abi;
@@ -111,8 +113,8 @@ class BlockchainServiceBase {
       this[blockchainName].contractAddresses[contractName] =
         await this.callContractFunction(
           "Hub",
-          contractName.includes("ContentAsset")
-            ? "getAssetContractAddress"
+          contractName.includes("AssetStorage")
+            ? "getAssetStorageAddress"
             : "getContractAddress",
           [contractName],
           {
@@ -169,7 +171,7 @@ class BlockchainServiceBase {
 
     try {
       const receipt = await this.executeContractFunction(
-        "ContentAsset1",
+        "ContentAsset",
         "createAsset",
         [Object.values(requestData)],
         blockchain
@@ -216,7 +218,7 @@ class BlockchainServiceBase {
 
     try {
       return this.executeContractFunction(
-        "ContentAsset1",
+        "ContentAsset",
         "updateAsset",
         [tokenId, Object.values(requestData)],
         blockchain
@@ -235,7 +237,7 @@ class BlockchainServiceBase {
     const blockchain = this.getBlockchain(options);
 
     return this.callContractFunction(
-      "ContentAsset1",
+      "ContentAssetStorage",
       "getAssertionIdsLength",
       [tokenId],
       blockchain
@@ -246,7 +248,7 @@ class BlockchainServiceBase {
     const blockchain = this.getBlockchain(options);
 
     return this.callContractFunction(
-      "ContentAsset1",
+      "ContentAssetStorage",
       "getLatestAssertionId",
       [tokenId],
       blockchain
@@ -257,7 +259,7 @@ class BlockchainServiceBase {
     const blockchain = this.getBlockchain(options);
 
     return this.callContractFunction(
-      "ContentAsset1",
+      "ContentAssetStorage",
       "ownerOf",
       [tokenId],
       blockchain
