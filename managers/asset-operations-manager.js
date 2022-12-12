@@ -34,6 +34,7 @@ class AssetOperationsManager {
 
     const assertion = await formatAssertion(content);
     const assertionId = calculateRoot(assertion);
+    const blockchain = this.blockchainService.getBlockchain(options);
     const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
         blockchain.name,
         "ContentAssetStorage",
@@ -42,10 +43,11 @@ class AssetOperationsManager {
     const tokenAmountInWei =
       options.tokenAmount ??
       (await this.nodeApiService.getBidSuggestion(
-        options.blockchain.name.startsWith("otp") ? "otp" : options.blockchain.name,
+        blockchain.name,
         options.epochsNum,
         assertionMetadata.getAssertionSizeInBytes(assertion),
         contentAssetStorageAddress,
+        assertionId,
         options.hashFunctionId ?? DEFAULT_HASH_FUNCTION_ID,
         options
       ));
@@ -63,7 +65,6 @@ class AssetOperationsManager {
       stepHooks
     );
 
-    const blockchain = this.blockchainService.getBlockchain(options)
     const UAL = Utilities.deriveUAL(
       blockchain.name,
       contentAssetStorageAddress,
