@@ -21,13 +21,13 @@ class HttpService {
     });
   }
 
-  async getBidSuggestion(blockchain, epochsNumber, assertionSize, hashFunctionId, options) {
+  async getBidSuggestion(blockchain, epochsNumber, assertionSize, contentAssetStorageAddress, hashFunctionId, options) {
     const endpoint = options.endpoint ?? this.config.endpoint;
 
     return axios({
       method: "get",
       url: `${endpoint}:${this.config.port}/bid-suggestion`,
-      params: { blockchain, epochsNumber, assertionSize, hashFunctionId },
+      params: { blockchain, epochsNumber, assertionSize, contentAssetStorageAddress, hashFunctionId },
       headers: this.prepareRequestConfig(),
     })
       .then((response) => {
