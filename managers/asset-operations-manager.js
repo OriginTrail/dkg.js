@@ -43,7 +43,9 @@ class AssetOperationsManager {
     const tokenAmountInWei =
       options.tokenAmount ??
       (await this.nodeApiService.getBidSuggestion(
-        blockchain.name,
+        blockchain.name.startsWith("otp")
+            ? "otp"
+            : blockchain.name,
         options.epochsNum,
         assertionMetadata.getAssertionSizeInBytes(assertion),
         contentAssetStorageAddress,
