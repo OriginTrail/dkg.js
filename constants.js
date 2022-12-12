@@ -29,9 +29,13 @@ module.exports.BLOCKCHAINS = {
     rpc: "https://matic-mumbai.chainstacklabs.com",
     hubContract: "0xdaa16AC171CfE8Df6F79C06E7EEAb2249E2C9Ec8", // TODO: change to Asset Contract
   },
-  otp: {
+  "otp::testnet": {
     rpc: "https://lofar-testnet.origin-trail.network",
     hubContract: "0xEF9FeCb85d03d6e624C434dF8298692d13853033",
+  },
+  "otp::mainnet": {
+    rpc: "https://astrosat-parachain-rpc.origin-trail.network",
+    hubContract: "0x485Cbd3A5BCE1a9c1e5cD37AA02039D7C23fD0c3",
   },
 };
 
