@@ -9,7 +9,7 @@ const jsonld = require("jsonld");
 const {
   OPERATIONS,
   PUBLISH_TYPES,
-  BLOCKCHAINS,
+  DEFAULT_HASH_FUNCTION_ID,
   OPERATIONS_STEP_STATUS,
   GET_OUTPUT_FORMATS,
 } = require("../constants.js");
@@ -34,15 +34,23 @@ class AssetOperationsManager {
 
     const assertion = await formatAssertion(content);
     const assertionId = calculateRoot(assertion);
-    const tokenAmount =
+    const blockchain = this.blockchainService.getBlockchain(options);
+    const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
+        blockchain.name,
+        "ContentAssetStorage",
+        blockchain.rpc
+    );
+    const tokenAmountInWei =
       options.tokenAmount ??
       (await this.nodeApiService.getBidSuggestion(
-        options.blockchain.name,
+        blockchain.name,
         options.epochsNum,
         assertionMetadata.getAssertionSizeInBytes(assertion),
+        contentAssetStorageAddress,
+        assertionId,
+        options.hashFunctionId ?? DEFAULT_HASH_FUNCTION_ID,
         options
       ));
-
     const tokenId = await this.blockchainService.createAsset(
       {
         assertionId,
@@ -50,23 +58,16 @@ class AssetOperationsManager {
         triplesNumber: assertionMetadata.getAssertionTriplesNumber(assertion),
         chunksNumber: assertionMetadata.getAssertionChunksNumber(assertion),
         epochsNum: options.epochsNum,
-        tokenAmount: this.blockchainService.convertToWei(
-          Math.ceil(parseFloat(tokenAmount))
-        ),
+        tokenAmount: tokenAmountInWei,
         scoreFunctionId: options.scoreFunctionId ?? 1,
       },
       options,
       stepHooks
     );
 
-    const blockchain = this.blockchainService.getBlockchain(options)
     const UAL = Utilities.deriveUAL(
       blockchain.name,
-      await this.blockchainService.getContractAddress(
-        blockchain.name,
-        "ContentAssetStorage",
-        blockchain.rpc
-      ),
+      contentAssetStorageAddress,
       tokenId
     );
 
@@ -159,6 +160,7 @@ class AssetOperationsManager {
         options.blockchain.name,
         options.epochsNum,
         assertionMetadata.getAssertionSizeInBytes(assertion),
+        options.hashFunctionId ?? DEFAULT_HASH_FUNCTION_ID,
         options
       ));
 
@@ -170,7 +172,7 @@ class AssetOperationsManager {
         triplesNumber: assertionMetadata.getAssertionTriplesNumber(assertion),
         chunksNumber: assertionMetadata.getAssertionChunksNumber(assertion),
         epochsNum: options.epochsNum,
-        tokenAmount: this.blockchainService.convertToWei(tokenAmount),
+        tokenAmount: tokenAmount,
         scoreFunctionId: options.scoreFunctionId ?? 1,
       },
       options

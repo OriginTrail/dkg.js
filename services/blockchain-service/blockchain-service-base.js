@@ -76,7 +76,7 @@ class BlockchainServiceBase {
 
     let gasPrice;
 
-    if (blockchain.name === "otp") {
+    if (blockchain.name.startsWith("otp")) {
       gasPrice = await web3Instance.eth.getGasPrice();
     } else {
       gasPrice = Web3.utils.toWei("100", "Gwei");
