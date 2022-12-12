@@ -37,13 +37,12 @@ class AssetOperationsManager {
     const tokenAmountInWei =
       options.tokenAmount ??
       (await this.nodeApiService.getBidSuggestion(
-        options.blockchain.name,
+        options.blockchain.name.startsWith("otp") ? "otp" : options.blockchain.name,
         options.epochsNum,
         assertionMetadata.getAssertionSizeInBytes(assertion),
         options.hashFunctionId ?? DEFAULT_HASH_FUNCTION_ID,
         options
       ));
-
     const tokenId = await this.blockchainService.createAsset(
       {
         assertionId,
