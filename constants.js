@@ -51,6 +51,7 @@ module.exports.PUBLISH_TRIPLES_NUMBER = 10;
 module.exports.PUBLISH_CHUNKS_NUMBER = 10;
 module.exports.PUBLISH_EPOCHS_NUM = 5;
 module.exports.PUBLISH_TOKEN_AMOUNT = 15;
+module.exports.DEFAULT_HASH_FUNCTION_ID = 1;
 
 module.exports.OPERATIONS = {
   publish: "publish",
