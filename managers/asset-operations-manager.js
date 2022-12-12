@@ -9,7 +9,7 @@ const jsonld = require("jsonld");
 const {
   OPERATIONS,
   PUBLISH_TYPES,
-  BLOCKCHAINS,
+  DEFAULT_HASH_FUNCTION_ID,
   OPERATIONS_STEP_STATUS,
   GET_OUTPUT_FORMATS,
 } = require("../constants.js");
@@ -34,12 +34,13 @@ class AssetOperationsManager {
 
     const assertion = await formatAssertion(content);
     const assertionId = calculateRoot(assertion);
-    const tokenAmount =
+    const tokenAmountInWei =
       options.tokenAmount ??
       (await this.nodeApiService.getBidSuggestion(
         options.blockchain.name,
         options.epochsNum,
         assertionMetadata.getAssertionSizeInBytes(assertion),
+        options.hashFunctionId ?? DEFAULT_HASH_FUNCTION_ID,
         options
       ));
 
@@ -50,9 +51,7 @@ class AssetOperationsManager {
         triplesNumber: assertionMetadata.getAssertionTriplesNumber(assertion),
         chunksNumber: assertionMetadata.getAssertionChunksNumber(assertion),
         epochsNum: options.epochsNum,
-        tokenAmount: this.blockchainService.convertToWei(
-          Math.ceil(parseFloat(tokenAmount))
-        ),
+        tokenAmount: tokenAmountInWei,
         scoreFunctionId: options.scoreFunctionId ?? 1,
       },
       options,
@@ -159,6 +158,7 @@ class AssetOperationsManager {
         options.blockchain.name,
         options.epochsNum,
         assertionMetadata.getAssertionSizeInBytes(assertion),
+        options.hashFunctionId ?? DEFAULT_HASH_FUNCTION_ID,
         options
       ));
 
