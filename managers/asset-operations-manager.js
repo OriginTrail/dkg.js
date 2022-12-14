@@ -60,7 +60,7 @@ class AssetOperationsManager {
         triplesNumber: assertionMetadata.getAssertionTriplesNumber(assertion),
         chunksNumber: assertionMetadata.getAssertionChunksNumber(assertion),
         epochsNum: options.epochsNum,
-        tokenAmount: tokenAmountInWei,
+        tokenAmount: tokenAmountInWei+ "00",
         scoreFunctionId: options.scoreFunctionId ?? 1,
       },
       options,
