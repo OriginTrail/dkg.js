@@ -35,7 +35,7 @@ module.exports.BLOCKCHAINS = {
   },
   "otp::mainnet": {
     rpc: "https://astrosat-parachain-rpc.origin-trail.network",
-    hubContract: "0x485Cbd3A5BCE1a9c1e5cD37AA02039D7C23fD0c3",
+    hubContract: "0x5fA7916c48Fe6D5F1738d12Ad234b78c90B4cAdA",
   },
 };
 
