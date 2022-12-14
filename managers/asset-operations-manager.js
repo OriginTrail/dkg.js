@@ -62,6 +62,7 @@ class AssetOperationsManager {
         epochsNum: options.epochsNum,
         tokenAmount: tokenAmountInWei,
         scoreFunctionId: options.scoreFunctionId ?? 1,
+        immutable_: options.immutable ?? false,
       },
       options,
       stepHooks
