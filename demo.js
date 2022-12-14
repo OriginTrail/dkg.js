@@ -1,22 +1,22 @@
 const DKG = require("./index.js");
 
-const OT_NODE_HOSTNAME = "http://localhost";
+const OT_NODE_HOSTNAME = "https://v6-pegasus-node-12.origin-trail.network";
 const OT_NODE_PORT = "8900";
-const PUBLIC_KEY = "0xBaF76aC0d0ef9a2FFF76884d54C9D3e270290a43";
+const PUBLIC_KEY = "0x3Fb245acB60987BE46E4AfF0Cb03cd29E7C5a4a7";
 const PRIVATE_KEY =
-  "0x9b9af041edc816692276ac3c8f1d5565e3c01ddff80ec982943a29bd8d1d8863";
-
-// const blockchain = {
-//   name: "otp",
-//   publicKey: PUBLIC_KEY,
-//   privateKey: PRIVATE_KEY,
-// };
+  "c1d623e05eb1d4dd243a24a2a78a6bd96d1fd2950c3fa433eaa00cde7614703a";
 
 const blockchain = {
-  name: "ganache",
+  name: "otp::testnet",
   publicKey: PUBLIC_KEY,
   privateKey: PRIVATE_KEY,
 };
+
+// const blockchain = {
+//   name: "ganache",
+//   publicKey: PUBLIC_KEY,
+//   privateKey: PRIVATE_KEY,
+// };
 
 let options = {
   endpoint: OT_NODE_HOSTNAME,
@@ -82,6 +82,7 @@ async function main() {
     console.log("======================== ASSET CREATED");
     console.log(createAssetResult);
 
+    return;
     divider();
 
     let ownerResult = await DkgClient.asset.getOwner(
