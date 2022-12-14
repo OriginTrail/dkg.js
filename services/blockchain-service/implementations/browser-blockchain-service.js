@@ -13,7 +13,9 @@ class BrowserBlockchainService extends BlockchainServiceBase {
 
   getBlockchain(options) {
     return {
-      name: options.blockchain.name,
+      name: options.blockchain.name.startsWith("otp")
+        ? "otp"
+        : options.blockchain.name,
       hubContract:
         options.blockchain.hubContract ??
         BLOCKCHAINS[options.blockchain.name].hubContract,
@@ -49,7 +51,8 @@ class BrowserBlockchainService extends BlockchainServiceBase {
   async executeContractFunction(contractName, functionName, args, blockchain) {
     const contractInstance = await this.getContractInstance(
       blockchain.name,
-      contractName
+      contractName,
+      blockchain.rpc
     );
     const tx = await this.prepareTransaction(
       contractInstance,
