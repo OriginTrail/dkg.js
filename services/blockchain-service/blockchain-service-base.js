@@ -179,7 +179,7 @@ class BlockchainServiceBase {
 
       const { tokenId } = await this.decodeEventLogs(
         receipt,
-        "AssetCreated",
+        "AssetMinted",
         blockchain
       );
 
