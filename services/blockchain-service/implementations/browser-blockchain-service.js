@@ -49,7 +49,8 @@ class BrowserBlockchainService extends BlockchainServiceBase {
   async executeContractFunction(contractName, functionName, args, blockchain) {
     const contractInstance = await this.getContractInstance(
       blockchain.name,
-      contractName
+      contractName,
+      blockchain.rpc
     );
     const tx = await this.prepareTransaction(
       contractInstance,

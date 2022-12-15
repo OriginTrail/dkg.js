@@ -48,7 +48,8 @@ class BlockchainServiceBase {
   async callContractFunction(contractName, functionName, args, blockchain) {
     const contractInstance = await this.getContractInstance(
       blockchain.name,
-      contractName
+      contractName,
+      blockchain.rpc
     );
 
     return contractInstance.methods[functionName](...args).call();
