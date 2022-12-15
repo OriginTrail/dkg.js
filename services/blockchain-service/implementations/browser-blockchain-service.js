@@ -13,9 +13,7 @@ class BrowserBlockchainService extends BlockchainServiceBase {
 
   getBlockchain(options) {
     return {
-      name: options.blockchain.name.startsWith("otp")
-        ? "otp"
-        : options.blockchain.name,
+      name: options.blockchain.name,
       hubContract:
         options.blockchain.hubContract ??
         BLOCKCHAINS[options.blockchain.name].hubContract,
