@@ -1,6 +1,3 @@
-class IndexOperationsManager {
-    constructor(props) {
-    }
-}
+class IndexOperationsManager {}
 
 module.exports = IndexOperationsManager;
