@@ -13,7 +13,7 @@ module.exports = {
         'linebreak-style': ['error', 'unix'],
         camelcase: 0,
         'class-methods-use-this': 0,
-        'consistent-return': 0,
+        'consistent-return': 1,
         'no-restricted-syntax': 0,
         'guard-for-in': 0,
         'no-console': 'warn',

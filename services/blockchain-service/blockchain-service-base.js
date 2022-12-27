@@ -214,6 +214,7 @@ class BlockchainServiceBase {
                 [serviceAgreementV1Address, requestData.tokenAmount],
                 blockchain,
             );
+            throw e;
         }
     }
 
