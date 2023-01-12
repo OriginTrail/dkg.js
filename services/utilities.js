@@ -4,11 +4,19 @@ module.exports = {
   nodeSupported() {
     return typeof window === "undefined";
   },
+  isEmptyObject(object) {
+    for (const key in object) {
+      return false;
+    }
+    return true;
+  },
   toNumber(hex) {
     return parseInt(hex.slice(2), 16);
   },
   deriveUAL(blockchain, contract, tokenId) {
-    return `did:dkg:${blockchain.startsWith("otp") ? "otp" : blockchain.toLowerCase()}/${contract.toLowerCase()}/${tokenId}`;
+    return `did:dkg:${
+      blockchain.startsWith("otp") ? "otp" : blockchain.toLowerCase()
+    }/${contract.toLowerCase()}/${tokenId}`;
   },
   resolveUAL(ual) {
     const segments = ual.split(":");

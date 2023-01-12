@@ -1,13 +1,30 @@
-const { MAX_FILE_SIZE, BLOCKCHAINS, OPERATIONS, GET_OUTPUT_FORMATS } = require("../constants.js");
+const {
+  MAX_FILE_SIZE,
+  BLOCKCHAINS,
+  OPERATIONS,
+  GET_OUTPUT_FORMATS,
+} = require("../constants.js");
 const utilities = require("./utilities.js");
-const publishAllowedVisibilityParams = ["public", "private"];
 
 class ValidationService {
-  validatePublishRequest(content, options) {
-    this.validateJSON(content);
-    this.validateSize(content);
+  validatePublishRequest(publicContent, privateContent, options) {
+    if (
+      (!publicContent || utilities.isEmptyObject(publicContent)) &&
+      (!privateContent || utilities.isEmptyObject(privateContent))
+    )
+      throw Error(
+        "public content or private content must be non empty objects"
+      );
+
+    if (publicContent) {
+      this.validateJSON(publicContent);
+      this.validateSize(publicContent);
+    }
+    if (privateContent) {
+      this.validateJSON(privateContent);
+      this.validateSize(privateContent);
+    }
     this.validateBlockchain(options.blockchain);
-    this.validateLocalStore(options.localStore);
   }
 
   validateGetRequest(UAL, options) {
@@ -35,11 +52,6 @@ class ValidationService {
     if (!content) throw Error("No content provided");
     if (Buffer.byteLength(JSON.stringify(content), "utf-8") > MAX_FILE_SIZE)
       throw Error(`File size limit is ${MAX_FILE_SIZE / (1024 * 1024)}MB.`);
-  }
-
-  validateLocalStore(localStore) {
-    if (localStore && typeof localStore !== "boolean")
-      throw Error("LocalStore option must be boolean");
   }
 
   validateValidate(validate) {

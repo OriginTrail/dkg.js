@@ -53,14 +53,32 @@ class HttpService {
       });
   }
 
-  publish(publishType, assertionId, assertion, UAL, options) {
+  localStore(assertionId, assertion, options) {
+    const endpoint = options.endpoint ?? this.config.endpoint;
+    const requestBody = {
+      assertionId,
+      assertion,
+    };
+    return axios({
+      method: "post",
+      url: `${endpoint}:${this.config.port}/local-store`,
+      data: requestBody,
+      headers: this.prepareRequestConfig(),
+    })
+      .then((response) => {
+        return response.data.operationId;
+      })
+      .catch((e) => {
+        throw Error(`Unable to store locally: ${e.message}`);
+      });
+  }
+
+  publish(assertionId, assertion, UAL, options) {
     let requestBody = this.preparePublishRequest(
-      publishType,
       assertionId,
       assertion,
       UAL,
-      options.hashFunctionId,
-      options.localStore
+      options.hashFunctionId
     );
     const endpoint = options.endpoint ?? this.config.endpoint;
     return axios({
@@ -162,34 +180,16 @@ class HttpService {
     return response.data;
   }
 
-  preparePublishRequest(
-    publishType,
-    assertionId,
-    assertion,
-    UAL,
-    hashFunctionId = 1,
-    localStore
-  ) {
-    let publishRequest = {
-      publishType,
+  preparePublishRequest(assertionId, assertion, UAL, hashFunctionId = 1) {
+    const { blockchain, contract, tokenId } = utilities.resolveUAL(UAL);
+    const publishRequest = {
       assertionId,
       assertion,
+      blockchain,
+      contract,
+      tokenId: parseInt(tokenId),
+      hashFunctionId,
     };
-    switch (publishType) {
-      case PUBLISH_TYPES.ASSET:
-        const { blockchain, contract, tokenId } = utilities.resolveUAL(UAL);
-        publishRequest = {
-          ...publishRequest,
-          blockchain,
-          contract,
-          tokenId: parseInt(tokenId),
-          hashFunctionId,
-          localStore,
-        };
-        break;
-      default:
-        throw Error("Publish type not yet implemented");
-    }
     return publishRequest;
   }
 
