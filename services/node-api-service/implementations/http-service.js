@@ -1,6 +1,6 @@
 const axios = require("axios");
 const Utilities = require("../../utilities.js");
-const { OPERATION_STATUSES } = require("../../../constants.js");
+const { OPERATION_STATUSES, OPERATIONS } = require("../../../constants.js");
 const utilities = require("../../utilities.js");
 
 class HttpService {
@@ -53,16 +53,12 @@ class HttpService {
       });
   }
 
-  localStore(assertionId, assertion, options) {
+  localStore(assertions, options) {
     const endpoint = options.endpoint ?? this.config.endpoint;
-    const requestBody = {
-      assertionId,
-      assertion,
-    };
     return axios({
       method: "post",
       url: `${endpoint}:${this.config.port}/local-store`,
-      data: requestBody,
+      data: assertions,
       headers: this.prepareRequestConfig(),
     })
       .then((response) => {
@@ -166,7 +162,6 @@ class HttpService {
       await Utilities.sleepForMilliseconds(frequency * 1000);
       try {
         response = await axios(axios_config);
-        response.data.status = "FAILED"
         // this.logger.debug(
         //     `${options.operation} result status: ${response.data.status}`
         // );

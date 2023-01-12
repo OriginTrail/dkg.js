@@ -92,56 +92,39 @@ class AssetOperationsManager {
     );
 
     let operationResult;
+    let operationId;
     if (privateAssertionId && !utilities.isEmptyObject(privateAssertion)) {
-      const privateLocalStoreOperationId = await this.nodeApiService.localStore(
-        privateAssertionId,
-        privateAssertion,
+      operationId = await this.nodeApiService.localStore(
+        [
+          { assertionId: privateAssertionId, assertion: privateAssertion },
+          { assertionId: publicAssertionId, assertion: publicAssertion },
+        ],
         options
       );
       operationResult = await this.nodeApiService.getOperationResult(
-        privateLocalStoreOperationId,
-        { ...options, operation: OPERATIONS.LOCAL_STORE }
+        operationId,
+        { ...options, operation: OPERATIONS.LOCAL_STORE, frequency: 0.5 }
       );
+      console.log(operationResult);
 
       if (operationResult.status === OPERATION_STATUSES.FAILED) {
         return {
           UAL,
-          publicAssertionId,
+          assertionId: publicAssertionId,
           operation: Utilities.getOperationStatusObject(
             operationResult,
-            privateLocalStoreOperationId
-          ),
-        };
-      }
-
-      const publicLocalStoreOperationId = await this.nodeApiService.localStore(
-        publicAssertionId,
-        publicAssertion,
-        options
-      );
-      operationResult = await this.nodeApiService.getOperationResult(
-        publicLocalStoreOperationId,
-        { ...options, operation: OPERATIONS.LOCAL_STORE }
-      );
-
-      if (operationResult.status === OPERATION_STATUSES.FAILED) {
-        return {
-          UAL,
-          publicAssertionId,
-          operation: Utilities.getOperationStatusObject(
-            operationResult,
-            publicLocalStoreOperationId
+            operationId
           ),
         };
       }
     }
 
-    const operationId = await this.nodeApiService.publish(
-      publicAssertionId,
-      publicAssertion,
-      UAL,
-      options
-    );
+     operationId = await this.nodeApiService.publish(
+       publicAssertionId,
+       publicAssertion,
+       UAL,
+       options
+     );
 
     operationResult = await this.nodeApiService.getOperationResult(
       operationId,

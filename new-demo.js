@@ -29,7 +29,7 @@ const DkgClient = new DKG(options);
 let publishOptions = {
   epochsNum: 2,
   maxNumberOfRetries: 30,
-  frequency: 1,
+  frequency: 2,
   blockchain,
 };
 
