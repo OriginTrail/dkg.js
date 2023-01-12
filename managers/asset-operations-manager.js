@@ -7,10 +7,10 @@ const Utilities = require("../services/utilities.js");
 const jsonld = require("jsonld");
 const {
   OPERATIONS,
-  PUBLISH_TYPES,
   DEFAULT_HASH_FUNCTION_ID,
   OPERATIONS_STEP_STATUS,
   GET_OUTPUT_FORMATS,
+  OPERATION_STATUSES,
 } = require("../constants.js");
 const emptyHooks = require("../util/empty-hooks");
 const utilities = require("../services/utilities.js");
@@ -91,19 +91,50 @@ class AssetOperationsManager {
       tokenId
     );
 
+    let operationResult;
     if (privateAssertionId && !utilities.isEmptyObject(privateAssertion)) {
-      await this.nodeApiService.localStore(
+      const privateLocalStoreOperationId = await this.nodeApiService.localStore(
         privateAssertionId,
         privateAssertion,
         options
       );
-    }
+      operationResult = await this.nodeApiService.getOperationResult(
+        privateLocalStoreOperationId,
+        { ...options, operation: OPERATIONS.LOCAL_STORE }
+      );
 
-    await this.nodeApiService.localStore(
-      publicAssertionId,
-      publicAssertion,
-      options
-    );
+      if (operationResult.status === OPERATION_STATUSES.FAILED) {
+        return {
+          UAL,
+          publicAssertionId,
+          operation: Utilities.getOperationStatusObject(
+            operationResult,
+            privateLocalStoreOperationId
+          ),
+        };
+      }
+
+      const publicLocalStoreOperationId = await this.nodeApiService.localStore(
+        publicAssertionId,
+        publicAssertion,
+        options
+      );
+      operationResult = await this.nodeApiService.getOperationResult(
+        publicLocalStoreOperationId,
+        { ...options, operation: OPERATIONS.LOCAL_STORE }
+      );
+
+      if (operationResult.status === OPERATION_STATUSES.FAILED) {
+        return {
+          UAL,
+          publicAssertionId,
+          operation: Utilities.getOperationStatusObject(
+            operationResult,
+            publicLocalStoreOperationId
+          ),
+        };
+      }
+    }
 
     const operationId = await this.nodeApiService.publish(
       publicAssertionId,
@@ -112,9 +143,9 @@ class AssetOperationsManager {
       options
     );
 
-    const operationResult = await this.nodeApiService.getOperationResult(
+    operationResult = await this.nodeApiService.getOperationResult(
       operationId,
-      { ...options, operation: OPERATIONS.publish }
+      { ...options, operation: OPERATIONS.PUBLISH }
     );
 
     stepHooks.afterHook({
@@ -148,7 +179,7 @@ class AssetOperationsManager {
     let operationId = await this.nodeApiService.get(UAL, options);
     let operationResult = await this.nodeApiService.getOperationResult(
       operationId,
-      { ...options, operation: OPERATIONS.get }
+      { ...options, operation: OPERATIONS.GET }
     );
     let assertion = operationResult.data.assertion;
     if (assertion) {
@@ -214,7 +245,6 @@ class AssetOperationsManager {
       options
     );
     let operationId = await this.nodeApiService.publish(
-      PUBLISH_TYPES.ASSET,
       assertionId,
       assertion,
       UAL,
@@ -222,7 +252,7 @@ class AssetOperationsManager {
     );
     let operationResult = await this.nodeApiService.getOperationResult(
       operationId,
-      { ...options, operation: OPERATIONS.publish }
+      { ...options, operation: OPERATIONS.PUBLISH }
     );
     return {
       UAL,

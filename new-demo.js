@@ -40,5 +40,5 @@ let publishOptions = {
     publishOptions
   );
 
-  console.log(res);
+  console.log("asset create res: ", res);
 })();

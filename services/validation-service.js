@@ -79,7 +79,7 @@ class ValidationService {
       throw Error("Blockchain rpc missing");
     if (!blockchain.hubContract && !BLOCKCHAINS[blockchain.name].hubContract)
       throw Error("Blockchain hub contract missing");
-    if (operation !== OPERATIONS.get) {
+    if (operation !== OPERATIONS.GET) {
       if (!blockchain.publicKey && utilities.nodeSupported())
         throw Error("Blockchain public key missing");
       if (!blockchain.privateKey && utilities.nodeSupported())

@@ -10,16 +10,6 @@ module.exports.MAX_FILE_SIZE = 2621440;
  */
 module.exports.DID_PREFIX = "did:dkg";
 
-/**
- * @constant {object} PUBLISH_TYPES
- * - Different types of publish
- */
-module.exports.PUBLISH_TYPES = {
-  ASSERTION: "assertion",
-  ASSET: "asset",
-  INDEX: "index",
-};
-
 module.exports.BLOCKCHAINS = {
   ganache: {
     rpc: "http://localhost:7545",
@@ -58,15 +48,15 @@ module.exports.PUBLISH_TOKEN_AMOUNT = 15;
 module.exports.DEFAULT_HASH_FUNCTION_ID = 1;
 
 module.exports.OPERATIONS = {
-  publish: "publish",
-  get: "get",
-  update: "update",
+  PUBLISH: "publish",
+  GET: "get",
+  LOCAL_STORE: "local-store",
 };
 
 module.exports.OPERATION_STATUSES = {
-  pending: "PENDING",
-  completed: "COMPLETED",
-  failed: "FAILED",
+  PENDING: "PENDING",
+  COMPLETED: "COMPLETED",
+  FAILED: "FAILED",
 };
 
 module.exports.GET_OUTPUT_FORMATS = {
@@ -75,7 +65,7 @@ module.exports.GET_OUTPUT_FORMATS = {
 };
 
 module.exports.OPERATIONS_STEP_STATUS = {
-  INCREASE_ALLOWANCE_COMPLETED: 'INCREASE_ALLOWANCE_COMPLETED',
-  CREATE_ASSET_COMPLETED: 'CREATE_ASSET_COMPLETED',
-  NETWORK_PUBLISH_COMPLETED: 'NETWORK_PUBLISH_COMPLETED'
-}
+  INCREASE_ALLOWANCE_COMPLETED: "INCREASE_ALLOWANCE_COMPLETED",
+  CREATE_ASSET_COMPLETED: "CREATE_ASSET_COMPLETED",
+  NETWORK_PUBLISH_COMPLETED: "NETWORK_PUBLISH_COMPLETED",
+};

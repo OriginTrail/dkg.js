@@ -1,5 +1,3 @@
-const { OPERATION_STATUSES } = require("../constants");
-
 module.exports = {
   nodeSupported() {
     return typeof window === "undefined";

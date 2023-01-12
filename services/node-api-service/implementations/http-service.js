@@ -1,6 +1,6 @@
 const axios = require("axios");
 const Utilities = require("../../utilities.js");
-const { OPERATION_STATUSES, PUBLISH_TYPES } = require("../../../constants.js");
+const { OPERATION_STATUSES } = require("../../../constants.js");
 const utilities = require("../../utilities.js");
 
 class HttpService {
@@ -137,7 +137,7 @@ class HttpService {
       );
     }
     let response = {
-      status: OPERATION_STATUSES.pending,
+      status: OPERATION_STATUSES.PENDING,
     };
     let retries = 0;
     let maxNumberOfRetries =
@@ -166,6 +166,7 @@ class HttpService {
       await Utilities.sleepForMilliseconds(frequency * 1000);
       try {
         response = await axios(axios_config);
+        response.data.status = "FAILED"
         // this.logger.debug(
         //     `${options.operation} result status: ${response.data.status}`
         // );
@@ -174,8 +175,8 @@ class HttpService {
         throw e;
       }
     } while (
-      response.data.status !== OPERATION_STATUSES.completed &&
-      response.data.status !== OPERATION_STATUSES.failed
+      response.data.status !== OPERATION_STATUSES.COMPLETED &&
+      response.data.status !== OPERATION_STATUSES.FAILED
     );
     return response.data;
   }
