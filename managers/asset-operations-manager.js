@@ -105,7 +105,6 @@ class AssetOperationsManager {
         operationId,
         { ...options, operation: OPERATIONS.LOCAL_STORE, frequency: 0.5 }
       );
-      console.log(operationResult);
 
       if (operationResult.status === OPERATION_STATUSES.FAILED) {
         return {
