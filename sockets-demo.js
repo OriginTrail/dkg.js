@@ -8,23 +8,22 @@ let options = { endpoint: OT_NODE_HOSTNAME, port: OT_NODE_PORT, useSSL: false, l
 const dkg = new DKG(options);
 
 async function main() {
-
-    console.log('============ DKG-Client v6 Demo ===================')
+    console.log('============ DKG-Client v6 Demo ===================');
 
     options = {
-        operation: "PUBLISH",
+        operation: 'PUBLISH',
         metadata: {
-            type: "Product",
-            issuer: "0x4609ffd1d9bc8ebeeb048834721dbe43e420e528",
-            visibility: "public",
-            keywords: ["24.06.2022", "awdaawd8"],
-            dataRootId: "https://origintrail.io/default-data-id",
+            type: 'Product',
+            issuer: '0x4609ffd1d9bc8ebeeb048834721dbe43e420e528',
+            visibility: 'public',
+            keywords: ['24.06.2022', 'awdaawd8'],
+            dataRootId: 'https://origintrail.io/default-data-id',
         },
         data: [
-            "<https://origintrail.io/default-data-id> <http://schema.org/aggregateRating> _:c14n5 .",
-            "<https://origintrail.io/default-data-id> <http://schema.org/offers> _:c14n2 .",
+            '<https://origintrail.io/default-data-id> <http://schema.org/aggregateRating> _:c14n5 .',
+            '<https://origintrail.io/default-data-id> <http://schema.org/offers> _:c14n2 .',
         ],
-        ual: "dkg://did.otp.0x174714134abcd13431413413/987654321",
+        ual: 'dkg://did.otp.0x174714134abcd13431413413/987654321',
     };
 
     await dkg.socketPublish(options).then((result) => {
@@ -34,13 +33,15 @@ async function main() {
     });
 }
 
-const keypress = async () => {
-    console.log('Press any key...')
-    process.stdin.setRawMode(true)
-    return new Promise(resolve => process.stdin.once('data', () => {
-        process.stdin.setRawMode(false)
-        resolve()
-    }))
-}
+/* const keypress = async () => {
+    console.log('Press any key...');
+    process.stdin.setRawMode(true);
+    return new Promise((resolve) =>
+        process.stdin.once('data', () => {
+            process.stdin.setRawMode(false);
+            resolve();
+        }),
+    );
+}; */
 
 main();

@@ -4,15 +4,12 @@ class GraphOperationsManager {
     }
 
     async query(queryString, type, options = {}) {
-        const operationId = await this.nodeApiService.query({query: queryString, type}, options);
+        const operationId = await this.nodeApiService.query({ query: queryString, type }, options);
 
-        return this.nodeApiService.getOperationResult(
-            operationId,
-            {
-                ...options,
-                operation: 'query'
-            }
-        );
+        return this.nodeApiService.getOperationResult(operationId, {
+            ...options,
+            operation: 'query',
+        });
     }
 }
 module.exports = GraphOperationsManager;
