@@ -11,6 +11,7 @@ const {
   OPERATIONS_STEP_STATUS,
   GET_OUTPUT_FORMATS,
   OPERATION_STATUSES,
+  DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY,
 } = require("../constants.js");
 const emptyHooks = require("../util/empty-hooks");
 const utilities = require("../services/utilities.js");
@@ -103,7 +104,11 @@ class AssetOperationsManager {
       );
       operationResult = await this.nodeApiService.getOperationResult(
         operationId,
-        { ...options, operation: OPERATIONS.LOCAL_STORE, frequency: 0.5 }
+        {
+          ...options,
+          operation: OPERATIONS.LOCAL_STORE,
+          frequency: DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY,
+        }
       );
 
       if (operationResult.status === OPERATION_STATUSES.FAILED) {
@@ -118,12 +123,12 @@ class AssetOperationsManager {
       }
     }
 
-     operationId = await this.nodeApiService.publish(
-       publicAssertionId,
-       publicAssertion,
-       UAL,
-       options
-     );
+    operationId = await this.nodeApiService.publish(
+      publicAssertionId,
+      publicAssertion,
+      UAL,
+      options
+    );
 
     operationResult = await this.nodeApiService.getOperationResult(
       operationId,

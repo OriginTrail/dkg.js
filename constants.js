@@ -46,6 +46,9 @@ module.exports.PUBLISH_CHUNKS_NUMBER = 10;
 module.exports.PUBLISH_EPOCHS_NUM = 5;
 module.exports.PUBLISH_TOKEN_AMOUNT = 15;
 module.exports.DEFAULT_HASH_FUNCTION_ID = 1;
+module.exports.DEFAULT_GET_OPERATION_RESULT_FREQUENCY = 5;
+module.exports.DEFAULT_GET_OPERATION_RESULT_MAX_NUM_RETRIES = 5;
+module.exports.DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY = 0.5;
 
 module.exports.OPERATIONS = {
   PUBLISH: "publish",

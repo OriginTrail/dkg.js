@@ -1,12 +1,13 @@
 const axios = require("axios");
 const Utilities = require("../../utilities.js");
-const { OPERATION_STATUSES, OPERATIONS } = require("../../../constants.js");
+const {
+  OPERATION_STATUSES,
+  DEFAULT_GET_OPERATION_RESULT_FREQUENCY,
+  DEFAULT_GET_OPERATION_RESULT_MAX_NUM_RETRIES,
+} = require("../../../constants.js");
 const utilities = require("../../utilities.js");
 
 class HttpService {
-  maxNumberOfRetries = 5;
-  frequency = 5;
-
   constructor(config) {
     this.config = config;
   }
@@ -137,8 +138,9 @@ class HttpService {
     };
     let retries = 0;
     let maxNumberOfRetries =
-      options.maxNumberOfRetries ?? this.maxNumberOfRetries;
-    let frequency = options.frequency ?? this.frequency;
+      options.maxNumberOfRetries ??
+      DEFAULT_GET_OPERATION_RESULT_MAX_NUM_RETRIES;
+    let frequency = options.frequency ?? DEFAULT_GET_OPERATION_RESULT_FREQUENCY;
 
     const endpoint = options.endpoint ?? this.config.endpoint;
     let axios_config = {
