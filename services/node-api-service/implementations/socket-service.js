@@ -1,13 +1,6 @@
 class SocketService {
-    constructor() {
-    }
+    publish() {}
 
-    publish() {
-        console.log('sockets publish');
-    }
-
-    getOperationResult() {
-        console.log('sockets get operation result');
-    }
+    getOperationResult() {}
 }
 module.exports = SocketService;
