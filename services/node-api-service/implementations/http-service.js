@@ -11,13 +11,15 @@ class HttpService {
         this.config = config;
     }
 
-    info() {
+    async info() {
         try {
-            return axios({
+            const response = await axios({
                 method: 'get',
                 url: `${this.config.endpoint}:${this.config.port}/info`,
                 headers: this.prepareRequestConfig(),
             });
+
+            return response;
         } catch (error) {
             throw Error(`Unable to get node info: ${error.message}`);
         }
