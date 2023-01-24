@@ -54,11 +54,11 @@ class HttpService {
         }
     }
 
-    localStore(assertions, options) {
+    async localStore(assertions, options) {
         const endpoint = options.endpoint ?? this.config.endpoint;
 
         try {
-            const response = axios({
+            const response = await axios({
                 method: 'post',
                 url: `${endpoint}:${this.config.port}/local-store`,
                 data: assertions,
@@ -113,17 +113,17 @@ class HttpService {
 
     async query(data, options) {
         const endpoint = options.endpoint ?? this.config.endpoint;
-
-        return axios({
-            method: 'post',
-            url: `${endpoint}:${this.config.port}/query`,
-            data: { query: data.query, type: data.type },
-            headers: this.prepareRequestConfig(),
-        })
-            .then((response) => response.data.operationId)
-            .catch((e) => {
-                throw Error(`Unable to query: ${e.message}`);
+        try {
+            const response = await axios({
+                method: 'post',
+                url: `${endpoint}:${this.config.port}/query`,
+                data: { query: data.query, type: data.type },
+                headers: this.prepareRequestConfig(),
             });
+            return response.data.operationId;
+        } catch (error) {
+            throw Error(`Unable to query: ${error.message}`);
+        }
     }
 
     async getOperationResult(operationId, options) {
