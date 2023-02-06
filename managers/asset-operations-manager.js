@@ -13,6 +13,7 @@ const {
     GET_OUTPUT_FORMATS,
     OPERATION_STATUSES,
     DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY,
+    HAS_PRIVATE_ASSERTION_PREDICATE,
 } = require('../constants.js');
 const emptyHooks = require('../util/empty-hooks');
 
@@ -34,11 +35,17 @@ class AssetOperationsManager {
             privateAssertion = await formatAssertion(privateContent);
             privateAssertionId = calculateRoot(privateAssertion);
         }
-        const publicAssertion = await formatAssertion(
-            privateAssertionId
-                ? { ...publicContent, 'https://dkg.private': privateAssertionId }
-                : publicContent,
-        );
+        const publicGraph = {
+            '@graph': [
+                publicContent,
+                privateAssertionId
+                    ? {
+                          [HAS_PRIVATE_ASSERTION_PREDICATE]: privateAssertionId,
+                      }
+                    : {},
+            ],
+        };
+        const publicAssertion = await formatAssertion(publicGraph);
         const publicAssertionId = calculateRoot(publicAssertion);
 
         const blockchain = this.blockchainService.getBlockchain(options);

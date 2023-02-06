@@ -10,6 +10,9 @@ module.exports.MAX_FILE_SIZE = 2621440;
  */
 module.exports.DID_PREFIX = 'did:dkg';
 
+module.exports.HAS_PRIVATE_ASSERTION_PREDICATE =
+    'https://origintrail.io/ontology#hasPrivateAssertion';
+
 module.exports.BLOCKCHAINS = {
     ganache: {
         rpc: 'http://localhost:7545',
@@ -51,15 +54,15 @@ module.exports.DEFAULT_GET_OPERATION_RESULT_MAX_NUM_RETRIES = 5;
 module.exports.DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY = 0.5;
 
 module.exports.OPERATIONS = {
-  PUBLISH: "publish",
-  GET: "get",
-  LOCAL_STORE: "local-store",
+    PUBLISH: 'publish',
+    GET: 'get',
+    LOCAL_STORE: 'local-store',
 };
 
 module.exports.OPERATION_STATUSES = {
-  PENDING: "PENDING",
-  COMPLETED: "COMPLETED",
-  FAILED: "FAILED",
+    PENDING: 'PENDING',
+    COMPLETED: 'COMPLETED',
+    FAILED: 'FAILED',
 };
 
 module.exports.GET_OUTPUT_FORMATS = {
@@ -68,7 +71,7 @@ module.exports.GET_OUTPUT_FORMATS = {
 };
 
 module.exports.OPERATIONS_STEP_STATUS = {
-  INCREASE_ALLOWANCE_COMPLETED: "INCREASE_ALLOWANCE_COMPLETED",
-  CREATE_ASSET_COMPLETED: "CREATE_ASSET_COMPLETED",
-  NETWORK_PUBLISH_COMPLETED: "NETWORK_PUBLISH_COMPLETED",
+    INCREASE_ALLOWANCE_COMPLETED: 'INCREASE_ALLOWANCE_COMPLETED',
+    CREATE_ASSET_COMPLETED: 'CREATE_ASSET_COMPLETED',
+    NETWORK_PUBLISH_COMPLETED: 'NETWORK_PUBLISH_COMPLETED',
 };

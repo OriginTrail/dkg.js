@@ -56,7 +56,7 @@ function divider() {
     console.log(createAssetResult);
 
     divider();
-    let ownerResult = await DkgClient.asset.getOwner(createAssetResult.UAL, {
+    const ownerResult = await DkgClient.asset.getOwner(createAssetResult.UAL, {
         blockchain,
     });
     console.log('======================== GET ASSET OWNER');
