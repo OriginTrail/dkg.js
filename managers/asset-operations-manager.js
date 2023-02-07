@@ -13,7 +13,7 @@ const {
     GET_OUTPUT_FORMATS,
     OPERATION_STATUSES,
     DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY,
-    HAS_PRIVATE_ASSERTION_PREDICATE,
+    PRIVATE_ASSERTION_PREDICATE,
 } = require('../constants.js');
 const emptyHooks = require('../util/empty-hooks');
 
@@ -40,7 +40,7 @@ class AssetOperationsManager {
                 publicContent,
                 privateAssertionId
                     ? {
-                          [HAS_PRIVATE_ASSERTION_PREDICATE]: privateAssertionId,
+                          [PRIVATE_ASSERTION_PREDICATE]: privateAssertionId,
                       }
                     : {},
             ],
