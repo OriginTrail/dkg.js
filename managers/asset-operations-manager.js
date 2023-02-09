@@ -24,25 +24,35 @@ class AssetOperationsManager {
         this.blockchainService = services.blockchainService;
     }
 
-    async create(publicContent, privateContent, opts = {}, stepHooks = emptyHooks) {
+    async create(userContent, opts = {}, stepHooks = emptyHooks) {
         const options = JSON.parse(JSON.stringify(opts));
 
-        this.validationService.validatePublishRequest(publicContent, privateContent, options);
+        this.validationService.validateContentType(userContent);
+        let content = {};
+
+        // for backwards compatibility
+        if (!userContent.public && !userContent.private) {
+            content.public = userContent;
+        } else {
+            content = userContent;
+        }
+
+        this.validationService.validatePublishRequest(content, options);
 
         let privateAssertion;
         let privateAssertionId;
-        if (privateContent && !isEmptyObject(privateContent)) {
-            privateAssertion = await formatAssertion(privateContent);
+        if (content.private) {
+            privateAssertion = await formatAssertion(content.private);
             privateAssertionId = calculateRoot(privateAssertion);
         }
         const publicGraph = {
             '@graph': [
-                publicContent,
+                content.public,
                 privateAssertionId
                     ? {
                           [PRIVATE_ASSERTION_PREDICATE]: privateAssertionId,
                       }
-                    : {},
+                    : null,
             ],
         };
         const publicAssertion = await formatAssertion(publicGraph);

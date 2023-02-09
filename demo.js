@@ -35,15 +35,17 @@ function divider() {
 
     const createAssetResult = await DkgClient.asset.create(
         {
-            '@context': 'http://schema.org',
-            '@id': 'http://Max',
-            '@type': 'Person',
-            name: 'Max',
-        },
-        {
-            '@context': 'http://schema.org',
-            '@id': 'http://Max',
-            governmentId: '123',
+            public: {
+                '@context': 'http://schema.org',
+                '@id': 'http://Max',
+                '@type': 'Person',
+                name: 'Max',
+            },
+            private: {
+                '@context': 'http://schema.org',
+                '@id': 'http://Max',
+                governmentId: '123',
+            },
         },
         {
             epochsNum: 2,

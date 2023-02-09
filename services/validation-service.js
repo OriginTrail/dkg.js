@@ -1,21 +1,21 @@
 const { MAX_FILE_SIZE, BLOCKCHAINS, OPERATIONS, GET_OUTPUT_FORMATS } = require('../constants.js');
-const { isEmptyObject, nodeSupported } = require('./utilities.js');
+const { nodeSupported } = require('./utilities.js');
 
 class ValidationService {
-    validatePublishRequest(publicContent, privateContent, options) {
-        if (
-            (!publicContent || isEmptyObject(publicContent)) &&
-            (!privateContent || isEmptyObject(privateContent))
-        )
-            throw Error('public content or private content must be non empty objects');
+    validatePublishRequest(content, options) {
+        const keysNumber = Object.keys(content).length;
 
-        if (publicContent) {
-            this.validateJSON(publicContent);
-            this.validateSize(publicContent);
+        if (
+            !(keysNumber === 1 && (content.public || content.private)) &&
+            !(keysNumber === 2 && content.public && content.private)
+        )
+            throw Error('content keys can only be "public", "private" or both.');
+
+        if (content.public) {
+            this.validateSize(content.public);
         }
-        if (privateContent) {
-            this.validateJSON(privateContent);
-            this.validateSize(privateContent);
+        if (content.private) {
+            this.validateSize(content.private);
         }
         this.validateBlockchain(options.blockchain);
     }
@@ -31,13 +31,8 @@ class ValidationService {
         this.validateBlockchain(options.blockchain);
     }
 
-    validateJSON(content) {
-        try {
-            JSON.parse(JSON.stringify(content));
-        } catch (e) {
-            throw Error('Invalid JSON format');
-        }
-        return true;
+    validateContentType(obj) {
+        if (!(!!obj && obj.constructor === Object)) throw Error('Content must be an object'); 
     }
 
     validateSize(content) {

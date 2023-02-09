@@ -11,7 +11,7 @@ module.exports.MAX_FILE_SIZE = 2621440;
 module.exports.DID_PREFIX = 'did:dkg';
 
 module.exports.PRIVATE_ASSERTION_PREDICATE =
-    'https://origintrail.io/ontology#privateAssertionHash';
+    'https://ontology.origintrail.io/dkg/1.0#privateAssertionID';
 
 module.exports.BLOCKCHAINS = {
     ganache: {
