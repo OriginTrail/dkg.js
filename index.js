@@ -9,11 +9,9 @@ class DkgClient {
     constructor(config) {
         const baseServiceManager = new BaseServiceManager(config);
         const services = baseServiceManager.getServices();
-        // this.assertion = new AssertionOperationsManager(config, services);
-        this.asset = new AssetOperationsManager(config, services);
-        // this.index = new IndexOperationsManager(config, services);
-        this.node = new NodeOperationsManager(config, services);
 
+        this.asset = new AssetOperationsManager(config, services);
+        this.node = new NodeOperationsManager(config, services);
         this.graph = new GraphOperationsManager(config, services);
     }
 }

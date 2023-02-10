@@ -1,12 +1,27 @@
 const { MAX_FILE_SIZE, BLOCKCHAINS, OPERATIONS, GET_OUTPUT_FORMATS } = require('../constants.js');
-const utilities = require('./utilities.js');
+const { nodeSupported } = require('./utilities.js');
 
 class ValidationService {
     validatePublishRequest(content, options) {
-        this.validateJSON(content);
-        this.validateSize(content);
+        const keys = Object.keys(content);
+
+        if (
+            !(keys.length === 1 && (keys.includes('public') || keys.includes('private'))) &&
+            !(keys.length === 2 && (keys.includes('public') || keys.includes('private')))
+        )
+            throw Error('content keys can only be "public", "private" or both.');
+
+        if(!content.public && !content.private) {
+            throw Error('Public or private content must be defined');
+        }
+
+        if (content.public) {
+            this.validateSize(content.public);
+        }
+        if (content.private) {
+            this.validateSize(content.private);
+        }
         this.validateBlockchain(options.blockchain);
-        this.validateLocalStore(options.localStore);
     }
 
     validateGetRequest(UAL, options) {
@@ -20,24 +35,14 @@ class ValidationService {
         this.validateBlockchain(options.blockchain);
     }
 
-    validateJSON(content) {
-        try {
-            JSON.parse(JSON.stringify(content));
-        } catch (e) {
-            throw Error('Invalid JSON format');
-        }
-        return true;
+    validateContentType(obj) {
+        if (!(!!obj && typeof obj === 'object')) throw Error('Content must be an object'); 
     }
 
     validateSize(content) {
         if (!content) throw Error('No content provided');
         if (Buffer.byteLength(JSON.stringify(content), 'utf-8') > MAX_FILE_SIZE)
             throw Error(`File size limit is ${MAX_FILE_SIZE / (1024 * 1024)}MB.`);
-    }
-
-    validateLocalStore(localStore) {
-        if (localStore && typeof localStore !== 'boolean')
-            throw Error('LocalStore option must be boolean');
     }
 
     validateValidate(validate) {
@@ -56,14 +61,14 @@ class ValidationService {
     validateBlockchain(blockchain, operation) {
         if (!blockchain) throw Error('Blockchain configuration missing');
         if (!blockchain.name) throw Error('Blockchain name missing');
-        if (utilities.nodeSupported() && !blockchain.rpc && !BLOCKCHAINS[blockchain.name].rpc)
+        if (nodeSupported() && !blockchain.rpc && !BLOCKCHAINS[blockchain.name].rpc)
             throw Error('Blockchain rpc missing');
         if (!blockchain.hubContract && !BLOCKCHAINS[blockchain.name].hubContract)
             throw Error('Blockchain hub contract missing');
-        if (operation !== OPERATIONS.get) {
-            if (!blockchain.publicKey && utilities.nodeSupported())
+        if (operation !== OPERATIONS.GET) {
+            if (!blockchain.publicKey && nodeSupported())
                 throw Error('Blockchain public key missing');
-            if (!blockchain.privateKey && utilities.nodeSupported())
+            if (!blockchain.privateKey && nodeSupported())
                 throw Error('Blockchain private key missing');
         }
     }

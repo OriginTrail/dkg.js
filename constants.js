@@ -10,15 +10,8 @@ module.exports.MAX_FILE_SIZE = 2621440;
  */
 module.exports.DID_PREFIX = 'did:dkg';
 
-/**
- * @constant {object} PUBLISH_TYPES
- * - Different types of publish
- */
-module.exports.PUBLISH_TYPES = {
-    ASSERTION: 'assertion',
-    ASSET: 'asset',
-    INDEX: 'index',
-};
+module.exports.PRIVATE_ASSERTION_PREDICATE =
+    'https://ontology.origintrail.io/dkg/1.0#privateAssertionID';
 
 module.exports.BLOCKCHAINS = {
     ganache: {
@@ -56,17 +49,20 @@ module.exports.PUBLISH_CHUNKS_NUMBER = 10;
 module.exports.PUBLISH_EPOCHS_NUM = 5;
 module.exports.PUBLISH_TOKEN_AMOUNT = 15;
 module.exports.DEFAULT_HASH_FUNCTION_ID = 1;
+module.exports.DEFAULT_GET_OPERATION_RESULT_FREQUENCY = 5;
+module.exports.DEFAULT_GET_OPERATION_RESULT_MAX_NUM_RETRIES = 5;
+module.exports.DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY = 0.5;
 
 module.exports.OPERATIONS = {
-    publish: 'publish',
-    get: 'get',
-    update: 'update',
+    PUBLISH: 'publish',
+    GET: 'get',
+    LOCAL_STORE: 'local-store',
 };
 
 module.exports.OPERATION_STATUSES = {
-    pending: 'PENDING',
-    completed: 'COMPLETED',
-    failed: 'FAILED',
+    PENDING: 'PENDING',
+    COMPLETED: 'COMPLETED',
+    FAILED: 'FAILED',
 };
 
 module.exports.GET_OUTPUT_FORMATS = {

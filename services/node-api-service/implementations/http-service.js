@@ -1,29 +1,28 @@
 const axios = require('axios');
-const Utilities = require('../../utilities.js');
 const {
     OPERATION_STATUSES,
-    PUBLISH_TYPES,
-    DEFAULT_HASH_FUNCTION_ID,
+    DEFAULT_GET_OPERATION_RESULT_FREQUENCY,
+    DEFAULT_GET_OPERATION_RESULT_MAX_NUM_RETRIES,
 } = require('../../../constants.js');
-const utilities = require('../../utilities.js');
+const { sleepForMilliseconds, resolveUAL } = require('../../utilities.js');
 
 class HttpService {
-    maxNumberOfRetries = 5;
-
-    frequency = 5;
-
     constructor(config) {
         this.config = config;
     }
 
-    info() {
-        return axios({
-            method: 'get',
-            url: `${this.config.endpoint}:${this.config.port}/info`,
-            headers: this.prepareRequestConfig(),
-        }).catch((e) => {
-            throw Error(`Unable to get node info: ${e.message}`);
-        });
+    async info() {
+        try {
+            const response = await axios({
+                method: 'get',
+                url: `${this.config.endpoint}:${this.config.port}/info`,
+                headers: this.prepareRequestConfig(),
+            });
+
+            return response;
+        } catch (error) {
+            throw Error(`Unable to get node info: ${error.message}`);
+        }
     }
 
     async getBidSuggestion(
@@ -36,7 +35,6 @@ class HttpService {
         options,
     ) {
         const endpoint = options.endpoint ?? this.config.endpoint;
-
         try {
             const response = await axios({
                 method: 'get',
@@ -51,22 +49,39 @@ class HttpService {
                 },
                 headers: this.prepareRequestConfig(),
             });
+
             return response.data.bidSuggestion;
-        } catch (e) {
-            throw Error(`Unable to get bid suggestion: ${e.message}`);
+        } catch (error) {
+            throw Error(`Unable to get bid suggestion: ${error.message}`);
         }
     }
 
-    async publish(publishType, assertionId, assertion, UAL, options) {
+    async localStore(assertions, options) {
+        const endpoint = options.endpoint ?? this.config.endpoint;
+
+        try {
+            const response = await axios({
+                method: 'post',
+                url: `${endpoint}:${this.config.port}/local-store`,
+                data: assertions,
+                headers: this.prepareRequestConfig(),
+            });
+
+            return response.data.operationId;
+        } catch (error) {
+            throw Error(`Unable to store locally: ${error.message}`);
+        }
+    }
+
+    async publish(assertionId, assertion, UAL, options) {
         const requestBody = this.preparePublishRequest(
-            publishType,
             assertionId,
             assertion,
             UAL,
-            options.localStore,
             options.hashFunctionId,
         );
         const endpoint = options.endpoint ?? this.config.endpoint;
+
         try {
             const response = await axios({
                 method: 'post',
@@ -74,9 +89,10 @@ class HttpService {
                 data: requestBody,
                 headers: this.prepareRequestConfig(),
             });
+
             return response.data.operationId;
-        } catch (e) {
-            throw Error(`Unable to publish: ${e.message}`);
+        } catch (error) {
+            throw Error(`Unable to publish: ${error.message}`);
         }
     }
 
@@ -90,15 +106,15 @@ class HttpService {
                 data: requestBody,
                 headers: this.prepareRequestConfig(),
             });
+
             return response.data.operationId;
-        } catch (e) {
-            throw Error(`Unable to get assertion: ${e.message}`);
+        } catch (error) {
+            throw Error(`Unable to get assertion: ${error.message}`);
         }
     }
 
     async query(data, options) {
         const endpoint = options.endpoint ?? this.config.endpoint;
-
         try {
             const response = await axios({
                 method: 'post',
@@ -106,24 +122,24 @@ class HttpService {
                 data: { query: data.query, type: data.type },
                 headers: this.prepareRequestConfig(),
             });
-
             return response.data.operationId;
-        } catch (e) {
-            throw Error(`Unable to query: ${e.message}`);
+        } catch (error) {
+            throw Error(`Unable to query: ${error.message}`);
         }
     }
 
     async getOperationResult(operationId, options) {
-        await Utilities.sleepForMilliseconds(500);
+        await sleepForMilliseconds(500);
         if (!operationId) {
             throw Error('Operation ID is missing, unable to fetch the operation results.');
         }
         let response = {
-            status: OPERATION_STATUSES.pending,
+            status: OPERATION_STATUSES.PENDING,
         };
         let retries = 0;
-        const maxNumberOfRetries = options.maxNumberOfRetries ?? this.maxNumberOfRetries;
-        const frequency = options.frequency ?? this.frequency;
+        const maxNumberOfRetries =
+            options.maxNumberOfRetries ?? DEFAULT_GET_OPERATION_RESULT_MAX_NUM_RETRIES;
+        const frequency = options.frequency ?? DEFAULT_GET_OPERATION_RESULT_FREQUENCY;
 
         const endpoint = options.endpoint ?? this.config.endpoint;
         const axios_config = {
@@ -144,46 +160,26 @@ class HttpService {
             }
             retries += 1;
             // eslint-disable-next-line no-await-in-loop
-            await Utilities.sleepForMilliseconds(frequency * 1000);
+            await sleepForMilliseconds(frequency * 1000);
             // eslint-disable-next-line no-await-in-loop
             response = await axios(axios_config);
         } while (
-            response.data.status !== OPERATION_STATUSES.completed &&
-            response.data.status !== OPERATION_STATUSES.failed
+            response.data.status !== OPERATION_STATUSES.COMPLETED &&
+            response.data.status !== OPERATION_STATUSES.FAILED
         );
         return response.data;
     }
 
-    preparePublishRequest(
-        publishType,
-        assertionId,
-        assertion,
-        UAL,
-        localStore,
-        hashFunctionId = DEFAULT_HASH_FUNCTION_ID,
-    ) {
-        let publishRequest = {
-            publishType,
+    preparePublishRequest(assertionId, assertion, UAL, hashFunctionId = 1) {
+        const { blockchain, contract, tokenId } = resolveUAL(UAL);
+        return {
             assertionId,
             assertion,
+            blockchain,
+            contract,
+            tokenId: parseInt(tokenId, 10),
+            hashFunctionId,
         };
-        switch (publishType) {
-            case PUBLISH_TYPES.ASSET: {
-                const { blockchain, contract, tokenId } = utilities.resolveUAL(UAL);
-                publishRequest = {
-                    ...publishRequest,
-                    blockchain,
-                    contract,
-                    tokenId: parseInt(tokenId, 10),
-                    hashFunctionId,
-                    localStore,
-                };
-                break;
-            }
-            default:
-                throw Error('Publish type not yet implemented');
-        }
-        return publishRequest;
     }
 
     prepareGetAssertionRequest(UAL, hashFunctionId = 1) {
@@ -197,6 +193,7 @@ class HttpService {
         if (this.config?.auth?.token) {
             return { Authorization: `Bearer ${this.config.auth.token}` };
         }
+
         return {};
     }
 }
