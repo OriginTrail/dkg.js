@@ -93,7 +93,7 @@ function divider() {
     divider();
 
     const queryResult = await DkgClient.graph.query(
-        'construct { ?s ?p ?o } where { ?s ?p ?o . <http://Max> ?p ?o }',
+        'construct { ?s ?p ?o } where { ?s ?p ?o . <uuid:user:1> ?p ?o }',
         'CONSTRUCT',
     );
     console.log('======================== QUERY RESULT');
