@@ -3,13 +3,17 @@ const { nodeSupported } = require('./utilities.js');
 
 class ValidationService {
     validatePublishRequest(content, options) {
-        const keysNumber = Object.keys(content).length;
+        const keys = Object.keys(content);
 
         if (
-            !(keysNumber === 1 && (content.public || content.private)) &&
-            !(keysNumber === 2 && content.public && content.private)
+            !(keys.length === 1 && (keys.includes('public') || keys.includes('private'))) &&
+            !(keys.length === 2 && (keys.includes('public') || keys.includes('private')))
         )
             throw Error('content keys can only be "public", "private" or both.');
+
+        if(!content.public && !content.private) {
+            throw Error('Public or private content must be defined');
+        }
 
         if (content.public) {
             this.validateSize(content.public);
@@ -32,7 +36,7 @@ class ValidationService {
     }
 
     validateContentType(obj) {
-        if (!(!!obj && obj.constructor === Object)) throw Error('Content must be an object'); 
+        if (!(!!obj && typeof obj === 'object')) throw Error('Content must be an object'); 
     }
 
     validateSize(content) {

@@ -41,14 +41,14 @@ class AssetOperationsManager {
 
         let privateAssertion;
         let privateAssertionId;
-        if (content.private) {
+        if (content.private && !isEmptyObject(content.private)) {
             privateAssertion = await formatAssertion(content.private);
             privateAssertionId = calculateRoot(privateAssertion);
         }
         const publicGraph = {
             '@graph': [
-                content.public,
-                privateAssertionId
+                content.public && !isEmptyObject(content.public) ? content.public : null,
+                content.private && !isEmptyObject(content.private)
                     ? {
                           [PRIVATE_ASSERTION_PREDICATE]: privateAssertionId,
                       }
@@ -94,11 +94,23 @@ class AssetOperationsManager {
 
         let operationResult;
         let operationId;
-        if (privateAssertionId && !isEmptyObject(privateAssertion)) {
+        if (privateAssertion?.length) {
             operationId = await this.nodeApiService.localStore(
                 [
-                    { assertionId: privateAssertionId, assertion: privateAssertion },
-                    { assertionId: publicAssertionId, assertion: publicAssertion },
+                    {
+                        blockchain: blockchain.name,
+                        contract: contentAssetStorageAddress,
+                        tokenId,
+                        assertionId: publicAssertionId,
+                        assertion: publicAssertion,
+                    },
+                    {
+                        blockchain: blockchain.name,
+                        contract: contentAssetStorageAddress,
+                        tokenId,
+                        assertionId: privateAssertionId,
+                        assertion: privateAssertion,
+                    },
                 ],
                 options,
             );

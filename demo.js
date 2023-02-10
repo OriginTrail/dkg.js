@@ -36,15 +36,30 @@ function divider() {
     const createAssetResult = await DkgClient.asset.create(
         {
             public: {
-                '@context': 'http://schema.org',
-                '@id': 'http://Max',
-                '@type': 'Person',
-                name: 'Max',
+                '@context': ['https://schema.org'],
+                '@id': 'uuid:1',
+                company: 'OT',
+                user: {
+                    '@id': 'uuid:user:1',
+                },
+                city: {
+                    '@id': 'uuid:belgrade',
+                },
             },
             private: {
-                '@context': 'http://schema.org',
-                '@id': 'http://Max',
-                governmentId: '123',
+                '@context': ['https://schema.org'],
+                '@graph': [
+                    {
+                        '@id': 'uuid:user:1',
+                        name: 'Adam',
+                        lastname: 'Smith',
+                    },
+                    {
+                        '@id': 'uuid:belgrade',
+                        title: 'Belgrade',
+                        postCode: '11000',
+                    },
+                ],
             },
         },
         {
