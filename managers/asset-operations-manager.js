@@ -37,7 +37,8 @@ class AssetOperationsManager {
             content = userContent;
         }
 
-        this.validationService.validatePublishRequest(content, options);
+        const blockchain = this.blockchainService.getBlockchain(options);
+        this.validationService.validatePublishRequest(content, blockchain);
 
         let privateAssertion;
         let privateAssertionId;
@@ -58,7 +59,6 @@ class AssetOperationsManager {
         const publicAssertion = await formatAssertion(publicGraph);
         const publicAssertionId = calculateRoot(publicAssertion);
 
-        const blockchain = this.blockchainService.getBlockchain(options);
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
             blockchain.name,
             'ContentAssetStorage',
@@ -250,7 +250,8 @@ class AssetOperationsManager {
 
     async transfer(UAL, to, opts = {}) {
         const options = JSON.parse(JSON.stringify(opts));
-        this.validationService.validateAssetTransferRequest(UAL, to, options);
+        const blockchain = await this.blockchainService.getBlockchain(options)
+        this.validationService.validateAssetTransferRequest(UAL, to, blockchain);
         const { tokenId } = resolveUAL(UAL);
         await this.blockchainService.transferAsset(tokenId, to, options);
         const owner = await this.blockchainService.getAssetOwner(tokenId, options);

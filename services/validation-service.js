@@ -2,7 +2,7 @@ const { MAX_FILE_SIZE, BLOCKCHAINS, OPERATIONS, GET_OUTPUT_FORMATS } = require('
 const { nodeSupported } = require('./utilities.js');
 
 class ValidationService {
-    validatePublishRequest(content, options) {
+    validatePublishRequest(content, blockchain) {
         const keys = Object.keys(content);
 
         if (
@@ -11,7 +11,7 @@ class ValidationService {
         )
             throw Error('content keys can only be "public", "private" or both.');
 
-        if(!content.public && !content.private) {
+        if (!content.public && !content.private) {
             throw Error('Public or private content must be defined');
         }
 
@@ -21,7 +21,7 @@ class ValidationService {
         if (content.private) {
             this.validateSize(content.private);
         }
-        this.validateBlockchain(options.blockchain);
+        this.validateBlockchain(blockchain);
     }
 
     validateGetRequest(UAL, options) {
@@ -30,13 +30,13 @@ class ValidationService {
         this.validateOutputFormat(options?.outputFormat);
     }
 
-    validateAssetTransferRequest(UAL, newOwner, options) {
+    validateAssetTransferRequest(UAL, newOwner, blockchain) {
         if (!UAL || !newOwner) throw Error('Wrong parameters for the transfer.');
-        this.validateBlockchain(options.blockchain);
+        this.validateBlockchain(blockchain);
     }
 
     validateContentType(obj) {
-        if (!(!!obj && typeof obj === 'object')) throw Error('Content must be an object'); 
+        if (!(!!obj && typeof obj === 'object')) throw Error('Content must be an object');
     }
 
     validateSize(content) {

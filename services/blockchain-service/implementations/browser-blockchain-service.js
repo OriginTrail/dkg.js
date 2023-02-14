@@ -3,20 +3,20 @@ const BlockchainServiceBase = require('../blockchain-service-base.js');
 const { WEBSOCKET_PROVIDER_OPTIONS, BLOCKCHAINS } = require('../../../constants.js');
 
 class BrowserBlockchainService extends BlockchainServiceBase {
-    constructor(config) {
+    constructor(config = {}) {
         super(config);
         this.config = config;
     }
 
     getBlockchain(options) {
+        const name = options.blockchain.name ?? this.config?.blockchain?.name;
+        const rpc = options.blockchain.rpc ?? BLOCKCHAINS[name].rpc;
+        const hubContract = options.blockchain.hubContract ?? BLOCKCHAINS[name].hubContract;
+
         return {
-            name: options.blockchain.name,
-            hubContract:
-                options.blockchain.hubContract ?? BLOCKCHAINS[options.blockchain.name].hubContract,
-            assetContract:
-                options.blockchain.assetContract ??
-                BLOCKCHAINS[options.blockchain.name].assetContract,
-            rpc: options.blockchain.rpc ?? BLOCKCHAINS[options.blockchain.name].rpc,
+            name,
+            rpc,
+            hubContract,
         };
     }
 
