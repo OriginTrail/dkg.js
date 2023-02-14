@@ -24,14 +24,20 @@ class ValidationService {
         this.validateBlockchain(blockchain);
     }
 
-    validateGetRequest(UAL, options) {
+    validateGetRequest(UAL, blockchain, options) {
         if (!UAL) throw Error('UAL is missing.');
+        this.validateBlockchain(blockchain)
         this.validateValidate(options?.validate);
         this.validateOutputFormat(options?.outputFormat);
     }
 
     validateAssetTransferRequest(UAL, newOwner, blockchain) {
         if (!UAL || !newOwner) throw Error('Wrong parameters for the transfer.');
+        this.validateBlockchain(blockchain);
+    }
+
+    validateGetOwnerRequest(UAL, blockchain) {
+        if (!UAL) throw Error('UAL is missing.');
         this.validateBlockchain(blockchain);
     }
 
@@ -80,10 +86,6 @@ class ValidationService {
         if (keywords.length > 10) throw Error('Too many keywords provided, limit is 10.');
         if (!keywords.every((i) => typeof i === 'string' && i !== ''))
             throw Error('all keywords must be non empty strings');
-    }
-
-    validateGetOwnerRequest(UAL) {
-        if (!UAL) throw Error('UAL is missing.');
     }
 }
 module.exports = ValidationService;

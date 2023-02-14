@@ -138,9 +138,7 @@ class BlockchainServiceBase {
         return this[blockchainName].contracts[contractName];
     }
 
-    async createAsset(requestData, options, stepHooks = emptyHooks) {
-        const blockchain = this.getBlockchain(options);
-
+    async createAsset(requestData, blockchain, stepHooks = emptyHooks) {
         const serviceAgreementV1Address = await this.getContractAddress(
             blockchain.name,
             'ServiceAgreementV1',
@@ -184,9 +182,7 @@ class BlockchainServiceBase {
         }
     }
 
-    async updateAsset(tokenId, requestData, options) {
-        const blockchain = this.getBlockchain(options);
-
+    async updateAsset(tokenId, requestData, blockchain) {
         const serviceAgreementV1Address = await this.getContractAddress(
             blockchain.name,
             'ServiceAgreementV1',
@@ -218,20 +214,7 @@ class BlockchainServiceBase {
         }
     }
 
-    async getAssertionIdsLength(tokenId, options = {}) {
-        const blockchain = this.getBlockchain(options);
-
-        return this.callContractFunction(
-            'ContentAssetStorage',
-            'getAssertionIdsLength',
-            [tokenId],
-            blockchain,
-        );
-    }
-
-    async getLatestAssertionId(tokenId, options = {}) {
-        const blockchain = this.getBlockchain(options);
-
+    async getLatestAssertionId(tokenId, blockchain) {
         return this.callContractFunction(
             'ContentAssetStorage',
             'getLatestAssertionId',
@@ -240,9 +223,7 @@ class BlockchainServiceBase {
         );
     }
 
-    async getAssetOwner(tokenId, options = {}) {
-        const blockchain = this.getBlockchain(options);
-
+    async getAssetOwner(tokenId, blockchain) {
         return this.callContractFunction('ContentAssetStorage', 'ownerOf', [tokenId], blockchain);
     }
 

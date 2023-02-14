@@ -74,12 +74,12 @@ class BrowserBlockchainService extends BlockchainServiceBase {
         return receipt.events[eventName].returnValues;
     }
 
-    async transferAsset(tokenId, to, options) {
+    async transferAsset(tokenId, to, blockchain) {
         return this.executeContractFunction(
             'ContentAssetStorage',
             'transferFrom',
             [await this.getAccount(), to, tokenId],
-            this.getBlockchain(options),
+            blockchain,
         );
     }
 }

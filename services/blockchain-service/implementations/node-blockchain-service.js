@@ -79,9 +79,7 @@ class NodeBlockchainService extends BlockchainServiceBase {
         return result;
     }
 
-    async transferAsset(tokenId, to, options) {
-        const blockchain = this.getBlockchain(options);
-
+    async transferAsset(tokenId, to, blockchain) {
         return this.executeContractFunction(
             'ContentAssetStorage',
             'transferFrom',

@@ -86,7 +86,7 @@ class AssetOperationsManager {
                 scoreFunctionId: options.scoreFunctionId ?? 1,
                 immutable_: options.immutable ?? false,
             },
-            options,
+            blockchain,
             stepHooks,
         );
 
@@ -158,10 +158,11 @@ class AssetOperationsManager {
 
     async get(UAL, opts = {}) {
         const options = JSON.parse(JSON.stringify(opts));
-        this.validationService.validateGetRequest(UAL, options);
+        const blockchain = this.blockchainService.getBlockchain(options);
+        this.validationService.validateGetRequest(UAL, blockchain, options);
         const { tokenId } = resolveUAL(UAL);
 
-        const assertionId = await this.blockchainService.getLatestAssertionId(tokenId, options);
+        const assertionId = await this.blockchainService.getLatestAssertionId(tokenId, blockchain);
 
         const operationId = await this.nodeApiService.get(UAL, options);
         let operationResult = await this.nodeApiService.getOperationResult(operationId, {
@@ -226,7 +227,7 @@ class AssetOperationsManager {
         tokenAmount: tokenAmount,
         scoreFunctionId: options.scoreFunctionId ?? 1,
       },
-      options
+      blockchain
     );
     let operationId = await this.nodeApiService.publish(
       assertionId,
@@ -253,8 +254,8 @@ class AssetOperationsManager {
         const blockchain = await this.blockchainService.getBlockchain(options)
         this.validationService.validateAssetTransferRequest(UAL, to, blockchain);
         const { tokenId } = resolveUAL(UAL);
-        await this.blockchainService.transferAsset(tokenId, to, options);
-        const owner = await this.blockchainService.getAssetOwner(tokenId, options);
+        await this.blockchainService.transferAsset(tokenId, to, blockchain);
+        const owner = await this.blockchainService.getAssetOwner(tokenId, blockchain);
         return {
             UAL,
             owner,
@@ -264,9 +265,10 @@ class AssetOperationsManager {
 
     async getOwner(UAL, opts = {}) {
         const options = JSON.parse(JSON.stringify(opts));
-        this.validationService.validateGetOwnerRequest(UAL);
+        const blockchain = await this.blockchainService.getBlockchain(options);
+        this.validationService.validateGetOwnerRequest(UAL, blockchain);
         const { tokenId } = resolveUAL(UAL);
-        const owner = await this.blockchainService.getAssetOwner(tokenId, options);
+        const owner = await this.blockchainService.getAssetOwner(tokenId, blockchain);
         return {
             UAL,
             owner,
