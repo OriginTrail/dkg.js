@@ -60,9 +60,8 @@ class AssetOperationsManager {
         const publicAssertionId = calculateRoot(publicAssertion);
 
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
-            blockchain.name,
             'ContentAssetStorage',
-            blockchain.rpc,
+            blockchain,
         );
         const tokenAmountInWei =
             options.tokenAmount ??
@@ -181,6 +180,8 @@ class AssetOperationsManager {
                         algorithm: 'URDNA2015',
                         format: 'application/n-quads',
                     });
+                } else {
+                    assertion = assertion.join('\n');
                 }
             } catch (error) {
                 operationResult = {

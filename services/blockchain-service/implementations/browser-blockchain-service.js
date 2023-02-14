@@ -10,8 +10,12 @@ class BrowserBlockchainService extends BlockchainServiceBase {
 
     getBlockchain(options) {
         const name = options.blockchain.name ?? this.config?.blockchain?.name;
-        const rpc = options.blockchain.rpc ?? BLOCKCHAINS[name].rpc;
-        const hubContract = options.blockchain.hubContract ?? BLOCKCHAINS[name].hubContract;
+        const rpc =
+            options.blockchain?.rpc ?? this.config?.blockchain?.rpc ?? BLOCKCHAINS[name].rpc;
+        const hubContract =
+            options.blockchain?.hubContract ??
+            this.config?.blockchain?.hubContract ??
+            BLOCKCHAINS[name].hubContract;
 
         return {
             name,
@@ -41,11 +45,7 @@ class BrowserBlockchainService extends BlockchainServiceBase {
     }
 
     async executeContractFunction(contractName, functionName, args, blockchain) {
-        const contractInstance = await this.getContractInstance(
-            blockchain.name,
-            contractName,
-            blockchain.rpc,
-        );
+        const contractInstance = await this.getContractInstance(contractName, blockchain);
         const tx = await this.prepareTransaction(contractInstance, functionName, args, {
             name: blockchain.name,
             publicKey: await this.getAccount(),

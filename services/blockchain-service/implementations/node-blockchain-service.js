@@ -54,11 +54,7 @@ class NodeBlockchainService extends BlockchainServiceBase {
     async executeContractFunction(contractName, functionName, args, blockchain) {
         const web3Instance = await this.getWeb3Instance(blockchain.name, blockchain.rpc);
 
-        const contractInstance = await this.getContractInstance(
-            blockchain.name,
-            contractName,
-            blockchain.rpc,
-        );
+        const contractInstance = await this.getContractInstance(contractName, blockchain);
         const tx = await this.prepareTransaction(contractInstance, functionName, args, blockchain);
         const createdTransaction = await web3Instance.eth.accounts.signTransaction(
             tx,
