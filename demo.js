@@ -9,7 +9,6 @@ const PRIVATE_KEY = '0x9b9af041edc816692276ac3c8f1d5565e3c01ddff80ec982943a29bd8
 const DkgClient = new DKG({
     endpoint: OT_NODE_HOSTNAME,
     port: OT_NODE_PORT,
-    useSSL: false,
     blockchain: {
         name: 'ganache',
         publicKey: PUBLIC_KEY,

@@ -153,13 +153,11 @@
         },
         methods: {
             initializeDKGClient(blockchain) {
-                const OT_NODE_HOSTNAME = 'https://v6-pegasus-node-12.origin-trail.network';
+                const OT_NODE_HOSTNAME = 'localhost';
                 const OT_NODE_PORT = '8900';
                 const options = {
                     endpoint: OT_NODE_HOSTNAME,
                     port: OT_NODE_PORT,
-                    useSSL: false,
-                    loglevel: 'trace',
                     blockchain: {
                         name: "otp"
                     }
