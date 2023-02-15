@@ -38,11 +38,6 @@ class BlockchainServiceBase {
         return {};
     }
 
-    getBlockchain() {
-        // overridden by subclasses
-        return {};
-    }
-
     async decodeEventLogs() {
         // overridden by subclasses
         return {};

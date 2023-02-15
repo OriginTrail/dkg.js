@@ -1,22 +1,18 @@
 const axios = require('axios');
-const {
-    OPERATION_STATUSES,
-    DEFAULT_GET_OPERATION_RESULT_FREQUENCY,
-    DEFAULT_GET_OPERATION_RESULT_MAX_NUM_RETRIES,
-} = require('../../../constants.js');
+const { OPERATION_STATUSES } = require('../../../constants.js');
 const { sleepForMilliseconds, resolveUAL } = require('../../utilities.js');
 
 class HttpService {
-    constructor(config) {
+    constructor(config = {}) {
         this.config = config;
     }
 
-    async info() {
+    async info(endpoint, port, authToken) {
         try {
             const response = await axios({
                 method: 'get',
-                url: `${this.config.endpoint}:${this.config.port}/info`,
-                headers: this.prepareRequestConfig(),
+                url: `${endpoint}:${port}/info`,
+                headers: this.prepareRequestConfig(authToken),
             });
 
             return response;
@@ -26,19 +22,20 @@ class HttpService {
     }
 
     async getBidSuggestion(
+        endpoint,
+        port,
+        authToken,
         blockchain,
         epochsNumber,
         assertionSize,
         contentAssetStorageAddress,
         firstAssertionId,
         hashFunctionId,
-        options,
     ) {
-        const endpoint = options.endpoint ?? this.config.endpoint;
         try {
             const response = await axios({
                 method: 'get',
-                url: `${endpoint}:${this.config.port}/bid-suggestion`,
+                url: `${endpoint}:${port}/bid-suggestion`,
                 params: {
                     blockchain,
                     epochsNumber,
@@ -47,7 +44,7 @@ class HttpService {
                     firstAssertionId,
                     hashFunctionId,
                 },
-                headers: this.prepareRequestConfig(),
+                headers: this.prepareRequestConfig(authToken),
             });
 
             return response.data.bidSuggestion;
@@ -56,15 +53,13 @@ class HttpService {
         }
     }
 
-    async localStore(assertions, options) {
-        const endpoint = options.endpoint ?? this.config.endpoint;
-
+    async localStore(endpoint, port, authToken, assertions) {
         try {
             const response = await axios({
                 method: 'post',
-                url: `${endpoint}:${this.config.port}/local-store`,
+                url: `${endpoint}:${port}/local-store`,
                 data: assertions,
-                headers: this.prepareRequestConfig(),
+                headers: this.prepareRequestConfig(authToken),
             });
 
             return response.data.operationId;
@@ -73,21 +68,13 @@ class HttpService {
         }
     }
 
-    async publish(assertionId, assertion, UAL, options) {
-        const requestBody = this.preparePublishRequest(
-            assertionId,
-            assertion,
-            UAL,
-            options.hashFunctionId,
-        );
-        const endpoint = options.endpoint ?? this.config.endpoint;
-
+    async publish(endpoint, port, authToken, assertionId, assertion, UAL, hashFunctionId) {
         try {
             const response = await axios({
                 method: 'post',
-                url: `${endpoint}:${this.config.port}/publish`,
-                data: requestBody,
-                headers: this.prepareRequestConfig(),
+                url: `${endpoint}:${port}/publish`,
+                data: this.preparePublishRequest(assertionId, assertion, UAL, hashFunctionId),
+                headers: this.prepareRequestConfig(authToken),
             });
 
             return response.data.operationId;
@@ -96,15 +83,16 @@ class HttpService {
         }
     }
 
-    async get(UAL, options) {
-        const requestBody = this.prepareGetAssertionRequest(UAL, 1);
-        const endpoint = options.endpoint ?? this.config.endpoint;
+    async get(endpoint, port, authToken, UAL, hashFunctionId) {
         try {
             const response = await axios({
                 method: 'post',
-                url: `${endpoint}:${this.config.port}/get`,
-                data: requestBody,
-                headers: this.prepareRequestConfig(),
+                url: `${endpoint}:${port}/get`,
+                data: {
+                    id: UAL,
+                    hashFunctionId,
+                },
+                headers: this.prepareRequestConfig(authToken),
             });
 
             return response.data.operationId;
@@ -113,14 +101,13 @@ class HttpService {
         }
     }
 
-    async query(data, options) {
-        const endpoint = options.endpoint ?? this.config.endpoint;
+    async query(endpoint, port, authToken, query, type) {
         try {
             const response = await axios({
                 method: 'post',
-                url: `${endpoint}:${this.config.port}/query`,
-                data: { query: data.query, type: data.type },
-                headers: this.prepareRequestConfig(),
+                url: `${endpoint}:${port}/query`,
+                data: { query, type },
+                headers: this.prepareRequestConfig(authToken),
             });
             return response.data.operationId;
         } catch (error) {
@@ -128,24 +115,25 @@ class HttpService {
         }
     }
 
-    async getOperationResult(operationId, options) {
+    async getOperationResult(
+        endpoint,
+        port,
+        authToken,
+        operation,
+        maxNumberOfRetries,
+        frequency,
+        operationId,
+    ) {
         await sleepForMilliseconds(500);
-        if (!operationId) {
-            throw Error('Operation ID is missing, unable to fetch the operation results.');
-        }
         let response = {
             status: OPERATION_STATUSES.PENDING,
         };
         let retries = 0;
-        const maxNumberOfRetries =
-            options.maxNumberOfRetries ?? DEFAULT_GET_OPERATION_RESULT_MAX_NUM_RETRIES;
-        const frequency = options.frequency ?? DEFAULT_GET_OPERATION_RESULT_FREQUENCY;
 
-        const endpoint = options.endpoint ?? this.config.endpoint;
         const axios_config = {
             method: 'get',
-            url: `${endpoint}:${this.config.port}/${options.operation}/${operationId}`,
-            headers: this.prepareRequestConfig(),
+            url: `${endpoint}:${port}/${operation}/${operationId}`,
+            headers: this.prepareRequestConfig(authToken),
         };
         do {
             if (retries > maxNumberOfRetries) {
@@ -170,7 +158,7 @@ class HttpService {
         return response.data;
     }
 
-    preparePublishRequest(assertionId, assertion, UAL, hashFunctionId = 1) {
+    preparePublishRequest(assertionId, assertion, UAL, hashFunctionId) {
         const { blockchain, contract, tokenId } = resolveUAL(UAL);
         return {
             assertionId,
@@ -182,16 +170,9 @@ class HttpService {
         };
     }
 
-    prepareGetAssertionRequest(UAL, hashFunctionId = 1) {
-        return {
-            id: UAL,
-            hashFunctionId,
-        };
-    }
-
-    prepareRequestConfig() {
-        if (this.config?.auth?.token) {
-            return { Authorization: `Bearer ${this.config.auth.token}` };
+    prepareRequestConfig(authToken) {
+        if (authToken) {
+            return { Authorization: `Bearer ${authToken}` };
         }
 
         return {};

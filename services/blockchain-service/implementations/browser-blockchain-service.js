@@ -1,27 +1,11 @@
 const Web3 = require('web3');
 const BlockchainServiceBase = require('../blockchain-service-base.js');
-const { WEBSOCKET_PROVIDER_OPTIONS, BLOCKCHAINS } = require('../../../constants.js');
+const { WEBSOCKET_PROVIDER_OPTIONS } = require('../../../constants.js');
 
 class BrowserBlockchainService extends BlockchainServiceBase {
     constructor(config = {}) {
         super(config);
         this.config = config;
-    }
-
-    getBlockchain(options) {
-        const name = options.blockchain.name ?? this.config?.blockchain?.name;
-        const rpc =
-            options.blockchain?.rpc ?? this.config?.blockchain?.rpc ?? BLOCKCHAINS[name].rpc;
-        const hubContract =
-            options.blockchain?.hubContract ??
-            this.config?.blockchain?.hubContract ??
-            BLOCKCHAINS[name].hubContract;
-
-        return {
-            name,
-            rpc,
-            hubContract,
-        };
     }
 
     initializeWeb3(blockchainName, blockchainRpc) {

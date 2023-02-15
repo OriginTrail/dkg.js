@@ -1,5 +1,5 @@
 const Web3 = require('web3');
-const { BLOCKCHAINS, WEBSOCKET_PROVIDER_OPTIONS } = require('../../../constants.js');
+const { WEBSOCKET_PROVIDER_OPTIONS } = require('../../../constants.js');
 const BlockchainServiceBase = require('../blockchain-service-base.js');
 
 class NodeBlockchainService extends BlockchainServiceBase {
@@ -29,26 +29,6 @@ class NodeBlockchainService extends BlockchainServiceBase {
         } else {
             this[blockchainName].web3 = new Web3(blockchainRpc);
         }
-    }
-
-    getBlockchain(options) {
-        const name = options.blockchain?.name ?? this.config?.blockchain?.name;
-        const rpc =
-            options.blockchain?.rpc ?? this.config?.blockchain?.rpc ?? BLOCKCHAINS[name].rpc;
-        const hubContract =
-            options.blockchain?.hubContract ??
-            this.config?.blockchain?.hubContract ??
-            BLOCKCHAINS[name].hubContract;
-        const publicKey = options.blockchain?.publicKey ?? this.config?.blockchain?.publicKey;
-        const privateKey = options.blockchain?.privateKey ?? this.config?.blockchain?.privateKey;
-
-        return {
-            name,
-            rpc,
-            hubContract,
-            publicKey,
-            privateKey,
-        };
     }
 
     async executeContractFunction(contractName, functionName, args, blockchain) {
