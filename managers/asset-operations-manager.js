@@ -24,17 +24,15 @@ class AssetOperationsManager {
         this.inputService = services.inputService;
     }
 
-    async create(userContent, opts = {}, stepHooks = emptyHooks) {
-        const options = JSON.parse(JSON.stringify(opts));
-
-        this.validationService.validateContentType(userContent);
-        let content = {};
+    async create(content, options = {}, stepHooks = emptyHooks) {
+        this.validationService.validateContentType(content);
+        let jsonContent = {};
 
         // for backwards compatibility
-        if (!userContent.public && !userContent.private) {
-            content.public = userContent;
+        if (!content.public && !content.private) {
+            jsonContent.public = content;
         } else {
-            content = userContent;
+            jsonContent = content;
         }
 
         const blockchain = this.inputService.getBlockchain(options);
@@ -49,18 +47,20 @@ class AssetOperationsManager {
         const tokenAmount = this.inputService.getTokenAmount(options);
         const authToken = this.inputService.getAuthToken(options);
 
-        this.validationService.validatePublishRequest(content, blockchain);
+        this.validationService.validatePublishRequest(jsonContent, blockchain);
 
         let privateAssertion;
         let privateAssertionId;
-        if (content.private && !isEmptyObject(content.private)) {
-            privateAssertion = await formatAssertion(content.private);
+        if (jsonContent.private && !isEmptyObject(jsonContent.private)) {
+            privateAssertion = await formatAssertion(jsonContent.private);
             privateAssertionId = calculateRoot(privateAssertion);
         }
         const publicGraph = {
             '@graph': [
-                content.public && !isEmptyObject(content.public) ? content.public : null,
-                content.private && !isEmptyObject(content.private)
+                jsonContent.public && !isEmptyObject(jsonContent.public)
+                    ? jsonContent.public
+                    : null,
+                jsonContent.private && !isEmptyObject(jsonContent.private)
                     ? {
                           [PRIVATE_ASSERTION_PREDICATE]: privateAssertionId,
                       }
@@ -103,44 +103,45 @@ class AssetOperationsManager {
             stepHooks,
         );
 
+        
+        const resolvedUAL = {
+            blockchain: blockchain.name,
+            contract: contentAssetStorageAddress,
+            tokenId,
+        };
+        const assertions = [
+            {
+                ...resolvedUAL,
+                assertionId: publicAssertionId,
+                assertion: publicAssertion,
+            },
+        ];
+        if (privateAssertion?.length) {
+            assertions.push({
+                ...resolvedUAL,
+                assertionId: privateAssertionId,
+                assertion: privateAssertion,
+            });
+        }
+        let operationId = await this.nodeApiService.localStore(endpoint, port, authToken, assertions);
+        let operationResult = await this.nodeApiService.getOperationResult(
+            endpoint,
+            port,
+            authToken,
+            OPERATIONS.LOCAL_STORE,
+            maxNumberOfRetries,
+            DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY,
+            operationId,
+        );
+
         const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, tokenId);
 
-        let operationResult;
-        let operationId;
-        if (privateAssertion?.length) {
-            operationId = await this.nodeApiService.localStore(endpoint, port, authToken, [
-                {
-                    blockchain: blockchain.name,
-                    contract: contentAssetStorageAddress,
-                    tokenId,
-                    assertionId: publicAssertionId,
-                    assertion: publicAssertion,
-                },
-                {
-                    blockchain: blockchain.name,
-                    contract: contentAssetStorageAddress,
-                    tokenId,
-                    assertionId: privateAssertionId,
-                    assertion: privateAssertion,
-                },
-            ]);
-            operationResult = await this.nodeApiService.getOperationResult(
-                endpoint,
-                port,
-                authToken,
-                OPERATIONS.LOCAL_STORE,
-                maxNumberOfRetries,
-                DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY,
-                operationId,
-            );
-
-            if (operationResult.status === OPERATION_STATUSES.FAILED) {
-                return {
-                    UAL,
-                    assertionId: publicAssertionId,
-                    operation: getOperationStatusObject(operationResult, operationId),
-                };
-            }
+        if (operationResult.status === OPERATION_STATUSES.FAILED) {
+            return {
+                UAL,
+                assertionId: publicAssertionId,
+                operation: getOperationStatusObject(operationResult, operationId),
+            };
         }
 
         operationId = await this.nodeApiService.publish(
@@ -149,7 +150,9 @@ class AssetOperationsManager {
             authToken,
             publicAssertionId,
             publicAssertion,
-            UAL,
+            blockchain.name,
+            contentAssetStorageAddress,
+            tokenId,
             hashFunctionId,
         );
 
@@ -178,8 +181,7 @@ class AssetOperationsManager {
         };
     }
 
-    async get(UAL, opts = {}) {
-        const options = JSON.parse(JSON.stringify(opts));
+    async get(UAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
         const endpoint = this.inputService.getEndpoint(options);
         const port = this.inputService.getPort(options);
@@ -297,8 +299,7 @@ class AssetOperationsManager {
     };
   } */
 
-    async transfer(UAL, to, opts = {}) {
-        const options = JSON.parse(JSON.stringify(opts));
+    async transfer(UAL, to, options = {}) {
         const blockchain = await this.inputService.getBlockchain(options);
 
         this.validationService.validateAssetTransferRequest(UAL, to, blockchain);
@@ -313,8 +314,7 @@ class AssetOperationsManager {
         };
     }
 
-    async getOwner(UAL, opts = {}) {
-        const options = JSON.parse(JSON.stringify(opts));
+    async getOwner(UAL, options = {}) {
         const blockchain = await this.inputService.getBlockchain(options);
 
         this.validationService.validateGetOwnerRequest(UAL, blockchain);

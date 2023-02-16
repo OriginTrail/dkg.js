@@ -30,7 +30,7 @@ module.exports = {
         return {
             blockchain: args[0],
             contract: args[1],
-            tokenId: args[2],
+            tokenId: parseInt(args[2], 10),
         };
     },
     async sleepForMilliseconds(milliseconds) {

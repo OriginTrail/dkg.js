@@ -152,7 +152,9 @@ class BlockchainServiceBase {
                 blockchain,
             );
 
-            const { tokenId } = await this.decodeEventLogs(receipt, 'AssetMinted', blockchain);
+            let { tokenId } = await this.decodeEventLogs(receipt, 'AssetMinted', blockchain);
+
+            tokenId = parseInt(tokenId, 10);
 
             stepHooks.afterHook({
                 status: OPERATIONS_STEP_STATUS.CREATE_ASSET_COMPLETED,

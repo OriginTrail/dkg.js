@@ -1,6 +1,6 @@
 const axios = require('axios');
 const { OPERATION_STATUSES } = require('../../../constants.js');
-const { sleepForMilliseconds, resolveUAL } = require('../../utilities.js');
+const { sleepForMilliseconds } = require('../../utilities.js');
 
 class HttpService {
     constructor(config = {}) {
@@ -68,12 +68,29 @@ class HttpService {
         }
     }
 
-    async publish(endpoint, port, authToken, assertionId, assertion, UAL, hashFunctionId) {
+    async publish(
+        endpoint,
+        port,
+        authToken,
+        assertionId,
+        assertion,
+        blockchain,
+        contract,
+        tokenId,
+        hashFunctionId,
+    ) {
         try {
             const response = await axios({
                 method: 'post',
                 url: `${endpoint}:${port}/publish`,
-                data: this.preparePublishRequest(assertionId, assertion, UAL, hashFunctionId),
+                data: {
+                    assertionId,
+                    assertion,
+                    blockchain,
+                    contract,
+                    tokenId,
+                    hashFunctionId,
+                },
                 headers: this.prepareRequestConfig(authToken),
             });
 
@@ -156,18 +173,6 @@ class HttpService {
             response.data.status !== OPERATION_STATUSES.FAILED
         );
         return response.data;
-    }
-
-    preparePublishRequest(assertionId, assertion, UAL, hashFunctionId) {
-        const { blockchain, contract, tokenId } = resolveUAL(UAL);
-        return {
-            assertionId,
-            assertion,
-            blockchain,
-            contract,
-            tokenId: parseInt(tokenId, 10),
-            hashFunctionId,
-        };
     }
 
     prepareRequestConfig(authToken) {
