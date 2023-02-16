@@ -1,7 +1,92 @@
-const { MAX_FILE_SIZE, OPERATIONS, GET_OUTPUT_FORMATS } = require('../constants.js');
+const { MAX_FILE_SIZE, OPERATIONS, GET_OUTPUT_FORMATS, QUERY_TYPES } = require('../constants.js');
 const { nodeSupported } = require('./utilities.js');
 
 class ValidationService {
+    validateNodeInfo(endpoint, port, authToken) {
+        this.validateEndpoint(endpoint);
+        this.validatePort(port);
+        this.validateAuthToken(authToken);
+    }
+
+    validateGraphQuery(
+        queryString,
+        queryType,
+        endpoint,
+        port,
+        maxNumberOfRetries,
+        frequency,
+        authToken,
+    ) {
+        this.validateQueryString(queryString);
+        this.validateQueryType(queryType);
+        this.validateEndpoint(endpoint);
+        this.validatePort(port);
+        this.validateMaxNumberOfRetries(maxNumberOfRetries);
+        this.validateFrequency(frequency);
+        this.validateAuthToken(authToken);
+    }
+
+    validateAssetCreate(
+        blockchain,
+        endpoint,
+        port,
+        maxNumberOfRetries,
+        frequency,
+        epochsNum,
+        hashFunctionId,
+        scoreFunctionId,
+        immutable,
+        tokenAmount,
+        authToken,
+    ) {
+        this.validateBlockchain(blockchain);
+        this.validateEndpoint(endpoint);
+        this.validatePort(port);
+        this.validateMaxNumberOfRetries(maxNumberOfRetries);
+        this.validateFrequency(frequency);
+        this.validateEpochsNum(epochsNum);
+        this.validateHashFunctionId(hashFunctionId);
+        this.validateScoreFunctionId(scoreFunctionId);
+        this.validateImmutable(immutable);
+        this.validateTokenAmount(tokenAmount);
+        this.validateAuthToken(authToken);
+    }
+
+    validateAssetGet(
+        UAL,
+        blockchain,
+        endpoint,
+        port,
+        maxNumberOfRetries,
+        frequency,
+        hashFunctionId,
+        validate,
+        outputFormat,
+        authToken,
+    ) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+        this.validateEndpoint(endpoint);
+        this.validatePort(port);
+        this.validateMaxNumberOfRetries(maxNumberOfRetries);
+        this.validateFrequency(frequency);
+        this.validateHashFunctionId(hashFunctionId);
+        this.validateValidate(validate);
+        this.validateOutputFormat(outputFormat);
+        this.validateAuthToken(authToken);
+    }
+
+    validateAssetTransfer(UAL, newOwner, blockchain) {
+        this.validateUAL(UAL);
+        this.validateNewOwner(newOwner);
+        this.validateBlockchain(blockchain);
+    }
+
+    validateAssetGetOwner(UAL, blockchain) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+    }
+
     validateRequiredParam(paramName, param) {
         if (param == null) throw Error(`${paramName} is missing.`);
     }
@@ -13,6 +98,18 @@ class ValidationService {
         }
         // eslint-disable-next-line valid-typeof
         if (typeof parameter !== type) throw Error(`${paramName} must be of type ${type}.`);
+    }
+
+    validateQueryString(queryString) {
+        this.validateRequiredParam('queryString', queryString);
+        this.validateParamType('queryString', queryString, 'string');
+    }
+
+    validateQueryType(queryType) {
+        this.validateRequiredParam('queryType', queryType);
+        const validQueryTypes = Object.values(QUERY_TYPES);
+        if (!validQueryTypes.includes(queryType))
+            throw Error(`Invalid query Type: available query types: ${validQueryTypes}`);
     }
 
     validateUAL(ual) {
@@ -110,8 +207,9 @@ class ValidationService {
 
     validateOutputFormat(outputFormat) {
         this.validateRequiredParam('outputFormat', outputFormat);
-        if (!Object.values(GET_OUTPUT_FORMATS).includes(outputFormat))
-            throw Error('Unknown output format');
+        const validOutputFormats = Object.values(GET_OUTPUT_FORMATS);
+        if (!validOutputFormats.includes(outputFormat))
+            throw Error(`Invalid query Type: available query types: ${validOutputFormats}`);
     }
 
     validateBlockchain(blockchain, operation) {

@@ -47,7 +47,19 @@ class AssetOperationsManager {
         const tokenAmount = this.inputService.getTokenAmount(options);
         const authToken = this.inputService.getAuthToken(options);
 
-        this.validationService.validatePublishRequest(jsonContent, blockchain);
+        this.validationService.validateAssetCreate(
+            blockchain,
+            endpoint,
+            port,
+            maxNumberOfRetries,
+            frequency,
+            epochsNum,
+            hashFunctionId,
+            scoreFunctionId,
+            immutable,
+            tokenAmount,
+            authToken,
+        );
 
         let privateAssertion;
         let privateAssertionId;
@@ -88,6 +100,7 @@ class AssetOperationsManager {
                 publicAssertionId,
                 hashFunctionId,
             ));
+
         const tokenId = await this.blockchainService.createAsset(
             {
                 publicAssertionId,
@@ -103,7 +116,6 @@ class AssetOperationsManager {
             stepHooks,
         );
 
-        
         const resolvedUAL = {
             blockchain: blockchain.name,
             contract: contentAssetStorageAddress,
@@ -123,7 +135,12 @@ class AssetOperationsManager {
                 assertion: privateAssertion,
             });
         }
-        let operationId = await this.nodeApiService.localStore(endpoint, port, authToken, assertions);
+        let operationId = await this.nodeApiService.localStore(
+            endpoint,
+            port,
+            authToken,
+            assertions,
+        );
         let operationResult = await this.nodeApiService.getOperationResult(
             endpoint,
             port,
@@ -192,7 +209,18 @@ class AssetOperationsManager {
         const authToken = this.inputService.getAuthToken(options);
         const hashFunctionId = this.inputService.getHashFunctionId(options);
 
-        this.validationService.validateGetRequest(UAL, blockchain, options);
+        this.validationService.validateAssetGet(
+            UAL,
+            blockchain,
+            endpoint,
+            port,
+            maxNumberOfRetries,
+            frequency,
+            hashFunctionId,
+            validate,
+            outputFormat,
+            authToken,
+        );
 
         const { tokenId } = resolveUAL(UAL);
 
@@ -299,13 +327,13 @@ class AssetOperationsManager {
     };
   } */
 
-    async transfer(UAL, to, options = {}) {
+    async transfer(UAL, newOwner, options = {}) {
         const blockchain = await this.inputService.getBlockchain(options);
 
-        this.validationService.validateAssetTransferRequest(UAL, to, blockchain);
+        this.validationService.validateAssetTransfer(UAL, newOwner, blockchain);
 
         const { tokenId } = resolveUAL(UAL);
-        await this.blockchainService.transferAsset(tokenId, to, blockchain);
+        await this.blockchainService.transferAsset(tokenId, newOwner, blockchain);
         const owner = await this.blockchainService.getAssetOwner(tokenId, blockchain);
         return {
             UAL,
@@ -317,7 +345,7 @@ class AssetOperationsManager {
     async getOwner(UAL, options = {}) {
         const blockchain = await this.inputService.getBlockchain(options);
 
-        this.validationService.validateGetOwnerRequest(UAL, blockchain);
+        this.validationService.validateAssetGetOwner(UAL, blockchain);
 
         const { tokenId } = resolveUAL(UAL);
         const owner = await this.blockchainService.getAssetOwner(tokenId, blockchain);

@@ -7,11 +7,11 @@ class InputService {
 
     getBlockchain(options) {
         const name = options.blockchain?.name ?? this.config.blockchain?.name ?? null;
-        const rpc = options.blockchain?.rpc ?? this.config.blockchain?.rpc ?? BLOCKCHAINS[name].rpc;
+        const rpc = options.blockchain?.rpc ?? this.config.blockchain?.rpc ?? BLOCKCHAINS[name]?.rpc;
         const hubContract =
             options.blockchain?.hubContract ??
             this.config.blockchain?.hubContract ??
-            BLOCKCHAINS[name].hubContract;
+            BLOCKCHAINS[name]?.hubContract;
         const publicKey =
             options.blockchain?.publicKey ?? this.config.blockchain?.publicKey ?? null;
         const privateKey =

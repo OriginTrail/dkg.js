@@ -14,6 +14,8 @@ const DkgClient = new DKG({
         publicKey: PUBLIC_KEY,
         privateKey: PRIVATE_KEY,
     },
+    maxNumberOfRetries: 30,
+    frequency: 2,
 });
 
 function divider() {
@@ -60,11 +62,7 @@ function divider() {
                 ],
             },
         },
-        {
-            epochsNum: 2,
-            maxNumberOfRetries: 30,
-            frequency: 2,
-        },
+        { epochsNum: 2 },
     );
     console.log('======================== ASSET CREATED');
     console.log(createAssetResult);
@@ -76,11 +74,7 @@ function divider() {
 
     divider();
 
-    const getAssetResult = await DkgClient.asset.get(createAssetResult.UAL, {
-        validate: true,
-        maxNumberOfRetries: 30,
-        frequency: 1,
-    });
+    const getAssetResult = await DkgClient.asset.get(createAssetResult.UAL);
     console.log('======================== ASSET RESOLVED');
     console.log(JSON.stringify(getAssetResult, null, 2));
 
