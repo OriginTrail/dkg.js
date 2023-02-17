@@ -274,7 +274,7 @@ class AssetOperationsManager {
 
         let result = { operation: {} };
         if (contentType !== CONTENT_TYPES.PRIVATE) {
-            let formattedPublicAssertion;
+            let formattedPublicAssertion = publicAssertion;
             try {
                 if (outputFormat !== GET_OUTPUT_FORMATS.N_QUADS) {
                     formattedPublicAssertion = await toJSONLD(publicAssertion.join('\n'));
@@ -351,14 +351,18 @@ class AssetOperationsManager {
                     'application/n-quads',
                 );
 
-                if (validate === true && calculateRoot(privateAssertion) !== privateAssertionId) {
+                let formattedPrivateAssertion;
+                if (
+                    privateAssertion.length &&
+                    validate === true &&
+                    calculateRoot(privateAssertion) !== privateAssertionId
+                ) {
                     queryPrivateOperationResult.data = {
                         errorType: 'DKG_CLIENT_ERROR',
                         errorMessage: "Calculated root hashes don't match!",
                     };
                 }
 
-                let formattedPrivateAssertion;
                 try {
                     if (outputFormat !== GET_OUTPUT_FORMATS.N_QUADS) {
                         formattedPrivateAssertion = await toJSONLD(privateAssertion.join('\n'));
@@ -388,13 +392,6 @@ class AssetOperationsManager {
                     queryPrivateOperationResult,
                     queryPrivateOperationId,
                 );
-            } else if (contentType === CONTENT_TYPES.PRIVATE) {
-                result.operation.queryPrivate = {
-                    data: {
-                        errorType: 'DKG_CLIENT_ERROR',
-                        errorMessage: `Node doesn't have private data of ${UAL}`,
-                    },
-                };
             }
         }
 
@@ -482,4 +479,5 @@ class AssetOperationsManager {
         };
     }
 }
+
 module.exports = AssetOperationsManager;
