@@ -53,6 +53,7 @@ class AssetOperationsManager {
         } = this.inputService.getAssetCreateArguments(options);
 
         this.validationService.validateAssetCreate(
+            jsonContent,
             blockchain,
             endpoint,
             port,

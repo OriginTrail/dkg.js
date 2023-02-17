@@ -27,6 +27,7 @@ class ValidationService {
     }
 
     validateAssetCreate(
+        content,
         blockchain,
         endpoint,
         port,
@@ -39,7 +40,8 @@ class ValidationService {
         tokenAmount,
         authToken,
     ) {
-        this.validateBlockchain(blockchain);
+        this.validateContent(content)
+        this.validateBlockchain(blockchain, OPERATIONS.PUBLISH);
         this.validateEndpoint(endpoint);
         this.validatePort(port);
         this.validateMaxNumberOfRetries(maxNumberOfRetries);
@@ -67,12 +69,12 @@ class ValidationService {
         authToken,
     ) {
         this.validateUAL(UAL);
-        this.validateBlockchain(blockchain);
+        this.validateBlockchain(blockchain, OPERATIONS.GET);
         this.validateEndpoint(endpoint);
         this.validatePort(port);
         this.validateMaxNumberOfRetries(maxNumberOfRetries);
         this.validateFrequency(frequency);
-        this.validateAssetCreate(state);
+        this.validateState(state);
         this.validateContentVisibility(contentVisibility);
         this.validateHashFunctionId(hashFunctionId);
         this.validateValidate(validate);

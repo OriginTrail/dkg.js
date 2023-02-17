@@ -73,6 +73,11 @@ module.exports.GET_OUTPUT_FORMATS = {
     JSON_LD: 'json-ld',
 };
 
+module.exports.ASSET_STATES = {
+    LATEST: 'latest',
+    FINALIZED: 'finalized',
+};
+
 module.exports.QUERY_TYPES = {
     CONSTRUCT: 'CONSTRUCT',
     SELECT: 'SELECT',
@@ -94,4 +99,5 @@ module.exports.DEFAULT_PARAMETERS = {
     IMMUTABLE: false,
     VALIDATE: true,
     OUTPUT_FORMAT: this.GET_OUTPUT_FORMATS.JSON_LD,
+    STATE: this.ASSET_STATES.LATEST
 };

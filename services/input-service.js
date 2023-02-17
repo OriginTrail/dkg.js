@@ -5,9 +5,42 @@ class InputService {
         this.config = config;
     }
 
+    getAssetCreateArguments(options) {
+        return {
+            blockchain: this.getBlockchain(options),
+            endpoint: this.getEndpoint(options),
+            port: this.getPort(options),
+            maxNumberOfRetries: this.getMaxNumberOfRetries(options),
+            frequency: this.getFrequency(options),
+            epochsNum: this.getEpochsNum(options),
+            hashFunctionId: this.getHashFunctionId(options),
+            scoreFunctionId: this.getScoreFunctionId(options),
+            immutable: this.getImmutable(options),
+            tokenAmount: this.getTokenAmount(options),
+            authToken: this.getAuthToken(options),
+        };
+    }
+
+    getAssetGetArguments(options) {
+        return {
+            blockchain: this.getBlockchain(options),
+            endpoint: this.getEndpoint(options),
+            port: this.getPort(options),
+            maxNumberOfRetries: this.getMaxNumberOfRetries(options),
+            frequency: this.getFrequency(options),
+            state: this.getState(options),
+            contentVisibility: this.getContentVisibility(options),
+            validate: this.getValidate(options),
+            outputFormat: this.getOutputFormat(options),
+            authToken: this.getAuthToken(options),
+            hashFunctionId: this.getHashFunctionId(options),
+        };
+    }
+
     getBlockchain(options) {
         const name = options.blockchain?.name ?? this.config.blockchain?.name ?? null;
-        const rpc = options.blockchain?.rpc ?? this.config.blockchain?.rpc ?? BLOCKCHAINS[name]?.rpc;
+        const rpc =
+            options.blockchain?.rpc ?? this.config.blockchain?.rpc ?? BLOCKCHAINS[name]?.rpc;
         const hubContract =
             options.blockchain?.hubContract ??
             this.config.blockchain?.hubContract ??
@@ -23,38 +56,6 @@ class InputService {
             hubContract,
             publicKey,
             privateKey,
-        };
-    }
-
-    getAssetCreateArguments(options) {
-        return {
-            blockchain: this.inputService.getBlockchain(options),
-            endpoint: this.inputService.getEndpoint(options),
-            port: this.inputService.getPort(options),
-            maxNumberOfRetries: this.inputService.getMaxNumberOfRetries(options),
-            frequency: this.inputService.getFrequency(options),
-            epochsNum: this.inputService.getEpochsNum(options),
-            hashFunctionId: this.inputService.getHashFunctionId(options),
-            scoreFunctionId: this.inputService.getScoreFunctionId(options),
-            immutable: this.inputService.getImmutable(options),
-            tokenAmount: this.inputService.getTokenAmount(options),
-            authToken: this.inputService.getAuthToken(options),
-        };
-    }
-
-    getAssetGetArguments(options) {
-        return {
-            blockchain: this.inputService.getBlockchain(options),
-            endpoint: this.inputService.getEndpoint(options),
-            port: this.inputService.getPort(options),
-            maxNumberOfRetries: this.inputService.getMaxNumberOfRetries(options),
-            frequency: this.inputService.getFrequency(options),
-            state: this.inputService.getState(options),
-            contentVisibility: this.inputService.getContentVisibility(options),
-            validate: this.inputService.getValidate(options),
-            outputFormat: this.inputService.getOutputFormat(options),
-            authToken: this.inputService.getAuthToken(options),
-            hashFunctionId: this.inputService.getHashFunctionId(options),
         };
     }
 
@@ -99,7 +100,7 @@ class InputService {
     }
 
     getState(options) {
-        return options.state ?? this.config.state ?? null;
+        return options.state ?? this.config.state ?? DEFAULT_PARAMETERS.STATE;
     }
 
     getContentVisibility(options) {
