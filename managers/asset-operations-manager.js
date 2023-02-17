@@ -238,8 +238,6 @@ class AssetOperationsManager {
             authToken,
         );
 
-        const contentObj = { operation: {} };
-
         const { tokenId } = resolveUAL(UAL);
 
         const publicAssertionId = await this.blockchainService.getLatestAssertionId(
@@ -274,6 +272,7 @@ class AssetOperationsManager {
             };
         }
 
+        let result = { operation: {} };
         if (contentType !== CONTENT_TYPES.PRIVATE) {
             let formattedPublicAssertion;
             try {
@@ -289,9 +288,20 @@ class AssetOperationsManager {
                 };
             }
 
-            contentObj.public = formattedPublicAssertion;
-            contentObj.publicAssertionId = publicAssertionId;
-            contentObj.operation.publicGet = getOperationStatusObject(
+            if (contentType === CONTENT_TYPES.PUBLIC) {
+                result = {
+                    ...result,
+                    assertion: formattedPublicAssertion,
+                    assertionId: publicAssertionId,
+                };
+            } else {
+                result.public = {
+                    assertion: formattedPublicAssertion,
+                    assertionId: publicAssertionId,
+                };
+            }
+
+            result.operation.publicGet = getOperationStatusObject(
                 getPublicOperationResult,
                 getPublicOperationId,
             );
@@ -362,14 +372,24 @@ class AssetOperationsManager {
                     };
                 }
 
-                contentObj.private = formattedPrivateAssertion;
-                contentObj.privateAssertionId = privateAssertionId;
-                contentObj.operation.queryPrivate = getOperationStatusObject(
+                if (contentType === CONTENT_TYPES.PRIVATE) {
+                    result = {
+                        ...result,
+                        assertion: formattedPrivateAssertion,
+                        assertionId: privateAssertionId,
+                    };
+                } else {
+                    result.private = {
+                        assertion: formattedPrivateAssertion,
+                        assertionId: privateAssertionId,
+                    };
+                }
+                result.operation.queryPrivate = getOperationStatusObject(
                     queryPrivateOperationResult,
                     queryPrivateOperationId,
                 );
             } else if (contentType === CONTENT_TYPES.PRIVATE) {
-                contentObj.operation.queryPrivate = {
+                result.operation.queryPrivate = {
                     data: {
                         errorType: 'DKG_CLIENT_ERROR',
                         errorMessage: `Node doesn't have private data of ${UAL}`,
@@ -378,7 +398,7 @@ class AssetOperationsManager {
             }
         }
 
-        return contentObj;
+        return result;
     }
 
     /* async update(UAL, content, opts = {}) {
