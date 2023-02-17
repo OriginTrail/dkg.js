@@ -1,4 +1,4 @@
-const DKG = require('./index.js');
+const DKG = require('../index.js');
 
 const OT_NODE_HOSTNAME = 'http://localhost';
 const OT_NODE_PORT = '8900';
@@ -68,7 +68,9 @@ function divider() {
 
     divider();
 
-    const getAssetResult = await DkgClient.asset.get(createAssetResult.UAL, {contentVisibility: "private"});
+    const getAssetResult = await DkgClient.asset.get(createAssetResult.UAL, {
+        contentVisibility: 'private',
+    });
     console.log('======================== ASSET RESOLVED');
     console.log(JSON.stringify(getAssetResult, null, 2));
 
