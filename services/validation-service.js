@@ -1,4 +1,4 @@
-const { MAX_FILE_SIZE, OPERATIONS, GET_OUTPUT_FORMATS, QUERY_TYPES } = require('../constants.js');
+const { CONTENT_TYPES, MAX_FILE_SIZE, OPERATIONS, GET_OUTPUT_FORMATS, QUERY_TYPES } = require('../constants.js');
 const { nodeSupported } = require('./utilities.js');
 
 class ValidationService {
@@ -27,6 +27,7 @@ class ValidationService {
     }
 
     validateAssetCreate(
+        content,
         blockchain,
         endpoint,
         port,
@@ -39,7 +40,8 @@ class ValidationService {
         tokenAmount,
         authToken,
     ) {
-        this.validateBlockchain(blockchain);
+        this.validateContent(content)
+        this.validateBlockchain(blockchain, OPERATIONS.PUBLISH);
         this.validateEndpoint(endpoint);
         this.validatePort(port);
         this.validateMaxNumberOfRetries(maxNumberOfRetries);
@@ -59,17 +61,21 @@ class ValidationService {
         port,
         maxNumberOfRetries,
         frequency,
+        state,
+        contentType,
         hashFunctionId,
         validate,
         outputFormat,
         authToken,
     ) {
         this.validateUAL(UAL);
-        this.validateBlockchain(blockchain);
+        this.validateBlockchain(blockchain, OPERATIONS.GET);
         this.validateEndpoint(endpoint);
         this.validatePort(port);
         this.validateMaxNumberOfRetries(maxNumberOfRetries);
         this.validateFrequency(frequency);
+        this.validateState(state);
+        this.validateContentType(contentType);
         this.validateHashFunctionId(hashFunctionId);
         this.validateValidate(validate);
         this.validateOutputFormat(outputFormat);
@@ -123,7 +129,7 @@ class ValidationService {
         if (!(args?.length === 3)) throw Error('Invalid UAL.');
     }
 
-    validateContentType(obj) {
+    validateObjectType(obj) {
         if (!(!!obj && typeof obj === 'object')) throw Error('Content must be an object');
     }
 
@@ -166,6 +172,19 @@ class ValidationService {
     validateFrequency(frequency) {
         this.validateRequiredParam('frequency', frequency);
         this.validateParamType('frequency', frequency, 'number');
+    }
+
+    validateState(state) {
+        this.validateRequiredParam('state', state);
+        this.validateParamType('state', state, 'string');
+    }
+
+    validateContentType(contentType) {
+        this.validateRequiredParam('contentType', contentType);
+
+        const validContentTypes = Object.values(CONTENT_TYPES);
+        if (!validContentTypes.includes(contentType))
+          throw Error(`Invalid content visibility! Available parameters: ${validContentTypes}`)
     }
 
     validateEpochsNum(epochsNum) {

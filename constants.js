@@ -57,9 +57,25 @@ module.exports.OPERATION_STATUSES = {
     FAILED: 'FAILED',
 };
 
+module.exports.ASSERTION_STATES = {
+    LATEST: 'latest',
+    LATEST_FINALIZED: 'latest_finalized',
+};
+
+module.exports.CONTENT_TYPES = {
+    PUBLIC: 'public',
+    PRIVATE: 'private',
+    ALL: 'all',
+};
+
 module.exports.GET_OUTPUT_FORMATS = {
     N_QUADS: 'n-quads',
     JSON_LD: 'json-ld',
+};
+
+module.exports.ASSET_STATES = {
+    LATEST: 'latest',
+    FINALIZED: 'finalized',
 };
 
 module.exports.QUERY_TYPES = {
@@ -83,4 +99,6 @@ module.exports.DEFAULT_PARAMETERS = {
     IMMUTABLE: false,
     VALIDATE: true,
     OUTPUT_FORMAT: this.GET_OUTPUT_FORMATS.JSON_LD,
+    STATE: this.ASSET_STATES.LATEST,
+    CONTENT_TYPE: this.CONTENT_TYPES.PUBLIC,
 };

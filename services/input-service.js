@@ -5,9 +5,42 @@ class InputService {
         this.config = config;
     }
 
+    getAssetCreateArguments(options) {
+        return {
+            blockchain: this.getBlockchain(options),
+            endpoint: this.getEndpoint(options),
+            port: this.getPort(options),
+            maxNumberOfRetries: this.getMaxNumberOfRetries(options),
+            frequency: this.getFrequency(options),
+            epochsNum: this.getEpochsNum(options),
+            hashFunctionId: this.getHashFunctionId(options),
+            scoreFunctionId: this.getScoreFunctionId(options),
+            immutable: this.getImmutable(options),
+            tokenAmount: this.getTokenAmount(options),
+            authToken: this.getAuthToken(options),
+        };
+    }
+
+    getAssetGetArguments(options) {
+        return {
+            blockchain: this.getBlockchain(options),
+            endpoint: this.getEndpoint(options),
+            port: this.getPort(options),
+            maxNumberOfRetries: this.getMaxNumberOfRetries(options),
+            frequency: this.getFrequency(options),
+            state: this.getState(options),
+            contentType: this.getContentType(options),
+            validate: this.getValidate(options),
+            outputFormat: this.getOutputFormat(options),
+            authToken: this.getAuthToken(options),
+            hashFunctionId: this.getHashFunctionId(options),
+        };
+    }
+
     getBlockchain(options) {
         const name = options.blockchain?.name ?? this.config.blockchain?.name ?? null;
-        const rpc = options.blockchain?.rpc ?? this.config.blockchain?.rpc ?? BLOCKCHAINS[name]?.rpc;
+        const rpc =
+            options.blockchain?.rpc ?? this.config.blockchain?.rpc ?? BLOCKCHAINS[name]?.rpc;
         const hubContract =
             options.blockchain?.hubContract ??
             this.config.blockchain?.hubContract ??
@@ -64,6 +97,14 @@ class InputService {
 
     getTokenAmount(options) {
         return options.tokenAmount ?? this.config.tokenAmount ?? null;
+    }
+
+    getState(options) {
+        return options.state ?? this.config.state ?? DEFAULT_PARAMETERS.STATE;
+    }
+
+    getContentType(options) {
+        return options.contentType ?? this.config.contentType ?? DEFAULT_PARAMETERS.CONTENT_TYPE;
     }
 
     getValidate(options) {

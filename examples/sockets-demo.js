@@ -1,4 +1,4 @@
-const DKG = require('./index');
+const DKG = require('../index');
 
 const OT_NODE_HOSTNAME = 'localhost';
 const OT_NODE_PORT = '8903';

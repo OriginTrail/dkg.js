@@ -1,5 +1,5 @@
 const jsonld = require('jsonld');
-const DKG = require('./index.js');
+const DKG = require('../index.js');
 
 const OT_NODE_HOSTNAME = 'http://localhost';
 const OT_NODE_PORT = '8900';

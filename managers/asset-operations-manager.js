@@ -1,18 +1,21 @@
 const { assertionMetadata, formatAssertion, calculateRoot } = require('assertion-tools');
-const jsonld = require('jsonld');
 const {
     isEmptyObject,
     deriveUAL,
     getOperationStatusObject,
     resolveUAL,
+    toNQuads,
+    toJSONLD,
 } = require('../services/utilities.js');
 const {
+    CONTENT_TYPES,
     OPERATIONS,
     OPERATIONS_STEP_STATUS,
     GET_OUTPUT_FORMATS,
     OPERATION_STATUSES,
     DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY,
     PRIVATE_ASSERTION_PREDICATE,
+    QUERY_TYPES,
 } = require('../constants.js');
 const emptyHooks = require('../util/empty-hooks');
 
@@ -25,7 +28,7 @@ class AssetOperationsManager {
     }
 
     async create(content, options = {}, stepHooks = emptyHooks) {
-        this.validationService.validateContentType(content);
+        this.validationService.validateObjectType(content);
         let jsonContent = {};
 
         // for backwards compatibility
@@ -35,19 +38,22 @@ class AssetOperationsManager {
             jsonContent = content;
         }
 
-        const blockchain = this.inputService.getBlockchain(options);
-        const endpoint = this.inputService.getEndpoint(options);
-        const port = this.inputService.getPort(options);
-        const maxNumberOfRetries = this.inputService.getMaxNumberOfRetries(options);
-        const frequency = this.inputService.getFrequency(options);
-        const epochsNum = this.inputService.getEpochsNum(options);
-        const hashFunctionId = this.inputService.getHashFunctionId(options);
-        const scoreFunctionId = this.inputService.getScoreFunctionId(options);
-        const immutable = this.inputService.getImmutable(options);
-        const tokenAmount = this.inputService.getTokenAmount(options);
-        const authToken = this.inputService.getAuthToken(options);
+        const {
+            blockchain,
+            endpoint,
+            port,
+            maxNumberOfRetries,
+            frequency,
+            epochsNum,
+            hashFunctionId,
+            scoreFunctionId,
+            immutable,
+            tokenAmount,
+            authToken,
+        } = this.inputService.getAssetCreateArguments(options);
 
         this.validationService.validateAssetCreate(
+            jsonContent,
             blockchain,
             endpoint,
             port,
@@ -117,7 +123,7 @@ class AssetOperationsManager {
         );
 
         const resolvedUAL = {
-            blockchain: blockchain.name,
+            blockchain: blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
             contract: contentAssetStorageAddress,
             tokenId,
         };
@@ -151,7 +157,11 @@ class AssetOperationsManager {
             operationId,
         );
 
-        const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, tokenId);
+        const UAL = deriveUAL(
+            blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
+            contentAssetStorageAddress,
+            tokenId,
+        );
 
         if (operationResult.status === OPERATION_STATUSES.FAILED) {
             return {
@@ -167,7 +177,7 @@ class AssetOperationsManager {
             authToken,
             publicAssertionId,
             publicAssertion,
-            blockchain.name,
+            blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
             contentAssetStorageAddress,
             tokenId,
             hashFunctionId,
@@ -199,15 +209,19 @@ class AssetOperationsManager {
     }
 
     async get(UAL, options = {}) {
-        const blockchain = this.inputService.getBlockchain(options);
-        const endpoint = this.inputService.getEndpoint(options);
-        const port = this.inputService.getPort(options);
-        const maxNumberOfRetries = this.inputService.getMaxNumberOfRetries(options);
-        const frequency = this.inputService.getFrequency(options);
-        const validate = this.inputService.getValidate(options);
-        const outputFormat = this.inputService.getOutputFormat(options);
-        const authToken = this.inputService.getAuthToken(options);
-        const hashFunctionId = this.inputService.getHashFunctionId(options);
+        const {
+            blockchain,
+            endpoint,
+            port,
+            maxNumberOfRetries,
+            frequency,
+            state,
+            contentType,
+            validate,
+            outputFormat,
+            authToken,
+            hashFunctionId,
+        } = this.inputService.getAssetGetArguments(options);
 
         this.validationService.validateAssetGet(
             UAL,
@@ -216,6 +230,8 @@ class AssetOperationsManager {
             port,
             maxNumberOfRetries,
             frequency,
+            state,
+            contentType,
             hashFunctionId,
             validate,
             outputFormat,
@@ -224,9 +240,12 @@ class AssetOperationsManager {
 
         const { tokenId } = resolveUAL(UAL);
 
-        const assertionId = await this.blockchainService.getLatestAssertionId(tokenId, blockchain);
+        const publicAssertionId = await this.blockchainService.getLatestAssertionId(
+            tokenId,
+            blockchain,
+        );
 
-        const operationId = await this.nodeApiService.get(
+        const getPublicOperationId = await this.nodeApiService.get(
             endpoint,
             port,
             authToken,
@@ -234,45 +253,149 @@ class AssetOperationsManager {
             hashFunctionId,
         );
 
-        let operationResult = await this.nodeApiService.getOperationResult(
+        const getPublicOperationResult = await this.nodeApiService.getOperationResult(
             endpoint,
             port,
             authToken,
             OPERATIONS.GET,
             maxNumberOfRetries,
             frequency,
-            operationId,
+            getPublicOperationId,
         );
-        let { assertion } = operationResult.data;
-        if (assertion) {
+
+        const publicAssertion = getPublicOperationResult.data.assertion;
+
+        if (validate === true && calculateRoot(publicAssertion) !== publicAssertionId) {
+            getPublicOperationResult.data = {
+                errorType: 'DKG_CLIENT_ERROR',
+                errorMessage: "Calculated root hashes don't match!",
+            };
+        }
+
+        let result = { operation: {} };
+        if (contentType !== CONTENT_TYPES.PRIVATE) {
+            let formattedPublicAssertion = publicAssertion;
             try {
-                if (validate === true && calculateRoot(assertion) !== assertionId) {
-                    throw Error("Calculated root hashes don't match!");
-                }
                 if (outputFormat !== GET_OUTPUT_FORMATS.N_QUADS) {
-                    assertion = await jsonld.fromRDF(assertion.join('\n'), {
-                        algorithm: 'URDNA2015',
-                        format: 'application/n-quads',
-                    });
+                    formattedPublicAssertion = await toJSONLD(publicAssertion.join('\n'));
                 } else {
-                    assertion = assertion.join('\n');
+                    formattedPublicAssertion = publicAssertion.join('\n');
                 }
             } catch (error) {
-                operationResult = {
-                    ...operationResult,
-                    data: {
+                getPublicOperationResult.data = {
+                    errorType: 'DKG_CLIENT_ERROR',
+                    errorMessage: error.message,
+                };
+            }
+
+            if (contentType === CONTENT_TYPES.PUBLIC) {
+                result = {
+                    ...result,
+                    assertion: formattedPublicAssertion,
+                    assertionId: publicAssertionId,
+                };
+            } else {
+                result.public = {
+                    assertion: formattedPublicAssertion,
+                    assertionId: publicAssertionId,
+                };
+            }
+
+            result.operation.publicGet = getOperationStatusObject(
+                getPublicOperationResult,
+                getPublicOperationId,
+            );
+        }
+
+        if (contentType !== CONTENT_TYPES.PUBLIC) {
+            const privateAssertionLinkTriple = publicAssertion.filter((element) =>
+                element.includes(PRIVATE_ASSERTION_PREDICATE),
+            )[0];
+
+            if (privateAssertionLinkTriple) {
+                const privateAssertionId = privateAssertionLinkTriple.match(/"(.*?)"/)[1];
+
+                const queryString = `
+                    CONSTRUCT { ?s ?p ?o }
+                    WHERE {
+                        {
+                            GRAPH <assertion:${privateAssertionId}>
+                            {
+                                ?s ?p ?o .
+                            }
+                        }
+                    }`;
+
+                const queryPrivateOperationId = await this.nodeApiService.query(
+                    endpoint,
+                    port,
+                    authToken,
+                    queryString,
+                    QUERY_TYPES.CONSTRUCT,
+                );
+
+                const queryPrivateOperationResult = await this.nodeApiService.getOperationResult(
+                    endpoint,
+                    port,
+                    authToken,
+                    OPERATIONS.QUERY,
+                    maxNumberOfRetries,
+                    frequency,
+                    queryPrivateOperationId,
+                );
+
+                const privateAssertionNQuads = queryPrivateOperationResult.data;
+
+                const privateAssertion = await toNQuads(
+                    privateAssertionNQuads,
+                    'application/n-quads',
+                );
+
+                let formattedPrivateAssertion;
+                if (
+                    privateAssertion.length &&
+                    validate === true &&
+                    calculateRoot(privateAssertion) !== privateAssertionId
+                ) {
+                    queryPrivateOperationResult.data = {
+                        errorType: 'DKG_CLIENT_ERROR',
+                        errorMessage: "Calculated root hashes don't match!",
+                    };
+                }
+
+                try {
+                    if (outputFormat !== GET_OUTPUT_FORMATS.N_QUADS) {
+                        formattedPrivateAssertion = await toJSONLD(privateAssertion.join('\n'));
+                    } else {
+                        formattedPrivateAssertion = privateAssertion.join('\n');
+                    }
+                } catch (error) {
+                    queryPrivateOperationResult.data = {
                         errorType: 'DKG_CLIENT_ERROR',
                         errorMessage: error.message,
-                    },
-                };
+                    };
+                }
+
+                if (contentType === CONTENT_TYPES.PRIVATE) {
+                    result = {
+                        ...result,
+                        assertion: formattedPrivateAssertion,
+                        assertionId: privateAssertionId,
+                    };
+                } else {
+                    result.private = {
+                        assertion: formattedPrivateAssertion,
+                        assertionId: privateAssertionId,
+                    };
+                }
+                result.operation.queryPrivate = getOperationStatusObject(
+                    queryPrivateOperationResult,
+                    queryPrivateOperationId,
+                );
             }
         }
 
-        return {
-            assertion,
-            assertionId,
-            operation: getOperationStatusObject(operationResult, operationId),
-        };
+        return result;
     }
 
     /* async update(UAL, content, opts = {}) {
@@ -356,4 +479,5 @@ class AssetOperationsManager {
         };
     }
 }
+
 module.exports = AssetOperationsManager;
