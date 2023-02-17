@@ -29,7 +29,7 @@ class InputService {
             maxNumberOfRetries: this.getMaxNumberOfRetries(options),
             frequency: this.getFrequency(options),
             state: this.getState(options),
-            contentVisibility: this.getContentVisibility(options),
+            contentType: this.getContentType(options),
             validate: this.getValidate(options),
             outputFormat: this.getOutputFormat(options),
             authToken: this.getAuthToken(options),
@@ -103,8 +103,8 @@ class InputService {
         return options.state ?? this.config.state ?? DEFAULT_PARAMETERS.STATE;
     }
 
-    getContentVisibility(options) {
-        return options.contentVisibility ?? this.config.contentVisibility ?? null;
+    getContentType(options) {
+        return options.contentType ?? this.config.contentType ?? DEFAULT_PARAMETERS.CONTENT_TYPE;
     }
 
     getValidate(options) {

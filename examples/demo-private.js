@@ -13,7 +13,7 @@ const DkgClient = new DKG({
         publicKey: PUBLIC_KEY,
         privateKey: PRIVATE_KEY,
     },
-    maxNumberOfRetries: 30,
+    maxNumberOfRetries: 60,
     frequency: 2,
 });
 
@@ -35,7 +35,7 @@ function divider() {
     const createAssetResult = await DkgClient.asset.create(
         {
             public: {
-                '@context': ['https://schema.org'],
+                '@context': ['http://schema.org'],
                 '@id': 'uuid:1',
                 company: 'OT',
                 user: {
@@ -46,7 +46,7 @@ function divider() {
                 },
             },
             private: {
-                '@context': ['https://schema.org'],
+                '@context': ['http://schema.org'],
                 '@graph': [
                     {
                         '@id': 'uuid:user:1',
@@ -68,10 +68,26 @@ function divider() {
 
     divider();
 
-    const getAssetResult = await DkgClient.asset.get(createAssetResult.UAL, {
-        contentVisibility: 'private',
+    const getPrivateAssetResult = await DkgClient.asset.get(createAssetResult.UAL, {
+        contentType: 'private',
     });
-    console.log('======================== ASSET RESOLVED');
+    console.log('======================== PRIVATE ASSET CONTENT RESOLVED');
+    console.log(JSON.stringify(getPrivateAssetResult, null, 2));
+
+    divider();
+
+    divider();
+
+    const getPublicAssetResult = await DkgClient.asset.get(createAssetResult.UAL);
+    console.log('======================== PUBLIC ASSET CONTENT RESOLVED');
+    console.log(JSON.stringify(getPublicAssetResult, null, 2));
+
+    divider();
+
+    divider();
+
+    const getAssetResult = await DkgClient.asset.get(createAssetResult.UAL, { contentType: 'all' });
+    console.log('======================== ALL ASSET CONTENT RESOLVED');
     console.log(JSON.stringify(getAssetResult, null, 2));
 
     divider();
