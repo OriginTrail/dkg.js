@@ -57,6 +57,17 @@ module.exports.OPERATION_STATUSES = {
     FAILED: 'FAILED',
 };
 
+module.exports.ASSERTION_STATES = {
+    LATEST: 'latest',
+    LATEST_FINALIZED: 'latest_finalized',
+};
+
+module.exports.CONTENT_VISIBILITY = {
+    PUBLIC: 'public',
+    PRIVATE: 'private',
+    ALL: 'all',
+};
+
 module.exports.GET_OUTPUT_FORMATS = {
     N_QUADS: 'n-quads',
     JSON_LD: 'json-ld',

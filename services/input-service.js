@@ -26,6 +26,38 @@ class InputService {
         };
     }
 
+    getAssetCreateArguments(options) {
+        return {
+            blockchain: this.inputService.getBlockchain(options),
+            endpoint: this.inputService.getEndpoint(options),
+            port: this.inputService.getPort(options),
+            maxNumberOfRetries: this.inputService.getMaxNumberOfRetries(options),
+            frequency: this.inputService.getFrequency(options),
+            epochsNum: this.inputService.getEpochsNum(options),
+            hashFunctionId: this.inputService.getHashFunctionId(options),
+            scoreFunctionId: this.inputService.getScoreFunctionId(options),
+            immutable: this.inputService.getImmutable(options),
+            tokenAmount: this.inputService.getTokenAmount(options),
+            authToken: this.inputService.getAuthToken(options),
+        };
+    }
+
+    getAssetGetArguments(options) {
+        return {
+            blockchain: this.inputService.getBlockchain(options),
+            endpoint: this.inputService.getEndpoint(options),
+            port: this.inputService.getPort(options),
+            maxNumberOfRetries: this.inputService.getMaxNumberOfRetries(options),
+            frequency: this.inputService.getFrequency(options),
+            state: this.inputService.getState(options),
+            contentVisibility: this.inputService.getContentVisibility(options),
+            validate: this.inputService.getValidate(options),
+            outputFormat: this.inputService.getOutputFormat(options),
+            authToken: this.inputService.getAuthToken(options),
+            hashFunctionId: this.inputService.getHashFunctionId(options),
+        };
+    }
+
     getEndpoint(options) {
         return options.endpoint ?? this.config.endpoint ?? null;
     }
@@ -64,6 +96,14 @@ class InputService {
 
     getTokenAmount(options) {
         return options.tokenAmount ?? this.config.tokenAmount ?? null;
+    }
+
+    getState(options) {
+        return options.state ?? this.config.state ?? null;
+    }
+
+    getContentVisibility(options) {
+        return options.contentVisibility ?? this.config.contentVisibility ?? null;
     }
 
     getValidate(options) {

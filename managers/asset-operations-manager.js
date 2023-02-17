@@ -7,12 +7,15 @@ const {
     resolveUAL,
 } = require('../services/utilities.js');
 const {
+    ASSERTION_STATES,
+    CONTENT_VISIBILITY,
     OPERATIONS,
     OPERATIONS_STEP_STATUS,
     GET_OUTPUT_FORMATS,
     OPERATION_STATUSES,
     DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY,
     PRIVATE_ASSERTION_PREDICATE,
+    QUERY_TYPES,
 } = require('../constants.js');
 const emptyHooks = require('../util/empty-hooks');
 
@@ -35,17 +38,19 @@ class AssetOperationsManager {
             jsonContent = content;
         }
 
-        const blockchain = this.inputService.getBlockchain(options);
-        const endpoint = this.inputService.getEndpoint(options);
-        const port = this.inputService.getPort(options);
-        const maxNumberOfRetries = this.inputService.getMaxNumberOfRetries(options);
-        const frequency = this.inputService.getFrequency(options);
-        const epochsNum = this.inputService.getEpochsNum(options);
-        const hashFunctionId = this.inputService.getHashFunctionId(options);
-        const scoreFunctionId = this.inputService.getScoreFunctionId(options);
-        const immutable = this.inputService.getImmutable(options);
-        const tokenAmount = this.inputService.getTokenAmount(options);
-        const authToken = this.inputService.getAuthToken(options);
+        const {
+            blockchain,
+            endpoint,
+            port,
+            maxNumberOfRetries,
+            frequency,
+            epochsNum,
+            hashFunctionId,
+            scoreFunctionId,
+            immutable,
+            tokenAmount,
+            authToken,
+        } = this.inputService.getAssetCreateArguments(options);
 
         this.validationService.validateAssetCreate(
             blockchain,
@@ -74,8 +79,8 @@ class AssetOperationsManager {
                     : null,
                 jsonContent.private && !isEmptyObject(jsonContent.private)
                     ? {
-                          [PRIVATE_ASSERTION_PREDICATE]: privateAssertionId,
-                      }
+                        [PRIVATE_ASSERTION_PREDICATE]: privateAssertionId,
+                    }
                     : null,
             ],
         };
@@ -199,15 +204,19 @@ class AssetOperationsManager {
     }
 
     async get(UAL, options = {}) {
-        const blockchain = this.inputService.getBlockchain(options);
-        const endpoint = this.inputService.getEndpoint(options);
-        const port = this.inputService.getPort(options);
-        const maxNumberOfRetries = this.inputService.getMaxNumberOfRetries(options);
-        const frequency = this.inputService.getFrequency(options);
-        const validate = this.inputService.getValidate(options);
-        const outputFormat = this.inputService.getOutputFormat(options);
-        const authToken = this.inputService.getAuthToken(options);
-        const hashFunctionId = this.inputService.getHashFunctionId(options);
+        const {
+            blockchain,
+            endpoint,
+            port,
+            maxNumberOfRetries,
+            frequency,
+            state,
+            contentVisibility,
+            validate,
+            outputFormat,
+            authToken,
+            hashFunctionId,
+        } = this.inputService.getAssetGetArguments(options);
 
         this.validationService.validateAssetGet(
             UAL,
@@ -216,6 +225,8 @@ class AssetOperationsManager {
             port,
             maxNumberOfRetries,
             frequency,
+            state,
+            contentVisibility,
             hashFunctionId,
             validate,
             outputFormat,
@@ -224,55 +235,191 @@ class AssetOperationsManager {
 
         const { tokenId } = resolveUAL(UAL);
 
-        const assertionId = await this.blockchainService.getLatestAssertionId(tokenId, blockchain);
+        let publicAssertionId;
+        let getPublicOperationId;
+        if (state === ASSERTION_STATES.LATEST) {
+            publicAssertionId = await this.blockchainService.getLatestAssertionId(tokenId, blockchain);
 
-        const operationId = await this.nodeApiService.get(
-            endpoint,
-            port,
-            authToken,
-            UAL,
-            hashFunctionId,
-        );
+            getPublicOperationId = await this.nodeApiService.get(
+                endpoint,
+                port,
+                authToken,
+                UAL,
+                hashFunctionId,
+            );
+        }
 
-        let operationResult = await this.nodeApiService.getOperationResult(
+        let getPublicOperationResult = await this.nodeApiService.getOperationResult(
             endpoint,
             port,
             authToken,
             OPERATIONS.GET,
             maxNumberOfRetries,
             frequency,
-            operationId,
+            getPublicOperationId,
         );
-        let { assertion } = operationResult.data;
-        if (assertion) {
+
+        let publicAssertion = getPublicOperationResult.data.assertion;
+
+        if ((validate === true) && (calculateRoot(publicAssertion) !== publicAssertionId)) {
+            throw Error("Calculated root hashes don't match!");
+        }
+
+        if (publicAssertion && (contentVisibility === CONTENT_VISIBILITY.PUBLIC)) {
             try {
-                if (validate === true && calculateRoot(assertion) !== assertionId) {
-                    throw Error("Calculated root hashes don't match!");
-                }
                 if (outputFormat !== GET_OUTPUT_FORMATS.N_QUADS) {
-                    assertion = await jsonld.fromRDF(assertion.join('\n'), {
+                    publicAssertion = await jsonld.fromRDF(publicAssertion.join('\n'), {
                         algorithm: 'URDNA2015',
                         format: 'application/n-quads',
                     });
                 } else {
-                    assertion = assertion.join('\n');
+                    publicAssertion = publicAssertion.join('\n');
                 }
             } catch (error) {
-                operationResult = {
-                    ...operationResult,
+                getPublicOperationResult = {
+                    ...getPublicOperationResult,
                     data: {
                         errorType: 'DKG_CLIENT_ERROR',
                         errorMessage: error.message,
                     },
                 };
             }
+
+            return {
+                public: publicAssertion,
+                publicAssertionId,
+                operation: getOperationStatusObject(getPublicOperationResult, getPublicOperationId),
+            };
         }
 
-        return {
-            assertion,
-            assertionId,
-            operation: getOperationStatusObject(operationResult, operationId),
-        };
+        const privateAssertionLinkTriple = publicAssertion.filter(
+            element => element.includes(PRIVATE_ASSERTION_PREDICATE)
+        )[0];
+
+        if (privateAssertionLinkTriple) {
+            const regex = /"(.*?)"/;
+            const [privateAssertionId] = privateAssertionLinkTriple.match(regex);
+
+            const queryString = `
+                CONSTRUCT { ?s ?p ?o }
+                WHERE {
+                    {
+                        GRAPH <assertion:${privateAssertionId}>
+                        {
+                            ?s ?p ?o .
+                        }
+                    }
+                }`;
+
+            const queryPrivateOperationId = await this.nodeApiService.query(
+                endpoint,
+                port,
+                authToken,
+                queryString,
+                QUERY_TYPES.CONSTRUCT,
+            );
+
+            let queryPrivateOperationResult = this.nodeApiService.getOperationResult(
+                endpoint,
+                port,
+                authToken,
+                OPERATIONS.QUERY,
+                maxNumberOfRetries,
+                frequency,
+                queryPrivateOperationId,
+            );
+
+            let privateAssertion = queryPrivateOperationResult.data;
+
+            if (privateAssertion) {
+                if ((validate === true) && (calculateRoot(privateAssertion) !== privateAssertionId)) {
+                    throw Error("Calculated root hashes don't match!");
+                }
+
+                try {
+                    if (outputFormat !== GET_OUTPUT_FORMATS.N_QUADS) {
+                        privateAssertion = await jsonld.fromRDF(privateAssertion.join('\n'), {
+                            algorithm: 'URDNA2015',
+                            format: 'application/n-quads',
+                        });
+                    } else {
+                        privateAssertion = privateAssertion.join('\n');
+                    }
+                } catch (error) {
+                    queryPrivateOperationResult = {
+                        ...queryPrivateOperationResult,
+                        data: {
+                            errorType: 'DKG_CLIENT_ERROR',
+                            errorMessage: error.message,
+                        },
+                    };
+                }
+
+                if (contentVisibility === CONTENT_VISIBILITY.PRIVATE) {
+                    return {
+                        private: privateAssertion,
+                        privateAssertionId,
+                        operation: getOperationStatusObject(queryPrivateOperationResult, queryPrivateOperationId),
+                    };
+                }
+
+                if (contentVisibility === CONTENT_VISIBILITY.ALL) {
+                    return {
+                        public: publicAssertion,
+                        publicAssertionId,
+                        private: privateAssertion,
+                        privateAssertionId,
+                        operation: {
+                            getPublic: getOperationStatusObject(getPublicOperationResult, getPublicOperationId),
+                            queryPrivate: getOperationStatusObject(queryPrivateOperationResult, queryPrivateOperationId),
+                        },
+                    };
+                }
+            } else {
+                if (contentVisibility === CONTENT_VISIBILITY.PRIVATE) {
+                    queryPrivateOperationResult = {
+                        ...queryPrivateOperationResult,
+                        data: {
+                            errorType: 'DKG_CLIENT_ERROR',
+                            errorMessage: `Node doesn't have private data of ${UAL}`,
+                        }
+                    };
+
+                    return {
+                        private: privateAssertion,
+                        privateAssertionId,
+                        operation: getOperationStatusObject(queryPrivateOperationResult, queryPrivateOperationId),
+                    };
+                }
+
+                if (contentVisibility === CONTENT_VISIBILITY.ALL) {
+                    try {
+                        if (outputFormat !== GET_OUTPUT_FORMATS.N_QUADS) {
+                            publicAssertion = await jsonld.fromRDF(publicAssertion.join('\n'), {
+                                algorithm: 'URDNA2015',
+                                format: 'application/n-quads',
+                            });
+                        } else {
+                            publicAssertion = publicAssertion.join('\n');
+                        }
+                    } catch (error) {
+                        getPublicOperationResult = {
+                            ...getPublicOperationResult,
+                            data: {
+                                errorType: 'DKG_CLIENT_ERROR',
+                                errorMessage: error.message,
+                            },
+                        };
+                    }
+
+                    return {
+                        public: publicAssertion,
+                        publicAssertionId,
+                        operation: getOperationStatusObject(getPublicOperationResult, getPublicOperationId),
+                    };
+                }
+            }
+        }
     }
 
     /* async update(UAL, content, opts = {}) {

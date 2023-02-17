@@ -1,4 +1,4 @@
-const { MAX_FILE_SIZE, OPERATIONS, GET_OUTPUT_FORMATS, QUERY_TYPES } = require('../constants.js');
+const { CONTENT_VISIBILITY, MAX_FILE_SIZE, OPERATIONS, GET_OUTPUT_FORMATS, QUERY_TYPES } = require('../constants.js');
 const { nodeSupported } = require('./utilities.js');
 
 class ValidationService {
@@ -59,6 +59,8 @@ class ValidationService {
         port,
         maxNumberOfRetries,
         frequency,
+        state,
+        contentVisibility,
         hashFunctionId,
         validate,
         outputFormat,
@@ -70,6 +72,8 @@ class ValidationService {
         this.validatePort(port);
         this.validateMaxNumberOfRetries(maxNumberOfRetries);
         this.validateFrequency(frequency);
+        this.validateAssetCreate(state);
+        this.validateContentVisibility(contentVisibility);
         this.validateHashFunctionId(hashFunctionId);
         this.validateValidate(validate);
         this.validateOutputFormat(outputFormat);
@@ -166,6 +170,19 @@ class ValidationService {
     validateFrequency(frequency) {
         this.validateRequiredParam('frequency', frequency);
         this.validateParamType('frequency', frequency, 'number');
+    }
+
+    validateState(state) {
+        this.validateRequiredParam('state', state);
+        this.validateParamType('state', state, 'string');
+    }
+
+    validateContentVisibility(contentVisibility) {
+        this.validateRequiredParam('contentVisibility', contentVisibility);
+
+        const validContentVisibility = Object.values(CONTENT_VISIBILITY);
+        if (!validContentVisibility.includes(contentVisibility))
+          throw Error(`Invalid content visibility! Available parameters: ${validContentVisibility}`)
     }
 
     validateEpochsNum(epochsNum) {
