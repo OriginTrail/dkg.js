@@ -4,6 +4,7 @@ const BlockchainInterface = require('./blockchain-service/blockchain-interface.j
 // services
 const ValidationService = require('./validation-service.js');
 const Utilities = require('./utilities.js');
+const InputService = require('./input-service.js');
 
 class BaseServiceManager {
     constructor(config) {
@@ -13,6 +14,7 @@ class BaseServiceManager {
     initializeServices(config) {
         this.blockchainService = this.initializeBlockchainService(config);
         this.nodeApiService = this.initializeNodeApiService(config);
+        this.inputService = new InputService(config);
         this.validationService = new ValidationService();
     }
 
@@ -21,6 +23,7 @@ class BaseServiceManager {
             blockchainService: this.blockchainService,
             nodeApiService: this.nodeApiService,
             validationService: this.validationService,
+            inputService: this.inputService,
         };
     }
 

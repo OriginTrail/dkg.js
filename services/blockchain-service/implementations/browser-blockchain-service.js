@@ -1,23 +1,11 @@
 const Web3 = require('web3');
 const BlockchainServiceBase = require('../blockchain-service-base.js');
-const { WEBSOCKET_PROVIDER_OPTIONS, BLOCKCHAINS } = require('../../../constants.js');
+const { WEBSOCKET_PROVIDER_OPTIONS } = require('../../../constants.js');
 
 class BrowserBlockchainService extends BlockchainServiceBase {
-    constructor(config) {
+    constructor(config = {}) {
         super(config);
         this.config = config;
-    }
-
-    getBlockchain(options) {
-        return {
-            name: options.blockchain.name,
-            hubContract:
-                options.blockchain.hubContract ?? BLOCKCHAINS[options.blockchain.name].hubContract,
-            assetContract:
-                options.blockchain.assetContract ??
-                BLOCKCHAINS[options.blockchain.name].assetContract,
-            rpc: options.blockchain.rpc ?? BLOCKCHAINS[options.blockchain.name].rpc,
-        };
     }
 
     initializeWeb3(blockchainName, blockchainRpc) {
@@ -41,11 +29,7 @@ class BrowserBlockchainService extends BlockchainServiceBase {
     }
 
     async executeContractFunction(contractName, functionName, args, blockchain) {
-        const contractInstance = await this.getContractInstance(
-            blockchain.name,
-            contractName,
-            blockchain.rpc,
-        );
+        const contractInstance = await this.getContractInstance(contractName, blockchain);
         const tx = await this.prepareTransaction(contractInstance, functionName, args, {
             name: blockchain.name,
             publicKey: await this.getAccount(),
@@ -74,12 +58,12 @@ class BrowserBlockchainService extends BlockchainServiceBase {
         return receipt.events[eventName].returnValues;
     }
 
-    async transferAsset(tokenId, to, options) {
+    async transferAsset(tokenId, to, blockchain) {
         return this.executeContractFunction(
             'ContentAssetStorage',
             'transferFrom',
             [await this.getAccount(), to, tokenId],
-            this.getBlockchain(options),
+            blockchain,
         );
     }
 }

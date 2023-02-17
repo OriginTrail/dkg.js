@@ -4,7 +4,7 @@ const OT_NODE_HOSTNAME = 'localhost';
 const OT_NODE_PORT = '8903';
 
 // initialize connection to your DKG Node
-let options = { endpoint: OT_NODE_HOSTNAME, port: OT_NODE_PORT, useSSL: false, loglevel: 'trace' };
+let options = { endpoint: OT_NODE_HOSTNAME, port: OT_NODE_PORT, };
 const dkg = new DKG(options);
 
 async function main() {
