@@ -265,7 +265,7 @@ class AssetOperationsManager {
             getPublicOperationId,
         );
 
-        let publicAssertion = getPublicOperationResult.data.assertion;
+        const publicAssertion = getPublicOperationResult.data.assertion;
 
         if (validate === true && calculateRoot(publicAssertion) !== publicAssertionId) {
             getPublicOperationResult.data = {
@@ -275,11 +275,12 @@ class AssetOperationsManager {
         }
 
         if (contentType !== CONTENT_TYPES.PRIVATE) {
+            let formattedPublicAssertion;
             try {
                 if (outputFormat !== GET_OUTPUT_FORMATS.N_QUADS) {
-                    publicAssertion = await toJSONLD(publicAssertion.join('\n'));
+                    formattedPublicAssertion = await toJSONLD(publicAssertion.join('\n'));
                 } else {
-                    publicAssertion = publicAssertion.join('\n');
+                    formattedPublicAssertion = publicAssertion.join('\n');
                 }
             } catch (error) {
                 getPublicOperationResult.data = {
@@ -288,7 +289,7 @@ class AssetOperationsManager {
                 };
             }
 
-            contentObj.public = publicAssertion;
+            contentObj.public = formattedPublicAssertion;
             contentObj.publicAssertionId = publicAssertionId;
             contentObj.operation.publicGet = getOperationStatusObject(
                 getPublicOperationResult,
@@ -335,7 +336,7 @@ class AssetOperationsManager {
 
                 const privateAssertionNQuads = queryPrivateOperationResult.data;
 
-                let privateAssertion = await toNQuads(
+                const privateAssertion = await toNQuads(
                     privateAssertionNQuads,
                     'application/n-quads',
                 );
@@ -347,11 +348,12 @@ class AssetOperationsManager {
                     };
                 }
 
+                let formattedPrivateAssertion;
                 try {
                     if (outputFormat !== GET_OUTPUT_FORMATS.N_QUADS) {
-                        privateAssertion = await toJSONLD(privateAssertion.join('\n'));
+                        formattedPrivateAssertion = await toJSONLD(privateAssertion.join('\n'));
                     } else {
-                        privateAssertion = privateAssertion.join('\n');
+                        formattedPrivateAssertion = privateAssertion.join('\n');
                     }
                 } catch (error) {
                     queryPrivateOperationResult.data = {
@@ -360,7 +362,7 @@ class AssetOperationsManager {
                     };
                 }
 
-                contentObj.private = privateAssertion;
+                contentObj.private = formattedPrivateAssertion;
                 contentObj.privateAssertionId = privateAssertionId;
                 contentObj.operation.queryPrivate = getOperationStatusObject(
                     queryPrivateOperationResult,
