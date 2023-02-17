@@ -62,7 +62,7 @@ module.exports.ASSERTION_STATES = {
     LATEST_FINALIZED: 'latest_finalized',
 };
 
-module.exports.CONTENT_VISIBILITY = {
+module.exports.CONTENT_TYPES = {
     PUBLIC: 'public',
     PRIVATE: 'private',
     ALL: 'all',

@@ -8,7 +8,7 @@ const {
 } = require('../services/utilities.js');
 const {
     ASSERTION_STATES,
-    CONTENT_VISIBILITY,
+    CONTENT_TYPES,
     OPERATIONS,
     OPERATIONS_STEP_STATUS,
     GET_OUTPUT_FORMATS,
@@ -28,7 +28,7 @@ class AssetOperationsManager {
     }
 
     async create(content, options = {}, stepHooks = emptyHooks) {
-        this.validationService.validateContentType(content);
+        this.validationService.validateObjectType(content);
         let jsonContent = {};
 
         // for backwards compatibility
@@ -212,7 +212,7 @@ class AssetOperationsManager {
             maxNumberOfRetries,
             frequency,
             state,
-            contentVisibility,
+            contentType,
             validate,
             outputFormat,
             authToken,
@@ -227,12 +227,15 @@ class AssetOperationsManager {
             maxNumberOfRetries,
             frequency,
             state,
-            contentVisibility,
+            contentType,
             hashFunctionId,
             validate,
             outputFormat,
             authToken,
         );
+
+        const contentObj = {};
+        contentObj.operation = {};
 
         const { tokenId } = resolveUAL(UAL);
 
@@ -266,7 +269,7 @@ class AssetOperationsManager {
             throw Error("Calculated root hashes don't match!");
         }
 
-        if (publicAssertion && (contentVisibility === CONTENT_VISIBILITY.PUBLIC)) {
+        if (contentType !== CONTENT_TYPES.PRIVATE) {
             try {
                 if (outputFormat !== GET_OUTPUT_FORMATS.N_QUADS) {
                     publicAssertion = await jsonld.fromRDF(publicAssertion.join('\n'), {
@@ -286,53 +289,51 @@ class AssetOperationsManager {
                 };
             }
 
-            return {
-                public: publicAssertion,
-                publicAssertionId,
-                operation: getOperationStatusObject(getPublicOperationResult, getPublicOperationId),
-            };
+            contentObj.public = publicAssertion;
+            contentObj.publicAssertionId = publicAssertionId;
+            contentObj.operation.publicGet = getOperationStatusObject(getPublicOperationResult, getPublicOperationId);
         }
 
-        const privateAssertionLinkTriple = publicAssertion.filter(
-            element => element.includes(PRIVATE_ASSERTION_PREDICATE)
-        )[0];
+        if (contentType !== CONTENT_TYPES.PUBLIC) {
+            const privateAssertionLinkTriple = publicAssertion.filter(
+                element => element.includes(PRIVATE_ASSERTION_PREDICATE)
+            )[0];
 
-        if (privateAssertionLinkTriple) {
-            const regex = /"(.*?)"/;
-            const [privateAssertionId] = privateAssertionLinkTriple.match(regex);
+            if (privateAssertionLinkTriple) {
+                const regex = /"(.*?)"/;
+                const [privateAssertionId] = privateAssertionLinkTriple.match(regex);
 
-            const queryString = `
-                CONSTRUCT { ?s ?p ?o }
-                WHERE {
-                    {
-                        GRAPH <assertion:${privateAssertionId}>
+                const queryString = `
+                    CONSTRUCT { ?s ?p ?o }
+                    WHERE {
                         {
-                            ?s ?p ?o .
+                            GRAPH <assertion:${privateAssertionId}>
+                            {
+                                ?s ?p ?o .
+                            }
                         }
-                    }
-                }`;
+                    }`;
 
-            const queryPrivateOperationId = await this.nodeApiService.query(
-                endpoint,
-                port,
-                authToken,
-                queryString,
-                QUERY_TYPES.CONSTRUCT,
-            );
+                const queryPrivateOperationId = await this.nodeApiService.query(
+                    endpoint,
+                    port,
+                    authToken,
+                    queryString,
+                    QUERY_TYPES.CONSTRUCT,
+                );
 
-            let queryPrivateOperationResult = this.nodeApiService.getOperationResult(
-                endpoint,
-                port,
-                authToken,
-                OPERATIONS.QUERY,
-                maxNumberOfRetries,
-                frequency,
-                queryPrivateOperationId,
-            );
+                let queryPrivateOperationResult = this.nodeApiService.getOperationResult(
+                    endpoint,
+                    port,
+                    authToken,
+                    OPERATIONS.QUERY,
+                    maxNumberOfRetries,
+                    frequency,
+                    queryPrivateOperationId,
+                );
 
-            let privateAssertion = queryPrivateOperationResult.data;
+                let privateAssertion = queryPrivateOperationResult.data;
 
-            if (privateAssertion) {
                 if ((validate === true) && (calculateRoot(privateAssertion) !== privateAssertionId)) {
                     throw Error("Calculated root hashes don't match!");
                 }
@@ -356,71 +357,20 @@ class AssetOperationsManager {
                     };
                 }
 
-                if (contentVisibility === CONTENT_VISIBILITY.PRIVATE) {
-                    return {
-                        private: privateAssertion,
-                        privateAssertionId,
-                        operation: getOperationStatusObject(queryPrivateOperationResult, queryPrivateOperationId),
-                    };
-                }
-
-                if (contentVisibility === CONTENT_VISIBILITY.ALL) {
-                    return {
-                        public: publicAssertion,
-                        publicAssertionId,
-                        private: privateAssertion,
-                        privateAssertionId,
-                        operation: {
-                            getPublic: getOperationStatusObject(getPublicOperationResult, getPublicOperationId),
-                            queryPrivate: getOperationStatusObject(queryPrivateOperationResult, queryPrivateOperationId),
-                        },
-                    };
-                }
-            } else {
-                if (contentVisibility === CONTENT_VISIBILITY.PRIVATE) {
-                    queryPrivateOperationResult = {
-                        ...queryPrivateOperationResult,
-                        data: {
-                            errorType: 'DKG_CLIENT_ERROR',
-                            errorMessage: `Node doesn't have private data of ${UAL}`,
-                        }
-                    };
-
-                    return {
-                        private: privateAssertion,
-                        privateAssertionId,
-                        operation: getOperationStatusObject(queryPrivateOperationResult, queryPrivateOperationId),
-                    };
-                }
-
-                if (contentVisibility === CONTENT_VISIBILITY.ALL) {
-                    try {
-                        if (outputFormat !== GET_OUTPUT_FORMATS.N_QUADS) {
-                            publicAssertion = await jsonld.fromRDF(publicAssertion.join('\n'), {
-                                algorithm: 'URDNA2015',
-                                format: 'application/n-quads',
-                            });
-                        } else {
-                            publicAssertion = publicAssertion.join('\n');
-                        }
-                    } catch (error) {
-                        getPublicOperationResult = {
-                            ...getPublicOperationResult,
-                            data: {
-                                errorType: 'DKG_CLIENT_ERROR',
-                                errorMessage: error.message,
-                            },
-                        };
+                contentObj.private = privateAssertion;
+                contentObj.privateAssertionId = privateAssertionId;
+                contentObj.operation.queryPrivate = getOperationStatusObject(queryPrivateOperationResult, queryPrivateOperationId);
+            } else if (contentType === CONTENT_TYPES.PRIVATE) {
+                contentObj.operation.queryPrivate = {
+                    data: {
+                        errorType: 'DKG_CLIENT_ERROR',
+                        errorMessage: `Node doesn't have private data of ${UAL}`,
                     }
-
-                    return {
-                        public: publicAssertion,
-                        publicAssertionId,
-                        operation: getOperationStatusObject(getPublicOperationResult, getPublicOperationId),
-                    };
-                }
+                };
             }
         }
+
+        return contentObj;
     }
 
     /* async update(UAL, content, opts = {}) {

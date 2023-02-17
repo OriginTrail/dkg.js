@@ -1,4 +1,4 @@
-const { CONTENT_VISIBILITY, MAX_FILE_SIZE, OPERATIONS, GET_OUTPUT_FORMATS, QUERY_TYPES } = require('../constants.js');
+const { CONTENT_TYPES, MAX_FILE_SIZE, OPERATIONS, GET_OUTPUT_FORMATS, QUERY_TYPES } = require('../constants.js');
 const { nodeSupported } = require('./utilities.js');
 
 class ValidationService {
@@ -62,7 +62,7 @@ class ValidationService {
         maxNumberOfRetries,
         frequency,
         state,
-        contentVisibility,
+        contentType,
         hashFunctionId,
         validate,
         outputFormat,
@@ -75,7 +75,7 @@ class ValidationService {
         this.validateMaxNumberOfRetries(maxNumberOfRetries);
         this.validateFrequency(frequency);
         this.validateState(state);
-        this.validateContentVisibility(contentVisibility);
+        this.validateContentType(contentType);
         this.validateHashFunctionId(hashFunctionId);
         this.validateValidate(validate);
         this.validateOutputFormat(outputFormat);
@@ -129,7 +129,7 @@ class ValidationService {
         if (!(args?.length === 3)) throw Error('Invalid UAL.');
     }
 
-    validateContentType(obj) {
+    validateObjectType(obj) {
         if (!(!!obj && typeof obj === 'object')) throw Error('Content must be an object');
     }
 
@@ -179,12 +179,12 @@ class ValidationService {
         this.validateParamType('state', state, 'string');
     }
 
-    validateContentVisibility(contentVisibility) {
-        this.validateRequiredParam('contentVisibility', contentVisibility);
+    validateContentType(contentType) {
+        this.validateRequiredParam('contentType', contentType);
 
-        const validContentVisibility = Object.values(CONTENT_VISIBILITY);
-        if (!validContentVisibility.includes(contentVisibility))
-          throw Error(`Invalid content visibility! Available parameters: ${validContentVisibility}`)
+        const validContentTypes = Object.values(CONTENT_TYPES);
+        if (!validContentTypes.includes(contentType))
+          throw Error(`Invalid content visibility! Available parameters: ${validContentTypes}`)
     }
 
     validateEpochsNum(epochsNum) {
