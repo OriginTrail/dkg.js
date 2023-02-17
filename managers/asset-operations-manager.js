@@ -1,14 +1,13 @@
 const { assertionMetadata, formatAssertion, calculateRoot } = require('assertion-tools');
-const jsonld = require('jsonld');
 const {
     isEmptyObject,
     deriveUAL,
     getOperationStatusObject,
     resolveUAL,
     toNQuads,
+    toJSONLD,
 } = require('../services/utilities.js');
 const {
-    ASSERTION_STATES,
     CONTENT_TYPES,
     OPERATIONS,
     OPERATIONS_STEP_STATUS,
@@ -124,7 +123,7 @@ class AssetOperationsManager {
         );
 
         const resolvedUAL = {
-            blockchain: blockchain.name,
+            blockchain: blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
             contract: contentAssetStorageAddress,
             tokenId,
         };
@@ -158,7 +157,11 @@ class AssetOperationsManager {
             operationId,
         );
 
-        const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, tokenId);
+        const UAL = deriveUAL(
+            blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
+            contentAssetStorageAddress,
+            tokenId,
+        );
 
         if (operationResult.status === OPERATION_STATUSES.FAILED) {
             return {
@@ -174,7 +177,7 @@ class AssetOperationsManager {
             authToken,
             publicAssertionId,
             publicAssertion,
-            blockchain.name,
+            blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
             contentAssetStorageAddress,
             tokenId,
             hashFunctionId,
@@ -235,29 +238,24 @@ class AssetOperationsManager {
             authToken,
         );
 
-        const contentObj = {};
-        contentObj.operation = {};
+        const contentObj = { operation: {} };
 
         const { tokenId } = resolveUAL(UAL);
 
-        let publicAssertionId;
-        let getPublicOperationId;
-        if (state === ASSERTION_STATES.LATEST) {
-            publicAssertionId = await this.blockchainService.getLatestAssertionId(
-                tokenId,
-                blockchain,
-            );
+        const publicAssertionId = await this.blockchainService.getLatestAssertionId(
+            tokenId,
+            blockchain,
+        );
 
-            getPublicOperationId = await this.nodeApiService.get(
-                endpoint,
-                port,
-                authToken,
-                UAL,
-                hashFunctionId,
-            );
-        }
+        const getPublicOperationId = await this.nodeApiService.get(
+            endpoint,
+            port,
+            authToken,
+            UAL,
+            hashFunctionId,
+        );
 
-        let getPublicOperationResult = await this.nodeApiService.getOperationResult(
+        const getPublicOperationResult = await this.nodeApiService.getOperationResult(
             endpoint,
             port,
             authToken,
@@ -270,26 +268,23 @@ class AssetOperationsManager {
         let publicAssertion = getPublicOperationResult.data.assertion;
 
         if (validate === true && calculateRoot(publicAssertion) !== publicAssertionId) {
-            throw Error("Calculated root hashes don't match!");
+            getPublicOperationResult.data = {
+                errorType: 'DKG_CLIENT_ERROR',
+                errorMessage: "Calculated root hashes don't match!",
+            };
         }
 
         if (contentType !== CONTENT_TYPES.PRIVATE) {
             try {
                 if (outputFormat !== GET_OUTPUT_FORMATS.N_QUADS) {
-                    publicAssertion = await jsonld.fromRDF(publicAssertion.join('\n'), {
-                        algorithm: 'URDNA2015',
-                        format: 'application/n-quads',
-                    });
+                    publicAssertion = await toJSONLD(publicAssertion.join('\n'));
                 } else {
                     publicAssertion = publicAssertion.join('\n');
                 }
             } catch (error) {
-                getPublicOperationResult = {
-                    ...getPublicOperationResult,
-                    data: {
-                        errorType: 'DKG_CLIENT_ERROR',
-                        errorMessage: error.message,
-                    },
+                getPublicOperationResult.data = {
+                    errorType: 'DKG_CLIENT_ERROR',
+                    errorMessage: error.message,
                 };
             }
 
@@ -307,8 +302,7 @@ class AssetOperationsManager {
             )[0];
 
             if (privateAssertionLinkTriple) {
-                const regex = /"(.*?)"/;
-                const privateAssertionId = privateAssertionLinkTriple.match(regex)[1];
+                const privateAssertionId = privateAssertionLinkTriple.match(/"(.*?)"/)[1];
 
                 const queryString = `
                     CONSTRUCT { ?s ?p ?o }
@@ -329,7 +323,7 @@ class AssetOperationsManager {
                     QUERY_TYPES.CONSTRUCT,
                 );
 
-                let queryPrivateOperationResult = await this.nodeApiService.getOperationResult(
+                const queryPrivateOperationResult = await this.nodeApiService.getOperationResult(
                     endpoint,
                     port,
                     authToken,
@@ -341,28 +335,28 @@ class AssetOperationsManager {
 
                 const privateAssertionNQuads = queryPrivateOperationResult.data;
 
-                let privateAssertion = await toNQuads(privateAssertionNQuads, 'application/n-quads');
+                let privateAssertion = await toNQuads(
+                    privateAssertionNQuads,
+                    'application/n-quads',
+                );
 
                 if (validate === true && calculateRoot(privateAssertion) !== privateAssertionId) {
-                    throw Error("Calculated root hashes don't match!");
+                    queryPrivateOperationResult.data = {
+                        errorType: 'DKG_CLIENT_ERROR',
+                        errorMessage: "Calculated root hashes don't match!",
+                    };
                 }
 
                 try {
                     if (outputFormat !== GET_OUTPUT_FORMATS.N_QUADS) {
-                        privateAssertion = await jsonld.fromRDF(privateAssertion.join('\n'), {
-                            algorithm: 'URDNA2015',
-                            format: 'application/n-quads',
-                        });
+                        privateAssertion = await toJSONLD(privateAssertion.join('\n'));
                     } else {
                         privateAssertion = privateAssertion.join('\n');
                     }
                 } catch (error) {
-                    queryPrivateOperationResult = {
-                        ...queryPrivateOperationResult,
-                        data: {
-                            errorType: 'DKG_CLIENT_ERROR',
-                            errorMessage: error.message,
-                        },
+                    queryPrivateOperationResult.data = {
+                        errorType: 'DKG_CLIENT_ERROR',
+                        errorMessage: error.message,
                     };
                 }
 

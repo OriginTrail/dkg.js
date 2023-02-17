@@ -65,4 +65,11 @@ module.exports = {
 
         return canonized.split('\n').filter((x) => x !== '');
     },
+
+    async toJSONLD(nquads) {
+        return jsonld.fromRDF(nquads, {
+            algorithm: 'URDNA2015',
+            format: 'application/n-quads',
+        });
+    }
 };
