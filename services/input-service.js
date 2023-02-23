@@ -37,6 +37,20 @@ class InputService {
         };
     }
 
+    getAssetUpdateArguments(options) {
+        return {
+            blockchain: this.getBlockchain(options),
+            endpoint: this.getEndpoint(options),
+            port: this.getPort(options),
+            maxNumberOfRetries: this.getMaxNumberOfRetries(options),
+            frequency: this.getFrequency(options),
+            hashFunctionId: this.getHashFunctionId(options),
+            scoreFunctionId: this.getScoreFunctionId(options),
+            tokenAmount: this.getTokenAmount(options),
+            authToken: this.getAuthToken(options),
+        };
+    }
+
     getBlockchain(options) {
         const name = options.blockchain?.name ?? this.config.blockchain?.name ?? null;
         const rpc =

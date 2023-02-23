@@ -47,6 +47,7 @@ module.exports.WEBSOCKET_PROVIDER_OPTIONS = {
 module.exports.OPERATIONS = {
     PUBLISH: 'publish',
     GET: 'get',
+    UPDATE: 'update',
     LOCAL_STORE: 'local-store',
     QUERY: 'query',
 };
@@ -90,6 +91,7 @@ module.exports.OPERATIONS_STEP_STATUS = {
 };
 
 module.exports.DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY = 0.5;
+
 module.exports.DEFAULT_PARAMETERS = {
     PORT: 8900,
     FREQUENCY: 5,
