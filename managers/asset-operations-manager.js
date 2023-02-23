@@ -398,57 +398,183 @@ class AssetOperationsManager {
         return result;
     }
 
-    /* async update(UAL, content, opts = {}) {
-    const options = JSON.parse(JSON.stringify(opts));
-    this.validationService.validatePublishRequest(content, options);
-    const assertion = await formatAssertion(content);
-    const assertionId = calculateRoot(assertion);
-    const endpoint = this.getEndpoint(options);
-        const port = this.getPort(options);
-    const tokenAmount =
-      options.tokenAmount ??
-      (await this.nodeApiService.getBidSuggestion(
-        endpoint,
-        port,
-        options.blockchain.name,
-        options.epochsNum,
-        assertionMetadata.getAssertionSizeInBytes(assertion),
-        options.hashFunctionId ?? DEFAULT_HASH_FUNCTION_ID,
-      ));
-    await this.blockchainService.updateAsset(
-      Utilities.resolveUAL(UAL).tokenId,
-      {
-        assertionId,
-        assertionSize: assertionMetadata.getAssertionSizeInBytes(assertion),
-        triplesNumber: assertionMetadata.getAssertionTriplesNumber(assertion),
-        chunksNumber: assertionMetadata.getAssertionChunksNumber(assertion),
-        epochsNum: options.epochsNum,
-        tokenAmount: tokenAmount,
-        scoreFunctionId: options.scoreFunctionId ?? 1,
-      },
-      blockchain
-    );
-    let operationId = await this.nodeApiService.publish(
-        endpoint,
-        port,
-      assertionId,
-      assertion,
-      UAL,
-      hashFunctionId
-    );
-    let operationResult = await this.nodeApiService.getOperationResult(
-      operationId,
-      { ...options, operation: OPERATIONS.PUBLISH }
-    );
-    return {
-      UAL,
-      assertionId,
-      operation: Utilities.getOperationStatusObject(
-        operationResult,
-        operationId
-      ),
-    };
-  } */
+    async update(UAL, content, options = {}) {
+        this.validationService.validateObjectType(content);
+        let jsonContent = content;
+
+        const {
+            blockchain,
+            endpoint,
+            port,
+            maxNumberOfRetries,
+            frequency,
+            hashFunctionId,
+            scoreFunctionId,
+            tokenAmount,
+            authToken,
+        } = this.inputService.getAssetUpdateArguments(options);
+
+        this.validationService.validateAssetUpdate(
+            jsonContent,
+            blockchain,
+            endpoint,
+            port,
+            maxNumberOfRetries,
+            frequency,
+            hashFunctionId,
+            scoreFunctionId,
+            tokenAmount,
+            authToken,
+        );
+
+        const { tokenId } = resolveUAL(UAL);
+        let privateAssertion;
+        let privateAssertionId;
+        if (jsonContent.private && !isEmptyObject(jsonContent.private)) {
+            privateAssertion = await formatAssertion(jsonContent.private);
+            privateAssertionId = calculateRoot(privateAssertion);
+        }
+
+        // If public assertion is not provided, get it from the network
+        let publicAssertion;
+        if (!jsonContent.public || isEmptyObject(jsonContent.public)) {
+            const publicAssertionId = await this.blockchainService.getLatestAssertionId(
+                tokenId,
+                blockchain,
+            );
+
+            const getPublicOperationId = await this.nodeApiService.get(
+                endpoint,
+                port,
+                authToken,
+                UAL,
+                hashFunctionId,
+            );
+
+            const getPublicOperationResult = await this.nodeApiService.getOperationResult(
+                endpoint,
+                port,
+                authToken,
+                OPERATIONS.GET,
+                maxNumberOfRetries,
+                frequency,
+                getPublicOperationId,
+            );
+
+            publicAssertion = getPublicOperationResult.data.assertion;
+
+            if (calculateRoot(publicAssertion) !== publicAssertionId) {
+                getPublicOperationResult.data = {
+                    errorType: 'DKG_CLIENT_ERROR',
+                    errorMessage: "Calculated root hashes don't match!",
+                };
+
+                // TODO: Check returned response
+                return {
+                    UAL,
+                    getPublicOperationResult
+                }
+            }
+
+            // Transform public assertion to include updated private assertion Id
+            const hashRegex = /"([^"]+)"/; // Regex pattern to match the hash value inside the double quotes
+            publicAssertion = publicAssertion.map((str) => {
+                if (str.includes('privateAssertionID')) {
+                    return str.replace(hashRegex, `"${privateAssertionId}"`);
+                }
+                return str;
+            });
+        } else {
+            const publicGraph = {
+                '@graph': [
+                    jsonContent.public && !isEmptyObject(jsonContent.public)
+                        ? jsonContent.public
+                        : null,
+                    jsonContent.private && !isEmptyObject(jsonContent.private)
+                        ? {
+                            [PRIVATE_ASSERTION_PREDICATE]: privateAssertionId,
+                        }
+                        : null,
+                ],
+            };
+            publicAssertion = await formatAssertion(publicGraph);
+        }
+
+        const publicAssertionId = calculateRoot(publicAssertion);
+
+        const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
+            'ContentAssetStorage',
+            blockchain,
+        );
+
+        const tokenAmountInWei =
+            tokenAmount ??
+            (await this.nodeApiService.getBidSuggestion(
+                endpoint,
+                port,
+                authToken,
+                blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
+                1, // TODO: Determine number of epochs
+                assertionMetadata.getAssertionSizeInBytes(publicAssertion),
+                contentAssetStorageAddress,
+                publicAssertionId,
+                hashFunctionId,
+            ));
+
+        // TODO: Uncomment when it is ready
+        // await this.blockchainService.updateAsset(
+        //   Utilities.resolveUAL(UAL).tokenId,
+        //   {
+        //     assertionId,
+        //     assertionSize: assertionMetadata.getAssertionSizeInBytes(assertion),
+        //     triplesNumber: assertionMetadata.getAssertionTriplesNumber(assertion),
+        //     chunksNumber: assertionMetadata.getAssertionChunksNumber(assertion),
+        //     epochsNum: options.epochsNum,
+        //     tokenAmount: tokenAmountInWei,
+        //     scoreFunctionId: options.scoreFunctionId ?? 1,
+        //   },
+        //   blockchain
+        // );
+
+        const assertionData = {
+            publicAssertion, publicAssertionId
+        }
+
+        if (privateAssertion?.length) {
+            assertionData.privateAssertionID = privateAssertionId;
+            assertionData.privateAssertion = privateAssertion;
+        }
+
+        let operationId = await this.nodeApiService.update(
+            endpoint,
+            port,
+            authToken,
+            assertionData,
+            blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
+            contentAssetStorageAddress,
+            tokenId,
+            hashFunctionId
+        );
+        let operationResult = await this.nodeApiService.getOperationResult(
+            operationId,
+            { ...options, operation: OPERATIONS.UPDATE }
+        );
+        return {
+            UAL,
+            operation: getOperationStatusObject(
+                operationResult,
+                operationId
+            ),
+        };
+    }
+
+    async waitFinalization(UAL, options = {}) {
+        // TODO: Implement according to changes in smart contracts
+    }
+
+    async cancelUpdate(UAL, options = {}) {
+        // TODO: Implement according to changes in smart contracts
+    }
 
     async transfer(UAL, newOwner, options = {}) {
         const blockchain = await this.inputService.getBlockchain(options);
