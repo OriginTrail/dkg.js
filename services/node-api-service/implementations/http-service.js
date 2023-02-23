@@ -118,6 +118,38 @@ class HttpService {
         }
     }
 
+    async update(
+        endpoint,
+        port,
+        authToken,
+        assertionId,
+        assertion,
+        blockchain,
+        contract,
+        tokenId,
+        hashFunctionId,
+    ) {
+        try {
+            const response = await axios({
+                method: 'post',
+                url: `${endpoint}:${port}/update`,
+                data: {
+                    assertionId,
+                    assertion,
+                    blockchain,
+                    contract,
+                    tokenId,
+                    hashFunctionId,
+                },
+                headers: this.prepareRequestConfig(authToken),
+            });
+
+            return response.data.operationId;
+        } catch (error) {
+            throw Error(`Unable to update: ${error.message}`);
+        }
+    }
+
     async query(endpoint, port, authToken, query, type) {
         try {
             const response = await axios({
