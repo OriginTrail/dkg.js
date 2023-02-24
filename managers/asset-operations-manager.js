@@ -27,6 +27,14 @@ class AssetOperationsManager {
         this.inputService = services.inputService;
     }
 
+    /**
+     * Creates a new asset.
+     * @async
+     * @param {Object} content - The content of the asset to be created, contains public, private or both keys.
+     * @param {Object} [options={}] - Additional options for asset creation.
+     * @param {Object} [stepHooks=emptyHooks] - Hooks to execute during asset creation.
+     * @returns {Object} Object containing UAL, publicAssertionId and operation status.
+     */
     async create(content, options = {}, stepHooks = emptyHooks) {
         this.validationService.validateObjectType(content);
         let jsonContent = {};
@@ -208,6 +216,17 @@ class AssetOperationsManager {
         };
     }
 
+    /**
+     * Retrieves a public or private assertion for a given UAL.
+     * @async
+     * @param {string} UAL - The Universal Asset Locator
+     * @param {Object} [options={}] - Optional parameters for the asset get operation.
+     * @param {string} [options.state] - The state of the asset, "latest" or "finalized".
+     * @param {string} [options.contentType] - The type of content to retrieve, either "public", "private" or "all".
+     * @param {boolean} [options.validate] - Whether to validate the retrieved assertion.
+     * @param {string} [options.outputFormat] - The format of the retrieved assertion output, either "n-quads" or "json-ld".
+     * @returns {Object} - The result of the asset get operation.
+     */
     async get(UAL, options = {}) {
         const {
             blockchain,
@@ -398,6 +417,14 @@ class AssetOperationsManager {
         return result;
     }
 
+    /**
+     * Updates an existing asset.
+     * @async
+     * @param {string} UAL - The Universal Asset Locator
+     * @param {Object} content - The content of the asset to be updated.
+     * @param {Object} [options={}] - Additional options for asset update.
+     * @returns {Object} Object containing UAL, publicAssertionId and operation status.
+     */
     async update(UAL, content, options = {}) {
         this.validationService.validateObjectType(content);
         let jsonContent = content;
@@ -576,6 +603,14 @@ class AssetOperationsManager {
         // TODO: Implement according to changes in smart contracts
     }
 
+    /**
+     * Transfer an asset to a new owner on a specified blockchain.
+     * @async
+     * @param {string} UAL - The Universal Asset Locator of the asset to be transferred.
+     * @param {string} newOwner - The address of the new owner.
+     * @param {Object} [options={}] - Additional options for asset transfer.
+     * @returns {Object} Object containing UAL, owner's address and operation status.
+     */
     async transfer(UAL, newOwner, options = {}) {
         const blockchain = await this.inputService.getBlockchain(options);
 
@@ -591,6 +626,13 @@ class AssetOperationsManager {
         };
     }
 
+    /**
+     * Retrieves the owner of a specified asset for a given blockchain.
+     * @async
+     * @param {string} UAL - The Universal Asset Locator of the asset.
+     * @param {Object} [options={}] - Optional parameters for blockchain service.
+     * @returns {Object} An object containing the UAL, owner and operation status.
+     */
     async getOwner(UAL, options = {}) {
         const blockchain = await this.inputService.getBlockchain(options);
 

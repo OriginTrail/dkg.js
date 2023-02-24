@@ -7,6 +7,14 @@ class GraphOperationsManager {
         this.inputService = services.inputService;
     }
 
+    /**
+     * An asynchronous function that executes a SPARQL query using an API endpoint and returns the query result.
+     * @async
+     * @param {string} queryString - The string representation of the SPARQL query to be executed.
+     * @param {string} queryType - The type of the SPARQL query, "CONSTRUCT" or "SELECT".
+     * @param {Object} [options={}] - An object containing additional options for the query execution.
+     * @returns {Promise} A Promise that resolves to the query result.
+     */
     async query(queryString, queryType, options = {}) {
         const endpoint = this.inputService.getEndpoint(options);
         const port = this.inputService.getPort(options);
