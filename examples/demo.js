@@ -80,6 +80,31 @@ function divider() {
 
     divider();
 
+    const updateAssetResult = await DkgClient.asset.update(
+        createAssetResult.UAL,
+        {
+            private: {
+                '@context': ['https://schema.org'],
+                '@graph': [
+                    {
+                        '@id': 'uuid:user:1',
+                        name: 'Adams',
+                        lastname: 'Heath',
+                    },
+                    {
+                        '@id': 'uuid:belgrade',
+                        title: 'Belgrade',
+                        postCode: '11010',
+                    },
+                ],
+            },
+        }
+    );
+    console.log('======================== ASSET UPDATED');
+    console.log(updateAssetResult);
+
+    divider();
+
     const queryResult = await DkgClient.graph.query(
         'construct { ?s ?p ?o } where { ?s ?p ?o . <uuid:user:1> ?p ?o }',
         'CONSTRUCT',
