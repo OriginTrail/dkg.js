@@ -427,7 +427,7 @@ class AssetOperationsManager {
      */
     async update(UAL, content, options = {}) {
         this.validationService.validateObjectType(content);
-        let jsonContent = content;
+        const jsonContent = content;
 
         const {
             blockchain,
@@ -567,7 +567,7 @@ class AssetOperationsManager {
             assertionData.privateAssertion = privateAssertion;
         }
 
-        let operationId = await this.nodeApiService.update(
+        const operationId = await this.nodeApiService.update(
             endpoint,
             port,
             authToken,
@@ -577,9 +577,14 @@ class AssetOperationsManager {
             tokenId,
             hashFunctionId
         );
-        let operationResult = await this.nodeApiService.getOperationResult(
+        const operationResult = await this.nodeApiService.getOperationResult(
+            endpoint,
+            port,
+            authToken,
+            OPERATIONS.UPDATE,
+            maxNumberOfRetries,
+            frequency,
             operationId,
-            { ...options, operation: OPERATIONS.UPDATE }
         );
         return {
             UAL,
