@@ -548,20 +548,15 @@ class AssetOperationsManager {
                 hashFunctionId,
             ));
 
-        // TODO: Uncomment when it is ready
-        // await this.blockchainService.updateAsset(
-        //   Utilities.resolveUAL(UAL).tokenId,
-        //   {
-        //     assertionId,
-        //     assertionSize: assertionMetadata.getAssertionSizeInBytes(assertion),
-        //     triplesNumber: assertionMetadata.getAssertionTriplesNumber(assertion),
-        //     chunksNumber: assertionMetadata.getAssertionChunksNumber(assertion),
-        //     epochsNum: options.epochsNum,
-        //     tokenAmount: tokenAmountInWei,
-        //     scoreFunctionId: options.scoreFunctionId ?? 1,
-        //   },
-        //   blockchain
-        // );
+        await this.blockchainService.updateAsset(
+          resolveUAL(UAL).tokenId,
+          publicAssertionId,
+          assertionMetadata.getAssertionSizeInBytes(publicAssertion),
+          assertionMetadata.getAssertionTriplesNumber(publicAssertion),
+          assertionMetadata.getAssertionChunksNumber(publicAssertion),
+          tokenAmountInWei,
+          blockchain
+        );
 
         const assertionData = {
             publicAssertion, publicAssertionId

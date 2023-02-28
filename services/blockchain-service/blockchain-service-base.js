@@ -173,7 +173,7 @@ class BlockchainServiceBase {
         }
     }
 
-    async updateAsset(tokenId, requestData, blockchain) {
+    async updateAsset(tokenId, publicAssertionId, assertionSize, triplesNumber, chunksNumber, tokenAmount, blockchain) {
         const serviceAgreementV1Address = await this.getContractAddress(
             'ServiceAgreementV1',
             blockchain,
@@ -182,22 +182,29 @@ class BlockchainServiceBase {
         await this.executeContractFunction(
             'Token',
             'increaseAllowance',
-            [serviceAgreementV1Address, requestData.tokenAmount],
+            [serviceAgreementV1Address, tokenAmount],
             blockchain,
         );
 
         try {
             return this.executeContractFunction(
                 'ContentAsset',
-                'updateAsset',
-                [tokenId, Object.values(requestData)],
+                'updateAssetState',
+                [
+                    tokenId,
+                    publicAssertionId,
+                    assertionSize,
+                    triplesNumber,
+                    chunksNumber,
+                    tokenAmount
+                ],
                 blockchain,
             );
         } catch (e) {
             await this.executeContractFunction(
                 'Token',
                 'decreaseAllowance',
-                [serviceAgreementV1Address, requestData.tokenAmount],
+                [serviceAgreementV1Address, tokenAmount],
                 blockchain,
             );
             throw e;
