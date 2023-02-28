@@ -18,6 +18,10 @@ module.exports.BLOCKCHAINS = {
         rpc: 'http://localhost:7545',
         hubContract: '0x209679fA3B658Cd0fC74473aF28243bfe78a9b12',
     },
+    hardhat: {
+        rpc: 'http://localhost:8545',
+        hubContract: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
+    },
     polygon: {
         rpc: 'https://matic-mumbai.chainstacklabs.com',
         hubContract: '0xdaa16AC171CfE8Df6F79C06E7EEAb2249E2C9Ec8', // TODO: change to Asset Contract
