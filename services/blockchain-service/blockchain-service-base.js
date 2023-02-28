@@ -1,10 +1,10 @@
 const Web3 = require('web3');
-const HubAbi = require('dkg-evm-module/build/contracts/Hub.json').abi;
-const ServiceAgreementV1Abi = require('dkg-evm-module/build/contracts/ServiceAgreementV1.json').abi;
+const HubAbi = require('dkg-evm-module/abi/Hub.json');
+const ServiceAgreementV1Abi = require('dkg-evm-module/abi/ServiceAgreementV1.json');
 const ContentAssetStorageAbi =
-    require('dkg-evm-module/build/contracts/ContentAssetStorage.json').abi;
-const ContentAssetAbi = require('dkg-evm-module/build/contracts/ContentAsset.json').abi;
-const TokenAbi = require('dkg-evm-module/build/contracts/ERC20Token.json').abi;
+    require('dkg-evm-module/abi/ContentAssetStorage.json');
+const ContentAssetAbi = require('dkg-evm-module/abi/ContentAsset.json');
+const TokenAbi = require('dkg-evm-module/abi/Token.json');
 const { BLOCKCHAINS, OPERATIONS_STEP_STATUS } = require('../../constants');
 const emptyHooks = require('../../util/empty-hooks.js');
 
