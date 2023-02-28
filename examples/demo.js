@@ -3,14 +3,14 @@ const DKG = require('../index.js');
 
 const OT_NODE_HOSTNAME = 'http://localhost';
 const OT_NODE_PORT = '8900';
-const PUBLIC_KEY = '0xBaF76aC0d0ef9a2FFF76884d54C9D3e270290a43';
-const PRIVATE_KEY = '0x9b9af041edc816692276ac3c8f1d5565e3c01ddff80ec982943a29bd8d1d8863';
+const PUBLIC_KEY = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
+const PRIVATE_KEY = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
 
 const DkgClient = new DKG({
     endpoint: OT_NODE_HOSTNAME,
     port: OT_NODE_PORT,
     blockchain: {
-        name: 'ganache',
+        name: 'hardhat',
         publicKey: PUBLIC_KEY,
         privateKey: PRIVATE_KEY,
     },
@@ -83,7 +83,7 @@ function divider() {
     const updateAssetResult = await DkgClient.asset.update(
         createAssetResult.UAL,
         {
-            private: {
+            public: {
                 '@context': ['https://schema.org'],
                 '@graph': [
                     {
