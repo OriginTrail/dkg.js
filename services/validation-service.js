@@ -129,6 +129,12 @@ class ValidationService {
         this.validateBlockchain(blockchain);
     }
 
+    validateAddTokens(UAL, tokenAmount, blockchain) {
+        this.validateUAL(UAL);
+        this.validateTokenAmount(tokenAmount);
+        this.validateBlockchain(blockchain);
+    }
+
     validateRequiredParam(paramName, param) {
         if (param == null) throw Error(`${paramName} is missing.`);
     }

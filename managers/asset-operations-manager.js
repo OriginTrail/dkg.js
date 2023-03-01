@@ -674,6 +674,20 @@ class AssetOperationsManager {
             operation: getOperationStatusObject({ status: 'COMPLETED' }, null),
         };
     }
+
+    async addTokens(UAL, tokenAmount, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+
+        this.validationService.validateAddTokens(UAL, tokenAmount, blockchain);
+
+        const { tokenId } = resolveUAL(UAL);
+        await this.blockchainService.addTokens(tokenId, tokenAmount, blockchain);
+
+        return {
+            UAL,
+            operation: getOperationStatusObject({ status: 'COMPLETED' }, null),
+        };
+    }
 }
 
 module.exports = AssetOperationsManager;

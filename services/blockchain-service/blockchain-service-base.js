@@ -232,6 +232,10 @@ class BlockchainServiceBase {
         return this.callContractFunction('ContentAsset', 'updateAssetStoringPeriod', [tokenId, epochsNumber, tokenAmount], blockchain);
     }
 
+    async addTokens(tokenId, tokenAmount, blockchain) {
+        return this.callContractFunction('ContentAsset', 'updateAssetTokenAmount', [tokenId, tokenAmount], blockchain);
+    }
+
     convertToWei(ether) {
         return Web3.utils.toWei(ether.toString(), 'ether');
     }
