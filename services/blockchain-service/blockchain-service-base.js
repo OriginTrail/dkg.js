@@ -228,6 +228,10 @@ class BlockchainServiceBase {
         return this.callContractFunction('ContentAsset', 'burn', [tokenId], blockchain);
     }
 
+    async extendAssetStoringPeriod(tokenId, epochsNumber, tokenAmount, blockchain) {
+        return this.callContractFunction('ContentAsset', 'updateAssetStoringPeriod', [tokenId, epochsNumber, tokenAmount], blockchain);
+    }
+
     convertToWei(ether) {
         return Web3.utils.toWei(ether.toString(), 'ether');
     }

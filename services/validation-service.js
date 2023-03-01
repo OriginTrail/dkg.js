@@ -122,6 +122,13 @@ class ValidationService {
         this.validateBlockchain(blockchain);
     }
 
+    validateExtendAssetStoringPeriod(UAL, epochsNum, tokenAmount, blockchain) {
+        this.validateUAL(UAL);
+        this.validateEpochsNum(epochsNum);
+        this.validateTokenAmount(tokenAmount);
+        this.validateBlockchain(blockchain);
+    }
+
     validateRequiredParam(paramName, param) {
         if (param == null) throw Error(`${paramName} is missing.`);
     }

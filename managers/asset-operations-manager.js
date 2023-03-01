@@ -660,6 +660,20 @@ class AssetOperationsManager {
             operation: getOperationStatusObject({ status: 'COMPLETED' }, null),
         };
     }
+
+    async extendStoringPeriod(UAL, epochsNumber, tokenAmount, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+
+        this.validationService.validateExtendAssetStoringPeriod(UAL, epochsNumber, tokenAmount, blockchain);
+
+        const { tokenId } = resolveUAL(UAL);
+        await this.blockchainService.extendAssetStoringPeriod(tokenId, epochsNumber, tokenAmount, blockchain);
+
+        return {
+            UAL,
+            operation: getOperationStatusObject({ status: 'COMPLETED' }, null),
+        };
+    }
 }
 
 module.exports = AssetOperationsManager;
