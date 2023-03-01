@@ -224,6 +224,10 @@ class BlockchainServiceBase {
         return this.callContractFunction('ContentAssetStorage', 'ownerOf', [tokenId], blockchain);
     }
 
+    async burnAsset(tokenId, blockchain) {
+        return this.callContractFunction('ContentAsset', 'burn', [tokenId], blockchain);
+    }
+
     convertToWei(ether) {
         return Web3.utils.toWei(ether.toString(), 'ether');
     }
