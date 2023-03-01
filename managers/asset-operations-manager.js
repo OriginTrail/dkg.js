@@ -18,6 +18,7 @@ const {
     QUERY_TYPES,
 } = require('../constants.js');
 const emptyHooks = require('../util/empty-hooks');
+const { sleepForMilliseconds } = require("../services/utilities.js");
 
 class AssetOperationsManager {
     constructor(config, services) {
@@ -596,7 +597,43 @@ class AssetOperationsManager {
     }
 
     async waitFinalization(UAL, options = {}) {
-        // TODO: Implement according to changes in smart contracts
+        const blockchain = this.inputService.getBlockchain(options);
+        const frequency = this.inputService.getFrequency(options);
+        const maxNumberOfRetries = this.inputService.getMaxNumberOfRetries(options);
+
+        this.validationService.validateWaitAssetUpdateFinalization(UAL, blockchain);
+
+        const { tokenId } = resolveUAL(UAL);
+        let response = {
+            status: OPERATION_STATUSES.PENDING,
+        };
+        let pendingUpdate = true;
+        let retries = 0;
+        do {
+            if (retries > maxNumberOfRetries) {
+                response.data = {
+                    ...response.data,
+                    data: {
+                        errorType: 'DKG_CLIENT_ERROR',
+                        errorMessage: 'Unable to get results. Max number of retries reached.',
+                    },
+                };
+                break;
+            }
+            retries += 1;
+            await sleepForMilliseconds(frequency * 1000);
+            pendingUpdate = await this.blockchainService.hasPendingUpdate(tokenId, blockchain);
+        } while(pendingUpdate);
+        if (pendingUpdate) {
+            response.status = OPERATION_STATUSES.PENDING;
+        } else {
+            response.status = OPERATION_STATUSES.COMPLETED;
+        }
+
+        return {
+            UAL,
+            operation: getOperationStatusObject({ data: response.data, status: response.status }, null),
+        };
     }
 
     async cancelUpdate(UAL, options = {}) {

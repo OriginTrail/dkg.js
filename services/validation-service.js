@@ -106,6 +106,11 @@ class ValidationService {
         this.validateAuthToken(authToken);
     }
 
+    validateWaitAssetUpdateFinalization(UAL, blockchain) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+    }
+
     validateAssetUpdateCancel(UAL, blockchain) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);

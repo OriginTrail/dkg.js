@@ -3,6 +3,8 @@ const HubAbi = require('dkg-evm-module/abi/Hub.json');
 const ServiceAgreementV1Abi = require('dkg-evm-module/abi/ServiceAgreementV1.json');
 const ContentAssetStorageAbi =
     require('dkg-evm-module/abi/ContentAssetStorage.json');
+const UnfinalizedStateStorageAbi =
+    require('dkg-evm-module/abi/UnfinalizedStateStorage.json');
 const ContentAssetAbi = require('dkg-evm-module/abi/ContentAsset.json');
 const TokenAbi = require('dkg-evm-module/abi/Token.json');
 const { BLOCKCHAINS, OPERATIONS_STEP_STATUS } = require('../../constants');
@@ -18,6 +20,7 @@ class BlockchainServiceBase {
         this.abis.Hub = HubAbi;
         this.abis.ServiceAgreementV1 = ServiceAgreementV1Abi;
         this.abis.ContentAssetStorage = ContentAssetStorageAbi;
+        this.abis.UnfinalizedStateStorage = UnfinalizedStateStorageAbi;
         this.abis.ContentAsset = ContentAssetAbi;
         this.abis.Token = TokenAbi;
 
@@ -209,6 +212,10 @@ class BlockchainServiceBase {
             );
             throw e;
         }
+    }
+
+    async hasPendingUpdate(tokenId, blockchain) {
+        return this.callContractFunction('UnfinalizedStateStorage', 'hasPendingUpdate', [tokenId], blockchain);
     }
 
     async cancelAssetUpdate(tokenId, blockchain) {
