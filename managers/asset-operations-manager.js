@@ -612,7 +612,7 @@ class AssetOperationsManager {
      * @returns {Object} Object containing UAL, owner's address and operation status.
      */
     async transfer(UAL, newOwner, options = {}) {
-        const blockchain = await this.inputService.getBlockchain(options);
+        const blockchain = this.inputService.getBlockchain(options);
 
         this.validationService.validateAssetTransfer(UAL, newOwner, blockchain);
 
@@ -634,7 +634,7 @@ class AssetOperationsManager {
      * @returns {Object} An object containing the UAL, owner and operation status.
      */
     async getOwner(UAL, options = {}) {
-        const blockchain = await this.inputService.getBlockchain(options);
+        const blockchain = this.inputService.getBlockchain(options);
 
         this.validationService.validateAssetGetOwner(UAL, blockchain);
 
