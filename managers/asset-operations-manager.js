@@ -600,7 +600,17 @@ class AssetOperationsManager {
     }
 
     async cancelUpdate(UAL, options = {}) {
-        // TODO: Implement according to changes in smart contracts
+        const blockchain = this.inputService.getBlockchain(options);
+
+        this.validationService.validateAssetUpdateCancel(UAL, blockchain);
+
+        const { tokenId } = resolveUAL(UAL);
+        await this.blockchainService.cancelAssetUpdate(tokenId, blockchain);
+
+        return {
+            UAL,
+            operation: getOperationStatusObject({ status: 'COMPLETED' }, null),
+        };
     }
 
     /**

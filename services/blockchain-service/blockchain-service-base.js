@@ -211,6 +211,10 @@ class BlockchainServiceBase {
         }
     }
 
+    async cancelAssetUpdate(tokenId, blockchain) {
+        return this.callContractFunction('ContentAsset', 'cancelAssetStateUpdate', [tokenId], blockchain);
+    }
+
     async getLatestAssertionId(tokenId, blockchain) {
         return this.callContractFunction(
             'ContentAssetStorage',
