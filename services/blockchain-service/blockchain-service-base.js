@@ -48,7 +48,6 @@ class BlockchainServiceBase {
 
     async callContractFunction(contractName, functionName, args, blockchain) {
         const contractInstance = await this.getContractInstance(contractName, blockchain);
-
         return contractInstance.methods[functionName](...args).call();
     }
 
@@ -219,7 +218,7 @@ class BlockchainServiceBase {
     }
 
     async cancelAssetUpdate(tokenId, blockchain) {
-        return this.callContractFunction('ContentAsset', 'cancelAssetStateUpdate', [tokenId], blockchain);
+        return this.executeContractFunction('ContentAsset', 'cancelAssetStateUpdate', [tokenId], blockchain);
     }
 
     async getLatestAssertionId(tokenId, blockchain) {
@@ -236,15 +235,15 @@ class BlockchainServiceBase {
     }
 
     async burnAsset(tokenId, blockchain) {
-        return this.callContractFunction('ContentAsset', 'burnAsset', [tokenId], blockchain);
+        return this.executeContractFunction('ContentAsset', 'burnAsset', [tokenId], blockchain);
     }
 
     async extendAssetStoringPeriod(tokenId, epochsNumber, tokenAmount, blockchain) {
-        return this.callContractFunction('ContentAsset', 'updateAssetStoringPeriod', [tokenId, epochsNumber, tokenAmount], blockchain);
+        return this.executeContractFunction('ContentAsset', 'updateAssetStoringPeriod', [tokenId, epochsNumber, tokenAmount], blockchain);
     }
 
     async addTokens(tokenId, tokenAmount, blockchain) {
-        return this.callContractFunction('ContentAsset', 'updateAssetTokenAmount', [tokenId, tokenAmount], blockchain);
+        return this.executeContractFunction('ContentAsset', 'updateAssetTokenAmount', [tokenId, tokenAmount], blockchain);
     }
 
     convertToWei(ether) {
