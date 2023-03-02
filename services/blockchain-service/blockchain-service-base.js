@@ -236,7 +236,7 @@ class BlockchainServiceBase {
     }
 
     async burnAsset(tokenId, blockchain) {
-        return this.callContractFunction('ContentAsset', 'burn', [tokenId], blockchain);
+        return this.callContractFunction('ContentAsset', 'burnAsset', [tokenId], blockchain);
     }
 
     async extendAssetStoringPeriod(tokenId, epochsNumber, tokenAmount, blockchain) {
