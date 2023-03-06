@@ -53,12 +53,15 @@ class HttpService {
         }
     }
 
-    async localStore(endpoint, port, authToken, assertions) {
+    async localStore(endpoint, port, authToken, assertions, storeType) {
         try {
             const response = await axios({
                 method: 'post',
                 url: `${endpoint}:${port}/local-store`,
-                data: assertions,
+                data: {
+                    assertions,
+                    storeType,
+                },
                 headers: this.prepareRequestConfig(authToken),
             });
 
@@ -100,13 +103,14 @@ class HttpService {
         }
     }
 
-    async get(endpoint, port, authToken, UAL, hashFunctionId) {
+    async get(endpoint, port, authToken, UAL, state, hashFunctionId) {
         try {
             const response = await axios({
                 method: 'post',
                 url: `${endpoint}:${port}/get`,
                 data: {
                     id: UAL,
+                    state: state,
                     hashFunctionId,
                 },
                 headers: this.prepareRequestConfig(authToken),
@@ -122,7 +126,8 @@ class HttpService {
         endpoint,
         port,
         authToken,
-        assertionData,
+        assertionId,
+        assertion,
         blockchain,
         contract,
         tokenId,
@@ -133,7 +138,8 @@ class HttpService {
                 method: 'post',
                 url: `${endpoint}:${port}/update`,
                 data: {
-                    assertionData,
+                    assertionId,
+                    assertion,
                     blockchain,
                     contract,
                     tokenId,

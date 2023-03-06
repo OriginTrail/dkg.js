@@ -18,7 +18,8 @@ const {
     QUERY_TYPES,
 } = require('../constants.js');
 const emptyHooks = require('../util/empty-hooks');
-const { sleepForMilliseconds } = require("../services/utilities.js");
+const { sleepForMilliseconds } = require('../services/utilities.js');
+const {STORE_TYPES} = require('../constants');
 
 class AssetOperationsManager {
     constructor(config, services) {
@@ -155,6 +156,7 @@ class AssetOperationsManager {
             port,
             authToken,
             assertions,
+            STORE_TYPES.TRIPLE
         );
         let operationResult = await this.nodeApiService.getOperationResult(
             endpoint,
@@ -270,6 +272,7 @@ class AssetOperationsManager {
             port,
             authToken,
             UAL,
+            state,
             hashFunctionId,
         );
 
@@ -559,26 +562,66 @@ class AssetOperationsManager {
           blockchain
         );
 
-        const assertionData = {
-            publicAssertion, publicAssertionId
-        }
+        const resolvedUAL = {
+            blockchain: blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
+            contract: contentAssetStorageAddress,
+            tokenId,
+        };
+
+        const assertions = [
+            {
+                ...resolvedUAL,
+                assertionId: publicAssertionId,
+                assertion: publicAssertion,
+            },
+        ];
 
         if (privateAssertion?.length) {
-            assertionData.privateAssertionID = privateAssertionId;
-            assertionData.privateAssertion = privateAssertion;
+            assertions.push({
+                ...resolvedUAL,
+                assertionId: privateAssertionId,
+                assertion: privateAssertion,
+            });
         }
 
-        const operationId = await this.nodeApiService.update(
+        let operationId = await this.nodeApiService.localStore(
             endpoint,
             port,
             authToken,
-            assertionData,
+            assertions,
+            STORE_TYPES.PENDING
+        );
+
+        let operationResult = await this.nodeApiService.getOperationResult(
+            endpoint,
+            port,
+            authToken,
+            OPERATIONS.LOCAL_STORE,
+            maxNumberOfRetries,
+            DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY,
+            operationId,
+        );
+
+        if (operationResult.status === OPERATION_STATUSES.FAILED) {
+            return {
+                UAL,
+                assertionId: publicAssertionId,
+                operation: getOperationStatusObject(operationResult, operationId),
+            };
+        }
+
+        operationId = await this.nodeApiService.update(
+            endpoint,
+            port,
+            authToken,
+            publicAssertionId,
+            publicAssertion,
             blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
             contentAssetStorageAddress,
             tokenId,
             hashFunctionId
         );
-        const operationResult = await this.nodeApiService.getOperationResult(
+        operationResult = await this.nodeApiService.getOperationResult(
             endpoint,
             port,
             authToken,

@@ -79,8 +79,13 @@ module.exports.GET_OUTPUT_FORMATS = {
 };
 
 module.exports.ASSET_STATES = {
-    LATEST: 'latest',
-    FINALIZED: 'finalized',
+    LATEST: 'LATEST',
+    FINALIZED: 'LATEST_FINALIZED',
+};
+
+module.exports.STORE_TYPES = {
+    TRIPLE: 'TRIPLE',
+    PENDING: 'PENDING',
 };
 
 module.exports.QUERY_TYPES = {
