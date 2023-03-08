@@ -230,6 +230,15 @@ class BlockchainServiceBase {
         );
     }
 
+    async getUnfinalizedState(tokenId, blockchain) {
+        return this.callContractFunction(
+            'UnfinalizedStateStorage',
+            'getUnfinalizedState',
+            [tokenId],
+            blockchain,
+        );
+    }
+
     async getAssetOwner(tokenId, blockchain) {
         return this.callContractFunction('ContentAssetStorage', 'ownerOf', [tokenId], blockchain);
     }

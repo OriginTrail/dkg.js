@@ -19,7 +19,7 @@ const {
 } = require('../constants.js');
 const emptyHooks = require('../util/empty-hooks');
 const { sleepForMilliseconds } = require('../services/utilities.js');
-const {STORE_TYPES} = require('../constants');
+const {STORE_TYPES, ASSET_STATES} = require('../constants');
 
 class AssetOperationsManager {
     constructor(config, services) {
@@ -261,11 +261,19 @@ class AssetOperationsManager {
         );
 
         const { tokenId } = resolveUAL(UAL);
-
-        const publicAssertionId = await this.blockchainService.getLatestAssertionId(
-            tokenId,
-            blockchain,
-        );
+        let publicAssertionId;
+        const hasPendingUpdate = await this.blockchainService.hasPendingUpdate(tokenId, blockchain);
+        if (state === ASSET_STATES.LATEST && hasPendingUpdate) {
+            publicAssertionId = await this.blockchainService.getUnfinalizedState(
+                tokenId,
+                blockchain
+            );
+        } else {
+            publicAssertionId = await this.blockchainService.getLatestAssertionId(
+                tokenId,
+                blockchain,
+            );
+        }
 
         const getPublicOperationId = await this.nodeApiService.get(
             endpoint,
