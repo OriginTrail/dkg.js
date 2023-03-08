@@ -68,6 +68,7 @@ function divider() {
     console.log(createAssetResult);
 
     divider();
+
     const ownerResult = await DkgClient.asset.getOwner(createAssetResult.UAL);
     console.log('======================== GET ASSET OWNER');
     console.log(ownerResult);
@@ -85,28 +86,40 @@ function divider() {
         {
             public: {
                 '@context': ['https://schema.org'],
-                '@graph': [
-                    {
-                        '@id': 'uuid:user:1',
-                        name: 'Adams',
-                        lastname: 'Heath',
-                    },
-                    {
-                        '@id': 'uuid:belgrade',
-                        title: 'Belgrade',
-                        postCode: '11010',
-                    },
-                ],
+                '@id': 'uuid:2',
+                company: 'TL',
+                user: {
+                    '@id': 'uuid:user:2',
+                },
+                city: {
+                    '@id': 'uuid:Nis',
+                },
             },
         }
     );
+
     console.log('======================== ASSET UPDATED');
     console.log(updateAssetResult);
 
     divider();
 
+
+    const getLatestAssetResult = await DkgClient.asset.get(createAssetResult.UAL );
+    console.log('======================== ASSET LATEST RESOLVED');
+    console.log(JSON.stringify(getLatestAssetResult, null, 2));
+
+    divider();
+
+
+    const getLatestFinalizedAssetResult = await DkgClient.asset.get(createAssetResult.UAL, {state: 'LATEST_FINALIZED'});
+    console.log('======================== ASSET LATEST FINALIZED RESOLVED');
+    console.log(JSON.stringify(getLatestFinalizedAssetResult, null, 2));
+
+    divider();
+
+
     const queryResult = await DkgClient.graph.query(
-        'construct { ?s ?p ?o } where { ?s ?p ?o . <uuid:user:1> ?p ?o }',
+        'construct { ?s ?p ?o } where { ?s ?p ?o . <uuid:1> ?p ?o }',
         'CONSTRUCT',
     );
     console.log('======================== QUERY RESULT');
