@@ -655,7 +655,7 @@ class AssetOperationsManager {
         this.validationService.validateWaitAssetUpdateFinalization(UAL, blockchain);
 
         const { tokenId } = resolveUAL(UAL);
-        let response = {
+        const response = {
             status: OPERATION_STATUSES.PENDING,
         };
         let pendingUpdate = true;
@@ -672,7 +672,9 @@ class AssetOperationsManager {
                 break;
             }
             retries += 1;
+            // eslint-disable-next-line no-await-in-loop
             await sleepForMilliseconds(frequency * 1000);
+            // eslint-disable-next-line no-await-in-loop
             pendingUpdate = await this.blockchainService.hasPendingUpdate(tokenId, blockchain);
         } while(pendingUpdate);
         if (pendingUpdate) {

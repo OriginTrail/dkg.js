@@ -110,7 +110,7 @@ class HttpService {
                 url: `${endpoint}:${port}/get`,
                 data: {
                     id: UAL,
-                    state: state,
+                    state,
                     hashFunctionId,
                 },
                 headers: this.prepareRequestConfig(authToken),
