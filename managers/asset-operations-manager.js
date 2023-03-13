@@ -1,4 +1,5 @@
 const { assertionMetadata, formatAssertion, calculateRoot } = require('assertion-tools');
+const JsonLdError = require('jsonld/lib/JsonLdError.js');
 const {
     isEmptyObject,
     deriveUAL,
@@ -314,9 +315,16 @@ class AssetOperationsManager {
                     formattedPublicAssertion = publicAssertion.join('\n');
                 }
             } catch (error) {
+                let errorMessage;
+                if (error instanceof JsonLdError) {
+                    errorMessage = error.details.message;
+                } else {
+                    errorMessage = error.message;
+                }
+
                 getPublicOperationResult.data = {
                     errorType: 'DKG_CLIENT_ERROR',
-                    errorMessage: error.message,
+                    errorMessage,
                 };
             }
 
@@ -402,9 +410,15 @@ class AssetOperationsManager {
                         formattedPrivateAssertion = privateAssertion.join('\n');
                     }
                 } catch (error) {
+                    let errorMessage;
+                    if (error instanceof JsonLdError) {
+                        errorMessage = error.details.message;
+                    } else {
+                        errorMessage = error.message;
+                    }
                     queryPrivateOperationResult.data = {
                         errorType: 'DKG_CLIENT_ERROR',
-                        errorMessage: error.message,
+                        errorMessage,
                     };
                 }
 
