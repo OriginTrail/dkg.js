@@ -142,6 +142,7 @@ class AssetOperationsManager {
                 ...resolvedUAL,
                 assertionId: publicAssertionId,
                 assertion: publicAssertion,
+                storeType: STORE_TYPES.TRIPLE,
             },
         ];
         if (privateAssertion?.length) {
@@ -149,6 +150,7 @@ class AssetOperationsManager {
                 ...resolvedUAL,
                 assertionId: privateAssertionId,
                 assertion: privateAssertion,
+                storeType: STORE_TYPES.TRIPLE,
             });
         }
         let operationId = await this.nodeApiService.localStore(
@@ -156,7 +158,6 @@ class AssetOperationsManager {
             port,
             authToken,
             assertions,
-            STORE_TYPES.TRIPLE
         );
         let operationResult = await this.nodeApiService.getOperationResult(
             endpoint,
@@ -581,6 +582,7 @@ class AssetOperationsManager {
                 ...resolvedUAL,
                 assertionId: publicAssertionId,
                 assertion: publicAssertion,
+                storeType: STORE_TYPES.PENDING,
             },
         ];
 
@@ -589,6 +591,7 @@ class AssetOperationsManager {
                 ...resolvedUAL,
                 assertionId: privateAssertionId,
                 assertion: privateAssertion,
+                storeType: STORE_TYPES.PENDING,
             });
         }
 
@@ -597,7 +600,6 @@ class AssetOperationsManager {
             port,
             authToken,
             assertions,
-            STORE_TYPES.PENDING
         );
 
         let operationResult = await this.nodeApiService.getOperationResult(
