@@ -1,4 +1,5 @@
 const { assertionMetadata, formatAssertion, calculateRoot } = require('assertion-tools');
+const JsonLdError = require('jsonld/lib/JsonLdError.js');
 const {
     isEmptyObject,
     deriveUAL,
@@ -77,10 +78,32 @@ class AssetOperationsManager {
             authToken,
         );
 
+        let operationResult = {};
+
         let privateAssertion;
         let privateAssertionId;
         if (jsonContent.private && !isEmptyObject(jsonContent.private)) {
-            privateAssertion = await formatAssertion(jsonContent.private);
+            try {
+                privateAssertion = await formatAssertion(jsonContent.private);
+            } catch (error) {
+                let errorMessage;
+                if (error instanceof JsonLdError && Object.hasOwn(error, 'details')) {
+                    errorMessage = error.details.message;
+                } else {
+                    errorMessage = error.message;
+                }
+
+                operationResult.status = undefined;
+                operationResult.data = {
+                    errorType: 'DKG_CLIENT_ERROR',
+                    errorMessage,
+                };
+
+                return {
+                    operation: getOperationStatusObject(operationResult, undefined),
+                };
+            }
+
             privateAssertionId = calculateRoot(privateAssertion);
         }
         const publicGraph = {
@@ -95,7 +118,29 @@ class AssetOperationsManager {
                     : null,
             ],
         };
-        const publicAssertion = await formatAssertion(publicGraph);
+
+        let publicAssertion;
+        try {
+            publicAssertion = await formatAssertion(publicGraph);
+        } catch (error) {
+            let errorMessage;
+            if (error instanceof JsonLdError && Object.hasOwn(error, 'details')) {
+                errorMessage = error.details.message;
+            } else {
+                errorMessage = error.message;
+            }
+
+            operationResult.status = undefined;
+            operationResult.data = {
+                errorType: 'DKG_CLIENT_ERROR',
+                errorMessage,
+            };
+
+            return {
+                operation: getOperationStatusObject(operationResult, undefined),
+            };
+        }
+
         const publicAssertionId = calculateRoot(publicAssertion);
 
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
@@ -159,7 +204,7 @@ class AssetOperationsManager {
             authToken,
             assertions,
         );
-        let operationResult = await this.nodeApiService.getOperationResult(
+        operationResult = await this.nodeApiService.getOperationResult(
             endpoint,
             port,
             authToken,
@@ -298,27 +343,44 @@ class AssetOperationsManager {
         const publicAssertion = getPublicOperationResult.data.assertion;
 
         if (validate === true && calculateRoot(publicAssertion) !== publicAssertionId) {
+            getPublicOperationResult.status = undefined;
             getPublicOperationResult.data = {
                 errorType: 'DKG_CLIENT_ERROR',
                 errorMessage: "Calculated root hashes don't match!",
+            };
+
+            return {
+                operation: getOperationStatusObject(getPublicOperationResult, undefined),
             };
         }
 
         let result = { operation: {} };
         if (contentType !== CONTENT_TYPES.PRIVATE) {
             let formattedPublicAssertion = publicAssertion;
-            try {
-                if (outputFormat !== GET_OUTPUT_FORMATS.N_QUADS) {
-                    formattedPublicAssertion = await toJSONLD(publicAssertion.join('\n'));
-                } else {
-                    formattedPublicAssertion = publicAssertion.join('\n');
-                }
-            } catch (error) {
-                getPublicOperationResult.data = {
-                    errorType: 'DKG_CLIENT_ERROR',
-                    errorMessage: error.message,
-                };
-            }
+              if (outputFormat !== GET_OUTPUT_FORMATS.N_QUADS) {
+                  try {
+                      formattedPublicAssertion = await toJSONLD(publicAssertion.join('\n'));
+                  } catch (error) {
+                      let errorMessage;
+                      if (error instanceof JsonLdError && Object.hasOwn(error, 'details')) {
+                          errorMessage = error.details.message;
+                      } else {
+                          errorMessage = error.message;
+                      }
+      
+                      getPublicOperationResult.status = undefined;
+                      getPublicOperationResult.data = {
+                          errorType: 'DKG_CLIENT_ERROR',
+                          errorMessage,
+                      };
+
+                      return {
+                          operation: getOperationStatusObject(getPublicOperationResult, undefined),
+                      };
+                  }
+              } else {
+                  formattedPublicAssertion = publicAssertion.join('\n');
+              }
 
             if (contentType === CONTENT_TYPES.PUBLIC) {
                 result = {
@@ -333,7 +395,7 @@ class AssetOperationsManager {
                 };
             }
 
-            result.operation.publicGet = getOperationStatusObject(
+            result.operation = getOperationStatusObject(
                 getPublicOperationResult,
                 getPublicOperationId,
             );
@@ -377,11 +439,31 @@ class AssetOperationsManager {
                 );
 
                 const privateAssertionNQuads = queryPrivateOperationResult.data;
+                
+                let privateAssertion;
+                try {
+                  privateAssertion = await toNQuads(
+                      privateAssertionNQuads,
+                      'application/n-quads',
+                  );
+                } catch (error) {
+                  let errorMessage;
+                  if (error instanceof JsonLdError && Object.hasOwn(error, 'details')) {
+                      errorMessage = error.details.message;
+                  } else {
+                      errorMessage = error.message;
+                  }
 
-                const privateAssertion = await toNQuads(
-                    privateAssertionNQuads,
-                    'application/n-quads',
-                );
+                  queryPrivateOperationResult.status = undefined;
+                  queryPrivateOperationResult.data = {
+                      errorType: 'DKG_CLIENT_ERROR',
+                      errorMessage,
+                  };
+
+                  return {
+                      operation: getOperationStatusObject(queryPrivateOperationResult, undefined),
+                  };
+                }
 
                 let formattedPrivateAssertion;
                 if (
@@ -389,23 +471,40 @@ class AssetOperationsManager {
                     validate === true &&
                     calculateRoot(privateAssertion) !== privateAssertionId
                 ) {
+                    queryPrivateOperationResult.status = undefined;
                     queryPrivateOperationResult.data = {
                         errorType: 'DKG_CLIENT_ERROR',
                         errorMessage: "Calculated root hashes don't match!",
                     };
+
+                    return {
+                        operation: getOperationStatusObject(queryPrivateOperationResult, undefined),
+                    };
                 }
 
-                try {
-                    if (outputFormat !== GET_OUTPUT_FORMATS.N_QUADS) {
+                if (outputFormat !== GET_OUTPUT_FORMATS.N_QUADS) {
+                    try {
                         formattedPrivateAssertion = await toJSONLD(privateAssertion.join('\n'));
-                    } else {
-                        formattedPrivateAssertion = privateAssertion.join('\n');
+                    } catch (error) {
+                        let errorMessage;
+                        if (error instanceof JsonLdError && Object.hasOwn(error, 'details')) {
+                            errorMessage = error.details.message;
+                        } else {
+                            errorMessage = error.message;
+                        }
+
+                        queryPrivateOperationResult.status = undefined;
+                        queryPrivateOperationResult.data = {
+                            errorType: 'DKG_CLIENT_ERROR',
+                            errorMessage,
+                        };
+
+                        return {
+                            operation: getOperationStatusObject(queryPrivateOperationResult, undefined),
+                        };
                     }
-                } catch (error) {
-                    queryPrivateOperationResult.data = {
-                        errorType: 'DKG_CLIENT_ERROR',
-                        errorMessage: error.message,
-                    };
+                } else {
+                    formattedPrivateAssertion = privateAssertion.join('\n');
                 }
 
                 if (contentType === CONTENT_TYPES.PRIVATE) {
@@ -420,7 +519,7 @@ class AssetOperationsManager {
                         assertionId: privateAssertionId,
                     };
                 }
-                result.operation.queryPrivate = getOperationStatusObject(
+                result.operation = getOperationStatusObject(
                     queryPrivateOperationResult,
                     queryPrivateOperationId,
                 );
@@ -468,10 +567,32 @@ class AssetOperationsManager {
         );
 
         const { tokenId } = resolveUAL(UAL);
+
+        let operationResult = {};
+
         let privateAssertion;
         let privateAssertionId;
         if (jsonContent.private && !isEmptyObject(jsonContent.private)) {
-            privateAssertion = await formatAssertion(jsonContent.private);
+            try {
+                privateAssertion = await formatAssertion(jsonContent.private);
+            } catch (error) {
+                let errorMessage;
+                if (error instanceof JsonLdError && Object.hasOwn(error, 'details')) {
+                    errorMessage = error.details.message;
+                } else {
+                    errorMessage = error.message;
+                }
+
+                operationResult.status = undefined;
+                operationResult.data = {
+                    errorType: 'DKG_CLIENT_ERROR',
+                    errorMessage,
+                };
+
+                return {
+                    operation: getOperationStatusObject(operationResult, undefined),
+                };
+            }
             privateAssertionId = calculateRoot(privateAssertion);
         }
 
@@ -504,6 +625,7 @@ class AssetOperationsManager {
             publicAssertion = getPublicOperationResult.data.assertion;
 
             if (calculateRoot(publicAssertion) !== publicAssertionId) {
+                getPublicOperationResult.status = undefined;
                 getPublicOperationResult.data = {
                     errorType: 'DKG_CLIENT_ERROR',
                     errorMessage: "Calculated root hashes don't match!",
@@ -511,9 +633,8 @@ class AssetOperationsManager {
 
                 // TODO: Check returned response
                 return {
-                    UAL,
-                    getPublicOperationResult
-                }
+                    operation: getOperationStatusObject(getPublicOperationResult, undefined),
+                };
             }
 
             // Transform public assertion to include updated private assertion Id
@@ -537,7 +658,27 @@ class AssetOperationsManager {
                         : null,
                 ],
             };
-            publicAssertion = await formatAssertion(publicGraph);
+
+            try {
+                publicAssertion = await formatAssertion(publicGraph);
+            } catch (error) {
+                let errorMessage;
+                if (error instanceof JsonLdError && Object.hasOwn(error, 'details')) {
+                    errorMessage = error.details.message;
+                } else {
+                    errorMessage = error.message;
+                }
+
+                operationResult.status = undefined;
+                operationResult.data = {
+                    errorType: 'DKG_CLIENT_ERROR',
+                    errorMessage,
+                };
+
+                return {
+                    operation: getOperationStatusObject(operationResult, undefined),
+                };
+          }
         }
 
         const publicAssertionId = calculateRoot(publicAssertion);
@@ -602,7 +743,7 @@ class AssetOperationsManager {
             assertions,
         );
 
-        let operationResult = await this.nodeApiService.getOperationResult(
+        operationResult = await this.nodeApiService.getOperationResult(
             endpoint,
             port,
             authToken,
@@ -640,13 +781,11 @@ class AssetOperationsManager {
             frequency,
             operationId,
         );
+
         return {
             UAL,
-            operation: getOperationStatusObject(
-                operationResult,
-                operationId
-            ),
-        };
+            operation: getOperationStatusObject(operationResult, operationId),
+        }
     }
 
     async waitFinalization(UAL, options = {}) {
