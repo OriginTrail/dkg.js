@@ -1,13 +1,17 @@
-
 class NodeOperationsManager {
-  constructor(config, services) {
-    this.nodeApiService = services.nodeApiService;
-  }
+    constructor(config, services) {
+        this.nodeApiService = services.nodeApiService;
+        this.inputService = services.inputService;
+    }
 
-  async info() {
-    const response = await this.nodeApiService.info();
+    async info(options = {}) {
+        const endpoint = this.inputService.getEndpoint(options);
+        const port = this.inputService.getPort(options);
+        const authToken = this.inputService.getAuthToken(options);
 
-    return response.data;
-  }
+        const response = await this.nodeApiService.info(endpoint, port, authToken);
+
+        return response.data;
+    }
 }
 module.exports = NodeOperationsManager;

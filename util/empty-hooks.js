@@ -4,5 +4,5 @@
  * @type {{emptyHooks: exports.emptyHooks}}
  */
 module.exports = {
-    afterHook: () => {}
-}
+    afterHook: () => {},
+};

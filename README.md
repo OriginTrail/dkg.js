@@ -4,15 +4,13 @@
 
 **Javascript library for interaction with the OriginTrail Decentralized Knowledge Graph**
 
-**Note**: This library is currently in beta, so you can expect issues to arise. We'd appreciate that if you do run into trouble, you [open up an issue on this repository](https://github.com/OriginTrail/dkg.js/issues) and let us know. 
-Also, there are two actively maintained versions, v5 and v6, make sure you are using the appropriate one.
 The official OriginTrail documentation for v6 can be found [here](https://docs.origintrail.io/dkg-v6-upcoming-version/introduction-to-dkg-v6-start-here).
 
 
 ## Intro - What is a Decentralized Knowledge Graph (DKG)
 
 
-There are many avaialable definitions of a knowlege graph, therefore we will present a simplified one focused on usability, rather than completeness. The purpose of this introduction is not to be a comprehensive guide for knowledge graphs, however it aims to get you started with the basics.
+There are many available definitions of a knowledge graph, therefore we will present a simplified one focused on usability, rather than completeness. The purpose of this introduction is not to be a comprehensive guide for knowledge graphs, however it aims to get you started with the basics.
 
 A **knowledge graph (KG)** is a network of entities — physical & digital objects, events or concepts — illustrating the relationship between them (aka a semantic network). KGs are used by major companies such as [Amazon](http://lunadong.com/talks/PG.pdf), [Google](https://en.wikipedia.org/wiki/Google_Knowledge_Graph), [Uber](https://www.youtube.com/watch?v=r3yMSl5NB_Q), [IBM](https://www.ibm.com/cloud/learn/knowledge-graph) etc for various applications: search, data integration, knowledge reasoning, recommendation engines, analytics, machine learning and AI etc.
 
@@ -32,7 +30,7 @@ We define **decentralized knowledge graph (DKG)** as a global shared knowledge g
 
 ## The OriginTrail DKG Architecture 
 
-The OriginTrail Decentralized Network implements the DKG according the the OriginTrail protocol.
+The OriginTrail Decentralized Network implements the DKG according to the OriginTrail protocol.
 
 It is:
 
@@ -53,7 +51,7 @@ More information is available on the OriginTrail [website](https://origintrail.i
 
 This library provides an interface into the OriginTrail Decentralized Knowledge Graph, enabling:
 
-* provisioning & updating assets on the public DKG
+* creating & updating assets on the public DKG
 * network and local querying of information based on topics and identifiers
 * verifying the integrity of queried data
 
