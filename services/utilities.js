@@ -4,6 +4,7 @@ module.exports = {
     nodeSupported() {
         return typeof window === 'undefined';
     },
+
     isEmptyObject(object) {
         // eslint-disable-next-line no-unreachable-loop
         for (const key in object) {
@@ -11,14 +12,17 @@ module.exports = {
         }
         return true;
     },
+
     toNumber(hex) {
         return parseInt(hex.slice(2), 16);
     },
+
     deriveUAL(blockchain, contract, tokenId) {
         return `did:dkg:${
             blockchain.startsWith('otp') ? 'otp' : blockchain.toLowerCase()
         }/${contract.toLowerCase()}/${tokenId}`;
     },
+
     resolveUAL(ual) {
         const segments = ual.split(':');
         const argsString = segments.length === 3 ? segments[2] : segments[2] + segments[3];
@@ -34,13 +38,16 @@ module.exports = {
             tokenId: parseInt(args[2], 10),
         };
     },
+
     async sleepForMilliseconds(milliseconds) {
         // eslint-disable-next-line no-promise-executor-return
         await new Promise((r) => setTimeout(r, milliseconds));
     },
+
     capitalizeFirstLetter(str) {
         return str[0].toUpperCase() + str.slice(1);
     },
+
     getOperationStatusObject(operationResult, operationId) {
         const operationData = operationResult.data?.errorType
             ? { status: operationResult.status, ...operationResult.data }
@@ -51,6 +58,7 @@ module.exports = {
             ...operationData,
         };
     },
+
     async toNQuads(content, inputFormat) {
         const options = {
             algorithm: 'URDNA2015',
