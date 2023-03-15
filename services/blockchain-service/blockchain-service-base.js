@@ -1,10 +1,9 @@
 const Web3 = require('web3');
 const HubAbi = require('dkg-evm-module/abi/Hub.json');
 const ServiceAgreementV1Abi = require('dkg-evm-module/abi/ServiceAgreementV1.json');
-const ContentAssetStorageAbi =
-    require('dkg-evm-module/abi/ContentAssetStorage.json');
-const UnfinalizedStateStorageAbi =
-    require('dkg-evm-module/abi/UnfinalizedStateStorage.json');
+const ServiceAgreementStorageProxyAbi = require('dkg-evm-module/abi/ServiceAgreementStorageProxy.json');
+const ContentAssetStorageAbi = require('dkg-evm-module/abi/ContentAssetStorage.json');
+const UnfinalizedStateStorageAbi = require('dkg-evm-module/abi/UnfinalizedStateStorage.json');
 const ContentAssetAbi = require('dkg-evm-module/abi/ContentAsset.json');
 const TokenAbi = require('dkg-evm-module/abi/Token.json');
 const { BLOCKCHAINS, OPERATIONS_STEP_STATUS } = require('../../constants');
@@ -19,6 +18,7 @@ class BlockchainServiceBase {
         this.abis = {};
         this.abis.Hub = HubAbi;
         this.abis.ServiceAgreementV1 = ServiceAgreementV1Abi;
+        this.abis.ServiceAgreementStorageProxy = ServiceAgreementStorageProxyAbi;
         this.abis.ContentAssetStorage = ContentAssetStorageAbi;
         this.abis.UnfinalizedStateStorage = UnfinalizedStateStorageAbi;
         this.abis.ContentAsset = ContentAssetAbi;
@@ -175,7 +175,15 @@ class BlockchainServiceBase {
         }
     }
 
-    async updateAsset(tokenId, publicAssertionId, assertionSize, triplesNumber, chunksNumber, tokenAmount, blockchain) {
+    async updateAsset(
+        tokenId,
+        publicAssertionId,
+        assertionSize,
+        triplesNumber,
+        chunksNumber,
+        tokenAmount,
+        blockchain,
+    ) {
         const serviceAgreementV1Address = await this.getContractAddress(
             'ServiceAgreementV1',
             blockchain,
@@ -198,7 +206,7 @@ class BlockchainServiceBase {
                     assertionSize,
                     triplesNumber,
                     chunksNumber,
-                    tokenAmount
+                    tokenAmount,
                 ],
                 blockchain,
             );
@@ -214,11 +222,21 @@ class BlockchainServiceBase {
     }
 
     async hasPendingUpdate(tokenId, blockchain) {
-        return this.callContractFunction('UnfinalizedStateStorage', 'hasPendingUpdate', [tokenId], blockchain);
+        return this.callContractFunction(
+            'UnfinalizedStateStorage',
+            'hasPendingUpdate',
+            [tokenId],
+            blockchain,
+        );
     }
 
     async cancelAssetUpdate(tokenId, blockchain) {
-        return this.executeContractFunction('ContentAsset', 'cancelAssetStateUpdate', [tokenId], blockchain);
+        return this.executeContractFunction(
+            'ContentAsset',
+            'cancelAssetStateUpdate',
+            [tokenId],
+            blockchain,
+        );
     }
 
     async getLatestAssertionId(tokenId, blockchain) {
@@ -248,11 +266,63 @@ class BlockchainServiceBase {
     }
 
     async extendAssetStoringPeriod(tokenId, epochsNumber, tokenAmount, blockchain) {
-        return this.executeContractFunction('ContentAsset', 'updateAssetStoringPeriod', [tokenId, epochsNumber, tokenAmount], blockchain);
+        return this.executeContractFunction(
+            'ContentAsset',
+            'updateAssetStoringPeriod',
+            [tokenId, epochsNumber, tokenAmount],
+            blockchain,
+        );
     }
 
     async addTokens(tokenId, tokenAmount, blockchain) {
-        return this.executeContractFunction('ContentAsset', 'updateAssetTokenAmount', [tokenId, tokenAmount], blockchain);
+        return this.executeContractFunction(
+            'ContentAsset',
+            'updateAssetTokenAmount',
+            [tokenId, tokenAmount],
+            blockchain,
+        );
+    }
+
+    async getAssertionIdByIndex(tokenId, index, blockchain) {
+        return this.callContractFunction(
+            'ContentAssetStorage',
+            'getAssertionIdByIndex',
+            [tokenId, index],
+            blockchain,
+        );
+    }
+
+    async getAgreementData(agreementId, blockchain) {
+        const result = await this.callContractFunction(
+            'ServiceAgreementStorageProxy',
+            'getAgreementData',
+            [agreementId],
+            blockchain,
+        );
+
+        return {
+            startTime: Number(result['0']),
+            epochsNumber: Number(result['1']),
+            epochLength: Number(result['2']),
+            tokenAmount: result['3'][0],
+            addedTokenAmount: result['3'][1],
+            scoreFunctionId: result['4'][0],
+            proofWindowOffsetPerc: result['4'][1],
+        };
+    }
+
+    async getBlockchainTimestamp(blockchain) {
+        if (blockchain.name !== 'hardhat') return Math.floor(Date.now() / 1000);
+
+        const latestBlock = await this.getLatestBlock(blockchain);
+        return latestBlock.timestamp;
+    }
+
+    async getLatestBlock(blockchain) {
+        const web3 = await this.getWeb3Instance(blockchain.name, blockchain.rpc);
+        const blockNumber = await web3.eth.getBlockNumber();
+
+        return web3.eth.getBlock(blockNumber);
     }
 
     convertToWei(ether) {

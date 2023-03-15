@@ -1,4 +1,5 @@
 const { assertionMetadata, formatAssertion, calculateRoot } = require('assertion-tools');
+const { ethers } = require('ethers');
 const {
     isEmptyObject,
     deriveUAL,
@@ -19,7 +20,7 @@ const {
 } = require('../constants.js');
 const emptyHooks = require('../util/empty-hooks');
 const { sleepForMilliseconds } = require('../services/utilities.js');
-const {STORE_TYPES, ASSET_STATES} = require('../constants');
+const { STORE_TYPES, ASSET_STATES } = require('../constants');
 
 class AssetOperationsManager {
     constructor(config, services) {
@@ -267,7 +268,7 @@ class AssetOperationsManager {
         if (state === ASSET_STATES.LATEST && hasPendingUpdate) {
             publicAssertionId = await this.blockchainService.getUnfinalizedState(
                 tokenId,
-                blockchain
+                blockchain,
             );
         } else {
             publicAssertionId = await this.blockchainService.getLatestAssertionId(
@@ -512,8 +513,8 @@ class AssetOperationsManager {
                 // TODO: Check returned response
                 return {
                     UAL,
-                    getPublicOperationResult
-                }
+                    getPublicOperationResult,
+                };
             }
 
             // Transform public assertion to include updated private assertion Id
@@ -532,8 +533,8 @@ class AssetOperationsManager {
                         : null,
                     jsonContent.private && !isEmptyObject(jsonContent.private)
                         ? {
-                            [PRIVATE_ASSERTION_PREDICATE]: privateAssertionId,
-                        }
+                              [PRIVATE_ASSERTION_PREDICATE]: privateAssertionId,
+                          }
                         : null,
                 ],
             };
@@ -547,28 +548,68 @@ class AssetOperationsManager {
             blockchain,
         );
 
-        const tokenAmountInWei =
-            tokenAmount ??
-            (await this.nodeApiService.getBidSuggestion(
+        let tokenAmountInWei;
+
+        if (tokenAmount != null) {
+            tokenAmountInWei = tokenAmount;
+        } else {
+            const assetStorageContractAddress = resolveUAL(UAL).contract;
+            const firstAssertionId = await this.blockchainService.getAssertionIdByIndex(
+                tokenId,
+                0,
+                blockchain,
+            );
+
+            const keyword = ethers.solidityPacked(
+                ['address', 'bytes32'],
+                [assetStorageContractAddress, firstAssertionId],
+            );
+
+            const agreementId = ethers.sha256(
+                ethers.solidityPacked(
+                    ['address', 'uint256', 'bytes'],
+                    [assetStorageContractAddress, tokenId, keyword],
+                ),
+            );
+            const agreementData = await this.blockchainService.getAgreementData(
+                agreementId,
+                blockchain,
+            );
+
+            const now = await this.blockchainService.getBlockchainTimestamp(blockchain);
+            const currentEpoch = Math.floor(
+                (now - agreementData.startTime) / agreementData.epochLength,
+            );
+
+            const epochsLeft = agreementData.epochsNumber - currentEpoch;
+
+            const createAssetBidSuggestionInWei = await this.nodeApiService.getBidSuggestion(
                 endpoint,
                 port,
                 authToken,
                 blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
-                1, // TODO: Determine number of epochs
+                epochsLeft,
                 assertionMetadata.getAssertionSizeInBytes(publicAssertion),
                 contentAssetStorageAddress,
                 publicAssertionId,
                 hashFunctionId,
-            ));
+            );
+
+            tokenAmountInWei =
+                BigInt(createAssetBidSuggestionInWei) - BigInt(agreementData.tokenAmount);
+            if (tokenAmountInWei < 0) {
+                tokenAmountInWei = 0;
+            }
+        }
 
         await this.blockchainService.updateAsset(
-          resolveUAL(UAL).tokenId,
-          publicAssertionId,
-          assertionMetadata.getAssertionSizeInBytes(publicAssertion),
-          assertionMetadata.getAssertionTriplesNumber(publicAssertion),
-          assertionMetadata.getAssertionChunksNumber(publicAssertion),
-          tokenAmountInWei,
-          blockchain
+            resolveUAL(UAL).tokenId,
+            publicAssertionId,
+            assertionMetadata.getAssertionSizeInBytes(publicAssertion),
+            assertionMetadata.getAssertionTriplesNumber(publicAssertion),
+            assertionMetadata.getAssertionChunksNumber(publicAssertion),
+            tokenAmountInWei,
+            blockchain,
         );
 
         const resolvedUAL = {
@@ -629,7 +670,7 @@ class AssetOperationsManager {
             blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
             contentAssetStorageAddress,
             tokenId,
-            hashFunctionId
+            hashFunctionId,
         );
         operationResult = await this.nodeApiService.getOperationResult(
             endpoint,
@@ -642,10 +683,7 @@ class AssetOperationsManager {
         );
         return {
             UAL,
-            operation: getOperationStatusObject(
-                operationResult,
-                operationId
-            ),
+            operation: getOperationStatusObject(operationResult, operationId),
         };
     }
 
@@ -678,7 +716,7 @@ class AssetOperationsManager {
             await sleepForMilliseconds(frequency * 1000);
             // eslint-disable-next-line no-await-in-loop
             pendingUpdate = await this.blockchainService.hasPendingUpdate(tokenId, blockchain);
-        } while(pendingUpdate);
+        } while (pendingUpdate);
         if (pendingUpdate) {
             response.status = OPERATION_STATUSES.PENDING;
         } else {
@@ -687,7 +725,10 @@ class AssetOperationsManager {
 
         return {
             UAL,
-            operation: getOperationStatusObject({ data: response.data, status: response.status }, null),
+            operation: getOperationStatusObject(
+                { data: response.data, status: response.status },
+                null,
+            ),
         };
     }
 
@@ -766,10 +807,20 @@ class AssetOperationsManager {
     async extendStoringPeriod(UAL, epochsNumber, tokenAmount, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
 
-        this.validationService.validateExtendAssetStoringPeriod(UAL, epochsNumber, tokenAmount, blockchain);
+        this.validationService.validateExtendAssetStoringPeriod(
+            UAL,
+            epochsNumber,
+            tokenAmount,
+            blockchain,
+        );
 
         const { tokenId } = resolveUAL(UAL);
-        await this.blockchainService.extendAssetStoringPeriod(tokenId, epochsNumber, tokenAmount, blockchain);
+        await this.blockchainService.extendAssetStoringPeriod(
+            tokenId,
+            epochsNumber,
+            tokenAmount,
+            blockchain,
+        );
 
         return {
             UAL,
