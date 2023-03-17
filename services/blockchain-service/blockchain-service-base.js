@@ -10,7 +10,7 @@ const { BLOCKCHAINS, OPERATIONS_STEP_STATUS } = require('../../constants');
 const emptyHooks = require('../../util/empty-hooks.js');
 
 const FIXED_GAS_LIMIT_METHODS = {
-    createAsset: 400000,
+    createAsset: 450000,
 };
 
 class BlockchainServiceBase {
@@ -156,8 +156,6 @@ class BlockchainServiceBase {
                 [Object.values(requestData)],
                 blockchain,
             );
-
-            console.log(receipt);
 
             let { tokenId } = await this.decodeEventLogs(receipt, 'AssetMinted', blockchain);
 
