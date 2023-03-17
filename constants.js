@@ -26,6 +26,14 @@ module.exports.BLOCKCHAINS = {
         rpc: 'https://matic-mumbai.chainstacklabs.com',
         hubContract: '0xdaa16AC171CfE8Df6F79C06E7EEAb2249E2C9Ec8', // TODO: change to Asset Contract
     },
+    "otp::alphanet": {
+        rpc: "http://parachain-alphanet-02.origin-trail.network:9933",
+        hubContract: "0x7585a99C5C150a08f5CDeFD16465C6De8D41EbbD",
+    },
+    "otp::devnet": {
+        rpc: "https://lofar-tm-rpc.origin-trail.network",
+        hubContract: "0x833048F6e6BEa78E0AAdedeCd2Dc2231dda443FB",
+    },
     'otp::testnet': {
         rpc: 'https://lofar-testnet.origin-trail.network',
         hubContract: '0xBbfF7Ea6b2Addc1f38A0798329e12C08f03750A6',

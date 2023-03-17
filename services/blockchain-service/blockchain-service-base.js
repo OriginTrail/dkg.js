@@ -10,7 +10,7 @@ const { BLOCKCHAINS, OPERATIONS_STEP_STATUS } = require('../../constants');
 const emptyHooks = require('../../util/empty-hooks.js');
 
 const FIXED_GAS_LIMIT_METHODS = {
-    createAsset: 500000,
+    createAsset: 400000,
 };
 
 class BlockchainServiceBase {
@@ -61,6 +61,7 @@ class BlockchainServiceBase {
                 from: blockchain.publicKey,
             });
         }
+        console.log('Gas limit: ' + gasLimit);
 
         const encodedABI = await contractInstance.methods[functionName](...args).encodeABI();
 
@@ -135,6 +136,7 @@ class BlockchainServiceBase {
             'ServiceAgreementV1',
             blockchain,
         );
+        console.log('Increasing allowance ======');
         await this.executeContractFunction(
             'Token',
             'increaseAllowance',
@@ -147,12 +149,15 @@ class BlockchainServiceBase {
         });
 
         try {
+            console.log('Creating asset ======');
             const receipt = await this.executeContractFunction(
                 'ContentAsset',
                 'createAsset',
                 [Object.values(requestData)],
                 blockchain,
             );
+
+            console.log(receipt);
 
             let { tokenId } = await this.decodeEventLogs(receipt, 'AssetMinted', blockchain);
 
