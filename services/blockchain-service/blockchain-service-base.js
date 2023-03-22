@@ -267,21 +267,65 @@ class BlockchainServiceBase {
     }
 
     async extendAssetStoringPeriod(tokenId, epochsNumber, tokenAmount, blockchain) {
-        return this.executeContractFunction(
-            'ContentAsset',
-            'updateAssetStoringPeriod',
-            [tokenId, epochsNumber, tokenAmount],
+        const serviceAgreementV1Address = await this.getContractAddress(
+            'ServiceAgreementV1',
             blockchain,
         );
+
+        await this.executeContractFunction(
+            'Token',
+            'increaseAllowance',
+            [serviceAgreementV1Address, tokenAmount],
+            blockchain,
+        );
+
+        try {
+            return this.executeContractFunction(
+                'ContentAsset',
+                'updateAssetStoringPeriod',
+                [tokenId, epochsNumber, tokenAmount],
+                blockchain,
+            );
+        } catch (e) {
+            await this.executeContractFunction(
+                'Token',
+                'decreaseAllowance',
+                [serviceAgreementV1Address, tokenAmount],
+                blockchain,
+            );
+            throw e;
+        }
     }
 
     async addTokens(tokenId, tokenAmount, blockchain) {
-        return this.executeContractFunction(
-            'ContentAsset',
-            'updateAssetTokenAmount',
-            [tokenId, tokenAmount],
+        const serviceAgreementV1Address = await this.getContractAddress(
+            'ServiceAgreementV1',
             blockchain,
         );
+
+        await this.executeContractFunction(
+            'Token',
+            'increaseAllowance',
+            [serviceAgreementV1Address, tokenAmount],
+            blockchain,
+        );
+
+        try {
+            return this.executeContractFunction(
+                'ContentAsset',
+                'updateAssetTokenAmount',
+                [tokenId, tokenAmount],
+                blockchain,
+            );
+        } catch (e) {
+            await this.executeContractFunction(
+                'Token',
+                'decreaseAllowance',
+                [serviceAgreementV1Address, tokenAmount],
+                blockchain,
+            );
+            throw e;
+        }
     }
 
     async getAssertionIdByIndex(tokenId, index, blockchain) {
