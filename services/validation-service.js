@@ -1,4 +1,4 @@
-const { CONTENT_TYPES, MAX_FILE_SIZE, OPERATIONS, GET_OUTPUT_FORMATS, QUERY_TYPES } = require('../constants.js');
+const { ASSET_STATES, CONTENT_TYPES, MAX_FILE_SIZE, OPERATIONS, GET_OUTPUT_FORMATS, QUERY_TYPES } = require('../constants.js');
 const { nodeSupported } = require('./utilities.js');
 
 class ValidationService {
@@ -229,6 +229,9 @@ class ValidationService {
     validateState(state) {
         this.validateRequiredParam('state', state);
         this.validateParamType('state', state, 'string');
+        const validStates = Object.values(ASSET_STATES);
+        if (!validStates.includes(state.toUpperCase()))
+            throw Error(`Invalid state, available states: ${validStates}`);
     }
 
     validateContentType(contentType) {
