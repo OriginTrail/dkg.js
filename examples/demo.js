@@ -16,6 +16,7 @@ const DkgClient = new DKG({
     },
     maxNumberOfRetries: 30,
     frequency: 2,
+    contentType: 'all',
 });
 
 function divider() {
@@ -81,22 +82,30 @@ function divider() {
 
     divider();
 
-    const updateAssetResult = await DkgClient.asset.update(
-        createAssetResult.UAL,
-        {
-            public: {
-                '@context': ['https://schema.org'],
-                '@id': 'uuid:2',
-                company: 'TL',
-                user: {
-                    '@id': 'uuid:user:2',
-                },
-                city: {
-                    '@id': 'uuid:Nis',
-                },
+    const updateAssetResult = await DkgClient.asset.update(createAssetResult.UAL, {
+        public: {
+            '@context': ['https://schema.org'],
+            '@id': 'uuid:2',
+            company: 'TL',
+            user: {
+                '@id': 'uuid:user:2',
             },
-        }
-    );
+            city: {
+                '@id': 'uuid:Nis',
+            },
+        },
+        private: {
+            '@context': ['https://schema.org'],
+            '@graph': [
+                {
+                    '@id': 'uuid:user:1',
+                    name: 'Adam',
+                    lastname: 'Smith',
+                    identifier: `${Math.floor(Math.random() * 1e10)}`,
+                },
+            ],
+        },
+    });
 
     console.log('======================== ASSET UPDATED');
     console.log(updateAssetResult);
