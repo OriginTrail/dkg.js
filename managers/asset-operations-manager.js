@@ -265,8 +265,8 @@ class AssetOperationsManager {
         const { tokenId } = resolveUAL(UAL);
         let hasPendingUpdate = false;
         if (state === ASSET_STATES.LATEST) {
-             hasPendingUpdate = await this.blockchainService.hasPendingUpdate(tokenId, blockchain);
-        } 
+            hasPendingUpdate = await this.blockchainService.hasPendingUpdate(tokenId, blockchain);
+        }
 
         const publicAssertionId = hasPendingUpdate
             ? await this.blockchainService.getUnfinalizedState(tokenId, blockchain)
@@ -359,7 +359,7 @@ class AssetOperationsManager {
                         }
                     }`;
 
-                     queryPrivateOperationId = await this.nodeApiService.query(
+                    queryPrivateOperationId = await this.nodeApiService.query(
                         endpoint,
                         port,
                         authToken,
@@ -367,15 +367,15 @@ class AssetOperationsManager {
                         QUERY_TYPES.CONSTRUCT,
                     );
 
-                     queryPrivateOperationResult = await this.nodeApiService.getOperationResult(
-                         endpoint,
-                         port,
-                         authToken,
-                         OPERATIONS.QUERY,
-                         maxNumberOfRetries,
-                         frequency,
-                         queryPrivateOperationId,
-                     );
+                    queryPrivateOperationResult = await this.nodeApiService.getOperationResult(
+                        endpoint,
+                        port,
+                        authToken,
+                        OPERATIONS.QUERY,
+                        maxNumberOfRetries,
+                        frequency,
+                        queryPrivateOperationId,
+                    );
 
                     const privateAssertionNQuads = queryPrivateOperationResult.data;
 
@@ -422,10 +422,12 @@ class AssetOperationsManager {
                         assertionId: privateAssertionId,
                     };
                 }
-                result.operation.queryPrivate = getOperationStatusObject(
-                    queryPrivateOperationResult,
-                    queryPrivateOperationId,
-                );
+                if (queryPrivateOperationId) {
+                    result.operation.queryPrivate = getOperationStatusObject(
+                        queryPrivateOperationResult,
+                        queryPrivateOperationId,
+                    );
+                }
             }
         }
 
