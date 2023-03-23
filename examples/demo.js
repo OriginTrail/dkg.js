@@ -130,7 +130,7 @@ function divider() {
         'construct { ?s ?p ?o } where { ?s ?p ?o . <uuid:1> ?p ?o }',
         'CONSTRUCT',
     );
-    console.log('======================== QUERY PRIVATE CURRENT RESULT');
+    console.log('======================== QUERY LOCAL CURRENT RESULT');
     console.log(
         JSON.stringify(
             await jsonld.fromRDF(queryResult.data, {
