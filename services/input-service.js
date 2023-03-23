@@ -51,6 +51,18 @@ class InputService {
         };
     }
 
+    getQueryArguments(options) {
+        return {
+            graphLocation: this.inputService.getGraphLocation(options),
+            graphState: this.inputService.getGraphState(options),
+            endpoint: this.inputService.getEndpoint(options),
+            port: this.inputService.getPort(options),
+            maxNumberOfRetries: this.inputService.getMaxNumberOfRetries(options),
+            frequency: this.inputService.getFrequency(options),
+            authToken: this.inputService.getAuthToken(options),
+        }
+    }
+
     getBlockchain(options) {
         const name = options.blockchain?.name ?? this.config.blockchain?.name ?? null;
         const rpc =
@@ -71,6 +83,14 @@ class InputService {
             publicKey,
             privateKey,
         };
+    }
+
+    getGraphLocation(options) {
+        return options.graphLocation ?? this.config.graphLocation ?? 'PRIVATE_KG';
+    }
+
+    getGraphState(options) {
+        return options.graphState ?? this.config.graphState ?? 'CURRENT';
     }
 
     getEndpoint(options) {

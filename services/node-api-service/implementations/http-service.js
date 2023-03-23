@@ -151,12 +151,12 @@ class HttpService {
         }
     }
 
-    async query(endpoint, port, authToken, query, type) {
+    async query(endpoint, port, authToken, query, type, repository) {
         try {
             const response = await axios({
                 method: 'post',
                 url: `${endpoint}:${port}/query`,
-                data: { query, type },
+                data: { query, type, repository },
                 headers: this.prepareRequestConfig(authToken),
             });
             return response.data.operationId;
