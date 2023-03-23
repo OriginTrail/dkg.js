@@ -7,6 +7,7 @@ const {
     resolveUAL,
     toNQuads,
     toJSONLD,
+    deriveRepository,
 } = require('../services/utilities.js');
 const {
     CONTENT_TYPES,
@@ -17,6 +18,7 @@ const {
     DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY,
     PRIVATE_ASSERTION_PREDICATE,
     QUERY_TYPES,
+    DEFAULT_PARAMETERS,
 } = require('../constants.js');
 const emptyHooks = require('../util/empty-hooks');
 const { sleepForMilliseconds } = require('../services/utilities.js');
@@ -263,19 +265,14 @@ class AssetOperationsManager {
         );
 
         const { tokenId } = resolveUAL(UAL);
-        let publicAssertionId;
-        const hasPendingUpdate = await this.blockchainService.hasPendingUpdate(tokenId, blockchain);
-        if (state === ASSET_STATES.LATEST && hasPendingUpdate) {
-            publicAssertionId = await this.blockchainService.getUnfinalizedState(
-                tokenId,
-                blockchain,
-            );
-        } else {
-            publicAssertionId = await this.blockchainService.getLatestAssertionId(
-                tokenId,
-                blockchain,
-            );
+        let hasPendingUpdate = false;
+        if (state === ASSET_STATES.LATEST) {
+            hasPendingUpdate = await this.blockchainService.hasPendingUpdate(tokenId, blockchain);
         }
+
+        const publicAssertionId = hasPendingUpdate
+            ? await this.blockchainService.getUnfinalizedState(tokenId, blockchain)
+            : await this.blockchainService.getLatestAssertionId(tokenId, blockchain);
 
         const getPublicOperationId = await this.nodeApiService.get(
             endpoint,
@@ -345,10 +342,15 @@ class AssetOperationsManager {
                 element.includes(PRIVATE_ASSERTION_PREDICATE),
             )[0];
 
+            let queryPrivateOperationId;
+            let queryPrivateOperationResult = {};
             if (privateAssertionLinkTriple) {
                 const privateAssertionId = privateAssertionLinkTriple.match(/"(.*?)"/)[1];
-
-                const queryString = `
+                let privateAssertion;
+                if (getPublicOperationResult?.data?.privateAssertion?.length)
+                    privateAssertion = getPublicOperationResult.data.privateAssertion;
+                else {
+                    const queryString = `
                     CONSTRUCT { ?s ?p ?o }
                     WHERE {
                         {
@@ -359,30 +361,36 @@ class AssetOperationsManager {
                         }
                     }`;
 
-                const queryPrivateOperationId = await this.nodeApiService.query(
-                    endpoint,
-                    port,
-                    authToken,
-                    queryString,
-                    QUERY_TYPES.CONSTRUCT,
-                );
+                    const repository = deriveRepository(
+                        DEFAULT_PARAMETERS.GRAPH_LOCATION,
+                        DEFAULT_PARAMETERS.GRAPH_STATE,
+                    );
+                    queryPrivateOperationId = await this.nodeApiService.query(
+                        endpoint,
+                        port,
+                        authToken,
+                        queryString,
+                        QUERY_TYPES.CONSTRUCT,
+                        repository
+                    );
 
-                const queryPrivateOperationResult = await this.nodeApiService.getOperationResult(
-                    endpoint,
-                    port,
-                    authToken,
-                    OPERATIONS.QUERY,
-                    maxNumberOfRetries,
-                    frequency,
-                    queryPrivateOperationId,
-                );
+                    queryPrivateOperationResult = await this.nodeApiService.getOperationResult(
+                        endpoint,
+                        port,
+                        authToken,
+                        OPERATIONS.QUERY,
+                        maxNumberOfRetries,
+                        frequency,
+                        queryPrivateOperationId,
+                    );
 
-                const privateAssertionNQuads = queryPrivateOperationResult.data;
+                    const privateAssertionNQuads = queryPrivateOperationResult.data;
 
-                const privateAssertion = await toNQuads(
-                    privateAssertionNQuads,
-                    'application/n-quads',
-                );
+                    privateAssertion = await toNQuads(
+                        privateAssertionNQuads,
+                        'application/n-quads',
+                    );
+                }
 
                 let formattedPrivateAssertion;
                 if (
@@ -421,10 +429,12 @@ class AssetOperationsManager {
                         assertionId: privateAssertionId,
                     };
                 }
-                result.operation.queryPrivate = getOperationStatusObject(
-                    queryPrivateOperationResult,
-                    queryPrivateOperationId,
-                );
+                if (queryPrivateOperationId) {
+                    result.operation.queryPrivate = getOperationStatusObject(
+                        queryPrivateOperationResult,
+                        queryPrivateOperationId,
+                    );
+                }
             }
         }
 

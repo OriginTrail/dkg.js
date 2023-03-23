@@ -16,6 +16,7 @@ const DkgClient = new DKG({
     },
     maxNumberOfRetries: 30,
     frequency: 2,
+    contentType: 'all',
 });
 
 function divider() {
@@ -81,48 +82,74 @@ function divider() {
 
     divider();
 
-    const updateAssetResult = await DkgClient.asset.update(
-        createAssetResult.UAL,
-        {
-            public: {
-                '@context': ['https://schema.org'],
-                '@id': 'uuid:2',
-                company: 'TL',
-                user: {
-                    '@id': 'uuid:user:2',
-                },
-                city: {
-                    '@id': 'uuid:Nis',
-                },
+    const updateAssetResult = await DkgClient.asset.update(createAssetResult.UAL, {
+        public: {
+            '@context': ['https://schema.org'],
+            '@id': 'uuid:2',
+            company: 'TL',
+            user: {
+                '@id': 'uuid:user:2',
             },
-        }
-    );
+            city: {
+                '@id': 'uuid:Nis',
+            },
+        },
+        private: {
+            '@context': ['https://schema.org'],
+            '@graph': [
+                {
+                    '@id': 'uuid:user:1',
+                    name: 'Adam',
+                    lastname: 'Smith',
+                    identifier: `${Math.floor(Math.random() * 1e10)}`,
+                },
+            ],
+        },
+    });
 
     console.log('======================== ASSET UPDATED');
     console.log(updateAssetResult);
 
     divider();
 
-
-    const getLatestAssetResult = await DkgClient.asset.get(createAssetResult.UAL );
+    const getLatestAssetResult = await DkgClient.asset.get(createAssetResult.UAL);
     console.log('======================== ASSET LATEST RESOLVED');
     console.log(JSON.stringify(getLatestAssetResult, null, 2));
 
     divider();
 
-
-    const getLatestFinalizedAssetResult = await DkgClient.asset.get(createAssetResult.UAL, {state: 'LATEST_FINALIZED'});
+    const getLatestFinalizedAssetResult = await DkgClient.asset.get(createAssetResult.UAL, {
+        state: 'LATEST_FINALIZED',
+    });
     console.log('======================== ASSET LATEST FINALIZED RESOLVED');
     console.log(JSON.stringify(getLatestFinalizedAssetResult, null, 2));
 
     divider();
 
-
-    const queryResult = await DkgClient.graph.query(
+    let queryResult = await DkgClient.graph.query(
         'construct { ?s ?p ?o } where { ?s ?p ?o . <uuid:1> ?p ?o }',
         'CONSTRUCT',
     );
-    console.log('======================== QUERY RESULT');
+    console.log('======================== QUERY LOCAL CURRENT RESULT');
+    console.log(
+        JSON.stringify(
+            await jsonld.fromRDF(queryResult.data, {
+                algorithm: 'URDNA2015',
+                format: 'application/n-quads',
+            }),
+            null,
+            2,
+        ),
+    );
+
+    divider();
+
+    queryResult = await DkgClient.graph.query(
+        'construct { ?s ?p ?o } where { ?s ?p ?o . <uuid:1> ?p ?o }',
+        'CONSTRUCT',
+        { graphState: 'HISTORICAL', graphLocation: 'LOCAL_KG' },
+    );
+    console.log('======================== QUERY LOCAL HISTORY RESULT');
     console.log(
         JSON.stringify(
             await jsonld.fromRDF(queryResult.data, {
