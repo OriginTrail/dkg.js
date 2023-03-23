@@ -86,11 +86,11 @@ class InputService {
     }
 
     getGraphLocation(options) {
-        return options.graphLocation ?? this.config.graphLocation ?? 'PRIVATE_KG';
+        return options.graphLocation ?? this.config.graphLocation ?? DEFAULT_PARAMETERS.GRAPH_LOCATION;
     }
 
     getGraphState(options) {
-        return options.graphState ?? this.config.graphState ?? 'CURRENT';
+        return options.graphState ?? this.config.graphState ?? DEFAULT_PARAMETERS.GRAPH_STATE;
     }
 
     getEndpoint(options) {

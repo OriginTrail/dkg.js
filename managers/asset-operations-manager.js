@@ -7,6 +7,7 @@ const {
     resolveUAL,
     toNQuads,
     toJSONLD,
+    deriveRepository,
 } = require('../services/utilities.js');
 const {
     CONTENT_TYPES,
@@ -17,6 +18,7 @@ const {
     DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY,
     PRIVATE_ASSERTION_PREDICATE,
     QUERY_TYPES,
+    DEFAULT_PARAMETERS,
 } = require('../constants.js');
 const emptyHooks = require('../util/empty-hooks');
 const { sleepForMilliseconds } = require('../services/utilities.js');
@@ -359,12 +361,17 @@ class AssetOperationsManager {
                         }
                     }`;
 
+                    const repository = deriveRepository(
+                        DEFAULT_PARAMETERS.GRAPH_LOCATION,
+                        DEFAULT_PARAMETERS.GRAPH_STATE,
+                    );
                     queryPrivateOperationId = await this.nodeApiService.query(
                         endpoint,
                         port,
                         authToken,
                         queryString,
                         QUERY_TYPES.CONSTRUCT,
+                        repository
                     );
 
                     queryPrivateOperationResult = await this.nodeApiService.getOperationResult(

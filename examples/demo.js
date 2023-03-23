@@ -112,26 +112,44 @@ function divider() {
 
     divider();
 
-
-    const getLatestAssetResult = await DkgClient.asset.get(createAssetResult.UAL );
+    const getLatestAssetResult = await DkgClient.asset.get(createAssetResult.UAL);
     console.log('======================== ASSET LATEST RESOLVED');
     console.log(JSON.stringify(getLatestAssetResult, null, 2));
 
     divider();
 
-
-    const getLatestFinalizedAssetResult = await DkgClient.asset.get(createAssetResult.UAL, {state: 'LATEST_FINALIZED'});
+    const getLatestFinalizedAssetResult = await DkgClient.asset.get(createAssetResult.UAL, {
+        state: 'LATEST_FINALIZED',
+    });
     console.log('======================== ASSET LATEST FINALIZED RESOLVED');
     console.log(JSON.stringify(getLatestFinalizedAssetResult, null, 2));
 
     divider();
 
-
-    const queryResult = await DkgClient.graph.query(
+    let queryResult = await DkgClient.graph.query(
         'construct { ?s ?p ?o } where { ?s ?p ?o . <uuid:1> ?p ?o }',
         'CONSTRUCT',
     );
-    console.log('======================== QUERY RESULT');
+    console.log('======================== QUERY PRIVATE CURRENT RESULT');
+    console.log(
+        JSON.stringify(
+            await jsonld.fromRDF(queryResult.data, {
+                algorithm: 'URDNA2015',
+                format: 'application/n-quads',
+            }),
+            null,
+            2,
+        ),
+    );
+
+    divider();
+
+    queryResult = await DkgClient.graph.query(
+        'construct { ?s ?p ?o } where { ?s ?p ?o . <uuid:1> ?p ?o }',
+        'CONSTRUCT',
+        { graphState: 'HISTORY', graphLocation: 'LOCAL_KG' },
+    );
+    console.log('======================== QUERY PRIVATE HISTORY RESULT');
     console.log(
         JSON.stringify(
             await jsonld.fromRDF(queryResult.data, {
