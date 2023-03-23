@@ -32,7 +32,7 @@
     "dependencies": {
         "assertion-tools": "^2.0.2",
         "axios": "^0.27.2",
-        "dkg-evm-module": "github:origintrail/dkg-evm-module#bugfix/remove-husky",
+        "dkg-evm-module": "^4.0.3",
         "ethers": "^6.1.0",
         "jsonld": "^8.1.0",
         "web3": "^1.7.3"
