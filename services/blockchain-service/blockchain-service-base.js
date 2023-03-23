@@ -6,7 +6,7 @@ const ContentAssetStorageAbi = require('dkg-evm-module/abi/ContentAssetStorage.j
 const UnfinalizedStateStorageAbi = require('dkg-evm-module/abi/UnfinalizedStateStorage.json');
 const ContentAssetAbi = require('dkg-evm-module/abi/ContentAsset.json');
 const TokenAbi = require('dkg-evm-module/abi/Token.json');
-const { BLOCKCHAINS, OPERATIONS_STEP_STATUS } = require('../../constants');
+const { OPERATIONS_STEP_STATUS } = require('../../constants');
 const emptyHooks = require('../../util/empty-hooks.js');
 
 const FIXED_GAS_LIMIT_METHODS = {
@@ -23,17 +23,6 @@ class BlockchainServiceBase {
         this.abis.UnfinalizedStateStorage = UnfinalizedStateStorageAbi;
         this.abis.ContentAsset = ContentAssetAbi;
         this.abis.Token = TokenAbi;
-
-        for (const blockchainName of Object.keys(BLOCKCHAINS)) {
-            this[blockchainName] = {
-                contracts: { [BLOCKCHAINS[blockchainName].hubContract]: {} },
-                contractAddresses: {
-                    [BLOCKCHAINS[blockchainName].hubContract]: {
-                        Hub: BLOCKCHAINS[blockchainName].hubContract,
-                    },
-                },
-            };
-        }
     }
 
     initializeWeb3() {
@@ -52,7 +41,7 @@ class BlockchainServiceBase {
     }
 
     async prepareTransaction(contractInstance, functionName, args, blockchain) {
-        const web3Instance = await this.getWeb3Instance(blockchain.name, blockchain.rpc);
+        const web3Instance = await this.getWeb3Instance(blockchain);
         let gasLimit;
         if (FIXED_GAS_LIMIT_METHODS[functionName]) {
             gasLimit = FIXED_GAS_LIMIT_METHODS[functionName];
@@ -81,20 +70,35 @@ class BlockchainServiceBase {
         };
     }
 
-    async getWeb3Instance(blockchainName, blockchainRpc) {
-        if (!this[blockchainName].web3) {
-            this.initializeWeb3(blockchainName, blockchainRpc);
+    ensureBlockchainInfo(blockchain) {
+        if (!this[blockchain.name]) {
+            this[blockchain.name] = {
+                contracts: { [blockchain.hubContract]: {} },
+                contractAddresses: {
+                    [blockchain.hubContract]: {
+                        Hub: blockchain.hubContract,
+                    },
+                },
+            };
+        }
+    }
+
+    async getWeb3Instance(blockchain) {
+        this.ensureBlockchainInfo(blockchain);
+        if (!this[blockchain.name].web3) {
+            this.initializeWeb3(blockchain.name, blockchain.rpc);
         }
 
-        return this[blockchainName].web3;
+        return this[blockchain.name].web3;
     }
 
     async getContractAddress(contractName, blockchain) {
+        this.ensureBlockchainInfo(blockchain);
         if (!this[blockchain.name].contracts[blockchain.hubContract]) {
             this[blockchain.name].contracts[blockchain.hubContract] = {};
         }
         if (!this[blockchain.name].contracts[blockchain.hubContract].Hub) {
-            const web3Instance = await this.getWeb3Instance(blockchain.name, blockchain.rpc);
+            const web3Instance = await this.getWeb3Instance(blockchain);
             this[blockchain.name].contracts[blockchain.hubContract].Hub =
                 new web3Instance.eth.Contract(this.abis.Hub, blockchain.hubContract);
         }
@@ -114,12 +118,13 @@ class BlockchainServiceBase {
     }
 
     async getContractInstance(contractName, blockchain) {
+        this.ensureBlockchainInfo(blockchain);
         if (!this[blockchain.name].contractAddresses[blockchain.hubContract][contractName]) {
             this[blockchain.name].contractAddresses[blockchain.hubContract][contractName] =
                 await this.getContractAddress(contractName, blockchain);
         }
         if (!this[blockchain.name].contracts[blockchain.hubContract][contractName]) {
-            const web3Instance = await this.getWeb3Instance(blockchain.name, blockchain.rpc);
+            const web3Instance = await this.getWeb3Instance(blockchain);
             this[blockchain.name].contracts[blockchain.hubContract][contractName] =
                 new web3Instance.eth.Contract(
                     this.abis[contractName],
@@ -364,7 +369,7 @@ class BlockchainServiceBase {
     }
 
     async getLatestBlock(blockchain) {
-        const web3 = await this.getWeb3Instance(blockchain.name, blockchain.rpc);
+        const web3 = await this.getWeb3Instance(blockchain);
         const blockNumber = await web3.eth.getBlockNumber();
 
         return web3.eth.getBlock(blockNumber);
