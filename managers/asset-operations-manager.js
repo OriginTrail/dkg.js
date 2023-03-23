@@ -263,19 +263,14 @@ class AssetOperationsManager {
         );
 
         const { tokenId } = resolveUAL(UAL);
-        let publicAssertionId;
-        const hasPendingUpdate = await this.blockchainService.hasPendingUpdate(tokenId, blockchain);
-        if (state === ASSET_STATES.LATEST && hasPendingUpdate) {
-            publicAssertionId = await this.blockchainService.getUnfinalizedState(
-                tokenId,
-                blockchain,
-            );
-        } else {
-            publicAssertionId = await this.blockchainService.getLatestAssertionId(
-                tokenId,
-                blockchain,
-            );
-        }
+        let hasPendingUpdate = false;
+        if (state === ASSET_STATES.LATEST) {
+             hasPendingUpdate = await this.blockchainService.hasPendingUpdate(tokenId, blockchain);
+        } 
+
+        const publicAssertionId = hasPendingUpdate
+            ? await this.blockchainService.getUnfinalizedState(tokenId, blockchain)
+            : await this.blockchainService.getLatestAssertionId(tokenId, blockchain);
 
         const getPublicOperationId = await this.nodeApiService.get(
             endpoint,
