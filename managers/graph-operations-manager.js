@@ -1,4 +1,5 @@
 const { OPERATIONS } = require('../constants');
+const { deriveRepository } = require('../services/utilities.js');
 
 class GraphOperationsManager {
     constructor(config, services) {
@@ -16,15 +17,21 @@ class GraphOperationsManager {
      * @returns {Promise} A Promise that resolves to the query result.
      */
     async query(queryString, queryType, options = {}) {
-        const endpoint = this.inputService.getEndpoint(options);
-        const port = this.inputService.getPort(options);
-        const maxNumberOfRetries = this.inputService.getMaxNumberOfRetries(options);
-        const frequency = this.inputService.getFrequency(options);
-        const authToken = this.inputService.getAuthToken(options);
+        const {
+            graphLocation,
+            graphState,
+            endpoint,
+            port,
+            maxNumberOfRetries,
+            frequency,
+            authToken,
+        } = this.inputService.getQueryArguments(options);
 
         this.validationService.validateGraphQuery(
             queryString,
             queryType,
+            graphLocation,
+            graphState,
             endpoint,
             port,
             maxNumberOfRetries,
@@ -32,12 +39,15 @@ class GraphOperationsManager {
             authToken,
         );
 
+        const repository = deriveRepository(graphLocation, graphState);
+
         const operationId = await this.nodeApiService.query(
             endpoint,
             port,
             authToken,
             queryString,
             queryType,
+            repository,
         );
 
         return this.nodeApiService.getOperationResult(

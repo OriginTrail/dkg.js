@@ -1,4 +1,5 @@
 const jsonld = require('jsonld');
+const { GRAPH_LOCATIONS, GRAPH_STATES } = require('../constants.js');
 
 module.exports = {
     nodeSupported() {
@@ -34,6 +35,9 @@ module.exports = {
             tokenId: parseInt(args[2], 10),
         };
     },
+    deriveRepository(graphLocation, graphState) {
+        return GRAPH_LOCATIONS[graphLocation].toLowerCase() + this.capitalizeFirstLetter(GRAPH_STATES[graphState].toLowerCase());
+    },
     async sleepForMilliseconds(milliseconds) {
         // eslint-disable-next-line no-promise-executor-return
         await new Promise((r) => setTimeout(r, milliseconds));
@@ -65,7 +69,6 @@ module.exports = {
 
         return canonized.split('\n').filter((x) => x !== '');
     },
-
     async toJSONLD(nquads) {
         return jsonld.fromRDF(nquads, {
             algorithm: 'URDNA2015',

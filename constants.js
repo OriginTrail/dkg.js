@@ -96,6 +96,16 @@ module.exports.STORE_TYPES = {
     PENDING: 'PENDING',
 };
 
+module.exports.GRAPH_LOCATIONS = {
+    PUBLIC_KG: 'PUBLIC',
+    PRIVATE_KG: 'PRIVATE',
+};
+
+module.exports.GRAPH_STATES = {
+    CURRENT: 'CURRENT',
+    HISTORICAL: 'HISTORY',
+};
+
 module.exports.QUERY_TYPES = {
     CONSTRUCT: 'CONSTRUCT',
     SELECT: 'SELECT',
