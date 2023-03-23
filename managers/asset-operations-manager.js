@@ -603,7 +603,7 @@ class AssetOperationsManager {
         }
 
         await this.blockchainService.updateAsset(
-            resolveUAL(UAL).tokenId,
+            tokenId,
             publicAssertionId,
             assertionMetadata.getAssertionSizeInBytes(publicAssertion),
             assertionMetadata.getAssertionTriplesNumber(publicAssertion),
@@ -804,21 +804,90 @@ class AssetOperationsManager {
         };
     }
 
-    async extendStoringPeriod(UAL, epochsNumber, tokenAmount, options = {}) {
+    async extendStoringPeriod(UAL, epochsNumber, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
+        const tokenAmount = this.inputService.getTokenAmount(options);
+
+        const { tokenId, contract } = resolveUAL(UAL);
+
+        let tokenAmountInWei;
+
+        if (tokenAmount != null) {
+          tokenAmountInWei = tokenAmount;
+        } else {
+            const endpoint = this.inputService.getEndpoint(options);
+            const port = this.inputService.getPort(options);
+            const authToken = this.inputService.getAuthToken(options);
+
+            const firstAssertionId = await this.blockchainService.getAssertionIdByIndex(
+                tokenId,
+                0,
+                blockchain,
+            );
+
+            const keyword = ethers.solidityPacked(
+                ['address', 'bytes32'],
+                [contract, firstAssertionId],
+            );
+
+            const agreementId = ethers.sha256(
+                ethers.solidityPacked(
+                    ['address', 'uint256', 'bytes'],
+                    [contract, tokenId, keyword],
+                ),
+            );
+            const agreementData = await this.blockchainService.getAgreementData(
+                agreementId,
+                blockchain,
+            );
+
+            const now = await this.blockchainService.getBlockchainTimestamp(blockchain);
+            const currentEpoch = Math.floor(
+                (now - agreementData.startTime) / agreementData.epochLength,
+            );
+
+            const epochsLeft = agreementData.epochsNumber - currentEpoch;
+
+            const latestFinalizedState = await this.blockchainService.getLatestAssertionId(
+                tokenId,
+                blockchain,
+            );
+
+            const latestFinalizedStateSize = await this.blockchainService.getAssertionSize(
+                latestFinalizedState,
+                blockchain,
+            );
+
+            const bidSuggestion = await this.nodeApiService.getBidSuggestion(
+                endpoint,
+                port,
+                authToken,
+                blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
+                epochsLeft + epochsNumber,
+                latestFinalizedStateSize,
+                contract,
+                latestFinalizedState,
+                agreementId.hashFunctionId,
+            );
+
+            tokenAmountInWei = BigInt(bidSuggestion) - BigInt(agreementData.tokenAmount);
+
+            if (tokenAmountInWei < 0) {
+                tokenAmountInWei = 0;
+            }
+        }
 
         this.validationService.validateExtendAssetStoringPeriod(
             UAL,
             epochsNumber,
-            tokenAmount,
+            tokenAmountInWei,
             blockchain,
         );
 
-        const { tokenId } = resolveUAL(UAL);
         await this.blockchainService.extendAssetStoringPeriod(
             tokenId,
             epochsNumber,
-            tokenAmount,
+            tokenAmountInWei,
             blockchain,
         );
 
@@ -828,18 +897,176 @@ class AssetOperationsManager {
         };
     }
 
-    async addTokens(UAL, tokenAmount, options = {}) {
+    async addTokens(UAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
+        const tokenAmount = this.inputService.getTokenAmount(options);
 
-        this.validationService.validateAddTokens(UAL, tokenAmount, blockchain);
+        const { tokenId, contract } = resolveUAL(UAL);
+        
+        let tokenAmountInWei;
 
-        const { tokenId } = resolveUAL(UAL);
-        await this.blockchainService.addTokens(tokenId, tokenAmount, blockchain);
+        if (tokenAmount != null) {
+          tokenAmountInWei = tokenAmount;
+        } else {
+            const endpoint = this.inputService.getEndpoint(options);
+            const port = this.inputService.getPort(options);
+            const authToken = this.inputService.getAuthToken(options);
+
+            const firstAssertionId = await this.blockchainService.getAssertionIdByIndex(
+                tokenId,
+                0,
+                blockchain,
+            );
+
+            const keyword = ethers.solidityPacked(
+                ['address', 'bytes32'],
+                [contract, firstAssertionId],
+            );
+
+            const agreementId = ethers.sha256(
+                ethers.solidityPacked(
+                    ['address', 'uint256', 'bytes'],
+                    [contract, tokenId, keyword],
+                ),
+            );
+            const agreementData = await this.blockchainService.getAgreementData(
+                agreementId,
+                blockchain,
+            );
+
+            const now = await this.blockchainService.getBlockchainTimestamp(blockchain);
+            const currentEpoch = Math.floor(
+                (now - agreementData.startTime) / agreementData.epochLength,
+            );
+
+            const epochsLeft = agreementData.epochsNumber - currentEpoch;
+
+            const latestFinalizedState = await this.blockchainService.getLatestAssertionId(
+                tokenId,
+                blockchain,
+            );
+
+            const latestFinalizedStateSize = await this.blockchainService.getAssertionSize(
+                latestFinalizedState,
+                blockchain,
+            );
+
+            const bidSuggestion = await this.nodeApiService.getBidSuggestion(
+                endpoint,
+                port,
+                authToken,
+                blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
+                epochsLeft,
+                latestFinalizedStateSize,
+                contract,
+                latestFinalizedState,
+                agreementId.hashFunctionId,
+            );
+
+            tokenAmountInWei = BigInt(bidSuggestion) - BigInt(agreementData.tokenAmount);
+
+            if (tokenAmountInWei <= 0) {
+              throw Error(
+                  `Token amount is bigger than default suggested amount, `
+                  `please specify exact tokenAmount if you still want to add more tokens!`
+              );
+            }
+        }
+
+        this.validationService.validateAddTokens(UAL, tokenAmountInWei, blockchain);
+
+        await this.blockchainService.addTokens(tokenId, tokenAmountInWei, blockchain);
 
         return {
             UAL,
             operation: getOperationStatusObject({ status: 'COMPLETED' }, null),
         };
+    }
+
+    async addUpdateTokens(UAL, options = {}) {
+      const blockchain = this.inputService.getBlockchain(options);
+      const tokenAmount = this.inputService.getTokenAmount(options);
+
+      const { tokenId, contract } = resolveUAL(UAL);
+      
+      let tokenAmountInWei;
+
+      if (tokenAmount != null) {
+        tokenAmountInWei = tokenAmount;
+      } else {
+          const endpoint = this.inputService.getEndpoint(options);
+          const port = this.inputService.getPort(options);
+          const authToken = this.inputService.getAuthToken(options);
+
+          const firstAssertionId = await this.blockchainService.getAssertionIdByIndex(
+              tokenId,
+              0,
+              blockchain,
+          );
+
+          const keyword = ethers.solidityPacked(
+              ['address', 'bytes32'],
+              [contract, firstAssertionId],
+          );
+
+          const agreementId = ethers.sha256(
+              ethers.solidityPacked(
+                  ['address', 'uint256', 'bytes'],
+                  [contract, tokenId, keyword],
+              ),
+          );
+          const agreementData = await this.blockchainService.getAgreementData(
+              agreementId,
+              blockchain,
+          );
+
+          const now = await this.blockchainService.getBlockchainTimestamp(blockchain);
+          const currentEpoch = Math.floor(
+              (now - agreementData.startTime) / agreementData.epochLength,
+          );
+
+          const epochsLeft = agreementData.epochsNumber - currentEpoch;
+
+          const unfinalizedState = await this.blockchainService.getUnfinalizedState(
+              tokenId,
+              blockchain,
+          );
+
+          const unfinalizedStateSize = await this.blockchainService.getAssertionSize(
+              unfinalizedState,
+              blockchain,
+          );
+
+          const bidSuggestion = await this.nodeApiService.getBidSuggestion(
+              endpoint,
+              port,
+              authToken,
+              blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
+              epochsLeft,
+              unfinalizedStateSize,
+              contract,
+              unfinalizedState,
+              agreementId.hashFunctionId,
+          );
+
+          tokenAmountInWei = BigInt(bidSuggestion) - (BigInt(agreementData.tokenAmount) + BigInt(agreementData.updateTokenAmount));
+
+          if (tokenAmountInWei <= 0) {
+            throw Error(
+                `Token amount is bigger than default suggested amount, `
+                `please specify exact tokenAmount if you still want to add more tokens!`
+            );
+          }
+      }
+
+      this.validationService.validateAddTokens(UAL, tokenAmountInWei, blockchain);
+
+      await this.blockchainService.addUpdateTokens(tokenId, tokenAmountInWei, blockchain);
+
+      return {
+          UAL,
+          operation: getOperationStatusObject({ status: 'COMPLETED' }, null),
+      };
     }
 }
 
