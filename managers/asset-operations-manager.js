@@ -345,10 +345,15 @@ class AssetOperationsManager {
                 element.includes(PRIVATE_ASSERTION_PREDICATE),
             )[0];
 
+            let queryPrivateOperationId;
+            let queryPrivateOperationResult = {};
             if (privateAssertionLinkTriple) {
                 const privateAssertionId = privateAssertionLinkTriple.match(/"(.*?)"/)[1];
-
-                const queryString = `
+                let privateAssertion;
+                if (getPublicOperationResult?.data?.privateAssertion?.length)
+                    privateAssertion = getPublicOperationResult.data.privateAssertion;
+                else {
+                    const queryString = `
                     CONSTRUCT { ?s ?p ?o }
                     WHERE {
                         {
@@ -359,30 +364,31 @@ class AssetOperationsManager {
                         }
                     }`;
 
-                const queryPrivateOperationId = await this.nodeApiService.query(
-                    endpoint,
-                    port,
-                    authToken,
-                    queryString,
-                    QUERY_TYPES.CONSTRUCT,
-                );
+                     queryPrivateOperationId = await this.nodeApiService.query(
+                        endpoint,
+                        port,
+                        authToken,
+                        queryString,
+                        QUERY_TYPES.CONSTRUCT,
+                    );
 
-                const queryPrivateOperationResult = await this.nodeApiService.getOperationResult(
-                    endpoint,
-                    port,
-                    authToken,
-                    OPERATIONS.QUERY,
-                    maxNumberOfRetries,
-                    frequency,
-                    queryPrivateOperationId,
-                );
+                     queryPrivateOperationResult = await this.nodeApiService.getOperationResult(
+                         endpoint,
+                         port,
+                         authToken,
+                         OPERATIONS.QUERY,
+                         maxNumberOfRetries,
+                         frequency,
+                         queryPrivateOperationId,
+                     );
 
-                const privateAssertionNQuads = queryPrivateOperationResult.data;
+                    const privateAssertionNQuads = queryPrivateOperationResult.data;
 
-                const privateAssertion = await toNQuads(
-                    privateAssertionNQuads,
-                    'application/n-quads',
-                );
+                    privateAssertion = await toNQuads(
+                        privateAssertionNQuads,
+                        'application/n-quads',
+                    );
+                }
 
                 let formattedPrivateAssertion;
                 if (
