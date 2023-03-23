@@ -147,9 +147,9 @@ function divider() {
     queryResult = await DkgClient.graph.query(
         'construct { ?s ?p ?o } where { ?s ?p ?o . <uuid:1> ?p ?o }',
         'CONSTRUCT',
-        { graphState: 'HISTORY', graphLocation: 'LOCAL_KG' },
+        { graphState: 'HISTORICAL', graphLocation: 'LOCAL_KG' },
     );
-    console.log('======================== QUERY PRIVATE HISTORY RESULT');
+    console.log('======================== QUERY LOCAL HISTORY RESULT');
     console.log(
         JSON.stringify(
             await jsonld.fromRDF(queryResult.data, {

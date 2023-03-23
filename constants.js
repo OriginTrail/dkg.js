@@ -97,13 +97,20 @@ module.exports.STORE_TYPES = {
 };
 
 module.exports.GRAPH_LOCATIONS = {
-    PUBLIC_KG: 'PUBLIC',
-    LOCAL_KG: 'PRIVATE',
+    PUBLIC_KG: 'PUBLIC_KG',
+    LOCAL_KG: 'LOCAL_KG',
 };
 
 module.exports.GRAPH_STATES = {
     CURRENT: 'CURRENT',
-    HISTORICAL: 'HISTORY',
+    HISTORICAL: 'HISTORICAL',
+};
+
+module.exports.OT_NODE_TRIPLE_STORE_REPOSITORIES = {
+    PUBLIC_CURRENT: 'publicCurrent',
+    PUBLIC_HISTORY: 'publicHistory',
+    PRIVATE_CURRENT: 'privateCurrent',
+    PRIVATE_HISTORY: 'privateHistory',
 };
 
 module.exports.QUERY_TYPES = {

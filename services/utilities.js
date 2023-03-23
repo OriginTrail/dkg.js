@@ -1,5 +1,5 @@
 const jsonld = require('jsonld');
-const { GRAPH_LOCATIONS, GRAPH_STATES } = require('../constants.js');
+const { GRAPH_LOCATIONS, GRAPH_STATES, OT_NODE_TRIPLE_STORE_REPOSITORIES } = require('../constants.js');
 
 module.exports = {
     nodeSupported() {
@@ -36,7 +36,20 @@ module.exports = {
         };
     },
     deriveRepository(graphLocation, graphState) {
-        return GRAPH_LOCATIONS[graphLocation].toLowerCase() + this.capitalizeFirstLetter(GRAPH_STATES[graphState].toLowerCase());
+        switch (graphLocation + graphState) {
+            case GRAPH_LOCATIONS.PUBLIC_KG + GRAPH_STATES.CURRENT:
+                return OT_NODE_TRIPLE_STORE_REPOSITORIES.PUBLIC_CURRENT;
+            case GRAPH_LOCATIONS.PUBLIC_KG + GRAPH_STATES.HISTORICAL:
+                return OT_NODE_TRIPLE_STORE_REPOSITORIES.PUBLIC_HISTORY;
+            case GRAPH_LOCATIONS.LOCAL_KG + GRAPH_STATES.CURRENT:
+                return OT_NODE_TRIPLE_STORE_REPOSITORIES.PRIVATE_CURRENT;
+            case GRAPH_LOCATIONS.LOCAL_KG + GRAPH_STATES.HISTORICAL:
+                return OT_NODE_TRIPLE_STORE_REPOSITORIES.PRIVATE_HISTORY;
+            default:
+                throw new Error(
+                    `Unknown graph location and state: ${graphLocation}, ${graphState}`,
+                );
+        }
     },
     async sleepForMilliseconds(milliseconds) {
         // eslint-disable-next-line no-promise-executor-return
@@ -74,5 +87,5 @@ module.exports = {
             algorithm: 'URDNA2015',
             format: 'application/n-quads',
         });
-    }
+    },
 };

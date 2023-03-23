@@ -53,14 +53,14 @@ class InputService {
 
     getQueryArguments(options) {
         return {
-            graphLocation: this.inputService.getGraphLocation(options),
-            graphState: this.inputService.getGraphState(options),
-            endpoint: this.inputService.getEndpoint(options),
-            port: this.inputService.getPort(options),
-            maxNumberOfRetries: this.inputService.getMaxNumberOfRetries(options),
-            frequency: this.inputService.getFrequency(options),
-            authToken: this.inputService.getAuthToken(options),
-        }
+            graphLocation: this.getGraphLocation(options),
+            graphState: this.getGraphState(options),
+            endpoint: this.getEndpoint(options),
+            port: this.getPort(options),
+            maxNumberOfRetries: this.getMaxNumberOfRetries(options),
+            frequency: this.getFrequency(options),
+            authToken: this.getAuthToken(options),
+        };
     }
 
     getBlockchain(options) {
@@ -86,7 +86,9 @@ class InputService {
     }
 
     getGraphLocation(options) {
-        return options.graphLocation ?? this.config.graphLocation ?? DEFAULT_PARAMETERS.GRAPH_LOCATION;
+        return (
+            options.graphLocation ?? this.config.graphLocation ?? DEFAULT_PARAMETERS.GRAPH_LOCATION
+        );
     }
 
     getGraphState(options) {
