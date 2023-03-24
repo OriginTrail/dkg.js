@@ -469,78 +469,26 @@ class AssetOperationsManager {
         );
 
         const { tokenId } = resolveUAL(UAL);
+
         let privateAssertion;
         let privateAssertionId;
         if (jsonContent.private && !isEmptyObject(jsonContent.private)) {
             privateAssertion = await formatAssertion(jsonContent.private);
             privateAssertionId = calculateRoot(privateAssertion);
         }
-
-        // If public assertion is not provided, get it from the network
-        let publicAssertion;
-        if (!jsonContent.public || isEmptyObject(jsonContent.public)) {
-            const publicAssertionId = await this.blockchainService.getLatestAssertionId(
-                tokenId,
-                blockchain,
-            );
-
-            const getPublicOperationId = await this.nodeApiService.get(
-                endpoint,
-                port,
-                authToken,
-                UAL,
-                hashFunctionId,
-            );
-
-            const getPublicOperationResult = await this.nodeApiService.getOperationResult(
-                endpoint,
-                port,
-                authToken,
-                OPERATIONS.GET,
-                maxNumberOfRetries,
-                frequency,
-                getPublicOperationId,
-            );
-
-            publicAssertion = getPublicOperationResult.data.assertion;
-
-            if (calculateRoot(publicAssertion) !== publicAssertionId) {
-                getPublicOperationResult.data = {
-                    errorType: 'DKG_CLIENT_ERROR',
-                    errorMessage: "Calculated root hashes don't match!",
-                };
-
-                // TODO: Check returned response
-                return {
-                    UAL,
-                    getPublicOperationResult,
-                };
-            }
-
-            // Transform public assertion to include updated private assertion Id
-            const hashRegex = /"([^"]+)"/; // Regex pattern to match the hash value inside the double quotes
-            publicAssertion = publicAssertion.map((str) => {
-                if (str.includes('privateAssertionID')) {
-                    return str.replace(hashRegex, `"${privateAssertionId}"`);
-                }
-                return str;
-            });
-        } else {
-            const publicGraph = {
-                '@graph': [
-                    jsonContent.public && !isEmptyObject(jsonContent.public)
-                        ? jsonContent.public
-                        : null,
-                    jsonContent.private && !isEmptyObject(jsonContent.private)
-                        ? {
-                              [PRIVATE_ASSERTION_PREDICATE]: privateAssertionId,
-                          }
-                        : null,
-                ],
-            };
-            publicAssertion = await formatAssertion(publicGraph);
-        }
-
+        const publicGraph = {
+            '@graph': [
+                jsonContent.public && !isEmptyObject(jsonContent.public)
+                    ? jsonContent.public
+                    : null,
+                jsonContent.private && !isEmptyObject(jsonContent.private)
+                    ? {
+                          [PRIVATE_ASSERTION_PREDICATE]: privateAssertionId,
+                      }
+                    : null,
+            ],
+        };
+        const publicAssertion = await formatAssertion(publicGraph);
         const publicAssertionId = calculateRoot(publicAssertion);
 
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
@@ -561,7 +509,7 @@ class AssetOperationsManager {
                 authToken,
                 publicAssertionId,
                 assertionMetadata.getAssertionSizeInBytes(publicAssertion),
-                hashFunctionId
+                hashFunctionId,
             );
         }
 
@@ -801,7 +749,7 @@ class AssetOperationsManager {
                 authToken,
                 latestFinalizedState,
                 latestFinalizedStateSize,
-                hashFunctionId
+                hashFunctionId,
             );
 
             if (tokenAmountInWei < 0) {
@@ -863,7 +811,7 @@ class AssetOperationsManager {
                 authToken,
                 latestFinalizedState,
                 latestFinalizedStateSize,
-                hashFunctionId
+                hashFunctionId,
             );
 
             if (tokenAmountInWei <= 0) {
@@ -917,7 +865,7 @@ class AssetOperationsManager {
                 authToken,
                 unfinalizedState,
                 unfinalizedStateSize,
-                hashFunctionId
+                hashFunctionId,
             );
             if (tokenAmountInWei <= 0) {
                 throw Error(
