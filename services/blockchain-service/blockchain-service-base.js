@@ -1,4 +1,5 @@
 const Web3 = require('web3');
+const AssertionStorageAbi = require('dkg-evm-module/abi/AssertionStorage.json');
 const HubAbi = require('dkg-evm-module/abi/Hub.json');
 const ServiceAgreementV1Abi = require('dkg-evm-module/abi/ServiceAgreementV1.json');
 const ServiceAgreementStorageProxyAbi = require('dkg-evm-module/abi/ServiceAgreementStorageProxy.json');
@@ -16,6 +17,7 @@ const FIXED_GAS_LIMIT_METHODS = {
 class BlockchainServiceBase {
     constructor() {
         this.abis = {};
+        this.abis.AssertionStorage = AssertionStorageAbi;
         this.abis.Hub = HubAbi;
         this.abis.ServiceAgreementV1 = ServiceAgreementV1Abi;
         this.abis.ServiceAgreementStorageProxy = ServiceAgreementStorageProxyAbi;
@@ -287,7 +289,7 @@ class BlockchainServiceBase {
         try {
             return this.executeContractFunction(
                 'ContentAsset',
-                'updateAssetStoringPeriod',
+                'extendAssetStoringPeriod',
                 [tokenId, epochsNumber, tokenAmount],
                 blockchain,
             );
@@ -318,7 +320,38 @@ class BlockchainServiceBase {
         try {
             return this.executeContractFunction(
                 'ContentAsset',
-                'updateAssetTokenAmount',
+                'increaseAssetTokenAmount',
+                [tokenId, tokenAmount],
+                blockchain,
+            );
+        } catch (e) {
+            await this.executeContractFunction(
+                'Token',
+                'decreaseAllowance',
+                [serviceAgreementV1Address, tokenAmount],
+                blockchain,
+            );
+            throw e;
+        }
+    }
+
+    async addUpdateTokens(tokenId, tokenAmount, blockchain) {
+        const serviceAgreementV1Address = await this.getContractAddress(
+            'ServiceAgreementV1',
+            blockchain,
+        );
+
+        await this.executeContractFunction(
+            'Token',
+            'increaseAllowance',
+            [serviceAgreementV1Address, tokenAmount],
+            blockchain,
+        );
+
+        try {
+            return this.executeContractFunction(
+                'ContentAsset',
+                'increaseAssetUpdateTokenAmount',
                 [tokenId, tokenAmount],
                 blockchain,
             );
@@ -359,6 +392,15 @@ class BlockchainServiceBase {
             scoreFunctionId: result['4'][0],
             proofWindowOffsetPerc: result['4'][1],
         };
+    }
+
+    async getAssertionSize(assertionId, blockchain) {
+        return this.callContractFunction(
+            'AssertionStorage',
+            'getAssertionSize',
+            [assertionId],
+            blockchain,
+        );
     }
 
     async getBlockchainTimestamp(blockchain) {

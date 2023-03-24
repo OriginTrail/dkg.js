@@ -21,7 +21,6 @@ const {
     DEFAULT_PARAMETERS,
 } = require('../constants.js');
 const emptyHooks = require('../util/empty-hooks');
-const { sleepForMilliseconds } = require('../services/utilities.js');
 const { STORE_TYPES, ASSET_STATES } = require('../constants');
 
 class AssetOperationsManager {
@@ -479,78 +478,26 @@ class AssetOperationsManager {
         );
 
         const { tokenId } = resolveUAL(UAL);
+
         let privateAssertion;
         let privateAssertionId;
         if (jsonContent.private && !isEmptyObject(jsonContent.private)) {
             privateAssertion = await formatAssertion(jsonContent.private);
             privateAssertionId = calculateRoot(privateAssertion);
         }
-
-        // If public assertion is not provided, get it from the network
-        let publicAssertion;
-        if (!jsonContent.public || isEmptyObject(jsonContent.public)) {
-            const publicAssertionId = await this.blockchainService.getLatestAssertionId(
-                tokenId,
-                blockchain,
-            );
-
-            const getPublicOperationId = await this.nodeApiService.get(
-                endpoint,
-                port,
-                authToken,
-                UAL,
-                hashFunctionId,
-            );
-
-            const getPublicOperationResult = await this.nodeApiService.getOperationResult(
-                endpoint,
-                port,
-                authToken,
-                OPERATIONS.GET,
-                maxNumberOfRetries,
-                frequency,
-                getPublicOperationId,
-            );
-
-            publicAssertion = getPublicOperationResult.data.assertion;
-
-            if (calculateRoot(publicAssertion) !== publicAssertionId) {
-                getPublicOperationResult.data = {
-                    errorType: 'DKG_CLIENT_ERROR',
-                    errorMessage: "Calculated root hashes don't match!",
-                };
-
-                // TODO: Check returned response
-                return {
-                    UAL,
-                    getPublicOperationResult,
-                };
-            }
-
-            // Transform public assertion to include updated private assertion Id
-            const hashRegex = /"([^"]+)"/; // Regex pattern to match the hash value inside the double quotes
-            publicAssertion = publicAssertion.map((str) => {
-                if (str.includes('privateAssertionID')) {
-                    return str.replace(hashRegex, `"${privateAssertionId}"`);
-                }
-                return str;
-            });
-        } else {
-            const publicGraph = {
-                '@graph': [
-                    jsonContent.public && !isEmptyObject(jsonContent.public)
-                        ? jsonContent.public
-                        : null,
-                    jsonContent.private && !isEmptyObject(jsonContent.private)
-                        ? {
-                              [PRIVATE_ASSERTION_PREDICATE]: privateAssertionId,
-                          }
-                        : null,
-                ],
-            };
-            publicAssertion = await formatAssertion(publicGraph);
-        }
-
+        const publicGraph = {
+            '@graph': [
+                jsonContent.public && !isEmptyObject(jsonContent.public)
+                    ? jsonContent.public
+                    : null,
+                jsonContent.private && !isEmptyObject(jsonContent.private)
+                    ? {
+                          [PRIVATE_ASSERTION_PREDICATE]: privateAssertionId,
+                      }
+                    : null,
+            ],
+        };
+        const publicAssertion = await formatAssertion(publicGraph);
         const publicAssertionId = calculateRoot(publicAssertion);
 
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
@@ -563,57 +510,20 @@ class AssetOperationsManager {
         if (tokenAmount != null) {
             tokenAmountInWei = tokenAmount;
         } else {
-            const assetStorageContractAddress = resolveUAL(UAL).contract;
-            const firstAssertionId = await this.blockchainService.getAssertionIdByIndex(
-                tokenId,
-                0,
+            tokenAmountInWei = await this._getUpdateBidSuggestion(
+                UAL,
                 blockchain,
-            );
-
-            const keyword = ethers.solidityPacked(
-                ['address', 'bytes32'],
-                [assetStorageContractAddress, firstAssertionId],
-            );
-
-            const agreementId = ethers.sha256(
-                ethers.solidityPacked(
-                    ['address', 'uint256', 'bytes'],
-                    [assetStorageContractAddress, tokenId, keyword],
-                ),
-            );
-            const agreementData = await this.blockchainService.getAgreementData(
-                agreementId,
-                blockchain,
-            );
-
-            const now = await this.blockchainService.getBlockchainTimestamp(blockchain);
-            const currentEpoch = Math.floor(
-                (now - agreementData.startTime) / agreementData.epochLength,
-            );
-
-            const epochsLeft = agreementData.epochsNumber - currentEpoch;
-
-            const createAssetBidSuggestionInWei = await this.nodeApiService.getBidSuggestion(
                 endpoint,
                 port,
                 authToken,
-                blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
-                epochsLeft,
-                assertionMetadata.getAssertionSizeInBytes(publicAssertion),
-                contentAssetStorageAddress,
                 publicAssertionId,
+                assertionMetadata.getAssertionSizeInBytes(publicAssertion),
                 hashFunctionId,
             );
-
-            tokenAmountInWei =
-                BigInt(createAssetBidSuggestionInWei) - BigInt(agreementData.tokenAmount);
-            if (tokenAmountInWei < 0) {
-                tokenAmountInWei = 0;
-            }
         }
 
         await this.blockchainService.updateAsset(
-            resolveUAL(UAL).tokenId,
+            tokenId,
             publicAssertionId,
             assertionMetadata.getAssertionSizeInBytes(publicAssertion),
             assertionMetadata.getAssertionTriplesNumber(publicAssertion),
@@ -814,21 +724,59 @@ class AssetOperationsManager {
         };
     }
 
-    async extendStoringPeriod(UAL, epochsNumber, tokenAmount, options = {}) {
+    async extendStoringPeriod(UAL, epochsNumber, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
+        const tokenAmount = this.inputService.getTokenAmount(options);
+
+        const { tokenId } = resolveUAL(UAL);
+
+        let tokenAmountInWei;
+
+        if (tokenAmount != null) {
+            tokenAmountInWei = tokenAmount;
+        } else {
+            const endpoint = this.inputService.getEndpoint(options);
+            const port = this.inputService.getPort(options);
+            const authToken = this.inputService.getAuthToken(options);
+            const hashFunctionId = this.inputService.getHashFunctionId(options);
+
+            const latestFinalizedState = await this.blockchainService.getLatestAssertionId(
+                tokenId,
+                blockchain,
+            );
+
+            const latestFinalizedStateSize = await this.blockchainService.getAssertionSize(
+                latestFinalizedState,
+                blockchain,
+            );
+
+            tokenAmountInWei = await this._getUpdateBidSuggestion(
+                UAL,
+                blockchain,
+                endpoint,
+                port,
+                authToken,
+                latestFinalizedState,
+                latestFinalizedStateSize,
+                hashFunctionId,
+            );
+
+            if (tokenAmountInWei < 0) {
+                tokenAmountInWei = 0;
+            }
+        }
 
         this.validationService.validateExtendAssetStoringPeriod(
             UAL,
             epochsNumber,
-            tokenAmount,
+            tokenAmountInWei,
             blockchain,
         );
 
-        const { tokenId } = resolveUAL(UAL);
         await this.blockchainService.extendAssetStoringPeriod(
             tokenId,
             epochsNumber,
-            tokenAmount,
+            tokenAmountInWei,
             blockchain,
         );
 
@@ -838,18 +786,164 @@ class AssetOperationsManager {
         };
     }
 
-    async addTokens(UAL, tokenAmount, options = {}) {
+    async addTokens(UAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
-
-        this.validationService.validateAddTokens(UAL, tokenAmount, blockchain);
+        const tokenAmount = this.inputService.getTokenAmount(options);
 
         const { tokenId } = resolveUAL(UAL);
-        await this.blockchainService.addTokens(tokenId, tokenAmount, blockchain);
+
+        let tokenAmountInWei;
+
+        if (tokenAmount != null) {
+            tokenAmountInWei = tokenAmount;
+        } else {
+            const endpoint = this.inputService.getEndpoint(options);
+            const port = this.inputService.getPort(options);
+            const authToken = this.inputService.getAuthToken(options);
+            const hashFunctionId = this.inputService.getHashFunctionId(options);
+
+            const latestFinalizedState = await this.blockchainService.getLatestAssertionId(
+                tokenId,
+                blockchain,
+            );
+
+            const latestFinalizedStateSize = await this.blockchainService.getAssertionSize(
+                latestFinalizedState,
+                blockchain,
+            );
+
+            tokenAmountInWei = await this._getUpdateBidSuggestion(
+                UAL,
+                blockchain,
+                endpoint,
+                port,
+                authToken,
+                latestFinalizedState,
+                latestFinalizedStateSize,
+                hashFunctionId,
+            );
+
+            if (tokenAmountInWei <= 0) {
+                throw Error(
+                    `Token amount is bigger than default suggested amount, please specify exact tokenAmount if you still want to add more tokens!`,
+                );
+            }
+        }
+
+        this.validationService.validateAddTokens(UAL, tokenAmountInWei, blockchain);
+
+        await this.blockchainService.addTokens(tokenId, tokenAmountInWei, blockchain);
 
         return {
             UAL,
             operation: getOperationStatusObject({ status: 'COMPLETED' }, null),
         };
+    }
+
+    async addUpdateTokens(UAL, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        const tokenAmount = this.inputService.getTokenAmount(options);
+
+        const { tokenId } = resolveUAL(UAL);
+
+        let tokenAmountInWei;
+
+        if (tokenAmount != null) {
+            tokenAmountInWei = tokenAmount;
+        } else {
+            const endpoint = this.inputService.getEndpoint(options);
+            const port = this.inputService.getPort(options);
+            const authToken = this.inputService.getAuthToken(options);
+            const hashFunctionId = this.inputService.getHashFunctionId(options);
+
+            const unfinalizedState = await this.blockchainService.getUnfinalizedState(
+                tokenId,
+                blockchain,
+            );
+
+            const unfinalizedStateSize = await this.blockchainService.getAssertionSize(
+                unfinalizedState,
+                blockchain,
+            );
+
+            tokenAmountInWei = await this._getUpdateBidSuggestion(
+                UAL,
+                blockchain,
+                endpoint,
+                port,
+                authToken,
+                unfinalizedState,
+                unfinalizedStateSize,
+                hashFunctionId,
+            );
+            if (tokenAmountInWei <= 0) {
+                throw Error(
+                    `Token amount is bigger than default suggested amount, please specify exact tokenAmount if you still want to add more tokens!`,
+                );
+            }
+        }
+
+        this.validationService.validateAddTokens(UAL, tokenAmountInWei, blockchain);
+
+        await this.blockchainService.addUpdateTokens(tokenId, tokenAmountInWei, blockchain);
+
+        return {
+            UAL,
+            operation: getOperationStatusObject({ status: 'COMPLETED' }, null),
+        };
+    }
+
+    async _getUpdateBidSuggestion(
+        UAL,
+        blockchain,
+        endpoint,
+        port,
+        authToken,
+        assertionId,
+        size,
+        hashFunctionId,
+    ) {
+        const { contract, tokenId } = resolveUAL(UAL);
+        const firstAssertionId = await this.blockchainService.getAssertionIdByIndex(
+            tokenId,
+            0,
+            blockchain,
+        );
+
+        const keyword = ethers.solidityPacked(['address', 'bytes32'], [contract, firstAssertionId]);
+
+        const agreementId = ethers.sha256(
+            ethers.solidityPacked(['address', 'uint256', 'bytes'], [contract, tokenId, keyword]),
+        );
+        const agreementData = await this.blockchainService.getAgreementData(
+            agreementId,
+            blockchain,
+        );
+
+        const now = await this.blockchainService.getBlockchainTimestamp(blockchain);
+        const currentEpoch = Math.floor(
+            (now - agreementData.startTime) / agreementData.epochLength,
+        );
+
+        const epochsLeft = agreementData.epochsNumber - currentEpoch;
+
+        const bidSuggestion = await this.nodeApiService.getBidSuggestion(
+            endpoint,
+            port,
+            authToken,
+            blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
+            epochsLeft,
+            size,
+            contract,
+            assertionId,
+            hashFunctionId,
+        );
+
+        const tokenAmountInWei =
+            BigInt(bidSuggestion) -
+            (BigInt(agreementData.tokenAmount) + BigInt(agreementData.updateTokenAmount ?? 0));
+
+        return tokenAmountInWei > 0 ? tokenAmountInWei : 0;
     }
 }
 
