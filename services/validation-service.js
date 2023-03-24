@@ -1,4 +1,4 @@
-const { ASSET_STATES, CONTENT_TYPES, MAX_FILE_SIZE, OPERATIONS, GET_OUTPUT_FORMATS, QUERY_TYPES } = require('../constants.js');
+const { ASSET_STATES, CONTENT_TYPES, GRAPH_LOCATIONS, GRAPH_STATES, MAX_FILE_SIZE, OPERATIONS, GET_OUTPUT_FORMATS, QUERY_TYPES } = require('../constants.js');
 const { nodeSupported } = require('./utilities.js');
 
 class ValidationService {
@@ -11,6 +11,8 @@ class ValidationService {
     validateGraphQuery(
         queryString,
         queryType,
+        graphLocation,
+        graphState,
         endpoint,
         port,
         maxNumberOfRetries,
@@ -19,6 +21,8 @@ class ValidationService {
     ) {
         this.validateQueryString(queryString);
         this.validateQueryType(queryType);
+        this.validateGraphLocation(graphLocation);
+        this.validateGraphState(graphState);
         this.validateEndpoint(endpoint);
         this.validatePort(port);
         this.validateMaxNumberOfRetries(maxNumberOfRetries);
@@ -168,6 +172,20 @@ class ValidationService {
         const validQueryTypes = Object.values(QUERY_TYPES);
         if (!validQueryTypes.includes(queryType))
             throw Error(`Invalid query Type: available query types: ${validQueryTypes}`);
+    }
+
+    validateGraphLocation(graphLocation) {
+        this.validateRequiredParam('graphLocation', graphLocation);
+        const validGraphLocations = Object.keys(GRAPH_LOCATIONS);
+        if (!validGraphLocations.includes(graphLocation))
+            throw Error(`Invalid graph location: available locations: ${validGraphLocations}`);
+    }
+
+    validateGraphState(graphState) {
+        this.validateRequiredParam('graphState', graphState);
+        const validGraphStates = Object.keys(GRAPH_STATES);
+        if (!validGraphStates.includes(graphState))
+            throw Error(`Invalid graph state: available states: ${validGraphStates}`);
     }
 
     validateUAL(ual) {
