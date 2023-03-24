@@ -561,6 +561,7 @@ class AssetOperationsManager {
                 authToken,
                 publicAssertionId,
                 assertionMetadata.getAssertionSizeInBytes(publicAssertion),
+                hashFunctionId
             );
         }
 
@@ -780,6 +781,7 @@ class AssetOperationsManager {
             const endpoint = this.inputService.getEndpoint(options);
             const port = this.inputService.getPort(options);
             const authToken = this.inputService.getAuthToken(options);
+            const hashFunctionId = this.inputService.getHashFunctionId(options);
 
             const latestFinalizedState = await this.blockchainService.getLatestAssertionId(
                 tokenId,
@@ -799,6 +801,7 @@ class AssetOperationsManager {
                 authToken,
                 latestFinalizedState,
                 latestFinalizedStateSize,
+                hashFunctionId
             );
 
             if (tokenAmountInWei < 0) {
@@ -840,6 +843,7 @@ class AssetOperationsManager {
             const endpoint = this.inputService.getEndpoint(options);
             const port = this.inputService.getPort(options);
             const authToken = this.inputService.getAuthToken(options);
+            const hashFunctionId = this.inputService.getHashFunctionId(options);
 
             const latestFinalizedState = await this.blockchainService.getLatestAssertionId(
                 tokenId,
@@ -859,6 +863,7 @@ class AssetOperationsManager {
                 authToken,
                 latestFinalizedState,
                 latestFinalizedStateSize,
+                hashFunctionId
             );
 
             if (tokenAmountInWei <= 0) {
@@ -892,6 +897,7 @@ class AssetOperationsManager {
             const endpoint = this.inputService.getEndpoint(options);
             const port = this.inputService.getPort(options);
             const authToken = this.inputService.getAuthToken(options);
+            const hashFunctionId = this.inputService.getHashFunctionId(options);
 
             const unfinalizedState = await this.blockchainService.getUnfinalizedState(
                 tokenId,
@@ -911,6 +917,7 @@ class AssetOperationsManager {
                 authToken,
                 unfinalizedState,
                 unfinalizedStateSize,
+                hashFunctionId
             );
             if (tokenAmountInWei <= 0) {
                 throw Error(
@@ -929,7 +936,16 @@ class AssetOperationsManager {
         };
     }
 
-    async _getUpdateBidSuggestion(UAL, blockchain, endpoint, port, authToken, assertionId, size) {
+    async _getUpdateBidSuggestion(
+        UAL,
+        blockchain,
+        endpoint,
+        port,
+        authToken,
+        assertionId,
+        size,
+        hashFunctionId,
+    ) {
         const { contract, tokenId } = resolveUAL(UAL);
         const firstAssertionId = await this.blockchainService.getAssertionIdByIndex(
             tokenId,
@@ -963,12 +979,12 @@ class AssetOperationsManager {
             size,
             contract,
             assertionId,
-            agreementId.hashFunctionId,
+            hashFunctionId,
         );
 
         const tokenAmountInWei =
             BigInt(bidSuggestion) -
-            (BigInt(agreementData.tokenAmount) + BigInt(agreementData.updateTokenAmount));
+            (BigInt(agreementData.tokenAmount) + BigInt(agreementData.updateTokenAmount ?? 0));
 
         return tokenAmountInWei > 0 ? tokenAmountInWei : 0;
     }
