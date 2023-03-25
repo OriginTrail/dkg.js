@@ -2,7 +2,7 @@ const jsonld = require('jsonld');
 const DKG = require('../index.js');
 
 const OT_NODE_HOSTNAME = 'http://localhost';
-const OT_NODE_PORT = '8901';
+const OT_NODE_PORT = '8900';
 const PUBLIC_KEY = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
 const PRIVATE_KEY = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
 
@@ -85,7 +85,7 @@ function divider() {
     const updateAssetResult = await DkgClient.asset.update(createAssetResult.UAL, {
         public: {
             '@context': ['https://schema.org'],
-            '@id': 'uuid:2',
+            '@id': 'uuid:1',
             company: 'TL',
             user: {
                 '@id': 'uuid:user:2',
@@ -106,19 +106,31 @@ function divider() {
             ],
         },
     });
-
     console.log('======================== ASSET UPDATED');
     console.log(updateAssetResult);
 
     divider();
 
-    const getLatestAssetResult = await DkgClient.asset.get(createAssetResult.UAL);
-    console.log('======================== ASSET LATEST RESOLVED');
+    let getLatestAssetResult = await DkgClient.asset.get(createAssetResult.UAL);
+    console.log('======================== ASSET LATEST  RESOLVED');
     console.log(JSON.stringify(getLatestAssetResult, null, 2));
 
     divider();
 
-    const getLatestFinalizedAssetResult = await DkgClient.asset.get(createAssetResult.UAL, {
+    let getLatestFinalizedAssetResult = await DkgClient.asset.get(createAssetResult.UAL, {
+        state: 'LATEST_FINALIZED',
+    });
+    console.log('======================== ASSET LATEST FINALIZED RESOLVED');
+    console.log(JSON.stringify(getLatestFinalizedAssetResult, null, 2));
+
+    divider();
+
+    await DkgClient.asset.waitFinalization(createAssetResult.UAL);
+    console.log('======================== FINALIZATION COMPLETED');
+
+    divider();
+
+    getLatestFinalizedAssetResult = await DkgClient.asset.get(createAssetResult.UAL, {
         state: 'LATEST_FINALIZED',
     });
     console.log('======================== ASSET LATEST FINALIZED RESOLVED');
