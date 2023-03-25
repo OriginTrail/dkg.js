@@ -37,6 +37,32 @@ class InputService {
         };
     }
 
+    getAssetUpdateArguments(options) {
+        return {
+            blockchain: this.getBlockchain(options),
+            endpoint: this.getEndpoint(options),
+            port: this.getPort(options),
+            maxNumberOfRetries: this.getMaxNumberOfRetries(options),
+            frequency: this.getFrequency(options),
+            hashFunctionId: this.getHashFunctionId(options),
+            scoreFunctionId: this.getScoreFunctionId(options),
+            tokenAmount: this.getTokenAmount(options),
+            authToken: this.getAuthToken(options),
+        };
+    }
+
+    getQueryArguments(options) {
+        return {
+            graphLocation: this.getGraphLocation(options),
+            graphState: this.getGraphState(options),
+            endpoint: this.getEndpoint(options),
+            port: this.getPort(options),
+            maxNumberOfRetries: this.getMaxNumberOfRetries(options),
+            frequency: this.getFrequency(options),
+            authToken: this.getAuthToken(options),
+        };
+    }
+
     getBlockchain(options) {
         const name = options.blockchain?.name ?? this.config.blockchain?.name ?? null;
         const rpc =
@@ -57,6 +83,16 @@ class InputService {
             publicKey,
             privateKey,
         };
+    }
+
+    getGraphLocation(options) {
+        return (
+            options.graphLocation ?? this.config.graphLocation ?? DEFAULT_PARAMETERS.GRAPH_LOCATION
+        );
+    }
+
+    getGraphState(options) {
+        return options.graphState ?? this.config.graphState ?? DEFAULT_PARAMETERS.GRAPH_STATE;
     }
 
     getEndpoint(options) {

@@ -1,6 +1,6 @@
 {
     "name": "dkg.js",
-    "version": "6.0.1",
+    "version": "6.0.2",
     "description": "Javascript library for interaction with the OriginTrail Decentralized Knowledge Graph",
     "main": "index.js",
     "scripts": {
@@ -32,7 +32,8 @@
     "dependencies": {
         "assertion-tools": "^2.0.2",
         "axios": "^0.27.2",
-        "dkg-evm-module": "^3.2.1",
+        "dkg-evm-module": "^4.0.4",
+        "ethers": "^6.1.0",
         "jsonld": "^8.1.0",
         "web3": "^1.7.3"
     },

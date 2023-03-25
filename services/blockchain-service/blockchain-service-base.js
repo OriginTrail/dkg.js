@@ -1,11 +1,13 @@
 const Web3 = require('web3');
-const HubAbi = require('dkg-evm-module/build/contracts/Hub.json').abi;
-const ServiceAgreementV1Abi = require('dkg-evm-module/build/contracts/ServiceAgreementV1.json').abi;
-const ContentAssetStorageAbi =
-    require('dkg-evm-module/build/contracts/ContentAssetStorage.json').abi;
-const ContentAssetAbi = require('dkg-evm-module/build/contracts/ContentAsset.json').abi;
-const TokenAbi = require('dkg-evm-module/build/contracts/ERC20Token.json').abi;
-const { BLOCKCHAINS, OPERATIONS_STEP_STATUS } = require('../../constants');
+const AssertionStorageAbi = require('dkg-evm-module/abi/AssertionStorage.json');
+const HubAbi = require('dkg-evm-module/abi/Hub.json');
+const ServiceAgreementV1Abi = require('dkg-evm-module/abi/ServiceAgreementV1.json');
+const ServiceAgreementStorageProxyAbi = require('dkg-evm-module/abi/ServiceAgreementStorageProxy.json');
+const ContentAssetStorageAbi = require('dkg-evm-module/abi/ContentAssetStorage.json');
+const UnfinalizedStateStorageAbi = require('dkg-evm-module/abi/UnfinalizedStateStorage.json');
+const ContentAssetAbi = require('dkg-evm-module/abi/ContentAsset.json');
+const TokenAbi = require('dkg-evm-module/abi/Token.json');
+const { OPERATIONS_STEP_STATUS } = require('../../constants');
 const emptyHooks = require('../../util/empty-hooks.js');
 
 const FIXED_GAS_LIMIT_METHODS = {
@@ -15,22 +17,14 @@ const FIXED_GAS_LIMIT_METHODS = {
 class BlockchainServiceBase {
     constructor() {
         this.abis = {};
+        this.abis.AssertionStorage = AssertionStorageAbi;
         this.abis.Hub = HubAbi;
         this.abis.ServiceAgreementV1 = ServiceAgreementV1Abi;
+        this.abis.ServiceAgreementStorageProxy = ServiceAgreementStorageProxyAbi;
         this.abis.ContentAssetStorage = ContentAssetStorageAbi;
+        this.abis.UnfinalizedStateStorage = UnfinalizedStateStorageAbi;
         this.abis.ContentAsset = ContentAssetAbi;
         this.abis.Token = TokenAbi;
-
-        for (const blockchainName of Object.keys(BLOCKCHAINS)) {
-            this[blockchainName] = {
-                contracts: { [BLOCKCHAINS[blockchainName].hubContract]: {} },
-                contractAddresses: {
-                    [BLOCKCHAINS[blockchainName].hubContract]: {
-                        Hub: BLOCKCHAINS[blockchainName].hubContract,
-                    },
-                },
-            };
-        }
     }
 
     initializeWeb3() {
@@ -45,12 +39,11 @@ class BlockchainServiceBase {
 
     async callContractFunction(contractName, functionName, args, blockchain) {
         const contractInstance = await this.getContractInstance(contractName, blockchain);
-
         return contractInstance.methods[functionName](...args).call();
     }
 
     async prepareTransaction(contractInstance, functionName, args, blockchain) {
-        const web3Instance = await this.getWeb3Instance(blockchain.name, blockchain.rpc);
+        const web3Instance = await this.getWeb3Instance(blockchain);
         let gasLimit;
         if (FIXED_GAS_LIMIT_METHODS[functionName]) {
             gasLimit = FIXED_GAS_LIMIT_METHODS[functionName];
@@ -79,20 +72,35 @@ class BlockchainServiceBase {
         };
     }
 
-    async getWeb3Instance(blockchainName, blockchainRpc) {
-        if (!this[blockchainName].web3) {
-            this.initializeWeb3(blockchainName, blockchainRpc);
+    ensureBlockchainInfo(blockchain) {
+        if (!this[blockchain.name]) {
+            this[blockchain.name] = {
+                contracts: { [blockchain.hubContract]: {} },
+                contractAddresses: {
+                    [blockchain.hubContract]: {
+                        Hub: blockchain.hubContract,
+                    },
+                },
+            };
+        }
+    }
+
+    async getWeb3Instance(blockchain) {
+        this.ensureBlockchainInfo(blockchain);
+        if (!this[blockchain.name].web3) {
+            this.initializeWeb3(blockchain.name, blockchain.rpc);
         }
 
-        return this[blockchainName].web3;
+        return this[blockchain.name].web3;
     }
 
     async getContractAddress(contractName, blockchain) {
+        this.ensureBlockchainInfo(blockchain);
         if (!this[blockchain.name].contracts[blockchain.hubContract]) {
             this[blockchain.name].contracts[blockchain.hubContract] = {};
         }
         if (!this[blockchain.name].contracts[blockchain.hubContract].Hub) {
-            const web3Instance = await this.getWeb3Instance(blockchain.name, blockchain.rpc);
+            const web3Instance = await this.getWeb3Instance(blockchain);
             this[blockchain.name].contracts[blockchain.hubContract].Hub =
                 new web3Instance.eth.Contract(this.abis.Hub, blockchain.hubContract);
         }
@@ -112,12 +120,13 @@ class BlockchainServiceBase {
     }
 
     async getContractInstance(contractName, blockchain) {
+        this.ensureBlockchainInfo(blockchain);
         if (!this[blockchain.name].contractAddresses[blockchain.hubContract][contractName]) {
             this[blockchain.name].contractAddresses[blockchain.hubContract][contractName] =
                 await this.getContractAddress(contractName, blockchain);
         }
         if (!this[blockchain.name].contracts[blockchain.hubContract][contractName]) {
-            const web3Instance = await this.getWeb3Instance(blockchain.name, blockchain.rpc);
+            const web3Instance = await this.getWeb3Instance(blockchain);
             this[blockchain.name].contracts[blockchain.hubContract][contractName] =
                 new web3Instance.eth.Contract(
                     this.abis[contractName],
@@ -133,6 +142,7 @@ class BlockchainServiceBase {
             'ServiceAgreementV1',
             blockchain,
         );
+
         await this.executeContractFunction(
             'Token',
             'increaseAllowance',
@@ -173,7 +183,15 @@ class BlockchainServiceBase {
         }
     }
 
-    async updateAsset(tokenId, requestData, blockchain) {
+    async updateAsset(
+        tokenId,
+        publicAssertionId,
+        assertionSize,
+        triplesNumber,
+        chunksNumber,
+        tokenAmount,
+        blockchain,
+    ) {
         const serviceAgreementV1Address = await this.getContractAddress(
             'ServiceAgreementV1',
             blockchain,
@@ -182,26 +200,51 @@ class BlockchainServiceBase {
         await this.executeContractFunction(
             'Token',
             'increaseAllowance',
-            [serviceAgreementV1Address, requestData.tokenAmount],
+            [serviceAgreementV1Address, tokenAmount],
             blockchain,
         );
 
         try {
             return this.executeContractFunction(
                 'ContentAsset',
-                'updateAsset',
-                [tokenId, Object.values(requestData)],
+                'updateAssetState',
+                [
+                    tokenId,
+                    publicAssertionId,
+                    assertionSize,
+                    triplesNumber,
+                    chunksNumber,
+                    tokenAmount,
+                ],
                 blockchain,
             );
         } catch (e) {
             await this.executeContractFunction(
                 'Token',
                 'decreaseAllowance',
-                [serviceAgreementV1Address, requestData.tokenAmount],
+                [serviceAgreementV1Address, tokenAmount],
                 blockchain,
             );
             throw e;
         }
+    }
+
+    async hasPendingUpdate(tokenId, blockchain) {
+        return this.callContractFunction(
+            'UnfinalizedStateStorage',
+            'hasPendingUpdate',
+            [tokenId],
+            blockchain,
+        );
+    }
+
+    async cancelAssetUpdate(tokenId, blockchain) {
+        return this.executeContractFunction(
+            'ContentAsset',
+            'cancelAssetStateUpdate',
+            [tokenId],
+            blockchain,
+        );
     }
 
     async getLatestAssertionId(tokenId, blockchain) {
@@ -213,8 +256,165 @@ class BlockchainServiceBase {
         );
     }
 
+    async getUnfinalizedState(tokenId, blockchain) {
+        return this.callContractFunction(
+            'UnfinalizedStateStorage',
+            'getUnfinalizedState',
+            [tokenId],
+            blockchain,
+        );
+    }
+
     async getAssetOwner(tokenId, blockchain) {
         return this.callContractFunction('ContentAssetStorage', 'ownerOf', [tokenId], blockchain);
+    }
+
+    async burnAsset(tokenId, blockchain) {
+        return this.executeContractFunction('ContentAsset', 'burnAsset', [tokenId], blockchain);
+    }
+
+    async extendAssetStoringPeriod(tokenId, epochsNumber, tokenAmount, blockchain) {
+        const serviceAgreementV1Address = await this.getContractAddress(
+            'ServiceAgreementV1',
+            blockchain,
+        );
+
+        await this.executeContractFunction(
+            'Token',
+            'increaseAllowance',
+            [serviceAgreementV1Address, tokenAmount],
+            blockchain,
+        );
+
+        try {
+            return this.executeContractFunction(
+                'ContentAsset',
+                'extendAssetStoringPeriod',
+                [tokenId, epochsNumber, tokenAmount],
+                blockchain,
+            );
+        } catch (e) {
+            await this.executeContractFunction(
+                'Token',
+                'decreaseAllowance',
+                [serviceAgreementV1Address, tokenAmount],
+                blockchain,
+            );
+            throw e;
+        }
+    }
+
+    async addTokens(tokenId, tokenAmount, blockchain) {
+        const serviceAgreementV1Address = await this.getContractAddress(
+            'ServiceAgreementV1',
+            blockchain,
+        );
+
+        await this.executeContractFunction(
+            'Token',
+            'increaseAllowance',
+            [serviceAgreementV1Address, tokenAmount],
+            blockchain,
+        );
+
+        try {
+            return this.executeContractFunction(
+                'ContentAsset',
+                'increaseAssetTokenAmount',
+                [tokenId, tokenAmount],
+                blockchain,
+            );
+        } catch (e) {
+            await this.executeContractFunction(
+                'Token',
+                'decreaseAllowance',
+                [serviceAgreementV1Address, tokenAmount],
+                blockchain,
+            );
+            throw e;
+        }
+    }
+
+    async addUpdateTokens(tokenId, tokenAmount, blockchain) {
+        const serviceAgreementV1Address = await this.getContractAddress(
+            'ServiceAgreementV1',
+            blockchain,
+        );
+
+        await this.executeContractFunction(
+            'Token',
+            'increaseAllowance',
+            [serviceAgreementV1Address, tokenAmount],
+            blockchain,
+        );
+
+        try {
+            return this.executeContractFunction(
+                'ContentAsset',
+                'increaseAssetUpdateTokenAmount',
+                [tokenId, tokenAmount],
+                blockchain,
+            );
+        } catch (e) {
+            await this.executeContractFunction(
+                'Token',
+                'decreaseAllowance',
+                [serviceAgreementV1Address, tokenAmount],
+                blockchain,
+            );
+            throw e;
+        }
+    }
+
+    async getAssertionIdByIndex(tokenId, index, blockchain) {
+        return this.callContractFunction(
+            'ContentAssetStorage',
+            'getAssertionIdByIndex',
+            [tokenId, index],
+            blockchain,
+        );
+    }
+
+    async getAgreementData(agreementId, blockchain) {
+        const result = await this.callContractFunction(
+            'ServiceAgreementStorageProxy',
+            'getAgreementData',
+            [agreementId],
+            blockchain,
+        );
+
+        return {
+            startTime: Number(result['0']),
+            epochsNumber: Number(result['1']),
+            epochLength: Number(result['2']),
+            tokenAmount: result['3'][0],
+            addedTokenAmount: result['3'][1],
+            scoreFunctionId: result['4'][0],
+            proofWindowOffsetPerc: result['4'][1],
+        };
+    }
+
+    async getAssertionSize(assertionId, blockchain) {
+        return this.callContractFunction(
+            'AssertionStorage',
+            'getAssertionSize',
+            [assertionId],
+            blockchain,
+        );
+    }
+
+    async getBlockchainTimestamp(blockchain) {
+        if (blockchain.name !== 'hardhat') return Math.floor(Date.now() / 1000);
+
+        const latestBlock = await this.getLatestBlock(blockchain);
+        return latestBlock.timestamp;
+    }
+
+    async getLatestBlock(blockchain) {
+        const web3 = await this.getWeb3Instance(blockchain);
+        const blockNumber = await web3.eth.getBlockNumber();
+
+        return web3.eth.getBlock(blockNumber);
     }
 
     convertToWei(ether) {
