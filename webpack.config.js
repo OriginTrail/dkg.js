@@ -23,6 +23,12 @@ module.exports = {
     resolve: {
         fallback: {
             fs: false,
+            zlib: false,
+            url: false,
+            os: false,
+            path: false,
+            net: false,
+            tls: false,
             stream: require.resolve('stream-browserify'),
             http: require.resolve('stream-http/'),
             https: require.resolve('https-browserify/'),
