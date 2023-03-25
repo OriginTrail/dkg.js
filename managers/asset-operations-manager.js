@@ -7,6 +7,7 @@ const {
     resolveUAL,
     toNQuads,
     toJSONLD,
+    sleepForMilliseconds,
     deriveRepository,
 } = require('../services/utilities.js');
 const {
@@ -291,6 +292,13 @@ class AssetOperationsManager {
             frequency,
             getPublicOperationId,
         );
+
+        if(!getPublicOperationResult.data.assertion) {
+            return {
+                errorType: 'DKG_CLIENT_ERROR',
+                errorMessage: "Unable to find assertion on the network!",
+            };
+        }
 
         const publicAssertion = getPublicOperationResult.data.assertion;
 
