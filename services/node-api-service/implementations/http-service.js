@@ -100,13 +100,14 @@ class HttpService {
         }
     }
 
-    async get(endpoint, port, authToken, UAL, hashFunctionId) {
+    async get(endpoint, port, authToken, UAL, state, hashFunctionId) {
         try {
             const response = await axios({
                 method: 'post',
                 url: `${endpoint}:${port}/get`,
                 data: {
                     id: UAL,
+                    state,
                     hashFunctionId,
                 },
                 headers: this.prepareRequestConfig(authToken),
@@ -118,12 +119,44 @@ class HttpService {
         }
     }
 
-    async query(endpoint, port, authToken, query, type) {
+    async update(
+        endpoint,
+        port,
+        authToken,
+        assertionId,
+        assertion,
+        blockchain,
+        contract,
+        tokenId,
+        hashFunctionId,
+    ) {
+        try {
+            const response = await axios({
+                method: 'post',
+                url: `${endpoint}:${port}/update`,
+                data: {
+                    assertionId,
+                    assertion,
+                    blockchain,
+                    contract,
+                    tokenId,
+                    hashFunctionId,
+                },
+                headers: this.prepareRequestConfig(authToken),
+            });
+
+            return response.data.operationId;
+        } catch (error) {
+            throw Error(`Unable to update: ${error.message}`);
+        }
+    }
+
+    async query(endpoint, port, authToken, query, type, repository) {
         try {
             const response = await axios({
                 method: 'post',
                 url: `${endpoint}:${port}/query`,
-                data: { query, type },
+                data: { query, type, repository },
                 headers: this.prepareRequestConfig(authToken),
             });
             return response.data.operationId;

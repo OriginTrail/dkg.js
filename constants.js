@@ -18,9 +18,21 @@ module.exports.BLOCKCHAINS = {
         rpc: 'http://localhost:7545',
         hubContract: '0x209679fA3B658Cd0fC74473aF28243bfe78a9b12',
     },
+    hardhat: {
+        rpc: 'http://localhost:8545',
+        hubContract: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
+    },
     polygon: {
         rpc: 'https://matic-mumbai.chainstacklabs.com',
         hubContract: '0xdaa16AC171CfE8Df6F79C06E7EEAb2249E2C9Ec8', // TODO: change to Asset Contract
+    },
+    'otp::alphanet': {
+        rpc: 'http://parachain-alphanet-02.origin-trail.network:9933',
+        hubContract: '0x7585a99C5C150a08f5CDeFD16465C6De8D41EbbD',
+    },
+    'otp::devnet': {
+        rpc: 'https://lofar-tm-rpc.origin-trail.network',
+        hubContract: '0x833048F6e6BEa78E0AAdedeCd2Dc2231dda443FB',
     },
     'otp::testnet': {
         rpc: 'https://lofar-testnet.origin-trail.network',
@@ -47,6 +59,7 @@ module.exports.WEBSOCKET_PROVIDER_OPTIONS = {
 module.exports.OPERATIONS = {
     PUBLISH: 'publish',
     GET: 'get',
+    UPDATE: 'update',
     LOCAL_STORE: 'local-store',
     QUERY: 'query',
 };
@@ -74,8 +87,30 @@ module.exports.GET_OUTPUT_FORMATS = {
 };
 
 module.exports.ASSET_STATES = {
-    LATEST: 'latest',
-    FINALIZED: 'finalized',
+    LATEST: 'LATEST',
+    FINALIZED: 'LATEST_FINALIZED',
+};
+
+module.exports.STORE_TYPES = {
+    TRIPLE: 'TRIPLE',
+    PENDING: 'PENDING',
+};
+
+module.exports.GRAPH_LOCATIONS = {
+    PUBLIC_KG: 'PUBLIC_KG',
+    LOCAL_KG: 'LOCAL_KG',
+};
+
+module.exports.GRAPH_STATES = {
+    CURRENT: 'CURRENT',
+    HISTORICAL: 'HISTORICAL',
+};
+
+module.exports.OT_NODE_TRIPLE_STORE_REPOSITORIES = {
+    PUBLIC_CURRENT: 'publicCurrent',
+    PUBLIC_HISTORY: 'publicHistory',
+    PRIVATE_CURRENT: 'privateCurrent',
+    PRIVATE_HISTORY: 'privateHistory',
 };
 
 module.exports.QUERY_TYPES = {
@@ -90,6 +125,7 @@ module.exports.OPERATIONS_STEP_STATUS = {
 };
 
 module.exports.DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY = 0.5;
+
 module.exports.DEFAULT_PARAMETERS = {
     PORT: 8900,
     FREQUENCY: 5,
@@ -101,4 +137,6 @@ module.exports.DEFAULT_PARAMETERS = {
     OUTPUT_FORMAT: this.GET_OUTPUT_FORMATS.JSON_LD,
     STATE: this.ASSET_STATES.LATEST,
     CONTENT_TYPE: this.CONTENT_TYPES.PUBLIC,
+    GRAPH_LOCATION: this.GRAPH_LOCATIONS.LOCAL_KG,
+    GRAPH_STATE: this.GRAPH_STATES.CURRENT,
 };

@@ -1,5 +1,6 @@
 module.exports = {
     env: {
+        es2020: true,
         es6: true,
         browser: true,
         node: true,
@@ -11,7 +12,7 @@ module.exports = {
     },
     rules: {
         'linebreak-style': ['error', 'unix'],
-        'camelcase': 0,
+        camelcase: 0,
         'class-methods-use-this': 0,
         'consistent-return': 1,
         'no-restricted-syntax': 0,
@@ -29,4 +30,5 @@ module.exports = {
             },
         },
     ],
+    ignorePatterns: ['/dist/*'],
 };

@@ -1,4 +1,4 @@
-const { CONTENT_TYPES, MAX_FILE_SIZE, OPERATIONS, GET_OUTPUT_FORMATS, QUERY_TYPES } = require('../constants.js');
+const { ASSET_STATES, CONTENT_TYPES, GRAPH_LOCATIONS, GRAPH_STATES, MAX_FILE_SIZE, OPERATIONS, GET_OUTPUT_FORMATS, QUERY_TYPES } = require('../constants.js');
 const { nodeSupported } = require('./utilities.js');
 
 class ValidationService {
@@ -11,6 +11,8 @@ class ValidationService {
     validateGraphQuery(
         queryString,
         queryType,
+        graphLocation,
+        graphState,
         endpoint,
         port,
         maxNumberOfRetries,
@@ -19,6 +21,8 @@ class ValidationService {
     ) {
         this.validateQueryString(queryString);
         this.validateQueryType(queryType);
+        this.validateGraphLocation(graphLocation);
+        this.validateGraphState(graphState);
         this.validateEndpoint(endpoint);
         this.validatePort(port);
         this.validateMaxNumberOfRetries(maxNumberOfRetries);
@@ -82,6 +86,40 @@ class ValidationService {
         this.validateAuthToken(authToken);
     }
 
+    validateAssetUpdate(
+        content,
+        blockchain,
+        endpoint,
+        port,
+        maxNumberOfRetries,
+        frequency,
+        hashFunctionId,
+        scoreFunctionId,
+        tokenAmount,
+        authToken,
+    ) {
+        this.validateContent(content)
+        this.validateBlockchain(blockchain, OPERATIONS.UPDATE);
+        this.validateEndpoint(endpoint);
+        this.validatePort(port);
+        this.validateMaxNumberOfRetries(maxNumberOfRetries);
+        this.validateFrequency(frequency);
+        this.validateHashFunctionId(hashFunctionId);
+        this.validateScoreFunctionId(scoreFunctionId);
+        this.validateTokenAmount(tokenAmount);
+        this.validateAuthToken(authToken);
+    }
+
+    validateWaitAssetUpdateFinalization(UAL, blockchain) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+    }
+
+    validateAssetUpdateCancel(UAL, blockchain) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+    }
+
     validateAssetTransfer(UAL, newOwner, blockchain) {
         this.validateUAL(UAL);
         this.validateNewOwner(newOwner);
@@ -90,6 +128,24 @@ class ValidationService {
 
     validateAssetGetOwner(UAL, blockchain) {
         this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+    }
+
+    validateAssetBurn(UAL, blockchain) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+    }
+
+    validateExtendAssetStoringPeriod(UAL, epochsNum, tokenAmount, blockchain) {
+        this.validateUAL(UAL);
+        this.validateEpochsNum(epochsNum);
+        this.validateTokenAmount(tokenAmount);
+        this.validateBlockchain(blockchain);
+    }
+
+    validateAddTokens(UAL, tokenAmount, blockchain) {
+        this.validateUAL(UAL);
+        this.validateTokenAmount(tokenAmount);
         this.validateBlockchain(blockchain);
     }
 
@@ -116,6 +172,20 @@ class ValidationService {
         const validQueryTypes = Object.values(QUERY_TYPES);
         if (!validQueryTypes.includes(queryType))
             throw Error(`Invalid query Type: available query types: ${validQueryTypes}`);
+    }
+
+    validateGraphLocation(graphLocation) {
+        this.validateRequiredParam('graphLocation', graphLocation);
+        const validGraphLocations = Object.keys(GRAPH_LOCATIONS);
+        if (!validGraphLocations.includes(graphLocation))
+            throw Error(`Invalid graph location: available locations: ${validGraphLocations}`);
+    }
+
+    validateGraphState(graphState) {
+        this.validateRequiredParam('graphState', graphState);
+        const validGraphStates = Object.keys(GRAPH_STATES);
+        if (!validGraphStates.includes(graphState))
+            throw Error(`Invalid graph state: available states: ${validGraphStates}`);
     }
 
     validateUAL(ual) {
@@ -177,6 +247,9 @@ class ValidationService {
     validateState(state) {
         this.validateRequiredParam('state', state);
         this.validateParamType('state', state, 'string');
+        const validStates = Object.values(ASSET_STATES);
+        if (!validStates.includes(state.toUpperCase()))
+            throw Error(`Invalid state, available states: ${validStates}`);
     }
 
     validateContentType(contentType) {
