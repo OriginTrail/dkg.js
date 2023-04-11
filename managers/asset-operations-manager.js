@@ -611,6 +611,7 @@ class AssetOperationsManager {
         );
         return {
             UAL,
+            publicAssertionId: publicAssertionId,
             operation: getOperationStatusObject(operationResult, operationId),
         };
     }
