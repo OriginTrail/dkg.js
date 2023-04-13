@@ -33,6 +33,46 @@ class AssetOperationsManager {
     }
 
     /**
+     * gets bid suggestion
+     * @async
+     * @param {Object} [options={}] - Additional options for get bid suggestion .
+     * @param {Object} [stepHooks=emptyHooks] - Hooks to execute during bid suggestion.
+     * @returns {Object} String containing bid suggestion.
+     */
+    async getBidSuggestion(options = {}, stepHooks = emptyHooks) {
+        const {
+            blockchain,
+            endpoint,
+            port,
+            epochsNum,
+            hashFunctionId,
+            authToken,
+            bidSuggestionOption,
+            publicAssertionId,
+            assertionSizeInBytes,
+        } = this.inputService.getBidSuggestionArguments(options);
+
+        const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
+            'ContentAssetStorage',
+            blockchain,
+        );
+
+        const bidSuggestion = await this.nodeApiService.getBidSuggestion(
+            endpoint,
+            port,
+            authToken,
+            blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
+            epochsNum,
+            assertionSizeInBytes,
+            contentAssetStorageAddress,
+            publicAssertionId,
+            hashFunctionId,
+            bidSuggestionOption
+        );
+
+        return bidSuggestion;
+    }
+    /**
      * Creates a new asset.
      * @async
      * @param {Object} content - The content of the asset to be created, contains public, private or both keys.
@@ -63,6 +103,7 @@ class AssetOperationsManager {
             immutable,
             tokenAmount,
             authToken,
+            bidSuggestionOption
         } = this.inputService.getAssetCreateArguments(options);
 
         this.validationService.validateAssetCreate(
@@ -118,6 +159,7 @@ class AssetOperationsManager {
                 contentAssetStorageAddress,
                 publicAssertionId,
                 hashFunctionId,
+                bidSuggestionOption
             ));
 
         const tokenId = await this.blockchainService.createAsset(
@@ -470,6 +512,7 @@ class AssetOperationsManager {
             scoreFunctionId,
             tokenAmount,
             authToken,
+            bidSuggestionOption
         } = this.inputService.getAssetUpdateArguments(options);
 
         this.validationService.validateAssetUpdate(
@@ -527,6 +570,7 @@ class AssetOperationsManager {
                 publicAssertionId,
                 assertionMetadata.getAssertionSizeInBytes(publicAssertion),
                 hashFunctionId,
+                bidSuggestionOption
             );
         }
 
@@ -911,6 +955,7 @@ class AssetOperationsManager {
         assertionId,
         size,
         hashFunctionId,
+        bidSuggestionOption
     ) {
         const { contract, tokenId } = resolveUAL(UAL);
         const firstAssertionId = await this.blockchainService.getAssertionIdByIndex(
@@ -946,6 +991,7 @@ class AssetOperationsManager {
             contract,
             assertionId,
             hashFunctionId,
+            bidSuggestionOption
         );
 
         const tokenAmountInWei =

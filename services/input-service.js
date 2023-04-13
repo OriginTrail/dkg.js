@@ -18,7 +18,22 @@ class InputService {
             immutable: this.getImmutable(options),
             tokenAmount: this.getTokenAmount(options),
             authToken: this.getAuthToken(options),
+            bidSuggestionOption: this.getBidSuggestionOption(options)
         };
+    }
+
+    getBidSuggestionArguments(options) {
+        return {
+            blockchain: this.getBlockchain(options),
+            endpoint: this.getEndpoint(options),
+            port: this.getPort(options),
+            epochsNum: this.getEpochsNum(options),
+            hashFunctionId: this.getHashFunctionId(options),
+            authToken: this.getAuthToken(options),
+            bidSuggestionOption: this.getBidSuggestionOption(options),
+            publicAssertionId: this.getPublicAssertionId(options),
+            assertionSizeInBytes: this.getAssertionSizeInBytes(options),
+        }
     }
 
     getAssetGetArguments(options) {
@@ -48,6 +63,7 @@ class InputService {
             scoreFunctionId: this.getScoreFunctionId(options),
             tokenAmount: this.getTokenAmount(options),
             authToken: this.getAuthToken(options),
+            bidSuggestionOption: this.getBidSuggestionArguments(options)
         };
     }
 
@@ -161,6 +177,18 @@ class InputService {
 
     getAuthToken(options) {
         return options.auth?.token ?? this.config?.auth?.token ?? null;
+    }
+
+    getBidSuggestionOption(options) {
+        return options.bidSuggestionOption ?? this.config.bidSuggestionOption ?? DEFAULT_PARAMETERS.BID_SUGGESTION_OPTION;
+    }
+
+    getPublicAssertionId(options) {
+        return options.publicAssertionId ?? null;
+    }
+
+    getAssertionSizeInBytes(options) {
+        return options.assertionSizeInBytes ?? null;
     }
 }
 
