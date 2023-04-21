@@ -31,6 +31,33 @@ class AssetOperationsManager {
         this.blockchainService = services.blockchainService;
         this.inputService = services.inputService;
     }
+    
+    /**
+     * Increases allowance for a set quantity of tokens.
+     * @async
+     * @param {number} tokenAmount - The amount of tokens to increase the allowance for.
+     * @param {Object} [options={}] - Additional options for asset creation - currently only blockchain option expected.
+     * @returns {Object} Object containing hash of blockchain transaction and status.
+     */
+    async increaseAllowance(tokenAmount, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+
+        this.validationService.validateIncreaseAllowance(blockchain);
+
+        const serviceAgreementV1Address = await this.blockchainService.getContractAddress(
+            'ServiceAgreementV1',
+            blockchain,
+        );
+
+        const receipt = await this.blockchainService.executeContractFunction(
+            'Token',
+            'increaseAllowance',
+            [serviceAgreementV1Address, tokenAmount],
+            blockchain,
+        );
+
+        return { transactionHash: receipt.transactionHash, success: receipt.status };
+    }
 
     /**
      * Creates a new asset.

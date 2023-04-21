@@ -30,6 +30,11 @@ class ValidationService {
         this.validateAuthToken(authToken);
     }
 
+    validateIncreaseAllowance(blockchain)
+    {
+        this.validateBlockchain(blockchain, OPERATIONS.INCREASE_ALLOWANCE);
+    }
+
     validateAssetCreate(
         content,
         blockchain,
