@@ -137,18 +137,20 @@ class BlockchainServiceBase {
         return this[blockchain.name].contracts[blockchain.hubContract][contractName];
     }
 
-    async createAsset(requestData, blockchain, stepHooks = emptyHooks) {
+    async createAsset(requestData, blockchain, stepHooks = emptyHooks, skipIncreaseAllowance) {
         const serviceAgreementV1Address = await this.getContractAddress(
             'ServiceAgreementV1',
             blockchain,
         );
 
-        await this.executeContractFunction(
-            'Token',
-            'increaseAllowance',
-            [serviceAgreementV1Address, requestData.tokenAmount],
-            blockchain,
-        );
+        if (!skipIncreaseAllowance) {
+            await this.executeContractFunction(
+                'Token',
+                'increaseAllowance',
+                [serviceAgreementV1Address, requestData.tokenAmount],
+                blockchain,
+            );
+        }
 
         stepHooks.afterHook({
             status: OPERATIONS_STEP_STATUS.INCREASE_ALLOWANCE_COMPLETED,

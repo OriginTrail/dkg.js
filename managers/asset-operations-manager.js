@@ -60,14 +60,42 @@ class AssetOperationsManager {
     }
 
     /**
+     * Increases allowance for a set quantity of tokens.
+     * @async
+     * @param {number} tokenAmount - The amount of tokens to increase the allowance for.
+     * @param {Object} [options={}] - Additional options for asset creation - currently only blockchain option expected.
+     * @returns {Object} Object containing hash of blockchain transaction and status.
+     */
+    async increaseAllowance(tokenAmount, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+
+        this.validationService.validateIncreaseAllowance(blockchain);
+
+        const serviceAgreementV1Address = await this.blockchainService.getContractAddress(
+            'ServiceAgreementV1',
+            blockchain,
+        );
+
+        const receipt = await this.blockchainService.executeContractFunction(
+            'Token',
+            'increaseAllowance',
+            [serviceAgreementV1Address, tokenAmount],
+            blockchain,
+        );
+
+        return { transactionHash: receipt.transactionHash, success: receipt.status };
+    }
+
+    /**
      * Creates a new asset.
      * @async
      * @param {Object} content - The content of the asset to be created, contains public, private or both keys.
      * @param {Object} [options={}] - Additional options for asset creation.
      * @param {Object} [stepHooks=emptyHooks] - Hooks to execute during asset creation.
+     * @param {boolean} [skipIncreaseAllowance=false] - Whether to skip increasing the allowance before creating the asset.
      * @returns {Object} Object containing UAL, publicAssertionId and operation status.
      */
-    async create(content, options = {}, stepHooks = emptyHooks) {
+    async create(content, options = {}, stepHooks = emptyHooks, skipIncreaseAllowance = false) {
         this.validationService.validateObjectType(content);
         let jsonContent = {};
 
@@ -160,6 +188,7 @@ class AssetOperationsManager {
             },
             blockchain,
             stepHooks,
+            skipIncreaseAllowance,
         );
 
         const resolvedUAL = {
@@ -320,10 +349,10 @@ class AssetOperationsManager {
             getPublicOperationId,
         );
 
-        if(!getPublicOperationResult.data.assertion) {
+        if (!getPublicOperationResult.data.assertion) {
             return {
                 errorType: 'DKG_CLIENT_ERROR',
-                errorMessage: "Unable to find assertion on the network!",
+                errorMessage: 'Unable to find assertion on the network!',
             };
         }
 
@@ -405,7 +434,7 @@ class AssetOperationsManager {
                         authToken,
                         queryString,
                         QUERY_TYPES.CONSTRUCT,
-                        repository
+                        repository,
                     );
 
                     queryPrivateOperationResult = await this.nodeApiService.getOperationResult(

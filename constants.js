@@ -62,7 +62,7 @@ module.exports.OPERATIONS = {
     UPDATE: 'update',
     LOCAL_STORE: 'local-store',
     QUERY: 'query',
-    INCREASE_ALLOWANCE: 'increase-allowance'
+    INCREASE_ALLOWANCE: 'increase-allowance',
 };
 
 module.exports.OPERATION_STATUSES = {
