@@ -149,16 +149,28 @@ class BlockchainServiceBase {
         );
 
         if (!skipIncreaseAllowance) {
-            await this.executeContractFunction(
+            const allowance = await this.callContractFunction(
                 'Token',
-                'increaseAllowance',
-                [serviceAgreementV1Address, requestData.tokenAmount],
+                'allowance',
+                [blockchain.publicKey, serviceAgreementV1Address],
                 blockchain,
             );
 
-            stepHooks.afterHook({
-                status: OPERATIONS_STEP_STATUS.INCREASE_ALLOWANCE_COMPLETED,
-            });
+            if (BigInt(allowance) < BigInt(requestData.tokenAmount)) {
+                await this.executeContractFunction(
+                    'Token',
+                    'increaseAllowance',
+                    [
+                        serviceAgreementV1Address,
+                        BigInt(requestData.tokenAmount) - BigInt(allowance),
+                    ],
+                    blockchain,
+                );
+
+                stepHooks.afterHook({
+                    status: OPERATIONS_STEP_STATUS.INCREASE_ALLOWANCE_COMPLETED,
+                });
+            }
         }
 
         try {
