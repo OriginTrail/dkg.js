@@ -89,7 +89,10 @@ class AssetOperationsManager {
         const receipt = await this.blockchainService.executeContractFunction(
             'Token',
             'decreaseAllowance',
-            [serviceAgreementV1Address, tokenAmount > allowance ? allowance : tokenAmount], // So Error 'ERC20: decreased allowance below zero' is not emitted
+            [
+                serviceAgreementV1Address,
+                BigInt(tokenAmount) > BigInt(allowance) ? allowance : tokenAmount,
+            ], // So Error 'ERC20: decreased allowance below zero' is not emitted
             blockchain,
         );
 
