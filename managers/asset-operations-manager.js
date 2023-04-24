@@ -79,10 +79,17 @@ class AssetOperationsManager {
             blockchain,
         );
 
+        const allowance = await this.blockchainService.callContractFunction(
+            'Token',
+            'allowance',
+            [blockchain.publicKey, serviceAgreementV1Address],
+            blockchain,
+        );
+
         const receipt = await this.blockchainService.executeContractFunction(
             'Token',
             'decreaseAllowance',
-            [serviceAgreementV1Address, tokenAmount],
+            [serviceAgreementV1Address, tokenAmount > allowance ? allowance : tokenAmount], // So Error 'ERC20: decreased allowance below zero' is not emitted
             blockchain,
         );
 
