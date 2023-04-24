@@ -192,11 +192,14 @@ class BlockchainServiceBase {
 
             return tokenId;
         } catch (e) {
-            if (!skipIncreaseAllowance) {
+            if (!skipIncreaseAllowance && BigInt(allowance) < BigInt(requestData.tokenAmount)) {
                 await this.executeContractFunction(
                     'Token',
                     'decreaseAllowance',
-                    [serviceAgreementV1Address, requestData.tokenAmount],
+                    [
+                        serviceAgreementV1Address,
+                        BigInt(requestData.tokenAmount) - BigInt(allowance),
+                    ],
                     blockchain,
                 );
             }
@@ -253,11 +256,11 @@ class BlockchainServiceBase {
                 blockchain,
             );
         } catch (e) {
-            if (!skipIncreaseAllowance) {
+            if (!skipIncreaseAllowance && BigInt(allowance) < BigInt(tokenAmount)) {
                 await this.executeContractFunction(
                     'Token',
                     'decreaseAllowance',
-                    [serviceAgreementV1Address, tokenAmount],
+                    [serviceAgreementV1Address, BigInt(tokenAmount) - BigInt(allowance)],
                     blockchain,
                 );
             }
