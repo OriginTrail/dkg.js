@@ -231,7 +231,6 @@ class BlockchainServiceBase {
             );
 
             if (BigInt(allowance) < BigInt(tokenAmount)) {
-                console.log('here');
                 await this.executeContractFunction(
                     'Token',
                     'increaseAllowance',
