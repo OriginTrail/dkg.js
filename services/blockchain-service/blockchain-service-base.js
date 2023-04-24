@@ -220,12 +220,22 @@ class BlockchainServiceBase {
         );
 
         if (!skipIncreaseAllowance) {
-            await this.executeContractFunction(
+            const allowance = await this.callContractFunction(
                 'Token',
-                'increaseAllowance',
-                [serviceAgreementV1Address, tokenAmount],
+                'allowance',
+                [blockchain.publicKey, serviceAgreementV1Address],
                 blockchain,
             );
+
+            if (BigInt(allowance) < BigInt(tokenAmount)) {
+                console.log('here');
+                await this.executeContractFunction(
+                    'Token',
+                    'increaseAllowance',
+                    [serviceAgreementV1Address, BigInt(tokenAmount) - BigInt(allowance)],
+                    blockchain,
+                );
+            }
         }
 
         try {
