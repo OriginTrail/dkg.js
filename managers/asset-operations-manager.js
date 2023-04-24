@@ -486,9 +486,10 @@ class AssetOperationsManager {
      * @param {string} UAL - The Universal Asset Locator
      * @param {Object} content - The content of the asset to be updated.
      * @param {Object} [options={}] - Additional options for asset update.
+     * @param {boolean} [skipIncreaseAllowance=false] - Whether to skip increasing the allowance before updating the asset.
      * @returns {Object} Object containing UAL, publicAssertionId and operation status.
      */
-    async update(UAL, content, options = {}) {
+    async update(UAL, content, options = {}, skipIncreaseAllowance = false) {
         this.validationService.validateObjectType(content);
         const jsonContent = content;
 
@@ -570,6 +571,7 @@ class AssetOperationsManager {
             assertionMetadata.getAssertionChunksNumber(publicAssertion),
             tokenAmountInWei,
             blockchain,
+            skipIncreaseAllowance,
         );
 
         const resolvedUAL = {

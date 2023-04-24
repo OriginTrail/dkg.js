@@ -198,18 +198,21 @@ class BlockchainServiceBase {
         chunksNumber,
         tokenAmount,
         blockchain,
+        skipIncreaseAllowance = false,
     ) {
         const serviceAgreementV1Address = await this.getContractAddress(
             'ServiceAgreementV1',
             blockchain,
         );
 
-        await this.executeContractFunction(
-            'Token',
-            'increaseAllowance',
-            [serviceAgreementV1Address, tokenAmount],
-            blockchain,
-        );
+        if (!skipIncreaseAllowance) {
+            await this.executeContractFunction(
+                'Token',
+                'increaseAllowance',
+                [serviceAgreementV1Address, tokenAmount],
+                blockchain,
+            );
+        }
 
         try {
             return this.executeContractFunction(
