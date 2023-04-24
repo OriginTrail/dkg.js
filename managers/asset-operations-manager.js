@@ -36,7 +36,7 @@ class AssetOperationsManager {
      * Increases allowance for a set quantity of tokens.
      * @async
      * @param {number} tokenAmount - The amount of tokens to increase the allowance for.
-     * @param {Object} [options={}] - Additional options for asset creation - currently only blockchain option expected.
+     * @param {Object} [options={}] - Additional options for increasing allowance - currently only blockchain option expected.
      * @returns {Object} Object containing hash of blockchain transaction and status.
      */
     async increaseAllowance(tokenAmount, options = {}) {
@@ -52,6 +52,36 @@ class AssetOperationsManager {
         const receipt = await this.blockchainService.executeContractFunction(
             'Token',
             'increaseAllowance',
+            [serviceAgreementV1Address, tokenAmount],
+            blockchain,
+        );
+
+        return {
+            transactionHash: receipt.transactionHash,
+            status: receipt.status,
+        };
+    }
+
+    /**
+     * Decreases allowance for a set quantity of tokens.
+     * @async
+     * @param {number} tokenAmount - The amount of tokens to decrease the allowance for.
+     * @param {Object} [options={}] - Additional options for decreasing allowance - currently only blockchain option expected.
+     * @returns {Object} Object containing hash of blockchain transaction and status.
+     */
+    async decreaseAllowance(tokenAmount, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+
+        this.validationService.validateDecreaseAllowance(blockchain);
+
+        const serviceAgreementV1Address = await this.blockchainService.getContractAddress(
+            'ServiceAgreementV1',
+            blockchain,
+        );
+
+        const receipt = await this.blockchainService.executeContractFunction(
+            'Token',
+            'decreaseAllowance',
             [serviceAgreementV1Address, tokenAmount],
             blockchain,
         );

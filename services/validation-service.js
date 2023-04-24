@@ -1,4 +1,13 @@
-const { ASSET_STATES, CONTENT_TYPES, GRAPH_LOCATIONS, GRAPH_STATES, MAX_FILE_SIZE, OPERATIONS, GET_OUTPUT_FORMATS, QUERY_TYPES } = require('../constants.js');
+const {
+    ASSET_STATES,
+    CONTENT_TYPES,
+    GRAPH_LOCATIONS,
+    GRAPH_STATES,
+    MAX_FILE_SIZE,
+    OPERATIONS,
+    GET_OUTPUT_FORMATS,
+    QUERY_TYPES,
+} = require('../constants.js');
 const { nodeSupported } = require('./utilities.js');
 
 class ValidationService {
@@ -30,9 +39,12 @@ class ValidationService {
         this.validateAuthToken(authToken);
     }
 
-    validateIncreaseAllowance(blockchain)
-    {
+    validateIncreaseAllowance(blockchain) {
         this.validateBlockchain(blockchain, OPERATIONS.INCREASE_ALLOWANCE);
+    }
+
+    validateDecreaseAllowance(blockchain) {
+        this.validateBlockchain(blockchain, OPERATIONS.DECREASE_ALLOWANCE);
     }
 
     validateAssetCreate(
@@ -49,7 +61,7 @@ class ValidationService {
         tokenAmount,
         authToken,
     ) {
-        this.validateContent(content)
+        this.validateContent(content);
         this.validateBlockchain(blockchain, OPERATIONS.PUBLISH);
         this.validateEndpoint(endpoint);
         this.validatePort(port);
@@ -103,7 +115,7 @@ class ValidationService {
         tokenAmount,
         authToken,
     ) {
-        this.validateContent(content)
+        this.validateContent(content);
         this.validateBlockchain(blockchain, OPERATIONS.UPDATE);
         this.validateEndpoint(endpoint);
         this.validatePort(port);
@@ -262,7 +274,7 @@ class ValidationService {
 
         const validContentTypes = Object.values(CONTENT_TYPES);
         if (!validContentTypes.includes(contentType))
-          throw Error(`Invalid content visibility! Available parameters: ${validContentTypes}`)
+            throw Error(`Invalid content visibility! Available parameters: ${validContentTypes}`);
     }
 
     validateEpochsNum(epochsNum) {
