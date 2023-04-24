@@ -180,12 +180,14 @@ class BlockchainServiceBase {
 
             return tokenId;
         } catch (e) {
-            await this.executeContractFunction(
-                'Token',
-                'decreaseAllowance',
-                [serviceAgreementV1Address, requestData.tokenAmount],
-                blockchain,
-            );
+            if (!skipIncreaseAllowance) {
+                await this.executeContractFunction(
+                    'Token',
+                    'decreaseAllowance',
+                    [serviceAgreementV1Address, requestData.tokenAmount],
+                    blockchain,
+                );
+            }
             throw e;
         }
     }
@@ -229,12 +231,14 @@ class BlockchainServiceBase {
                 blockchain,
             );
         } catch (e) {
-            await this.executeContractFunction(
-                'Token',
-                'decreaseAllowance',
-                [serviceAgreementV1Address, tokenAmount],
-                blockchain,
-            );
+            if (!skipIncreaseAllowance) {
+                await this.executeContractFunction(
+                    'Token',
+                    'decreaseAllowance',
+                    [serviceAgreementV1Address, tokenAmount],
+                    blockchain,
+                );
+            }
             throw e;
         }
     }
