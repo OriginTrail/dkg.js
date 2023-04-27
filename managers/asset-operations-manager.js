@@ -108,10 +108,9 @@ class AssetOperationsManager {
      * @param {Object} content - The content of the asset to be created, contains public, private or both keys.
      * @param {Object} [options={}] - Additional options for asset creation.
      * @param {Object} [stepHooks=emptyHooks] - Hooks to execute during asset creation.
-     * @param {boolean} [skipIncreaseAllowance=false] - Whether to skip increasing the allowance before creating the asset.
      * @returns {Object} Object containing UAL, publicAssertionId and operation status.
      */
-    async create(content, options = {}, skipIncreaseAllowance = false, stepHooks = emptyHooks) {
+    async create(content, options = {}, stepHooks = emptyHooks) {
         this.validationService.validateObjectType(content);
         let jsonContent = {};
 
@@ -204,7 +203,6 @@ class AssetOperationsManager {
             },
             blockchain,
             stepHooks,
-            skipIncreaseAllowance,
         );
 
         const resolvedUAL = {
@@ -526,10 +524,9 @@ class AssetOperationsManager {
      * @param {string} UAL - The Universal Asset Locator
      * @param {Object} content - The content of the asset to be updated.
      * @param {Object} [options={}] - Additional options for asset update.
-     * @param {boolean} [skipIncreaseAllowance=false] - Whether to skip increasing the allowance before updating the asset.
      * @returns {Object} Object containing UAL, publicAssertionId and operation status.
      */
-    async update(UAL, content, options = {}, skipIncreaseAllowance = false) {
+    async update(UAL, content, options = {}) {
         this.validationService.validateObjectType(content);
         const jsonContent = content;
 
@@ -611,7 +608,6 @@ class AssetOperationsManager {
             assertionMetadata.getAssertionChunksNumber(publicAssertion),
             tokenAmountInWei,
             blockchain,
-            skipIncreaseAllowance,
         );
 
         const resolvedUAL = {

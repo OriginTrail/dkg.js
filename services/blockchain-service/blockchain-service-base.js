@@ -137,39 +137,32 @@ class BlockchainServiceBase {
         return this[blockchain.name].contracts[blockchain.hubContract][contractName];
     }
 
-    async createAsset(
-        requestData,
-        blockchain,
-        stepHooks = emptyHooks,
-        skipIncreaseAllowance = false,
-    ) {
+    async createAsset(requestData, blockchain, stepHooks = emptyHooks) {
         const serviceAgreementV1Address = await this.getContractAddress(
             'ServiceAgreementV1',
             blockchain,
         );
 
-        if (!skipIncreaseAllowance) {
-            const allowance = await this.callContractFunction(
+        const allowance = await this.callContractFunction(
+            'Token',
+            'allowance',
+            [blockchain.publicKey, serviceAgreementV1Address],
+            blockchain,
+        );
+
+        let tokensNeeded = BigInt(requestData.tokenAmount) - BigInt(allowance);
+
+        if (tokensNeeded > 0) {
+            await this.executeContractFunction(
                 'Token',
-                'allowance',
-                [blockchain.publicKey, serviceAgreementV1Address],
+                'increaseAllowance',
+                [serviceAgreementV1Address, tokensNeeded],
                 blockchain,
             );
 
-            let tokensNeeded = BigInt(requestData.tokenAmount) - BigInt(allowance);
-
-            if (tokensNeeded > 0) {
-                await this.executeContractFunction(
-                    'Token',
-                    'increaseAllowance',
-                    [serviceAgreementV1Address, tokensNeeded],
-                    blockchain,
-                );
-
-                stepHooks.afterHook({
-                    status: OPERATIONS_STEP_STATUS.INCREASE_ALLOWANCE_COMPLETED,
-                });
-            }
+            stepHooks.afterHook({
+                status: OPERATIONS_STEP_STATUS.INCREASE_ALLOWANCE_COMPLETED,
+            });
         }
 
         try {
@@ -191,7 +184,7 @@ class BlockchainServiceBase {
 
             return tokenId;
         } catch (e) {
-            if (!skipIncreaseAllowance && tokensNeeded > 0) {
+            if (tokensNeeded > 0) {
                 await this.executeContractFunction(
                     'Token',
                     'decreaseAllowance',
@@ -211,31 +204,28 @@ class BlockchainServiceBase {
         chunksNumber,
         tokenAmount,
         blockchain,
-        skipIncreaseAllowance = false,
     ) {
         const serviceAgreementV1Address = await this.getContractAddress(
             'ServiceAgreementV1',
             blockchain,
         );
 
-        if (!skipIncreaseAllowance) {
-            const allowance = await this.callContractFunction(
+        const allowance = await this.callContractFunction(
+            'Token',
+            'allowance',
+            [blockchain.publicKey, serviceAgreementV1Address],
+            blockchain,
+        );
+
+        let tokensNeeded = BigInt(tokenAmount) - BigInt(allowance);
+
+        if (tokensNeeded > 0) {
+            await this.executeContractFunction(
                 'Token',
-                'allowance',
-                [blockchain.publicKey, serviceAgreementV1Address],
+                'increaseAllowance',
+                [serviceAgreementV1Address, tokensNeeded],
                 blockchain,
             );
-
-            let tokensNeeded = BigInt(tokenAmount) - BigInt(allowance);
-
-            if (tokensNeeded > 0) {
-                await this.executeContractFunction(
-                    'Token',
-                    'increaseAllowance',
-                    [serviceAgreementV1Address, tokensNeeded],
-                    blockchain,
-                );
-            }
         }
 
         try {
@@ -253,7 +243,7 @@ class BlockchainServiceBase {
                 blockchain,
             );
         } catch (e) {
-            if (!skipIncreaseAllowance && tokensNeeded > 0) {
+            if (tokensNeeded > 0) {
                 await this.executeContractFunction(
                     'Token',
                     'decreaseAllowance',
