@@ -40,11 +40,11 @@ class ValidationService {
     }
 
     validateIncreaseAllowance(blockchain) {
-        this.validateBlockchain(blockchain, OPERATIONS.INCREASE_ALLOWANCE);
+        this.validateBlockchain(blockchain);
     }
 
     validateDecreaseAllowance(blockchain) {
-        this.validateBlockchain(blockchain, OPERATIONS.DECREASE_ALLOWANCE);
+        this.validateBlockchain(blockchain);
     }
 
     validateAssetCreate(
