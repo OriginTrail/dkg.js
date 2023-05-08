@@ -150,7 +150,7 @@ class BlockchainServiceBase {
             blockchain,
         );
 
-        let tokensNeeded = BigInt(requestData.tokenAmount) - BigInt(allowance);
+        const tokensNeeded = BigInt(requestData.tokenAmount) - BigInt(allowance);
 
         if (tokensNeeded > 0) {
             await this.executeContractFunction(
@@ -217,7 +217,7 @@ class BlockchainServiceBase {
             blockchain,
         );
 
-        let tokensNeeded = BigInt(tokenAmount) - BigInt(allowance);
+        const tokensNeeded = BigInt(tokenAmount) - BigInt(allowance);
 
         if (tokensNeeded > 0) {
             await this.executeContractFunction(
