@@ -836,34 +836,12 @@ class AssetOperationsManager {
                 blockchain,
             );
 
-            const firstAssertionId = await this.blockchainService.getAssertionIdByIndex(
-                tokenId,
-                0,
-                blockchain,
-            );
-
-            const keyword = ethers.solidityPacked(
-                ['address', 'bytes32'],
-                [contract, firstAssertionId],
-            );
-
-            const agreementId = ethers.sha256(
-                ethers.solidityPacked(
-                    ['address', 'uint256', 'bytes'],
-                    [contract, tokenId, keyword],
-                ),
-            );
-            const agreementData = await this.blockchainService.getAgreementData(
-                agreementId,
-                blockchain,
-            );
-
             tokenAmountInWei = await this.nodeApiService.getBidSuggestion(
                 endpoint,
                 port,
                 authToken,
                 blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
-                epochsNumber - agreementData.epochsNumber,
+                epochsNumber,
                 latestFinalizedStateSize,
                 contract,
                 latestFinalizedState,
