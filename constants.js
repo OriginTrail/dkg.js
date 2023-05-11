@@ -44,18 +44,6 @@ module.exports.BLOCKCHAINS = {
     },
 };
 
-module.exports.WEBSOCKET_PROVIDER_OPTIONS = {
-    reconnect: {
-        auto: true,
-        delay: 1000, // ms
-        maxAttempts: 3,
-    },
-    clientConfig: {
-        keepalive: true,
-        keepaliveInterval: 30 * 1000, // ms
-    },
-};
-
 module.exports.OPERATIONS = {
     PUBLISH: 'publish',
     GET: 'get',

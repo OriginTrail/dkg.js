@@ -111,7 +111,7 @@ function divider() {
 
     divider();
 
-    let getLatestAssetResult = await DkgClient.asset.get(createAssetResult.UAL);
+    const getLatestAssetResult = await DkgClient.asset.get(createAssetResult.UAL);
     console.log('======================== ASSET LATEST  RESOLVED');
     console.log(JSON.stringify(getLatestAssetResult, null, 2));
 
