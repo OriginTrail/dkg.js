@@ -33,6 +33,76 @@ class AssetOperationsManager {
     }
 
     /**
+     * Increases allowance for a set quantity of tokens.
+     * @async
+     * @param {number} tokenAmount - The amount of tokens to increase the allowance for.
+     * @param {Object} [options={}] - Additional options for increasing allowance - currently only blockchain option expected.
+     * @returns {Object} Object containing hash of blockchain transaction and status.
+     */
+    async increaseAllowance(tokenAmount, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+
+        this.validationService.validateIncreaseAllowance(blockchain);
+
+        const serviceAgreementV1Address = await this.blockchainService.getContractAddress(
+            'ServiceAgreementV1',
+            blockchain,
+        );
+
+        const receipt = await this.blockchainService.executeContractFunction(
+            'Token',
+            'increaseAllowance',
+            [serviceAgreementV1Address, tokenAmount],
+            blockchain,
+        );
+
+        return {
+            transactionHash: receipt.transactionHash,
+            status: receipt.status,
+        };
+    }
+
+    /**
+     * Decreases allowance for a set quantity of tokens.
+     * @async
+     * @param {number} tokenAmount - The amount of tokens to decrease the allowance for.
+     * @param {Object} [options={}] - Additional options for decreasing allowance - currently only blockchain option expected.
+     * @returns {Object} Object containing hash of blockchain transaction and status.
+     */
+    async decreaseAllowance(tokenAmount, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+
+        this.validationService.validateDecreaseAllowance(blockchain);
+
+        const serviceAgreementV1Address = await this.blockchainService.getContractAddress(
+            'ServiceAgreementV1',
+            blockchain,
+        );
+
+        const allowance = await this.blockchainService.callContractFunction(
+            'Token',
+            'allowance',
+            [blockchain.publicKey, serviceAgreementV1Address],
+            blockchain,
+        );
+
+        const receipt = await this.blockchainService.executeContractFunction(
+            'Token',
+            'decreaseAllowance',
+            [
+                serviceAgreementV1Address,
+                BigInt(tokenAmount) > BigInt(allowance) ? allowance : tokenAmount,
+            ], // So Error 'ERC20: decreased allowance below zero' is not emitted
+            blockchain,
+        );
+
+        return {
+            transactionHash: receipt.transactionHash,
+            status: receipt.status,
+        };
+    }
+
+    /**
      * Creates a new asset.
      * @async
      * @param {Object} content - The content of the asset to be created, contains public, private or both keys.
@@ -293,10 +363,10 @@ class AssetOperationsManager {
             getPublicOperationId,
         );
 
-        if(!getPublicOperationResult.data.assertion) {
+        if (!getPublicOperationResult.data.assertion) {
             return {
                 errorType: 'DKG_CLIENT_ERROR',
-                errorMessage: "Unable to find assertion on the network!",
+                errorMessage: 'Unable to find assertion on the network!',
             };
         }
 
@@ -378,7 +448,7 @@ class AssetOperationsManager {
                         authToken,
                         queryString,
                         QUERY_TYPES.CONSTRUCT,
-                        repository
+                        repository,
                     );
 
                     queryPrivateOperationResult = await this.nodeApiService.getOperationResult(
@@ -611,6 +681,7 @@ class AssetOperationsManager {
         );
         return {
             UAL,
+            publicAssertionId: publicAssertionId,
             operation: getOperationStatusObject(operationResult, operationId),
         };
     }
