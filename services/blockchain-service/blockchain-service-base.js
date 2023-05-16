@@ -75,7 +75,7 @@ class BlockchainServiceBase {
 
         let gasPrice;
         if (blockchain.name.startsWith('otp')) {
-            gasPrice = await provider.getGasPrice();
+            gasPrice = (await provider.getFeeData()).gasPrice;
         } else {
             gasPrice = this.convertToWei(100, 'gwei');
         }
