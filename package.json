@@ -27,7 +27,7 @@
     "bugs": {
         "url": "https://github.com/OriginTrail/dkg.js/issues"
     },
-    "homepage": "https://github.com/OriginTrail/dkg.js/tree/master#readme",
+    "homepage": "https://github.com/OriginTrail/dkg.js/tree/main#readme",
     "dependencies": {
         "assertion-tools": "^2.0.2",
         "axios": "^0.27.2",
