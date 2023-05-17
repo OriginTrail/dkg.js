@@ -790,25 +790,31 @@ class AssetOperationsManager {
     }
 
     /**
-     * Retrieves the issuer of a specified asset for a given blockchain.
+     * Retrieves the issuer of a specified asset for a given state index and a given blockchain.
      * @async
      * @param {string} UAL - The Universal Asset Locator of the asset.
+     * @param {string} stateIndex - The state index of the assertion we want to get issuer of.
      * @param {Object} [options={}] - Optional parameters for blockchain service.
      * @returns {Object} An object containing the UAL, issuer and operation status.
      */
-    async getIssuer(UAL, options = {}) {
+    async getStateIssuer(UAL, stateIndex, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
         this.validationService.validateAssetGetIssuer(UAL, blockchain);
 
         const { tokenId } = resolveUAL(UAL);
-        const assertionIndex = 0;
-        const firstAssertionId = await this.blockchainService.getAssertionIdByIndex(
+
+        const assertionId = await this.blockchainService.getAssertionIdByIndex(
             tokenId,
-            assertionIndex,
+            stateIndex,
             blockchain,
         );
 
-        const issuer = await this.blockchainService.getAssertionIssuer(tokenId, firstAssertionId, assertionIndex, blockchain);
+        const issuer = await this.blockchainService.getAssertionIssuer(
+            tokenId,
+            assertionId,
+            stateIndex,
+            blockchain,
+        );
         return {
             UAL,
             issuer,
