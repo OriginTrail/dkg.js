@@ -799,7 +799,7 @@ class AssetOperationsManager {
      */
     async getStateIssuer(UAL, stateIndex, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
-        this.validationService.validateAssetGetIssuer(UAL, blockchain);
+        this.validationService.validateAssetGetStateIssuer(UAL, blockchain);
 
         const { tokenId } = resolveUAL(UAL);
 
@@ -813,6 +813,36 @@ class AssetOperationsManager {
             tokenId,
             assertionId,
             stateIndex,
+            blockchain,
+        );
+        return {
+            UAL,
+            issuer,
+            operation: getOperationStatusObject({ data: {}, status: 'COMPLETED' }, null),
+        };
+    }
+
+    /**
+     * Retrieves the latest issuer of a specified asset and a given blockchain.
+     * @async
+     * @param {string} UAL - The Universal Asset Locator of the asset.
+     * @param {Object} [options={}] - Optional parameters for blockchain service.
+     * @returns {Object} An object containing the UAL, issuer and operation status.
+     */
+    async getLatestStateIssuer(UAL, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        this.validationService.validateAssetGetLatestStateIssuer(UAL, blockchain);
+
+        const { tokenId } = resolveUAL(UAL);
+
+        const assertionIds = await this.blockchainService.getAssertionIds(tokenId, blockchain);
+
+        let indexOfLastAssertion = assertionIds.length - 1;
+
+        const issuer = await this.blockchainService.getAssertionIssuer(
+            tokenId,
+            assertionIds[indexOfLastAssertion],
+            indexOfLastAssertion,
             blockchain,
         );
         return {
