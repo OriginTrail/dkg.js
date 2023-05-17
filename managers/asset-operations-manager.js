@@ -829,16 +829,16 @@ class AssetOperationsManager {
      * @param {Object} [options={}] - Optional parameters for blockchain service.
      * @returns {Object} An object containing the UAL, issuer and operation status.
      */
-    async getAssertionIds(UAL, options = {}) {
+    async getStates(UAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
-        this.validationService.validateAssetGetAssertionIds(UAL, blockchain);
+        this.validationService.validateAssetGetStates(UAL, blockchain);
 
         const { tokenId } = resolveUAL(UAL);
 
-        const assertionIds = await this.blockchainService.getAssertionIds(tokenId, blockchain);
+        const states = await this.blockchainService.getAssertionIds(tokenId, blockchain);
 
         return {
-            assertionIds,
+            states,
             operation: getOperationStatusObject({ data: {}, status: 'COMPLETED' }, null),
         };
     }

@@ -153,7 +153,7 @@ class ValidationService {
         this.validateBlockchain(blockchain);
     }
 
-    validateAssetGetAssertionIds(UAL, blockchain) {
+    validateAssetGetStates(UAL, blockchain) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
     }
