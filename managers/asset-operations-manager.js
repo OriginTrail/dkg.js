@@ -851,7 +851,7 @@ class AssetOperationsManager {
         return {
             UAL,
             issuer,
-            latestState: latestState,
+            latestState,
             operation: getOperationStatusObject({ data: {}, status: 'COMPLETED' }, null),
         };
     }
