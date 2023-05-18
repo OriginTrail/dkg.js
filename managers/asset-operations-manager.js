@@ -799,11 +799,11 @@ class AssetOperationsManager {
      */
     async getStateIssuer(UAL, stateIndex, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
-        this.validationService.validateAssetGetStateIssuer(UAL, blockchain);
+        this.validationService.validateAssetGetStateIssuer(UAL, stateIndex, blockchain);
 
         const { tokenId } = resolveUAL(UAL);
 
-        const assertionId = await this.blockchainService.getAssertionIdByIndex(
+        const state = await this.blockchainService.getAssertionIdByIndex(
             tokenId,
             stateIndex,
             blockchain,
@@ -811,13 +811,14 @@ class AssetOperationsManager {
 
         const issuer = await this.blockchainService.getAssertionIssuer(
             tokenId,
-            assertionId,
+            state,
             stateIndex,
             blockchain,
         );
         return {
             UAL,
             issuer,
+            state,
             operation: getOperationStatusObject({ data: {}, status: 'COMPLETED' }, null),
         };
     }
