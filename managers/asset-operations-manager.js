@@ -836,19 +836,22 @@ class AssetOperationsManager {
 
         const { tokenId } = resolveUAL(UAL);
 
-        const assertionIds = await this.blockchainService.getAssertionIds(tokenId, blockchain);
+        const states = await this.blockchainService.getAssertionIds(tokenId, blockchain);
 
-        let indexOfLastAssertion = assertionIds.length - 1;
+        const latestStateIndex = states.length - 1;
+
+        const latestState = states[latestStateIndex];
 
         const issuer = await this.blockchainService.getAssertionIssuer(
             tokenId,
-            assertionIds[indexOfLastAssertion],
-            indexOfLastAssertion,
+            latestState,
+            latestStateIndex,
             blockchain,
         );
         return {
             UAL,
             issuer,
+            latestState: latestState,
             operation: getOperationStatusObject({ data: {}, status: 'COMPLETED' }, null),
         };
     }
@@ -869,6 +872,7 @@ class AssetOperationsManager {
         const states = await this.blockchainService.getAssertionIds(tokenId, blockchain);
 
         return {
+            UAL,
             states,
             operation: getOperationStatusObject({ data: {}, status: 'COMPLETED' }, null),
         };
