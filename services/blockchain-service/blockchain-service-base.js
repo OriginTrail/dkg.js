@@ -401,6 +401,15 @@ class BlockchainServiceBase {
         );
     }
 
+    async getAssertionIds(tokenId, blockchain) {
+        return this.callContractFunction(
+            'ContentAssetStorage',
+            'getAssertionIds',
+            [tokenId],
+            blockchain,
+        );
+    }
+
     async getAssertionIssuer(tokenId, assertionId, assertionIndex, blockchain) {
         return this.callContractFunction(
             'ContentAssetStorage',

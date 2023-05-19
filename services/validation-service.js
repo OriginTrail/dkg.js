@@ -148,7 +148,18 @@ class ValidationService {
         this.validateBlockchain(blockchain);
     }
 
-    validateAssetGetIssuer(UAL, blockchain) {
+    validateAssetGetStateIssuer(UAL, stateIndex, blockchain) {
+        this.validateUAL(UAL);
+        this.validateStateIndex(stateIndex);
+        this.validateBlockchain(blockchain);
+    }
+
+    validateAssetGetStates(UAL, blockchain) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+    }
+
+    validateAssetGetLatestStateIssuer(UAL, blockchain) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
     }
@@ -219,6 +230,13 @@ class ValidationService {
         const args = argsString.split('/');
 
         if (!(args?.length === 3)) throw Error('Invalid UAL.');
+    }
+
+    validateStateIndex(stateIndex) {
+        this.validateRequiredParam('stateIndex', stateIndex);
+        this.validateParamType('stateIndex', stateIndex, 'number');
+
+        if (stateIndex < 0) throw Error('Invalid state index.');
     }
 
     validateObjectType(obj) {

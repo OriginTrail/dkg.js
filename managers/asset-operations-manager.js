@@ -790,28 +790,90 @@ class AssetOperationsManager {
     }
 
     /**
-     * Retrieves the issuer of a specified asset for a given blockchain.
+     * Retrieves the issuer of a specified asset for a specified state index and a given blockchain.
+     * @async
+     * @param {string} UAL - The Universal Asset Locator of the asset.
+     * @param {string} stateIndex - The state index of the assertion we want to get issuer of.
+     * @param {Object} [options={}] - Optional parameters for blockchain service.
+     * @returns {Object} An object containing the UAL, issuer and operation status.
+     */
+    async getStateIssuer(UAL, stateIndex, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        this.validationService.validateAssetGetStateIssuer(UAL, stateIndex, blockchain);
+
+        const { tokenId } = resolveUAL(UAL);
+
+        const state = await this.blockchainService.getAssertionIdByIndex(
+            tokenId,
+            stateIndex,
+            blockchain,
+        );
+
+        const issuer = await this.blockchainService.getAssertionIssuer(
+            tokenId,
+            state,
+            stateIndex,
+            blockchain,
+        );
+        return {
+            UAL,
+            issuer,
+            state,
+            operation: getOperationStatusObject({ data: {}, status: 'COMPLETED' }, null),
+        };
+    }
+
+    /**
+     * Retrieves the latest issuer of a specified asset and a given blockchain.
      * @async
      * @param {string} UAL - The Universal Asset Locator of the asset.
      * @param {Object} [options={}] - Optional parameters for blockchain service.
      * @returns {Object} An object containing the UAL, issuer and operation status.
      */
-    async getIssuer(UAL, options = {}) {
+    async getLatestStateIssuer(UAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
-        this.validationService.validateAssetGetIssuer(UAL, blockchain);
+        this.validationService.validateAssetGetLatestStateIssuer(UAL, blockchain);
 
         const { tokenId } = resolveUAL(UAL);
-        const assertionIndex = 0;
-        const firstAssertionId = await this.blockchainService.getAssertionIdByIndex(
+
+        const states = await this.blockchainService.getAssertionIds(tokenId, blockchain);
+
+        const latestStateIndex = states.length - 1;
+
+        const latestState = states[latestStateIndex];
+
+        const issuer = await this.blockchainService.getAssertionIssuer(
             tokenId,
-            assertionIndex,
+            latestState,
+            latestStateIndex,
             blockchain,
         );
-
-        const issuer = await this.blockchainService.getAssertionIssuer(tokenId, firstAssertionId, assertionIndex, blockchain);
         return {
             UAL,
             issuer,
+            latestState,
+            operation: getOperationStatusObject({ data: {}, status: 'COMPLETED' }, null),
+        };
+    }
+
+    /**
+     * Retrieves all assertion ids for a specified asset and a given blockchain.
+     * @async
+     * @param {string} UAL - The Universal Asset Locator of the asset.
+     * @param {Object} [options={}] - Optional parameters for blockchain service.
+     * @returns {Object} An object containing the UAL, issuer and operation status.
+     */
+    async getStates(UAL, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        this.validationService.validateAssetGetStates(UAL, blockchain);
+
+        const { tokenId } = resolveUAL(UAL);
+
+        const states = await this.blockchainService.getAssertionIds(tokenId, blockchain);
+
+        return {
+            UAL,
+            states,
             operation: getOperationStatusObject({ data: {}, status: 'COMPLETED' }, null),
         };
     }
