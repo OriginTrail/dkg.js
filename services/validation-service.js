@@ -260,7 +260,6 @@ class ValidationService {
     }
 
     validateAssertionSizeInBytes(assertionSizeInBytes) {
-        console.log(assertionSizeInBytes);
         if (assertionSizeInBytes > MAX_FILE_SIZE)
             throw Error(`File size limit is ${MAX_FILE_SIZE / (1024 * 1024)}MB.`);
     }
