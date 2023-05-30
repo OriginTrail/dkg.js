@@ -2,18 +2,17 @@
  * @constant {number} MAX_FILE_SIZE
  * - Max file size for publish
  */
-module.exports.MAX_FILE_SIZE = 2621440;
+const MAX_FILE_SIZE = 2621440;
 
 /**
  * @constant {number} DID_PREFIX
  * - DID prefix for graph database
  */
-module.exports.DID_PREFIX = 'did:dkg';
+const DID_PREFIX = 'did:dkg';
 
-module.exports.PRIVATE_ASSERTION_PREDICATE =
-    'https://ontology.origintrail.io/dkg/1.0#privateAssertionID';
+const PRIVATE_ASSERTION_PREDICATE = 'https://ontology.origintrail.io/dkg/1.0#privateAssertionID';
 
-module.exports.BLOCKCHAINS = {
+const BLOCKCHAINS = {
     ganache: {
         rpc: 'http://localhost:7545',
         hubContract: '0x209679fA3B658Cd0fC74473aF28243bfe78a9b12',
@@ -44,7 +43,7 @@ module.exports.BLOCKCHAINS = {
     },
 };
 
-module.exports.WEBSOCKET_PROVIDER_OPTIONS = {
+const WEBSOCKET_PROVIDER_OPTIONS = {
     reconnect: {
         auto: true,
         delay: 1000, // ms
@@ -56,7 +55,7 @@ module.exports.WEBSOCKET_PROVIDER_OPTIONS = {
     },
 };
 
-module.exports.OPERATIONS = {
+const OPERATIONS = {
     PUBLISH: 'publish',
     GET: 'get',
     UPDATE: 'update',
@@ -64,69 +63,69 @@ module.exports.OPERATIONS = {
     QUERY: 'query',
 };
 
-module.exports.OPERATION_STATUSES = {
+const OPERATION_STATUSES = {
     PENDING: 'PENDING',
     COMPLETED: 'COMPLETED',
     FAILED: 'FAILED',
 };
 
-module.exports.ASSERTION_STATES = {
+const ASSERTION_STATES = {
     LATEST: 'latest',
     LATEST_FINALIZED: 'latest_finalized',
 };
 
-module.exports.CONTENT_TYPES = {
+const CONTENT_TYPES = {
     PUBLIC: 'public',
     PRIVATE: 'private',
     ALL: 'all',
 };
 
-module.exports.GET_OUTPUT_FORMATS = {
+const GET_OUTPUT_FORMATS = {
     N_QUADS: 'n-quads',
     JSON_LD: 'json-ld',
 };
 
-module.exports.ASSET_STATES = {
+const ASSET_STATES = {
     LATEST: 'LATEST',
     FINALIZED: 'LATEST_FINALIZED',
 };
 
-module.exports.STORE_TYPES = {
+const STORE_TYPES = {
     TRIPLE: 'TRIPLE',
     PENDING: 'PENDING',
 };
 
-module.exports.GRAPH_LOCATIONS = {
+const GRAPH_LOCATIONS = {
     PUBLIC_KG: 'PUBLIC_KG',
     LOCAL_KG: 'LOCAL_KG',
 };
 
-module.exports.GRAPH_STATES = {
+const GRAPH_STATES = {
     CURRENT: 'CURRENT',
     HISTORICAL: 'HISTORICAL',
 };
 
-module.exports.OT_NODE_TRIPLE_STORE_REPOSITORIES = {
+const OT_NODE_TRIPLE_STORE_REPOSITORIES = {
     PUBLIC_CURRENT: 'publicCurrent',
     PUBLIC_HISTORY: 'publicHistory',
     PRIVATE_CURRENT: 'privateCurrent',
     PRIVATE_HISTORY: 'privateHistory',
 };
 
-module.exports.QUERY_TYPES = {
+const QUERY_TYPES = {
     CONSTRUCT: 'CONSTRUCT',
     SELECT: 'SELECT',
 };
 
-module.exports.OPERATIONS_STEP_STATUS = {
+const OPERATIONS_STEP_STATUS = {
     INCREASE_ALLOWANCE_COMPLETED: 'INCREASE_ALLOWANCE_COMPLETED',
     CREATE_ASSET_COMPLETED: 'CREATE_ASSET_COMPLETED',
     NETWORK_PUBLISH_COMPLETED: 'NETWORK_PUBLISH_COMPLETED',
 };
 
-module.exports.DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY = 0.5;
+const DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY = 0.5;
 
-module.exports.DEFAULT_PARAMETERS = {
+const DEFAULT_PARAMETERS = {
     PORT: 8900,
     FREQUENCY: 5,
     MAX_NUMBER_OF_RETRIES: 5,
@@ -134,9 +133,31 @@ module.exports.DEFAULT_PARAMETERS = {
     SCORE_FUNCTION_ID: 1,
     IMMUTABLE: false,
     VALIDATE: true,
-    OUTPUT_FORMAT: this.GET_OUTPUT_FORMATS.JSON_LD,
-    STATE: this.ASSET_STATES.LATEST,
-    CONTENT_TYPE: this.CONTENT_TYPES.PUBLIC,
-    GRAPH_LOCATION: this.GRAPH_LOCATIONS.LOCAL_KG,
-    GRAPH_STATE: this.GRAPH_STATES.CURRENT,
+    OUTPUT_FORMAT: GET_OUTPUT_FORMATS.JSON_LD,
+    STATE: ASSET_STATES.LATEST,
+    CONTENT_TYPE: CONTENT_TYPES.PUBLIC,
+    GRAPH_LOCATION: GRAPH_LOCATIONS.LOCAL_KG,
+    GRAPH_STATE: GRAPH_STATES.CURRENT,
+};
+
+module.exports = {
+    MAX_FILE_SIZE,
+    DID_PREFIX,
+    PRIVATE_ASSERTION_PREDICATE,
+    BLOCKCHAINS,
+    WEBSOCKET_PROVIDER_OPTIONS,
+    OPERATIONS,
+    OPERATION_STATUSES,
+    ASSERTION_STATES,
+    CONTENT_TYPES,
+    GET_OUTPUT_FORMATS,
+    ASSET_STATES,
+    STORE_TYPES,
+    GRAPH_LOCATIONS,
+    GRAPH_STATES,
+    OT_NODE_TRIPLE_STORE_REPOSITORIES,
+    QUERY_TYPES,
+    OPERATIONS_STEP_STATUS,
+    DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY,
+    DEFAULT_PARAMETERS,
 };
