@@ -699,7 +699,7 @@ class AssetOperationsManager {
         );
         return {
             UAL,
-            publicAssertionId: publicAssertionId,
+            publicAssertionId,
             operation: getOperationStatusObject(operationResult, operationId),
         };
     }
@@ -914,7 +914,14 @@ class AssetOperationsManager {
         const blockchain = this.inputService.getBlockchain(options);
         const tokenAmount = this.inputService.getTokenAmount(options);
 
-        const { tokenId } = resolveUAL(UAL);
+         this.validationService.validateExtendAssetStoringPeriod(
+             UAL,
+             epochsNumber,
+             tokenAmount,
+             blockchain,
+         );
+
+        const { tokenId, contract } = resolveUAL(UAL);
 
         let tokenAmountInWei;
 
@@ -936,28 +943,18 @@ class AssetOperationsManager {
                 blockchain,
             );
 
-            tokenAmountInWei = await this._getUpdateBidSuggestion(
-                UAL,
-                blockchain,
+            tokenAmountInWei = await this.nodeApiService.getBidSuggestion(
                 endpoint,
                 port,
                 authToken,
-                latestFinalizedState,
+                blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
+                epochsNumber,
                 latestFinalizedStateSize,
+                contract,
+                latestFinalizedState,
                 hashFunctionId,
             );
-
-            if (tokenAmountInWei < 0) {
-                tokenAmountInWei = 0;
-            }
         }
-
-        this.validationService.validateExtendAssetStoringPeriod(
-            UAL,
-            epochsNumber,
-            tokenAmountInWei,
-            blockchain,
-        );
 
         await this.blockchainService.extendAssetStoringPeriod(
             tokenId,
@@ -975,6 +972,8 @@ class AssetOperationsManager {
     async addTokens(UAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
         const tokenAmount = this.inputService.getTokenAmount(options);
+
+        this.validationService.validateAddTokens(UAL, tokenAmount, blockchain);
 
         const { tokenId } = resolveUAL(UAL);
 
@@ -1016,8 +1015,6 @@ class AssetOperationsManager {
             }
         }
 
-        this.validationService.validateAddTokens(UAL, tokenAmountInWei, blockchain);
-
         await this.blockchainService.addTokens(tokenId, tokenAmountInWei, blockchain);
 
         return {
@@ -1029,6 +1026,8 @@ class AssetOperationsManager {
     async addUpdateTokens(UAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
         const tokenAmount = this.inputService.getTokenAmount(options);
+
+        this.validationService.validateAddTokens(UAL, tokenAmount, blockchain);
 
         const { tokenId } = resolveUAL(UAL);
 
@@ -1068,8 +1067,6 @@ class AssetOperationsManager {
                 );
             }
         }
-
-        this.validationService.validateAddTokens(UAL, tokenAmountInWei, blockchain);
 
         await this.blockchainService.addUpdateTokens(tokenId, tokenAmountInWei, blockchain);
 
