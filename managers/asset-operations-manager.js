@@ -169,6 +169,15 @@ class AssetOperationsManager {
             ],
         };
         const publicAssertion = await formatAssertion(publicGraph);
+        const publicAssertionSizeInBytes =
+            assertionMetadata.getAssertionSizeInBytes(publicAssertion);
+
+        this.validationService.validateAssertionSizeInBytes(
+            publicAssertionSizeInBytes +
+                (privateAssertion === undefined
+                    ? 0
+                    : assertionMetadata.getAssertionSizeInBytes(privateAssertion)),
+        );
         const publicAssertionId = calculateRoot(publicAssertion);
 
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
@@ -184,7 +193,7 @@ class AssetOperationsManager {
                 authToken,
                 blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
                 epochsNum,
-                assertionMetadata.getAssertionSizeInBytes(publicAssertion),
+                publicAssertionSizeInBytes,
                 contentAssetStorageAddress,
                 publicAssertionId,
                 hashFunctionId,
@@ -193,7 +202,7 @@ class AssetOperationsManager {
         const tokenId = await this.blockchainService.createAsset(
             {
                 publicAssertionId,
-                assertionSize: assertionMetadata.getAssertionSizeInBytes(publicAssertion),
+                assertionSize: publicAssertionSizeInBytes,
                 triplesNumber: assertionMetadata.getAssertionTriplesNumber(publicAssertion),
                 chunksNumber: assertionMetadata.getAssertionChunksNumber(publicAssertion),
                 epochsNum,
@@ -576,6 +585,15 @@ class AssetOperationsManager {
             ],
         };
         const publicAssertion = await formatAssertion(publicGraph);
+        const publicAssertionSizeInBytes =
+            assertionMetadata.getAssertionSizeInBytes(publicAssertion);
+
+        this.validationService.validateAssertionSizeInBytes(
+            publicAssertionSizeInBytes +
+                (privateAssertion === undefined
+                    ? 0
+                    : assertionMetadata.getAssertionSizeInBytes(privateAssertion)),
+        );
         const publicAssertionId = calculateRoot(publicAssertion);
 
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
@@ -595,7 +613,7 @@ class AssetOperationsManager {
                 port,
                 authToken,
                 publicAssertionId,
-                assertionMetadata.getAssertionSizeInBytes(publicAssertion),
+                publicAssertionSizeInBytes,
                 hashFunctionId,
             );
         }
@@ -603,7 +621,7 @@ class AssetOperationsManager {
         await this.blockchainService.updateAsset(
             tokenId,
             publicAssertionId,
-            assertionMetadata.getAssertionSizeInBytes(publicAssertion),
+            publicAssertionSizeInBytes,
             assertionMetadata.getAssertionTriplesNumber(publicAssertion),
             assertionMetadata.getAssertionChunksNumber(publicAssertion),
             tokenAmountInWei,
@@ -785,6 +803,95 @@ class AssetOperationsManager {
         return {
             UAL,
             owner,
+            operation: getOperationStatusObject({ data: {}, status: 'COMPLETED' }, null),
+        };
+    }
+
+    /**
+     * Retrieves the issuer of a specified asset for a specified state index and a given blockchain.
+     * @async
+     * @param {string} UAL - The Universal Asset Locator of the asset.
+     * @param {string} stateIndex - The state index of the assertion we want to get issuer of.
+     * @param {Object} [options={}] - Optional parameters for blockchain service.
+     * @returns {Object} An object containing the UAL, issuer and operation status.
+     */
+    async getStateIssuer(UAL, stateIndex, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        this.validationService.validateAssetGetStateIssuer(UAL, stateIndex, blockchain);
+
+        const { tokenId } = resolveUAL(UAL);
+
+        const state = await this.blockchainService.getAssertionIdByIndex(
+            tokenId,
+            stateIndex,
+            blockchain,
+        );
+
+        const issuer = await this.blockchainService.getAssertionIssuer(
+            tokenId,
+            state,
+            stateIndex,
+            blockchain,
+        );
+        return {
+            UAL,
+            issuer,
+            state,
+            operation: getOperationStatusObject({ data: {}, status: 'COMPLETED' }, null),
+        };
+    }
+
+    /**
+     * Retrieves the latest issuer of a specified asset and a given blockchain.
+     * @async
+     * @param {string} UAL - The Universal Asset Locator of the asset.
+     * @param {Object} [options={}] - Optional parameters for blockchain service.
+     * @returns {Object} An object containing the UAL, issuer and operation status.
+     */
+    async getLatestStateIssuer(UAL, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        this.validationService.validateAssetGetLatestStateIssuer(UAL, blockchain);
+
+        const { tokenId } = resolveUAL(UAL);
+
+        const states = await this.blockchainService.getAssertionIds(tokenId, blockchain);
+
+        const latestStateIndex = states.length - 1;
+
+        const latestState = states[latestStateIndex];
+
+        const issuer = await this.blockchainService.getAssertionIssuer(
+            tokenId,
+            latestState,
+            latestStateIndex,
+            blockchain,
+        );
+        return {
+            UAL,
+            issuer,
+            latestState,
+            operation: getOperationStatusObject({ data: {}, status: 'COMPLETED' }, null),
+        };
+    }
+
+    /**
+     * Retrieves all assertion ids for a specified asset and a given blockchain.
+     * @async
+     * @param {string} UAL - The Universal Asset Locator of the asset.
+     * @param {Object} [options={}] - Optional parameters for blockchain service.
+     * @returns {Object} An object containing the UAL, issuer and operation status.
+     */
+    async getStates(UAL, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        this.validationService.validateAssetGetStates(UAL, blockchain);
+
+        const { tokenId } = resolveUAL(UAL);
+
+        const states = await this.blockchainService.getAssertionIds(tokenId, blockchain);
+
+        return {
+            UAL,
+            states,
             operation: getOperationStatusObject({ data: {}, status: 'COMPLETED' }, null),
         };
     }

@@ -148,6 +148,22 @@ class ValidationService {
         this.validateBlockchain(blockchain);
     }
 
+    validateAssetGetStateIssuer(UAL, stateIndex, blockchain) {
+        this.validateUAL(UAL);
+        this.validateStateIndex(stateIndex);
+        this.validateBlockchain(blockchain);
+    }
+
+    validateAssetGetStates(UAL, blockchain) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+    }
+
+    validateAssetGetLatestStateIssuer(UAL, blockchain) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+    }
+
     validateAssetBurn(UAL, blockchain) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
@@ -216,6 +232,13 @@ class ValidationService {
         if (!(args?.length === 3)) throw Error('Invalid UAL.');
     }
 
+    validateStateIndex(stateIndex) {
+        this.validateRequiredParam('stateIndex', stateIndex);
+        this.validateParamType('stateIndex', stateIndex, 'number');
+
+        if (stateIndex < 0) throw Error('Invalid state index.');
+    }
+
     validateObjectType(obj) {
         if (!(!!obj && typeof obj === 'object')) throw Error('Content must be an object');
     }
@@ -234,8 +257,10 @@ class ValidationService {
         if (!content.public && !content.private) {
             throw Error('Public or private content must be defined');
         }
+    }
 
-        if (Buffer.byteLength(JSON.stringify(content), 'utf-8') > MAX_FILE_SIZE)
+    validateAssertionSizeInBytes(assertionSizeInBytes) {
+        if (assertionSizeInBytes > MAX_FILE_SIZE)
             throw Error(`File size limit is ${MAX_FILE_SIZE / (1024 * 1024)}MB.`);
     }
 
