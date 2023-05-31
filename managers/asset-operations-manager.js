@@ -169,6 +169,15 @@ class AssetOperationsManager {
             ],
         };
         const publicAssertion = await formatAssertion(publicGraph);
+        const publicAssertionSizeInBytes =
+            assertionMetadata.getAssertionSizeInBytes(publicAssertion);
+
+        this.validationService.validateAssertionSizeInBytes(
+            publicAssertionSizeInBytes +
+                (privateAssertion === undefined
+                    ? 0
+                    : assertionMetadata.getAssertionSizeInBytes(privateAssertion)),
+        );
         const publicAssertionId = calculateRoot(publicAssertion);
 
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
@@ -184,7 +193,7 @@ class AssetOperationsManager {
                 authToken,
                 blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
                 epochsNum,
-                assertionMetadata.getAssertionSizeInBytes(publicAssertion),
+                publicAssertionSizeInBytes,
                 contentAssetStorageAddress,
                 publicAssertionId,
                 hashFunctionId,
@@ -193,7 +202,7 @@ class AssetOperationsManager {
         const tokenId = await this.blockchainService.createAsset(
             {
                 publicAssertionId,
-                assertionSize: assertionMetadata.getAssertionSizeInBytes(publicAssertion),
+                assertionSize: publicAssertionSizeInBytes,
                 triplesNumber: assertionMetadata.getAssertionTriplesNumber(publicAssertion),
                 chunksNumber: assertionMetadata.getAssertionChunksNumber(publicAssertion),
                 epochsNum,
@@ -576,6 +585,15 @@ class AssetOperationsManager {
             ],
         };
         const publicAssertion = await formatAssertion(publicGraph);
+        const publicAssertionSizeInBytes =
+            assertionMetadata.getAssertionSizeInBytes(publicAssertion);
+
+        this.validationService.validateAssertionSizeInBytes(
+            publicAssertionSizeInBytes +
+                (privateAssertion === undefined
+                    ? 0
+                    : assertionMetadata.getAssertionSizeInBytes(privateAssertion)),
+        );
         const publicAssertionId = calculateRoot(publicAssertion);
 
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
@@ -595,7 +613,7 @@ class AssetOperationsManager {
                 port,
                 authToken,
                 publicAssertionId,
-                assertionMetadata.getAssertionSizeInBytes(publicAssertion),
+                publicAssertionSizeInBytes,
                 hashFunctionId,
             );
         }
@@ -603,7 +621,7 @@ class AssetOperationsManager {
         await this.blockchainService.updateAsset(
             tokenId,
             publicAssertionId,
-            assertionMetadata.getAssertionSizeInBytes(publicAssertion),
+            publicAssertionSizeInBytes,
             assertionMetadata.getAssertionTriplesNumber(publicAssertion),
             assertionMetadata.getAssertionChunksNumber(publicAssertion),
             tokenAmountInWei,

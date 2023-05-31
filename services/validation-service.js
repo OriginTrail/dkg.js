@@ -257,8 +257,10 @@ class ValidationService {
         if (!content.public && !content.private) {
             throw Error('Public or private content must be defined');
         }
+    }
 
-        if (Buffer.byteLength(JSON.stringify(content), 'utf-8') > MAX_FILE_SIZE)
+    validateAssertionSizeInBytes(assertionSizeInBytes) {
+        if (assertionSizeInBytes > MAX_FILE_SIZE)
             throw Error(`File size limit is ${MAX_FILE_SIZE / (1024 * 1024)}MB.`);
     }
 
