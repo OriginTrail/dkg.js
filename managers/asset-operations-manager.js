@@ -307,7 +307,7 @@ class AssetOperationsManager {
      * @async
      * @param {string} UAL - The Universal Asset Locator
      * @param {Object} [options={}] - Optional parameters for the asset get operation.
-     * @param {string} [options.state] - The state of the asset, "latest" or "finalized".
+     * @param {string} [options.state] - The state or state index of the asset, "latest", "finalized", numerical, hash.
      * @param {string} [options.contentType] - The type of content to retrieve, either "public", "private" or "all".
      * @param {boolean} [options.validate] - Whether to validate the retrieved assertion.
      * @param {string} [options.outputFormat] - The format of the retrieved assertion output, either "n-quads" or "json-ld".
@@ -344,21 +344,45 @@ class AssetOperationsManager {
         );
 
         const { tokenId } = resolveUAL(UAL);
+
         let hasPendingUpdate = false;
         if (state === ASSET_STATES.LATEST) {
             hasPendingUpdate = await this.blockchainService.hasPendingUpdate(tokenId, blockchain);
         }
 
-        const publicAssertionId = hasPendingUpdate
-            ? await this.blockchainService.getUnfinalizedState(tokenId, blockchain)
-            : await this.blockchainService.getLatestAssertionId(tokenId, blockchain);
+        let publicAssertionId;
+        if (hasPendingUpdate) {
+            publicAssertionId = await this.blockchainService.getUnfinalizedState(tokenId, blockchain);
+        } else {
+            const assertionIds = await this.blockchainService.getAssertionIds(tokenId, blockchain);
+
+            if (state === ASSET_STATES.FINALIZED) {
+                publicAssertionId = assertionIds.slice(-1);
+            } else if (typeof state === "number") {
+                if (state >= assertionIds.length) {
+                    return {
+                        errorType: 'DKG_CLIENT_ERROR',
+                        errorMessage: 'State index is out of range.',
+                    }
+                }
+
+                publicAssertionId = assertionIds[state];
+            } else if (assertionIds.includes(state)) {
+                publicAssertionId = state;
+            } else {
+                return {
+                    errorType: 'DKG_CLIENT_ERROR',
+                    errorMessage: 'Incorrect state option.',
+                }
+            }
+        }
 
         const getPublicOperationId = await this.nodeApiService.get(
             endpoint,
             port,
             authToken,
             UAL,
-            state,
+            publicAssertionId,
             hashFunctionId,
         );
 
