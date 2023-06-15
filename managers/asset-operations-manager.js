@@ -356,7 +356,7 @@ class AssetOperationsManager {
         } else {
             const assertionIds = await this.blockchainService.getAssertionIds(tokenId, blockchain);
 
-            if (state === ASSET_STATES.FINALIZED) {
+            if (Object.values(ASSET_STATES).includes(state)) {
                 publicAssertionId = assertionIds[assertionIds.length - 1];
             } else if (typeof state === "number") {
                 if (state >= assertionIds.length) {
