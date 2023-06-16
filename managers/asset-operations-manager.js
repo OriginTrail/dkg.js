@@ -345,9 +345,11 @@ class AssetOperationsManager {
 
         const { tokenId } = resolveUAL(UAL);
 
+        let stateIsEnum = false;
         let hasPendingUpdate = false;
         if (state === ASSET_STATES.LATEST) {
             hasPendingUpdate = await this.blockchainService.hasPendingUpdate(tokenId, blockchain);
+            stateIsEnum = true;
         }
 
         let publicAssertionId;
@@ -358,6 +360,7 @@ class AssetOperationsManager {
 
             if (Object.values(ASSET_STATES).includes(state)) {
                 publicAssertionId = assertionIds[assertionIds.length - 1];
+                stateIsEnum = true;
             } else if (typeof state === "number") {
                 if (state >= assertionIds.length) {
                     return {
@@ -382,7 +385,7 @@ class AssetOperationsManager {
             port,
             authToken,
             UAL,
-            publicAssertionId,
+            stateIsEnum ? state: publicAssertionId,
             hashFunctionId,
         );
 
