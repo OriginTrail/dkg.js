@@ -408,11 +408,13 @@ class AssetOperationsManager {
         );
 
         if (!getPublicOperationResult.data.assertion) {
-            getPublicOperationResult.data = {
-                errorType: 'DKG_CLIENT_ERROR',
-                errorMessage: 'Unable to find assertion on the network!',
-            };
-            getPublicOperationResult.status = 'FAILED';
+            if (getPublicOperationResult.status !== 'FAILED') {
+                getPublicOperationResult.data = {
+                    errorType: 'DKG_CLIENT_ERROR',
+                    errorMessage: 'Unable to find assertion on the network!',
+                };
+                getPublicOperationResult.status = 'FAILED';
+            }
 
             return {
                 operation: {
