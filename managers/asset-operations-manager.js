@@ -346,7 +346,7 @@ class AssetOperationsManager {
         const { tokenId } = resolveUAL(UAL);
 
         let publicAssertionId;
-        if(state === ASSET_STATES.LATEST || /^0x[a-fA-F0-9]{64}$/.test(state)) {
+        if(state === ASSET_STATES.LATEST) {
             const unfinalizedState = await this.blockchainService.getUnfinalizedState(
                 tokenId,
                 blockchain,
@@ -357,11 +357,12 @@ class AssetOperationsManager {
             }
         }
 
+        const isEnumState = Object.values(ASSET_STATES).includes(state);
         let assertionIds = [];
         if(!publicAssertionId) {
             assertionIds = await this.blockchainService.getAssertionIds(tokenId, blockchain);
 
-            if (Object.values(ASSET_STATES).includes(state)) {
+            if (isEnumState) {
                 publicAssertionId = assertionIds[assertionIds.length - 1];
             } else if (typeof state === 'number') {
                 if (state >= assertionIds.length) {
@@ -371,6 +372,17 @@ class AssetOperationsManager {
                 publicAssertionId = assertionIds[state];
             } else if (assertionIds.includes(state)) {
                 publicAssertionId = state;
+            } else if (/^0x[a-fA-F0-9]{64}$/.test(state)) {
+                const unfinalizedState = await this.blockchainService.getUnfinalizedState(
+                    tokenId,
+                    blockchain,
+                );
+    
+                if (unfinalizedState != null && unfinalizedState !== ZeroHash && state === unfinalizedState) {
+                    publicAssertionId = unfinalizedState;
+                } else {
+                    throw Error('Given state hash isn\'t a part of the Knowledge Asset.')
+                }
             } else {
                 throw Error('Incorrect state option.');
             }
@@ -381,7 +393,7 @@ class AssetOperationsManager {
             port,
             authToken,
             UAL,
-            Object.values(ASSET_STATES).includes(state) ? state : publicAssertionId,
+            isEnumState ? state : publicAssertionId,
             hashFunctionId,
         );
 
