@@ -375,7 +375,7 @@ class AssetOperationsManager {
             }
 
             publicAssertionId = assertionIds[state];
-        } else if (assertionIds.includes(state)) {
+        } else if (assertionIds && assertionIds.includes(state)) {
             publicAssertionId = state;
         } else if (/^0x[a-fA-F0-9]{64}$/.test(state)) {
             const unfinalizedState = await this.blockchainService.getUnfinalizedState(
