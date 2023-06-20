@@ -348,7 +348,10 @@ class AssetOperationsManager {
         let publicAssertionId;
         let isLatestUnfinalized = false;
         if (state === ASSET_STATES.LATEST) {
-            const unfinalizedState = await this.blockchainService.getUnfinalizedState(tokenId, blockchain);
+            const unfinalizedState = await this.blockchainService.getUnfinalizedState(
+                tokenId,
+                blockchain,
+            );
             isLatestUnfinalized = unfinalizedState !== ZeroHash;
 
             if (isLatestUnfinalized) {
@@ -361,36 +364,35 @@ class AssetOperationsManager {
             assertionIds = await this.blockchainService.getAssertionIds(tokenId, blockchain);
         }
 
-        if ((state === ASSET_STATES.FINALIZED) || (state === ASSET_STATES.LATEST && !isLatestUnfinalized)) {
+        if (
+            state === ASSET_STATES.FINALIZED ||
+            (state === ASSET_STATES.LATEST && !isLatestUnfinalized)
+        ) {
             publicAssertionId = assertionIds[assertionIds.length - 1];
-        } else if (typeof state === "number") {
+        } else if (typeof state === 'number') {
             if (state >= assertionIds.length) {
-                return {
-                    errorType: 'DKG_CLIENT_ERROR',
-                    errorMessage: 'State index is out of range.',
-                }
+                throw Error('State index is out of range.');
             }
 
             publicAssertionId = assertionIds[state];
         } else if (assertionIds.includes(state)) {
             publicAssertionId = state;
         } else if (/^0x[a-fA-F0-9]{64}$/.test(state)) {
-            const unfinalizedState = await this.blockchainService.getUnfinalizedState(tokenId, blockchain);
+            const unfinalizedState = await this.blockchainService.getUnfinalizedState(
+                tokenId,
+                blockchain,
+            );
             const hasPendingUpdate = unfinalizedState !== ZeroHash;
 
-            if (hasPendingUpdate && (state === unfinalizedState)) {
+            if (hasPendingUpdate && state === unfinalizedState) {
                 publicAssertionId = state;
             } else {
-                return {
-                    errorType: 'DKG_CLIENT_ERROR',
-                    errorMessage: 'Incorrect state option. Knowledge Asset doesn\'t have state with given assertion hash.',
-                };
+                throw Error(
+                    "Incorrect state option. Knowledge Asset doesn't have state with given assertion hash.",
+                );
             }
         } else {
-            return {
-                errorType: 'DKG_CLIENT_ERROR',
-                errorMessage: 'Incorrect state option.',
-            };
+            throw Error('Incorrect state option.');
         }
 
         const getPublicOperationId = await this.nodeApiService.get(
@@ -398,7 +400,7 @@ class AssetOperationsManager {
             port,
             authToken,
             UAL,
-            Object.values(ASSET_STATES).includes(state) ? state: publicAssertionId,
+            Object.values(ASSET_STATES).includes(state) ? state : publicAssertionId,
             hashFunctionId,
         );
 
@@ -413,9 +415,19 @@ class AssetOperationsManager {
         );
 
         if (!getPublicOperationResult.data.assertion) {
-            return {
+            getPublicOperationResult.data = {
                 errorType: 'DKG_CLIENT_ERROR',
                 errorMessage: 'Unable to find assertion on the network!',
+            };
+            getPublicOperationResult.status = 'FAILED';
+
+            return {
+                operation: {
+                    publicGet: getOperationStatusObject(
+                        getPublicOperationResult,
+                        getPublicOperationId,
+                    ),
+                },
             };
         }
 
@@ -954,12 +966,12 @@ class AssetOperationsManager {
         const blockchain = this.inputService.getBlockchain(options);
         const tokenAmount = this.inputService.getTokenAmount(options);
 
-         this.validationService.validateExtendAssetStoringPeriod(
-             UAL,
-             epochsNumber,
-             tokenAmount,
-             blockchain,
-         );
+        this.validationService.validateExtendAssetStoringPeriod(
+            UAL,
+            epochsNumber,
+            tokenAmount,
+            blockchain,
+        );
 
         const { tokenId, contract } = resolveUAL(UAL);
 
