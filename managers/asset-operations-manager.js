@@ -345,37 +345,52 @@ class AssetOperationsManager {
 
         const { tokenId } = resolveUAL(UAL);
 
-        const unfinalizedState = await this.blockchainService.getUnfinalizedState(tokenId, blockchain);
-        const hasPendingUpdate = unfinalizedState !== ZeroHash;
-
         let publicAssertionId;
-        let stateIsEnum = false;
-        if (hasPendingUpdate && ([ASSET_STATES.LATEST, unfinalizedState].includes(state))) {
-            publicAssertionId = unfinalizedState;
-            stateIsEnum = true;
-        } else {
-            const assertionIds = await this.blockchainService.getAssertionIds(tokenId, blockchain);
+        let isLatestUnfinalized = false;
+        if (state === ASSET_STATES.LATEST) {
+            const unfinalizedState = await this.blockchainService.getUnfinalizedState(tokenId, blockchain);
+            isLatestUnfinalized = unfinalizedState !== ZeroHash;
 
-            if (Object.values(ASSET_STATES).includes(state)) {
-                publicAssertionId = assertionIds[assertionIds.length - 1];
-                stateIsEnum = true;
-            } else if (typeof state === "number") {
-                if (state >= assertionIds.length) {
-                    return {
-                        errorType: 'DKG_CLIENT_ERROR',
-                        errorMessage: 'State index is out of range.',
-                    }
+            if (isLatestUnfinalized) {
+                publicAssertionId = unfinalizedState;
+            }
+        }
+
+        let assertionIds;
+        if (!isLatestUnfinalized) {
+            assertionIds = await this.blockchainService.getAssertionIds(tokenId, blockchain);
+        }
+
+        if ((state === ASSET_STATES.FINALIZED) || (state === ASSET_STATES.LATEST && !isLatestUnfinalized)) {
+            publicAssertionId = assertionIds[assertionIds.length - 1];
+        } else if (typeof state === "number") {
+            if (state >= assertionIds.length) {
+                return {
+                    errorType: 'DKG_CLIENT_ERROR',
+                    errorMessage: 'State index is out of range.',
                 }
+            }
 
-                publicAssertionId = assertionIds[state];
-            } else if (assertionIds.includes(state)) {
+            publicAssertionId = assertionIds[state];
+        } else if (assertionIds.includes(state)) {
+            publicAssertionId = state;
+        } else if (/^0x[a-fA-F0-9]{64}$/.test(state)) {
+            const unfinalizedState = await this.blockchainService.getUnfinalizedState(tokenId, blockchain);
+            const hasPendingUpdate = unfinalizedState !== ZeroHash;
+
+            if (hasPendingUpdate && (state === unfinalizedState)) {
                 publicAssertionId = state;
             } else {
                 return {
                     errorType: 'DKG_CLIENT_ERROR',
-                    errorMessage: 'Incorrect state option.',
-                }
+                    errorMessage: 'Incorrect state option. Knowledge Asset doesn\'t have state with given assertion hash.',
+                };
             }
+        } else {
+            return {
+                errorType: 'DKG_CLIENT_ERROR',
+                errorMessage: 'Incorrect state option.',
+            };
         }
 
         const getPublicOperationId = await this.nodeApiService.get(
@@ -383,7 +398,7 @@ class AssetOperationsManager {
             port,
             authToken,
             UAL,
-            stateIsEnum ? state: publicAssertionId,
+            Object.values(ASSET_STATES).includes(state) ? state: publicAssertionId,
             hashFunctionId,
         );
 
