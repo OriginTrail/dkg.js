@@ -357,8 +357,8 @@ class AssetOperationsManager {
             }
         }
 
-        const isEnumState = Object.values(ASSET_STATES).includes(state);
         let assertionIds = [];
+        const isEnumState = Object.values(ASSET_STATES).includes(state);
         if(!publicAssertionId) {
             assertionIds = await this.blockchainService.getAssertionIds(tokenId, blockchain);
 
