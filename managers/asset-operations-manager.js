@@ -1,5 +1,5 @@
 const { assertionMetadata, formatAssertion, calculateRoot } = require('assertion-tools');
-const { ethers } = require('ethers');
+const { ethers, ZeroHash } = require('ethers');
 const {
     isEmptyObject,
     deriveUAL,
@@ -345,16 +345,14 @@ class AssetOperationsManager {
 
         const { tokenId } = resolveUAL(UAL);
 
-        let stateIsEnum = false;
-        let hasPendingUpdate = false;
-        if (state === ASSET_STATES.LATEST) {
-            hasPendingUpdate = await this.blockchainService.hasPendingUpdate(tokenId, blockchain);
-            stateIsEnum = true;
-        }
+        const unfinalizedState = await this.blockchainService.getUnfinalizedState(tokenId, blockchain);
+        const hasPendingUpdate = unfinalizedState !== ZeroHash;
 
         let publicAssertionId;
-        if (hasPendingUpdate) {
-            publicAssertionId = await this.blockchainService.getUnfinalizedState(tokenId, blockchain);
+        let stateIsEnum = false;
+        if (hasPendingUpdate && ([ASSET_STATES.LATEST, unfinalizedState].includes(state))) {
+            publicAssertionId = unfinalizedState;
+            stateIsEnum = true;
         } else {
             const assertionIds = await this.blockchainService.getAssertionIds(tokenId, blockchain);
 
