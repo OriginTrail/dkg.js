@@ -346,53 +346,34 @@ class AssetOperationsManager {
         const { tokenId } = resolveUAL(UAL);
 
         let publicAssertionId;
-        let isLatestUnfinalized = false;
-        if (state === ASSET_STATES.LATEST) {
+        if(state === ASSET_STATES.LATEST || /^0x[a-fA-F0-9]{64}$/.test(state)) {
             const unfinalizedState = await this.blockchainService.getUnfinalizedState(
                 tokenId,
                 blockchain,
             );
-            isLatestUnfinalized = unfinalizedState !== ZeroHash;
 
-            if (isLatestUnfinalized) {
+            if (unfinalizedState != null && unfinalizedState !== ZeroHash) {
                 publicAssertionId = unfinalizedState;
             }
         }
 
-        let assertionIds;
-        if (!isLatestUnfinalized) {
+        let assertionIds = [];
+        if(!publicAssertionId) {
             assertionIds = await this.blockchainService.getAssertionIds(tokenId, blockchain);
-        }
 
-        if (
-            state === ASSET_STATES.FINALIZED ||
-            (state === ASSET_STATES.LATEST && !isLatestUnfinalized)
-        ) {
-            publicAssertionId = assertionIds[assertionIds.length - 1];
-        } else if (typeof state === 'number') {
-            if (state >= assertionIds.length) {
-                throw Error('State index is out of range.');
-            }
+            if (Object.values(ASSET_STATES).includes(state)) {
+                publicAssertionId = assertionIds[assertionIds.length - 1];
+            } else if (typeof state === 'number') {
+                if (state >= assertionIds.length) {
+                    throw Error('State index is out of range.');
+                }
 
-            publicAssertionId = assertionIds[state];
-        } else if (assertionIds && assertionIds.includes(state)) {
-            publicAssertionId = state;
-        } else if (/^0x[a-fA-F0-9]{64}$/.test(state)) {
-            const unfinalizedState = await this.blockchainService.getUnfinalizedState(
-                tokenId,
-                blockchain,
-            );
-            const hasPendingUpdate = unfinalizedState !== ZeroHash;
-
-            if (hasPendingUpdate && state === unfinalizedState) {
+                publicAssertionId = assertionIds[state];
+            } else if (assertionIds.includes(state)) {
                 publicAssertionId = state;
             } else {
-                throw Error(
-                    "Incorrect state option. Knowledge Asset doesn't have state with given assertion hash.",
-                );
+                throw Error('Incorrect state option.');
             }
-        } else {
-            throw Error('Incorrect state option.');
         }
 
         const getPublicOperationId = await this.nodeApiService.get(
