@@ -1,5 +1,5 @@
 const { assertionMetadata, formatAssertion, calculateRoot } = require('assertion-tools');
-const { ethers } = require('ethers');
+const { ethers, ZeroHash } = require('ethers');
 const {
     isEmptyObject,
     deriveUAL,
@@ -307,7 +307,7 @@ class AssetOperationsManager {
      * @async
      * @param {string} UAL - The Universal Asset Locator
      * @param {Object} [options={}] - Optional parameters for the asset get operation.
-     * @param {string} [options.state] - The state of the asset, "latest" or "finalized".
+     * @param {string} [options.state] - The state or state index of the asset, "latest", "finalized", numerical, hash.
      * @param {string} [options.contentType] - The type of content to retrieve, either "public", "private" or "all".
      * @param {boolean} [options.validate] - Whether to validate the retrieved assertion.
      * @param {string} [options.outputFormat] - The format of the retrieved assertion output, either "n-quads" or "json-ld".
@@ -344,21 +344,56 @@ class AssetOperationsManager {
         );
 
         const { tokenId } = resolveUAL(UAL);
-        let hasPendingUpdate = false;
-        if (state === ASSET_STATES.LATEST) {
-            hasPendingUpdate = await this.blockchainService.hasPendingUpdate(tokenId, blockchain);
+
+        let publicAssertionId;
+        if(state === ASSET_STATES.LATEST) {
+            const unfinalizedState = await this.blockchainService.getUnfinalizedState(
+                tokenId,
+                blockchain,
+            );
+
+            if (unfinalizedState != null && unfinalizedState !== ZeroHash) {
+                publicAssertionId = unfinalizedState;
+            }
         }
 
-        const publicAssertionId = hasPendingUpdate
-            ? await this.blockchainService.getUnfinalizedState(tokenId, blockchain)
-            : await this.blockchainService.getLatestAssertionId(tokenId, blockchain);
+        let assertionIds = [];
+        const isEnumState = Object.values(ASSET_STATES).includes(state);
+        if(!publicAssertionId) {
+            assertionIds = await this.blockchainService.getAssertionIds(tokenId, blockchain);
+
+            if (isEnumState) {
+                publicAssertionId = assertionIds[assertionIds.length - 1];
+            } else if (typeof state === 'number') {
+                if (state >= assertionIds.length) {
+                    throw Error('State index is out of range.');
+                }
+
+                publicAssertionId = assertionIds[state];
+            } else if (assertionIds.includes(state)) {
+                publicAssertionId = state;
+            } else if (/^0x[a-fA-F0-9]{64}$/.test(state)) {
+                const unfinalizedState = await this.blockchainService.getUnfinalizedState(
+                    tokenId,
+                    blockchain,
+                );
+    
+                if (unfinalizedState != null && unfinalizedState !== ZeroHash && state === unfinalizedState) {
+                    publicAssertionId = unfinalizedState;
+                } else {
+                    throw Error('Given state hash isn\'t a part of the Knowledge Asset.')
+                }
+            } else {
+                throw Error('Incorrect state option.');
+            }
+        }
 
         const getPublicOperationId = await this.nodeApiService.get(
             endpoint,
             port,
             authToken,
             UAL,
-            state,
+            isEnumState ? state : publicAssertionId,
             hashFunctionId,
         );
 
@@ -373,9 +408,21 @@ class AssetOperationsManager {
         );
 
         if (!getPublicOperationResult.data.assertion) {
+            if (getPublicOperationResult.status !== 'FAILED') {
+                getPublicOperationResult.data = {
+                    errorType: 'DKG_CLIENT_ERROR',
+                    errorMessage: 'Unable to find assertion on the network!',
+                };
+                getPublicOperationResult.status = 'FAILED';
+            }
+
             return {
-                errorType: 'DKG_CLIENT_ERROR',
-                errorMessage: 'Unable to find assertion on the network!',
+                operation: {
+                    publicGet: getOperationStatusObject(
+                        getPublicOperationResult,
+                        getPublicOperationId,
+                    ),
+                },
             };
         }
 
@@ -914,12 +961,12 @@ class AssetOperationsManager {
         const blockchain = this.inputService.getBlockchain(options);
         const tokenAmount = this.inputService.getTokenAmount(options);
 
-         this.validationService.validateExtendAssetStoringPeriod(
-             UAL,
-             epochsNumber,
-             tokenAmount,
-             blockchain,
-         );
+        this.validationService.validateExtendAssetStoringPeriod(
+            UAL,
+            epochsNumber,
+            tokenAmount,
+            blockchain,
+        );
 
         const { tokenId, contract } = resolveUAL(UAL);
 

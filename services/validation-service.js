@@ -186,13 +186,22 @@ class ValidationService {
         if (param == null) throw Error(`${paramName} is missing.`);
     }
 
-    validateParamType(paramName, param, type) {
+    validateParamType(paramName, param, typeOrTypes) {
+        const isTypesArray = Array.isArray(typeOrTypes);
+
         let parameter = param;
-        if (type === 'number') {
+        if (isTypesArray && typeOrTypes.includes('number')) {
+            const parsed = parseInt(param, 10);
+            parameter = Number.isNaN(parsed) ? param : parsed;
+        } else if (typeOrTypes === 'number') {
             parameter = parseInt(param, 10);
         }
+        const types = isTypesArray ? typeOrTypes : [typeOrTypes];
+    
         // eslint-disable-next-line valid-typeof
-        if (typeof parameter !== type) throw Error(`${paramName} must be of type ${type}.`);
+        if (!types.some(type => typeof parameter === type)) {
+            throw new Error(`${paramName} must be of type ${types.join(" or ")}.`);
+        }
     }
 
     validateQueryString(queryString) {
@@ -288,10 +297,14 @@ class ValidationService {
 
     validateState(state) {
         this.validateRequiredParam('state', state);
-        this.validateParamType('state', state, 'string');
-        const validStates = Object.values(ASSET_STATES);
-        if (!validStates.includes(state.toUpperCase()))
-            throw Error(`Invalid state, available states: ${validStates}`);
+        this.validateParamType('state', state, ['number', 'string']);
+        const validStatesEnum = Object.values(ASSET_STATES);
+        if (
+            (typeof state === 'string' && !validStatesEnum.includes(state.toUpperCase())) &&
+            typeof state !== 'number' &&
+            !/^0x[a-fA-F0-9]{64}$/.test(state)
+        )
+            throw Error(`Invalid state, available states: ${validStatesEnum},numerical or hash.`);
     }
 
     validateContentType(contentType) {
