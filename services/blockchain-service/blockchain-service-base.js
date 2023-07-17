@@ -150,7 +150,7 @@ class BlockchainServiceBase {
             blockchain,
         );
 
-        let tokensNeeded = BigInt(requestData.tokenAmount) - BigInt(allowance);
+        const tokensNeeded = BigInt(requestData.tokenAmount) - BigInt(allowance);
 
         if (tokensNeeded > 0) {
             await this.executeContractFunction(
@@ -217,7 +217,7 @@ class BlockchainServiceBase {
             blockchain,
         );
 
-        let tokensNeeded = BigInt(tokenAmount) - BigInt(allowance);
+        const tokensNeeded = BigInt(tokenAmount) - BigInt(allowance);
 
         if (tokensNeeded > 0) {
             await this.executeContractFunction(
@@ -397,6 +397,24 @@ class BlockchainServiceBase {
             'ContentAssetStorage',
             'getAssertionIdByIndex',
             [tokenId, index],
+            blockchain,
+        );
+    }
+
+    async getAssertionIds(tokenId, blockchain) {
+        return this.callContractFunction(
+            'ContentAssetStorage',
+            'getAssertionIds',
+            [tokenId],
+            blockchain,
+        );
+    }
+
+    async getAssertionIssuer(tokenId, assertionId, assertionIndex, blockchain) {
+        return this.callContractFunction(
+            'ContentAssetStorage',
+            'getAssertionIssuer',
+            [tokenId, assertionId, assertionIndex],
             blockchain,
         );
     }
