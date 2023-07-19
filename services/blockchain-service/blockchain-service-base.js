@@ -225,15 +225,6 @@ class BlockchainServiceBase {
         tokenAmount,
         blockchain,
     ) {
-        console.log('blockchain', blockchain);
-        console.log('args', [
-            tokenId,
-            publicAssertionId,
-            assertionSize,
-            triplesNumber,
-            chunksNumber,
-            tokenAmount,
-        ]);
         const serviceAgreementV1Address = await this.getContractAddress(
             'ServiceAgreementV1',
             blockchain,
