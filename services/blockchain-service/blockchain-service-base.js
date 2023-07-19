@@ -70,7 +70,9 @@ class BlockchainServiceBase {
         if (FIXED_GAS_LIMIT_METHODS[functionName]) {
             gasLimit = BigInt(FIXED_GAS_LIMIT_METHODS[functionName]);
         } else {
-            gasLimit = await contractInstance.getFunction(functionName).estimateGas(...args);
+            gasLimit = await contractInstance
+                .getFunction(functionName)
+                .estimateGas(...args, { from: blockchain.publicKey });
         }
 
         let gasPrice;
@@ -223,6 +225,15 @@ class BlockchainServiceBase {
         tokenAmount,
         blockchain,
     ) {
+        console.log('blockchain', blockchain);
+        console.log('args', [
+            tokenId,
+            publicAssertionId,
+            assertionSize,
+            triplesNumber,
+            chunksNumber,
+            tokenAmount,
+        ]);
         const serviceAgreementV1Address = await this.getContractAddress(
             'ServiceAgreementV1',
             blockchain,

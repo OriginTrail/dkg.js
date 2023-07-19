@@ -1,4 +1,5 @@
 const jsonld = require('jsonld');
+const { setTimeout } = require('timers/promises');
 const DKG = require('../index.js');
 
 const OT_NODE_HOSTNAME = 'http://localhost';
@@ -125,8 +126,9 @@ function divider() {
 
     divider();
 
-    await DkgClient.asset.waitFinalization(createAssetResult.UAL);
+    const waitFinalizationResult = await DkgClient.asset.waitFinalization(createAssetResult.UAL);
     console.log('======================== FINALIZATION COMPLETED');
+    console.log(JSON.stringify(waitFinalizationResult, null, 2));
 
     divider();
 
