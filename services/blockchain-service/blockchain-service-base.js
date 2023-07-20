@@ -1,4 +1,4 @@
-const Web3 = require('web3');
+const ethers = require('ethers');
 const AssertionStorageAbi = require('dkg-evm-module/abi/AssertionStorage.json');
 const HubAbi = require('dkg-evm-module/abi/Hub.json');
 const ServiceAgreementV1Abi = require('dkg-evm-module/abi/ServiceAgreementV1.json');
@@ -15,7 +15,9 @@ const FIXED_GAS_LIMIT_METHODS = {
 };
 
 class BlockchainServiceBase {
-    constructor() {
+    constructor(config = {}) {
+        this.config = config;
+        this.events = {};
         this.abis = {};
         this.abis.AssertionStorage = AssertionStorageAbi;
         this.abis.Hub = HubAbi;
@@ -25,50 +27,70 @@ class BlockchainServiceBase {
         this.abis.UnfinalizedStateStorage = UnfinalizedStateStorageAbi;
         this.abis.ContentAsset = ContentAssetAbi;
         this.abis.Token = TokenAbi;
+
+        this.abis.ContentAsset.filter((obj) => obj.type === 'event').forEach((event) => {
+            const concatInputs = event.inputs.map((input) => input.internalType).join(',');
+
+            this.events[event.name] = {
+                hash: ethers.id(`${event.name}(${concatInputs})`),
+                inputs: event.inputs,
+            };
+        });
     }
 
-    initializeWeb3() {
+    initializeProvider() {
         // overridden by subclasses
         return {};
     }
 
-    async decodeEventLogs() {
+    async getPublicKey() {
         // overridden by subclasses
-        return {};
+        return;
+    }
+
+    async decodeEventLogs(receipt, eventName) {
+        let result;
+        const { hash } = this.events[eventName];
+
+        const iface = new ethers.Interface(this.abis.ContentAsset);
+
+        receipt.logs.forEach((row) => {
+            if (row.topics[0] === hash) {
+                const parsedLog = iface.parseLog({ data: row.data, topics: row.topics });
+
+                result = parsedLog.args;
+            }
+        });
+        return result;
     }
 
     async callContractFunction(contractName, functionName, args, blockchain) {
         const contractInstance = await this.getContractInstance(contractName, blockchain);
-        return contractInstance.methods[functionName](...args).call();
+        return contractInstance[functionName](...args);
     }
 
-    async prepareTransaction(contractInstance, functionName, args, blockchain) {
-        const web3Instance = await this.getWeb3Instance(blockchain);
+    async getTransactionOptions(contractInstance, functionName, args, blockchain) {
+        const publicKey = await this.getPublicKey(blockchain);
+        const provider = await this.getProvider(blockchain);
         let gasLimit;
         if (FIXED_GAS_LIMIT_METHODS[functionName]) {
-            gasLimit = FIXED_GAS_LIMIT_METHODS[functionName];
+            gasLimit = BigInt(FIXED_GAS_LIMIT_METHODS[functionName]);
         } else {
-            gasLimit = await contractInstance.methods[functionName](...args).estimateGas({
-                from: blockchain.publicKey,
-            });
+            gasLimit = await contractInstance
+                .getFunction(functionName)
+                .estimateGas(...args, { from: publicKey });
         }
 
-        const encodedABI = await contractInstance.methods[functionName](...args).encodeABI();
-
         let gasPrice;
-
         if (blockchain.name.startsWith('otp')) {
-            gasPrice = await web3Instance.eth.getGasPrice();
+            gasPrice = (await provider.getFeeData()).gasPrice;
         } else {
-            gasPrice = Web3.utils.toWei('100', 'Gwei');
+            gasPrice = this.convertToWei(100, 'gwei');
         }
 
         return {
-            from: blockchain.publicKey,
-            to: contractInstance.options.address,
-            data: encodedABI,
             gasPrice,
-            gas: gasLimit,
+            gasLimit,
         };
     }
 
@@ -85,13 +107,13 @@ class BlockchainServiceBase {
         }
     }
 
-    async getWeb3Instance(blockchain) {
+    async getProvider(blockchain) {
         this.ensureBlockchainInfo(blockchain);
-        if (!this[blockchain.name].web3) {
-            this.initializeWeb3(blockchain.name, blockchain.rpc);
+        if (!this[blockchain.name].provider) {
+            this.initializeProvider(blockchain.name, blockchain.rpc);
         }
 
-        return this[blockchain.name].web3;
+        return this[blockchain.name].provider;
     }
 
     async getContractAddress(contractName, blockchain) {
@@ -100,9 +122,12 @@ class BlockchainServiceBase {
             this[blockchain.name].contracts[blockchain.hubContract] = {};
         }
         if (!this[blockchain.name].contracts[blockchain.hubContract].Hub) {
-            const web3Instance = await this.getWeb3Instance(blockchain);
-            this[blockchain.name].contracts[blockchain.hubContract].Hub =
-                new web3Instance.eth.Contract(this.abis.Hub, blockchain.hubContract);
+            const provider = await this.getProvider(blockchain);
+            this[blockchain.name].contracts[blockchain.hubContract].Hub = new ethers.Contract(
+                blockchain.hubContract,
+                this.abis.Hub,
+                provider,
+            );
         }
 
         if (!this[blockchain.name].contractAddresses[blockchain.hubContract][contractName]) {
@@ -126,11 +151,12 @@ class BlockchainServiceBase {
                 await this.getContractAddress(contractName, blockchain);
         }
         if (!this[blockchain.name].contracts[blockchain.hubContract][contractName]) {
-            const web3Instance = await this.getWeb3Instance(blockchain);
+            const provider = await this.getProvider(blockchain);
             this[blockchain.name].contracts[blockchain.hubContract][contractName] =
-                new web3Instance.eth.Contract(
-                    this.abis[contractName],
+                new ethers.Contract(
                     this[blockchain.name].contractAddresses[blockchain.hubContract][contractName],
+                    this.abis[contractName],
+                    provider,
                 );
         }
 
@@ -146,7 +172,7 @@ class BlockchainServiceBase {
         const allowance = await this.callContractFunction(
             'Token',
             'allowance',
-            [blockchain.publicKey, serviceAgreementV1Address],
+            [await this.getPublicKey(blockchain), serviceAgreementV1Address],
             blockchain,
         );
 
@@ -213,7 +239,7 @@ class BlockchainServiceBase {
         const allowance = await this.callContractFunction(
             'Token',
             'allowance',
-            [blockchain.publicKey, serviceAgreementV1Address],
+            [await this.getPublicKey(blockchain), serviceAgreementV1Address],
             blockchain,
         );
 
@@ -455,14 +481,14 @@ class BlockchainServiceBase {
     }
 
     async getLatestBlock(blockchain) {
-        const web3 = await this.getWeb3Instance(blockchain);
-        const blockNumber = await web3.eth.getBlockNumber();
+        const provider = await this.getProvider(blockchain);
+        const blockNumber = await provider.getBlockNumber();
 
-        return web3.eth.getBlock(blockNumber);
+        return provider.getBlock(blockNumber);
     }
 
-    convertToWei(ether) {
-        return Web3.utils.toWei(ether.toString(), 'ether');
+    convertToWei(value, fromUnit = 'ether') {
+        return ethers.parseUnits(value.toString(), fromUnit).toString();
     }
 }
 module.exports = BlockchainServiceBase;

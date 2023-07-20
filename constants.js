@@ -43,18 +43,6 @@ const BLOCKCHAINS = {
     },
 };
 
-const WEBSOCKET_PROVIDER_OPTIONS = {
-    reconnect: {
-        auto: true,
-        delay: 1000, // ms
-        maxAttempts: 3,
-    },
-    clientConfig: {
-        keepalive: true,
-        keepaliveInterval: 30 * 1000, // ms
-    },
-};
-
 const OPERATIONS = {
     PUBLISH: 'publish',
     GET: 'get',
@@ -145,7 +133,6 @@ module.exports = {
     DID_PREFIX,
     PRIVATE_ASSERTION_PREDICATE,
     BLOCKCHAINS,
-    WEBSOCKET_PROVIDER_OPTIONS,
     OPERATIONS,
     OPERATION_STATUSES,
     ASSERTION_STATES,
