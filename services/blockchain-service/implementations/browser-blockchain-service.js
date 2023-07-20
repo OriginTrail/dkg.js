@@ -4,13 +4,13 @@ const BlockchainServiceBase = require('../blockchain-service-base.js');
 class BrowserBlockchainService extends BlockchainServiceBase {
     initializeProvider(blockchainName, blockchainRpc) {
         if (typeof window.Web3 === 'undefined' || !window.Web3) {
-            this.logger.error(
+            console.error(
                 'No web3 implementation injected, please inject your own Web3 implementation.',
             );
             return;
         }
         if (typeof window.ethereum !== 'undefined') {
-            this[blockchainName].provider = new ethers.Web3Provider(window.ethereum);
+            this[blockchainName].provider = new ethers.BrowserProvider(window.ethereum);
         } else if (blockchainRpc.startsWith('ws')) {
             this[blockchainName].provider = new ethers.WebSocketProvider(blockchainRpc);
         } else {
@@ -19,21 +19,36 @@ class BrowserBlockchainService extends BlockchainServiceBase {
     }
 
     async executeContractFunction(contractName, functionName, args, blockchain) {
-        const contractInstance = await this.getContractInstance(contractName, blockchain);
-        const options = await this.getTransactionOptions(contractInstance, functionName, args, {
-            name: blockchain.name,
-            publicKey: await this.getAccount(),
-        });
+        const provider = await this.getProvider(blockchain);
+        let contractInstance = await this.getContractInstance(contractName, blockchain);
+        const options = await this.getTransactionOptions(
+            contractInstance,
+            functionName,
+            args,
+            blockchain,
+        );
 
-        return contractInstance[functionName](...args, options);
+        const signer = await provider.getSigner();
+        contractInstance = contractInstance.connect(signer);
+        const tx = await contractInstance[functionName](...args, options);
+
+        return tx.wait();
     }
 
-    async getAccount() {
+    async getPublicKey(blockchain) {
+        return this.getAccount(blockchain);
+    }
+
+    async getAccount(blockchain) {
         if (!this.account) {
             if (!window.ethereum) {
                 throw Error('This operation can be performed only by using Metamask accounts.');
             }
-            const signer = this.provider.getSigner();
+            await window.ethereum
+                .request({ method: 'eth_requestAccounts' })
+                .catch(() => console.error('There was an error fetching your accounts'));
+            const provider = await this.getProvider(blockchain);
+            const signer = await provider.getSigner();
             this.account = await signer.getAddress();
         }
         return this.account;
@@ -43,7 +58,7 @@ class BrowserBlockchainService extends BlockchainServiceBase {
         return this.executeContractFunction(
             'ContentAssetStorage',
             'transferFrom',
-            [await this.getAccount(), to, tokenId],
+            [await this.getAccount(blockchain), to, tokenId],
             blockchain,
         );
     }

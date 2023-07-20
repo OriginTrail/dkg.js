@@ -12,6 +12,10 @@ class NodeBlockchainService extends BlockchainServiceBase {
         this[blockchainName].provider = provider;
     }
 
+    async getPublicKey(blockchain) {
+        return blockchain?.publicKey;
+    }
+
     async executeContractFunction(contractName, functionName, args, blockchain) {
         const provider = await this.getProvider(blockchain);
         let contractInstance = await this.getContractInstance(contractName, blockchain);

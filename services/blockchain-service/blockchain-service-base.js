@@ -15,7 +15,7 @@ const FIXED_GAS_LIMIT_METHODS = {
 };
 
 class BlockchainServiceBase {
-    constructor(config) {
+    constructor(config = {}) {
         this.config = config;
         this.events = {};
         this.abis = {};
@@ -43,6 +43,11 @@ class BlockchainServiceBase {
         return {};
     }
 
+    async getPublicKey() {
+        // overridden by subclasses
+        return;
+    }
+
     async decodeEventLogs(receipt, eventName) {
         let result;
         const { hash } = this.events[eventName];
@@ -65,6 +70,7 @@ class BlockchainServiceBase {
     }
 
     async getTransactionOptions(contractInstance, functionName, args, blockchain) {
+        const publicKey = await this.getPublicKey(blockchain);
         const provider = await this.getProvider(blockchain);
         let gasLimit;
         if (FIXED_GAS_LIMIT_METHODS[functionName]) {
@@ -72,7 +78,7 @@ class BlockchainServiceBase {
         } else {
             gasLimit = await contractInstance
                 .getFunction(functionName)
-                .estimateGas(...args, { from: blockchain.publicKey });
+                .estimateGas(...args, { from: publicKey });
         }
 
         let gasPrice;
@@ -166,7 +172,7 @@ class BlockchainServiceBase {
         const allowance = await this.callContractFunction(
             'Token',
             'allowance',
-            [blockchain.publicKey, serviceAgreementV1Address],
+            [await this.getPublicKey(blockchain), serviceAgreementV1Address],
             blockchain,
         );
 
@@ -233,7 +239,7 @@ class BlockchainServiceBase {
         const allowance = await this.callContractFunction(
             'Token',
             'allowance',
-            [blockchain.publicKey, serviceAgreementV1Address],
+            [await this.getPublicKey(blockchain), serviceAgreementV1Address],
             blockchain,
         );
 
