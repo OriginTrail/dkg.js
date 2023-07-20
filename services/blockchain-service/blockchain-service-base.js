@@ -15,7 +15,9 @@ const FIXED_GAS_LIMIT_METHODS = {
 };
 
 class BlockchainServiceBase {
-    constructor() {
+    constructor(config = {}) {
+        this.config = config;
+        this.events = {};
         this.abis = {};
         this.abis.AssertionStorage = AssertionStorageAbi;
         this.abis.Hub = HubAbi;
@@ -25,6 +27,15 @@ class BlockchainServiceBase {
         this.abis.UnfinalizedStateStorage = UnfinalizedStateStorageAbi;
         this.abis.ContentAsset = ContentAssetAbi;
         this.abis.Token = TokenAbi;
+
+        this.abis.ContentAsset.filter((obj) => obj.type === 'event').forEach((event) => {
+            const concatInputs = event.inputs.map((input) => input.internalType);
+
+            this.events[event.name] = {
+                hash: Web3.utils.keccak256(`${event.name}(${concatInputs})`),
+                inputs: event.inputs,
+            };
+        });
     }
 
     initializeWeb3() {
@@ -32,9 +43,20 @@ class BlockchainServiceBase {
         return {};
     }
 
-    async decodeEventLogs() {
+    async decodeEventLogs(receipt, eventName, blockchain) {
+        const web3Instance = await this.getWeb3Instance(blockchain);
+        let result;
+        const { hash, inputs } = this.events[eventName];
+        receipt.logs.forEach((row) => {
+            if (row.topics[0] === hash)
+                result = web3Instance.eth.abi.decodeLog(inputs, row.data, row.topics.slice(1));
+        });
+        return result;
+    }
+
+    async getPublicKey() {
         // overridden by subclasses
-        return {};
+        return;
     }
 
     async callContractFunction(contractName, functionName, args, blockchain) {
@@ -43,13 +65,14 @@ class BlockchainServiceBase {
     }
 
     async prepareTransaction(contractInstance, functionName, args, blockchain) {
+        const publicKey = await this.getPublicKey(blockchain);
         const web3Instance = await this.getWeb3Instance(blockchain);
         let gasLimit;
         if (FIXED_GAS_LIMIT_METHODS[functionName]) {
             gasLimit = FIXED_GAS_LIMIT_METHODS[functionName];
         } else {
             gasLimit = await contractInstance.methods[functionName](...args).estimateGas({
-                from: blockchain.publicKey,
+                from: publicKey,
             });
         }
 
@@ -64,7 +87,7 @@ class BlockchainServiceBase {
         }
 
         return {
-            from: blockchain.publicKey,
+            from: publicKey,
             to: contractInstance.options.address,
             data: encodedABI,
             gasPrice,
@@ -146,7 +169,7 @@ class BlockchainServiceBase {
         const allowance = await this.callContractFunction(
             'Token',
             'allowance',
-            [blockchain.publicKey, serviceAgreementV1Address],
+            [await this.getPublicKey(blockchain), serviceAgreementV1Address],
             blockchain,
         );
 
@@ -213,7 +236,7 @@ class BlockchainServiceBase {
         const allowance = await this.callContractFunction(
             'Token',
             'allowance',
-            [blockchain.publicKey, serviceAgreementV1Address],
+            [await this.getPublicKey(blockchain), serviceAgreementV1Address],
             blockchain,
         );
 

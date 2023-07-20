@@ -3,21 +3,6 @@ const { WEBSOCKET_PROVIDER_OPTIONS } = require('../../../constants.js');
 const BlockchainServiceBase = require('../blockchain-service-base.js');
 
 class NodeBlockchainService extends BlockchainServiceBase {
-    constructor(config = {}) {
-        super(config);
-        this.config = config;
-        this.events = {};
-
-        this.abis.ContentAsset.filter((obj) => obj.type === 'event').forEach((event) => {
-            const concatInputs = event.inputs.map((input) => input.internalType);
-
-            this.events[event.name] = {
-                hash: Web3.utils.keccak256(`${event.name}(${concatInputs})`),
-                inputs: event.inputs,
-            };
-        });
-    }
-
     initializeWeb3(blockchainName, blockchainRpc) {
         if (blockchainRpc.startsWith('ws')) {
             const provider = new Web3.providers.WebsocketProvider(
@@ -31,6 +16,10 @@ class NodeBlockchainService extends BlockchainServiceBase {
         }
     }
 
+    async getPublicKey(blockchain) {
+        return blockchain?.publicKey;
+    }
+
     async executeContractFunction(contractName, functionName, args, blockchain) {
         const web3Instance = await this.getWeb3Instance(blockchain);
 
@@ -42,17 +31,6 @@ class NodeBlockchainService extends BlockchainServiceBase {
         );
 
         return web3Instance.eth.sendSignedTransaction(createdTransaction.rawTransaction);
-    }
-
-    async decodeEventLogs(receipt, eventName, blockchain) {
-        const web3Instance = await this.getWeb3Instance(blockchain);
-        let result;
-        const { hash, inputs } = this.events[eventName];
-        receipt.logs.forEach((row) => {
-            if (row.topics[0] === hash)
-                result = web3Instance.eth.abi.decodeLog(inputs, row.data, row.topics.slice(1));
-        });
-        return result;
     }
 
     async transferAsset(tokenId, to, blockchain) {
