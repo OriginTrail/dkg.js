@@ -29,7 +29,7 @@
     },
     "homepage": "https://github.com/OriginTrail/dkg.js/tree/master#readme",
     "dependencies": {
-        "assertion-tools": "^2.0.3",
+        "assertion-tools": "github:OriginTrail/assertion-tools#fix/get-assertion-size",
         "axios": "^0.27.2",
         "dkg-evm-module": "^4.0.4",
         "ethers": "^6.1.0",
