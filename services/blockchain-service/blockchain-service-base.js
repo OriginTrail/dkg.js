@@ -10,10 +10,6 @@ const TokenAbi = require('dkg-evm-module/abi/Token.json');
 const { OPERATIONS_STEP_STATUS } = require('../../constants');
 const emptyHooks = require('../../util/empty-hooks.js');
 
-const FIXED_GAS_LIMIT_METHODS = {
-    createAsset: 450000,
-};
-
 class BlockchainServiceBase {
     constructor() {
         this.abis = {};
@@ -44,14 +40,9 @@ class BlockchainServiceBase {
 
     async prepareTransaction(contractInstance, functionName, args, blockchain) {
         const web3Instance = await this.getWeb3Instance(blockchain);
-        let gasLimit;
-        if (FIXED_GAS_LIMIT_METHODS[functionName]) {
-            gasLimit = FIXED_GAS_LIMIT_METHODS[functionName];
-        } else {
-            gasLimit = await contractInstance.methods[functionName](...args).estimateGas({
-                from: blockchain.publicKey,
-            });
-        }
+        const gasLimit = await contractInstance.methods[functionName](...args).estimateGas({
+            from: blockchain.publicKey,
+        });
 
         const encodedABI = await contractInstance.methods[functionName](...args).encodeABI();
 
