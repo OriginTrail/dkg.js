@@ -33,15 +33,33 @@ class NodeBlockchainService extends BlockchainServiceBase {
 
     async executeContractFunction(contractName, functionName, args, blockchain) {
         const web3Instance = await this.getWeb3Instance(blockchain);
+        let result;
+        let gasPrice;
+        let transactionRetried = false;
 
-        const contractInstance = await this.getContractInstance(contractName, blockchain);
-        const tx = await this.prepareTransaction(contractInstance, functionName, args, blockchain);
-        const createdTransaction = await web3Instance.eth.accounts.signTransaction(
-            tx,
-            blockchain.privateKey,
-        );
+        while(result == undefined) {
+            try {
+                const contractInstance = await this.getContractInstance(contractName, blockchain);
+                const tx = await this.prepareTransaction(contractInstance, functionName, args, blockchain);
+                gasPrice = tx.gasPrice;
+                const createdTransaction = await web3Instance.eth.accounts.signTransaction(
+                    tx,
+                    blockchain.privateKey,
+                );
 
-        return web3Instance.eth.sendSignedTransaction(createdTransaction.rawTransaction);
+                result = web3Instance.eth.sendSignedTransaction(createdTransaction.rawTransaction);
+            } catch(e) {
+                console.log(blockchain);
+                if (!transactionRetried && blockchain.handleNotMinedError && e.message.includes('Transaction was not mined')) {
+                    transactionRetried = true;
+                    blockchain.gasPrice = gasPrice;
+                } else {
+                    throw e;
+                }
+            }
+        }
+
+        return result;
     }
 
     async decodeEventLogs(receipt, eventName, blockchain) {

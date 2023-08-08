@@ -50,6 +50,11 @@ class BlockchainServiceBase {
 
         if (blockchain.name.startsWith('otp')) {
             gasPrice = await web3Instance.eth.getGasPrice();
+
+            // Gas price increase for handling `Transaction not mined` error
+            if(blockchain.gasPrice && gasPrice <= blockchain.gasPrice) {
+                gasPrice = Number(blockchain.gasPrice) + 1;
+            }
         } else {
             gasPrice = Web3.utils.toWei('100', 'Gwei');
         }
