@@ -1,3 +1,4 @@
+
 class BlockchainOperationsManager {
 
     constructor(config, services) {
@@ -5,6 +6,9 @@ class BlockchainOperationsManager {
         this.inputService = services.inputService;
     }
 
+    async getGasPrice(blockchain){
+        return this.blockchainService.getGasPrice(blockchain);
+    }
 }
 
 module.exports = BlockchainOperationsManager;

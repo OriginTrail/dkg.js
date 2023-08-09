@@ -450,6 +450,19 @@ class BlockchainServiceBase {
         return latestBlock.timestamp;
     }
 
+    async getGasPrice(blockchain) {
+        const web3Instance = await this.getWeb3Instance(blockchain);
+        let gasPrice;
+
+        if (blockchain.name.startsWith('otp')) {
+            gasPrice = await web3Instance.eth.getGasPrice();
+        } else {
+            gasPrice = Web3.utils.toWei('100', 'Gwei');
+        }
+
+        return gasPrice;
+    }
+
     async getLatestBlock(blockchain) {
         const web3 = await this.getWeb3Instance(blockchain);
         const blockNumber = await web3.eth.getBlockNumber();
