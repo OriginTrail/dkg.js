@@ -47,9 +47,8 @@ class NodeBlockchainService extends BlockchainServiceBase {
                     blockchain.privateKey,
                 );
 
-                result = web3Instance.eth.sendSignedTransaction(createdTransaction.rawTransaction);
+                result = await web3Instance.eth.sendSignedTransaction(createdTransaction.rawTransaction);
             } catch(e) {
-                console.log(blockchain);
                 if (!transactionRetried && blockchain.handleNotMinedError && e.message.includes('Transaction was not mined')) {
                     transactionRetried = true;
                     blockchain.gasPrice = gasPrice;
