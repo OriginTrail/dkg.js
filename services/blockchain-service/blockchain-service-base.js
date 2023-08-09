@@ -46,16 +46,18 @@ class BlockchainServiceBase {
 
         const encodedABI = await contractInstance.methods[functionName](...args).encodeABI();
 
-        let gasPrice;
+        let gasPrice = await web3Instance.eth.getGasPrice();
 
-        if (blockchain.name.startsWith('otp')) {
-            gasPrice = await web3Instance.eth.getGasPrice();
+        // Gas price increase for handling `Transaction not mined` error
+        if(blockchain.retryTx && gasPrice <= blockchain.gasPrice) {
+            gasPrice = Number(blockchain.gasPrice) + 1;
+        } else if (blockchain.gasPrice) {
+            // Gas price provided by developers
+            gasPrice = blockchain.gasPrice;
+        }
 
-            // Gas price increase for handling `Transaction not mined` error
-            if(blockchain.gasPrice && gasPrice <= blockchain.gasPrice) {
-                gasPrice = Number(blockchain.gasPrice) + 1;
-            }
-        } else {
+        // Fallback
+        if(!gasPrice) {
             gasPrice = Web3.utils.toWei('100', 'Gwei');
         }
 
