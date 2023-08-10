@@ -51,6 +51,7 @@ class NodeBlockchainService extends BlockchainServiceBase {
             } catch(e) {
                 if (!transactionRetried && blockchain.handleNotMinedError && e.message.includes('Transaction was not mined')) {
                     transactionRetried = true;
+                    blockchain.retryTx = true;
                     blockchain.gasPrice = gasPrice;
                 } else {
                     throw e;
