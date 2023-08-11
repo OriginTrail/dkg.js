@@ -8,7 +8,7 @@ class BrowserBlockchainService extends BlockchainServiceBase {
         this.config = config;
     }
 
-    initializeWeb3(blockchainName, blockchainRpc) {
+    initializeWeb3(blockchainName, blockchainRpc, blockchainOptions) {
         if (typeof window.Web3 === 'undefined' || !window.Web3) {
             this.logger.error(
                 'No web3 implementation injected, please inject your own Web3 implementation.',

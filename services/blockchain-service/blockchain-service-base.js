@@ -89,7 +89,8 @@ class BlockchainServiceBase {
     async getWeb3Instance(blockchain) {
         this.ensureBlockchainInfo(blockchain);
         if (!this[blockchain.name].web3) {
-            this.initializeWeb3(blockchain.name, blockchain.rpc);
+            const blockchainOptions = { transactionPollingTimeout: blockchain.transactionPollingTimeout };
+            this.initializeWeb3(blockchain.name, blockchain.rpc, blockchainOptions);
         }
 
         return this[blockchain.name].web3;

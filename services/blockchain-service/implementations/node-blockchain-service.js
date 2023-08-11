@@ -18,7 +18,7 @@ class NodeBlockchainService extends BlockchainServiceBase {
         });
     }
 
-    initializeWeb3(blockchainName, blockchainRpc) {
+    initializeWeb3(blockchainName, blockchainRpc, blockchainOptions) {
         if (blockchainRpc.startsWith('ws')) {
             const provider = new Web3.providers.WebsocketProvider(
                 blockchainRpc,
@@ -28,6 +28,10 @@ class NodeBlockchainService extends BlockchainServiceBase {
             this[blockchainName].web3 = new Web3(provider);
         } else {
             this[blockchainName].web3 = new Web3(blockchainRpc);
+        }
+        
+        if(blockchainOptions.transactionPollingTimeout) {
+            this[blockchainName].web3.eth.transactionPollingTimeout = blockchainOptions.transactionPollingTimeout;
         }
     }
 
