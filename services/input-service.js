@@ -90,6 +90,7 @@ class InputService {
             publicKey,
             privateKey,
             gasPrice,
+            transactionPollingTimeout,
             handleNotMinedError
         };
     }
