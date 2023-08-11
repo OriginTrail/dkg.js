@@ -46,7 +46,10 @@ class BlockchainServiceBase {
 
         const encodedABI = await contractInstance.methods[functionName](...args).encodeABI();
 
-        let gasPrice = await web3Instance.eth.getGasPrice();
+        let gasPrice;
+        if (blockchain.gasPrice === undefined) {
+            gasPrice = await web3Instance.eth.getGasPrice();
+        }
 
         // Gas price increase for handling `Transaction not mined` error
         if(blockchain.retryTx && gasPrice <= blockchain.gasPrice) {
