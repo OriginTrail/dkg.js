@@ -37,21 +37,27 @@ class NodeBlockchainService extends BlockchainServiceBase {
         let gasPrice;
         let transactionRetried = false;
 
-        while(result == undefined) {
+        while(result === undefined) {
             try {
+                // eslint-disable-next-line no-await-in-loop
                 const contractInstance = await this.getContractInstance(contractName, blockchain);
+                // eslint-disable-next-line no-await-in-loop
                 const tx = await this.prepareTransaction(contractInstance, functionName, args, blockchain);
                 gasPrice = tx.gasPrice;
+                // eslint-disable-next-line no-await-in-loop
                 const createdTransaction = await web3Instance.eth.accounts.signTransaction(
                     tx,
                     blockchain.privateKey,
                 );
 
+                // eslint-disable-next-line no-await-in-loop
                 result = await web3Instance.eth.sendSignedTransaction(createdTransaction.rawTransaction);
             } catch(e) {
                 if (!transactionRetried && blockchain.handleNotMinedError && e.message.includes('Transaction was not mined')) {
                     transactionRetried = true;
+                    // eslint-disable-next-line no-param-reassign
                     blockchain.retryTx = true;
+                    // eslint-disable-next-line no-param-reassign
                     blockchain.gasPrice = gasPrice;
                 } else {
                     throw e;
