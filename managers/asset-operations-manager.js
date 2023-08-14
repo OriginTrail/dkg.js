@@ -8,7 +8,6 @@ const {
     toNQuads,
     toJSONLD,
     sleepForMilliseconds,
-    deriveRepository,
 } = require('../services/utilities.js');
 const {
     CONTENT_TYPES,
