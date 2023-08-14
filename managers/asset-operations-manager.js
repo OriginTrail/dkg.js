@@ -20,6 +20,7 @@ const {
     PRIVATE_ASSERTION_PREDICATE,
     QUERY_TYPES,
     DEFAULT_PARAMETERS,
+    OT_NODE_TRIPLE_STORE_REPOSITORIES,
 } = require('../constants.js');
 const emptyHooks = require('../util/empty-hooks');
 const { STORE_TYPES, ASSET_STATES } = require('../constants');
@@ -345,8 +346,9 @@ class AssetOperationsManager {
 
         const { tokenId } = resolveUAL(UAL);
 
-        let publicAssertionId;
-        if(state === ASSET_STATES.LATEST) {
+        let publicAssertionId,
+            stateFinalized = false;
+        if (state === ASSET_STATES.LATEST) {
             const unfinalizedState = await this.blockchainService.getUnfinalizedState(
                 tokenId,
                 blockchain,
@@ -355,11 +357,15 @@ class AssetOperationsManager {
             if (unfinalizedState != null && unfinalizedState !== ZeroHash) {
                 publicAssertionId = unfinalizedState;
             }
+
+            stateFinalized = false;
+        } else if (state === ASSET_STATES.FINALIZED) {
+            stateFinalized = true;
         }
 
         let assertionIds = [];
         const isEnumState = Object.values(ASSET_STATES).includes(state);
-        if(!publicAssertionId) {
+        if (!publicAssertionId) {
             assertionIds = await this.blockchainService.getAssertionIds(tokenId, blockchain);
 
             if (isEnumState) {
@@ -370,18 +376,26 @@ class AssetOperationsManager {
                 }
 
                 publicAssertionId = assertionIds[state];
+
+                if (state === assertionIds.length - 1) stateFinalized = true;
             } else if (assertionIds.includes(state)) {
                 publicAssertionId = state;
+
+                if (state === assertionIds[assertionIds.length - 1]) stateFinalized = true;
             } else if (/^0x[a-fA-F0-9]{64}$/.test(state)) {
                 const unfinalizedState = await this.blockchainService.getUnfinalizedState(
                     tokenId,
                     blockchain,
                 );
-    
-                if (unfinalizedState != null && unfinalizedState !== ZeroHash && state === unfinalizedState) {
+
+                if (
+                    unfinalizedState != null &&
+                    unfinalizedState !== ZeroHash &&
+                    state === unfinalizedState
+                ) {
                     publicAssertionId = unfinalizedState;
                 } else {
-                    throw Error('Given state hash isn\'t a part of the Knowledge Asset.')
+                    throw Error("Given state hash isn't a part of the Knowledge Asset.");
                 }
             } else {
                 throw Error('Incorrect state option.');
@@ -494,17 +508,15 @@ class AssetOperationsManager {
                         }
                     }`;
 
-                    const repository = deriveRepository(
-                        DEFAULT_PARAMETERS.GRAPH_LOCATION,
-                        DEFAULT_PARAMETERS.GRAPH_STATE,
-                    );
                     queryPrivateOperationId = await this.nodeApiService.query(
                         endpoint,
                         port,
                         authToken,
                         queryString,
                         QUERY_TYPES.CONSTRUCT,
-                        repository,
+                        stateFinalized
+                            ? OT_NODE_TRIPLE_STORE_REPOSITORIES.PRIVATE_CURRENT
+                            : OT_NODE_TRIPLE_STORE_REPOSITORIES.PRIVATE_HISTORY,
                     );
 
                     queryPrivateOperationResult = await this.nodeApiService.getOperationResult(
