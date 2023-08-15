@@ -18,7 +18,7 @@ class NodeBlockchainService extends BlockchainServiceBase {
         });
     }
 
-    initializeWeb3(blockchainName, blockchainRpc) {
+    initializeWeb3(blockchainName, blockchainRpc, blockchainOptions) {
         if (blockchainRpc.startsWith('ws')) {
             const provider = new Web3.providers.WebsocketProvider(
                 blockchainRpc,
@@ -29,19 +29,47 @@ class NodeBlockchainService extends BlockchainServiceBase {
         } else {
             this[blockchainName].web3 = new Web3(blockchainRpc);
         }
+        
+        if(blockchainOptions.transactionPollingTimeout) {
+            this[blockchainName].web3.eth.transactionPollingTimeout = blockchainOptions.transactionPollingTimeout;
+        }
     }
 
     async executeContractFunction(contractName, functionName, args, blockchain) {
         const web3Instance = await this.getWeb3Instance(blockchain);
+        let result;
+        let gasPrice;
+        let transactionRetried = false;
 
-        const contractInstance = await this.getContractInstance(contractName, blockchain);
-        const tx = await this.prepareTransaction(contractInstance, functionName, args, blockchain);
-        const createdTransaction = await web3Instance.eth.accounts.signTransaction(
-            tx,
-            blockchain.privateKey,
-        );
+        while(result === undefined) {
+            try {
+                // eslint-disable-next-line no-await-in-loop
+                const contractInstance = await this.getContractInstance(contractName, blockchain);
+                // eslint-disable-next-line no-await-in-loop
+                const tx = await this.prepareTransaction(contractInstance, functionName, args, blockchain);
+                gasPrice = tx.gasPrice;
+                // eslint-disable-next-line no-await-in-loop
+                const createdTransaction = await web3Instance.eth.accounts.signTransaction(
+                    tx,
+                    blockchain.privateKey,
+                );
 
-        return web3Instance.eth.sendSignedTransaction(createdTransaction.rawTransaction);
+                // eslint-disable-next-line no-await-in-loop
+                result = await web3Instance.eth.sendSignedTransaction(createdTransaction.rawTransaction);
+            } catch(e) {
+                if (!transactionRetried && blockchain.handleNotMinedError && e.message.includes('Transaction was not mined')) {
+                    transactionRetried = true;
+                    // eslint-disable-next-line no-param-reassign
+                    blockchain.retryTx = true;
+                    // eslint-disable-next-line no-param-reassign
+                    blockchain.gasPrice = gasPrice;
+                } else {
+                    throw e;
+                }
+            }
+        }
+
+        return result;
     }
 
     async decodeEventLogs(receipt, eventName, blockchain) {
