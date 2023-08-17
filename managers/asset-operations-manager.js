@@ -356,8 +356,6 @@ class AssetOperationsManager {
             if (unfinalizedState != null && unfinalizedState !== ZeroHash) {
                 publicAssertionId = unfinalizedState;
                 stateFinalized = false;
-            } else {
-                stateFinalized = true;
             }
         }
 
