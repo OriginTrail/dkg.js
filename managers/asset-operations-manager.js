@@ -355,11 +355,10 @@ class AssetOperationsManager {
 
             if (unfinalizedState != null && unfinalizedState !== ZeroHash) {
                 publicAssertionId = unfinalizedState;
+                stateFinalized = false;
+            } else {
+                stateFinalized = true;
             }
-
-            stateFinalized = false;
-        } else if (state === ASSET_STATES.FINALIZED) {
-            stateFinalized = true;
         }
 
         let assertionIds = [];
@@ -369,6 +368,7 @@ class AssetOperationsManager {
 
             if (isEnumState) {
                 publicAssertionId = assertionIds[assertionIds.length - 1];
+                stateFinalized = true;
             } else if (typeof state === 'number') {
                 if (state >= assertionIds.length) {
                     throw Error('State index is out of range.');
@@ -393,6 +393,7 @@ class AssetOperationsManager {
                     state === unfinalizedState
                 ) {
                     publicAssertionId = unfinalizedState;
+                    stateFinalized = false;
                 } else {
                     throw Error("Given state hash isn't a part of the Knowledge Asset.");
                 }
