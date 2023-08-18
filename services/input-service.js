@@ -78,7 +78,7 @@ class InputService {
         const handleNotMinedError = options.blockchain?.handleNotMinedError
             ?? this.config.blockchain?.handleNotMinedError
             ?? DEFAULT_PARAMETERS.HANDLE_NOT_MINED_ERROR;
-        const gasPrice = options.blockchain?.gasPrice ?? this.config.blockchain?.gasPrice ?? null;
+        const gasPrice = options.blockchain?.gasPrice ?? this.config.blockchain?.gasPrice ?? undefined;
         const transactionPollingTimeout = options.blockchain?.transactionPollingTimeout
             ?? this.config.blockchain?.transactionPollingTimeout
             ?? null;
