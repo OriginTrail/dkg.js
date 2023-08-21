@@ -38,7 +38,7 @@ class BlockchainServiceBase {
         });
     }
 
-    async initializeWeb3() {
+    initializeWeb3() {
         // overridden by subclasses
         return {};
     }
