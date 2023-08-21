@@ -11,15 +11,15 @@ class BrowserBlockchainService extends BlockchainServiceBase {
             return;
         }
         if (window.ethereum) {
-            this[blockchainName].web3 = new window.web3(window.ethereum);
+            this[blockchainName].web3 = new Web3(window.ethereum);
         } else if (blockchainRpc.startsWith('ws')) {
-            const provider = new window.web3.providers.WebsocketProvider(
+            const provider = new Web3().providers.WebsocketProvider(
                 blockchainRpc,
                 WEBSOCKET_PROVIDER_OPTIONS,
             );
             this[blockchainName].web3 = new Web3(provider);
         } else {
-            this[blockchainName].web3 = new window.web3(blockchainRpc);
+            this[blockchainName].web3 = new Web3(blockchainRpc);
         }
     }
 
