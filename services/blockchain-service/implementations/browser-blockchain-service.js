@@ -4,22 +4,22 @@ const { WEBSOCKET_PROVIDER_OPTIONS } = require('../../../constants.js');
 
 class BrowserBlockchainService extends BlockchainServiceBase {
     initializeWeb3(blockchainName, blockchainRpc) {
-        if (typeof window.Web3 === 'undefined' || !window.Web3) {
+        if (typeof window.web3 === 'undefined' || !window.web3) {
             console.error(
                 'No web3 implementation injected, please inject your own Web3 implementation.',
             );
             return;
         }
         if (window.ethereum) {
-            this[blockchainName].web3 = new window.Web3(window.ethereum);
+            this[blockchainName].web3 = new window.web3(window.ethereum);
         } else if (blockchainRpc.startsWith('ws')) {
-            const provider = new window.Web3.providers.WebsocketProvider(
+            const provider = new window.web3.providers.WebsocketProvider(
                 blockchainRpc,
                 WEBSOCKET_PROVIDER_OPTIONS,
             );
             this[blockchainName].web3 = new Web3(provider);
         } else {
-            this[blockchainName].web3 = new window.Web3(blockchainRpc);
+            this[blockchainName].web3 = new window.web3(blockchainRpc);
         }
     }
 
