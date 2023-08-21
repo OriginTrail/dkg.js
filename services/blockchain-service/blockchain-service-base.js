@@ -38,7 +38,7 @@ class BlockchainServiceBase {
         });
     }
 
-    initializeWeb3() {
+    async initializeWeb3() {
         // overridden by subclasses
         return {};
     }
@@ -111,7 +111,7 @@ class BlockchainServiceBase {
     async getWeb3Instance(blockchain) {
         this.ensureBlockchainInfo(blockchain);
         if (!this[blockchain.name].web3) {
-            this.initializeWeb3(blockchain.name, blockchain.rpc);
+            await this.initializeWeb3(blockchain.name, blockchain.rpc);
         }
 
         return this[blockchain.name].web3;

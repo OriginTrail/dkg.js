@@ -3,7 +3,7 @@ const BlockchainServiceBase = require('../blockchain-service-base.js');
 const { WEBSOCKET_PROVIDER_OPTIONS } = require('../../../constants.js');
 
 class BrowserBlockchainService extends BlockchainServiceBase {
-    initializeWeb3(blockchainName, blockchainRpc) {
+    async initializeWeb3(blockchainName, blockchainRpc) {
         if (typeof window.web3 === 'undefined' || !window.web3) {
             console.error(
                 'No web3 implementation injected, please inject your own Web3 implementation.',
@@ -12,6 +12,15 @@ class BrowserBlockchainService extends BlockchainServiceBase {
         }
         if (window.ethereum) {
             this[blockchainName].web3 = new Web3(window.ethereum);
+
+            try {
+                // Request account access if needed
+                await window.ethereum.enable();
+                // Accounts now exposed
+                return web3;
+              } catch (error) {
+                console.error(error);
+              }
         } else if (blockchainRpc.startsWith('ws')) {
             const provider = new Web3().providers.WebsocketProvider(
                 blockchainRpc,

@@ -3,7 +3,7 @@ const { WEBSOCKET_PROVIDER_OPTIONS } = require('../../../constants.js');
 const BlockchainServiceBase = require('../blockchain-service-base.js');
 
 class NodeBlockchainService extends BlockchainServiceBase {
-    initializeWeb3(blockchainName, blockchainRpc) {
+    async initializeWeb3(blockchainName, blockchainRpc) {
         if (blockchainRpc.startsWith('ws')) {
             const provider = new Web3.providers.WebsocketProvider(
                 blockchainRpc,
