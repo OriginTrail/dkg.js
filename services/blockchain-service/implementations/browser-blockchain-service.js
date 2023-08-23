@@ -16,11 +16,9 @@ class BrowserBlockchainService extends BlockchainServiceBase {
             try {
                 // Request account access if needed
                 await window.ethereum.enable();
-                // Accounts now exposed
-                return web3;
-              } catch (error) {
+            } catch (error) {
                 console.error(error);
-              }
+            }
         } else if (blockchainRpc.startsWith('ws')) {
             const provider = new Web3().providers.WebsocketProvider(
                 blockchainRpc,
@@ -38,9 +36,12 @@ class BrowserBlockchainService extends BlockchainServiceBase {
         const { hash, inputs } = this.events[eventName];
         Object.values(receipt.events).forEach((row) => {
             if (row.raw.topics[0] === hash)
-                result = web3Instance.eth.abi.decodeLog(inputs, row.raw.data, row.raw.topics.slice(1));
-
-        })
+                result = web3Instance.eth.abi.decodeLog(
+                    inputs,
+                    row.raw.data,
+                    row.raw.topics.slice(1),
+                );
+        });
         return result;
     }
 
