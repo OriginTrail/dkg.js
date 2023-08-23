@@ -208,12 +208,12 @@ class BlockchainServiceBase {
             return tokenId;
         } catch (e) {
             if (tokensNeeded > 0) {
-                await this.executeContractFunction(
-                    'Token',
-                    'decreaseAllowance',
-                    [serviceAgreementV1Address, tokensNeeded],
-                    blockchain,
-                );
+                // await this.executeContractFunction(
+                //     'Token',
+                //     'decreaseAllowance',
+                //     [serviceAgreementV1Address, tokensNeeded],
+                //     blockchain,
+                // );
             }
             throw e;
         }
