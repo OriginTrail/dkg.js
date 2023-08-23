@@ -32,6 +32,18 @@ class BrowserBlockchainService extends BlockchainServiceBase {
         }
     }
 
+    async decodeEventLogs(receipt, eventName, blockchain) {
+        const web3Instance = await this.getWeb3Instance(blockchain);
+        let result;
+        const { hash, inputs } = this.events[eventName];
+        Object.values(receipt.events).forEach((row) => {
+            if (row.raw.topics[0] === hash)
+                result = web3Instance.eth.abi.decodeLog(inputs, row.raw.data, row.raw.topics.slice(1));
+
+        })
+        return result;
+    }
+
     async executeContractFunction(contractName, functionName, args, blockchain) {
         const contractInstance = await this.getContractInstance(contractName, blockchain);
         const tx = await this.prepareTransaction(contractInstance, functionName, args, blockchain);

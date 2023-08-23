@@ -16,6 +16,17 @@ class NodeBlockchainService extends BlockchainServiceBase {
         }
     }
 
+    async decodeEventLogs(receipt, eventName, blockchain) {
+        const web3Instance = await this.getWeb3Instance(blockchain);
+        let result;
+        const { hash, inputs } = this.events[eventName];
+        receipt.logs.forEach((row) => {
+            if (row.topics[0] === hash)
+                result = web3Instance.eth.abi.decodeLog(inputs, row.data, row.topics.slice(1));
+        });
+        return result;
+    }
+
     async getPublicKey(blockchain) {
         return blockchain?.publicKey;
     }
