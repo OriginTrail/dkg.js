@@ -10,10 +10,6 @@ const TokenAbi = require('dkg-evm-module/abi/Token.json');
 const { OPERATIONS_STEP_STATUS } = require('../../constants');
 const emptyHooks = require('../../util/empty-hooks.js');
 
-const FIXED_GAS_LIMIT_METHODS = {
-    createAsset: 450000,
-};
-
 class BlockchainServiceBase {
     constructor(config = {}) {
         this.config = config;
@@ -61,22 +57,27 @@ class BlockchainServiceBase {
     async prepareTransaction(contractInstance, functionName, args, blockchain) {
         const publicKey = await this.getPublicKey(blockchain);
         const web3Instance = await this.getWeb3Instance(blockchain);
-        let gasLimit;
-        if (FIXED_GAS_LIMIT_METHODS[functionName]) {
-            gasLimit = FIXED_GAS_LIMIT_METHODS[functionName];
-        } else {
-            gasLimit = await contractInstance.methods[functionName](...args).estimateGas({
-                from: publicKey,
-            });
-        }
+        const gasLimit = await contractInstance.methods[functionName](...args).estimateGas({
+            from: blockchain.publicKey,
+        });
 
         const encodedABI = await contractInstance.methods[functionName](...args).encodeABI();
 
         let gasPrice;
-
-        if (blockchain.name.startsWith('otp')) {
+        if (blockchain.gasPrice === undefined) {
             gasPrice = await web3Instance.eth.getGasPrice();
-        } else {
+        }
+
+        // Gas price increase for handling `Transaction not mined` error
+        if (blockchain.retryTx && gasPrice <= blockchain.gasPrice) {
+            gasPrice = Number(blockchain.gasPrice) + 1;
+        } else if (blockchain.gasPrice) {
+            // Gas price provided by developers
+            gasPrice = blockchain.gasPrice;
+        }
+
+        // Fallback
+        if (!gasPrice) {
             gasPrice = Web3.utils.toWei('100', 'Gwei');
         }
 
@@ -105,7 +106,10 @@ class BlockchainServiceBase {
     async getWeb3Instance(blockchain) {
         this.ensureBlockchainInfo(blockchain);
         if (!this[blockchain.name].web3) {
-            await this.initializeWeb3(blockchain.name, blockchain.rpc);
+            const blockchainOptions = {
+                transactionPollingTimeout: blockchain.transactionPollingTimeout,
+            };
+            await this.initializeWeb3(blockchain.name, blockchain.rpc, blockchainOptions);
         }
 
         return this[blockchain.name].web3;
@@ -469,6 +473,19 @@ class BlockchainServiceBase {
 
         const latestBlock = await this.getLatestBlock(blockchain);
         return latestBlock.timestamp;
+    }
+
+    async getGasPrice(blockchain) {
+        const web3Instance = await this.getWeb3Instance(blockchain);
+        let gasPrice;
+
+        if (blockchain.name.startsWith('otp')) {
+            gasPrice = await web3Instance.eth.getGasPrice();
+        } else {
+            gasPrice = Web3.utils.toWei('100', 'Gwei');
+        }
+
+        return gasPrice;
     }
 
     async getLatestBlock(blockchain) {

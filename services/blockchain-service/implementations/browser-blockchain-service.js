@@ -3,9 +3,14 @@ const BlockchainServiceBase = require('../blockchain-service-base.js');
 const { WEBSOCKET_PROVIDER_OPTIONS } = require('../../../constants.js');
 
 class BrowserBlockchainService extends BlockchainServiceBase {
-    async initializeWeb3(blockchainName, blockchainRpc) {
-        if (typeof window.web3 === 'undefined' || !window.web3) {
-            console.error(
+    constructor(config = {}) {
+        super(config);
+        this.config = config;
+    }
+
+    async initializeWeb3(blockchainName, blockchainRpc, blockchainOptions) {
+        if (typeof window.Web3 === 'undefined' || !window.Web3) {
+            this.logger.error(
                 'No web3 implementation injected, please inject your own Web3 implementation.',
             );
             return;
