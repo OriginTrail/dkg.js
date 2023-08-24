@@ -29,10 +29,26 @@ class NodeBlockchainService extends BlockchainServiceBase {
         } else {
             this[blockchainName].web3 = new Web3(blockchainRpc);
         }
-        
-        if(blockchainOptions.transactionPollingTimeout) {
-            this[blockchainName].web3.eth.transactionPollingTimeout = blockchainOptions.transactionPollingTimeout;
+
+        if (blockchainOptions.transactionPollingTimeout) {
+            this[blockchainName].web3.eth.transactionPollingTimeout =
+                blockchainOptions.transactionPollingTimeout;
         }
+    }
+
+    async decodeEventLogs(receipt, eventName, blockchain) {
+        const web3Instance = await this.getWeb3Instance(blockchain);
+        let result;
+        const { hash, inputs } = this.events[eventName];
+        receipt.logs.forEach((row) => {
+            if (row.topics[0] === hash)
+                result = web3Instance.eth.abi.decodeLog(inputs, row.data, row.topics.slice(1));
+        });
+        return result;
+    }
+
+    async getPublicKey(blockchain) {
+        return blockchain?.publicKey;
     }
 
     async executeContractFunction(contractName, functionName, args, blockchain) {
@@ -41,12 +57,17 @@ class NodeBlockchainService extends BlockchainServiceBase {
         let gasPrice;
         let transactionRetried = false;
 
-        while(result === undefined) {
+        while (result === undefined) {
             try {
                 // eslint-disable-next-line no-await-in-loop
                 const contractInstance = await this.getContractInstance(contractName, blockchain);
                 // eslint-disable-next-line no-await-in-loop
-                const tx = await this.prepareTransaction(contractInstance, functionName, args, blockchain);
+                const tx = await this.prepareTransaction(
+                    contractInstance,
+                    functionName,
+                    args,
+                    blockchain,
+                );
                 gasPrice = tx.gasPrice;
                 // eslint-disable-next-line no-await-in-loop
                 const createdTransaction = await web3Instance.eth.accounts.signTransaction(
@@ -55,9 +76,15 @@ class NodeBlockchainService extends BlockchainServiceBase {
                 );
 
                 // eslint-disable-next-line no-await-in-loop
-                result = await web3Instance.eth.sendSignedTransaction(createdTransaction.rawTransaction);
-            } catch(e) {
-                if (!transactionRetried && blockchain.handleNotMinedError && e.message.includes('Transaction was not mined')) {
+                result = await web3Instance.eth.sendSignedTransaction(
+                    createdTransaction.rawTransaction,
+                );
+            } catch (e) {
+                if (
+                    !transactionRetried &&
+                    blockchain.handleNotMinedError &&
+                    e.message.includes('Transaction was not mined')
+                ) {
                     transactionRetried = true;
                     // eslint-disable-next-line no-param-reassign
                     blockchain.retryTx = true;
@@ -69,17 +96,6 @@ class NodeBlockchainService extends BlockchainServiceBase {
             }
         }
 
-        return result;
-    }
-
-    async decodeEventLogs(receipt, eventName, blockchain) {
-        const web3Instance = await this.getWeb3Instance(blockchain);
-        let result;
-        const { hash, inputs } = this.events[eventName];
-        receipt.logs.forEach((row) => {
-            if (row.topics[0] === hash)
-                result = web3Instance.eth.abi.decodeLog(inputs, row.data, row.topics.slice(1));
-        });
         return result;
     }
 

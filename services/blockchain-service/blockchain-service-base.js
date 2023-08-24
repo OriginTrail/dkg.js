@@ -11,7 +11,9 @@ const { OPERATIONS_STEP_STATUS } = require('../../constants');
 const emptyHooks = require('../../util/empty-hooks.js');
 
 class BlockchainServiceBase {
-    constructor() {
+    constructor(config = {}) {
+        this.config = config;
+        this.events = {};
         this.abis = {};
         this.abis.AssertionStorage = AssertionStorageAbi;
         this.abis.Hub = HubAbi;
@@ -21,6 +23,15 @@ class BlockchainServiceBase {
         this.abis.UnfinalizedStateStorage = UnfinalizedStateStorageAbi;
         this.abis.ContentAsset = ContentAssetAbi;
         this.abis.Token = TokenAbi;
+
+        this.abis.ContentAsset.filter((obj) => obj.type === 'event').forEach((event) => {
+            const concatInputs = event.inputs.map((input) => input.internalType);
+
+            this.events[event.name] = {
+                hash: Web3.utils.keccak256(`${event.name}(${concatInputs})`),
+                inputs: event.inputs,
+            };
+        });
     }
 
     initializeWeb3() {
@@ -28,9 +39,14 @@ class BlockchainServiceBase {
         return {};
     }
 
-    async decodeEventLogs() {
+    async decodeEventLogs(receipt, eventName, blockchain) {
         // overridden by subclasses
-        return {};
+        return;
+    }
+
+    async getPublicKey() {
+        // overridden by subclasses
+        return;
     }
 
     async callContractFunction(contractName, functionName, args, blockchain) {
@@ -39,6 +55,7 @@ class BlockchainServiceBase {
     }
 
     async prepareTransaction(contractInstance, functionName, args, blockchain) {
+        const publicKey = await this.getPublicKey(blockchain);
         const web3Instance = await this.getWeb3Instance(blockchain);
         const gasLimit = await contractInstance.methods[functionName](...args).estimateGas({
             from: blockchain.publicKey,
@@ -52,7 +69,7 @@ class BlockchainServiceBase {
         }
 
         // Gas price increase for handling `Transaction not mined` error
-        if(blockchain.retryTx && gasPrice <= blockchain.gasPrice) {
+        if (blockchain.retryTx && gasPrice <= blockchain.gasPrice) {
             gasPrice = Number(blockchain.gasPrice) + 1;
         } else if (blockchain.gasPrice) {
             // Gas price provided by developers
@@ -60,12 +77,12 @@ class BlockchainServiceBase {
         }
 
         // Fallback
-        if(!gasPrice) {
+        if (!gasPrice) {
             gasPrice = Web3.utils.toWei('100', 'Gwei');
         }
 
         return {
-            from: blockchain.publicKey,
+            from: publicKey,
             to: contractInstance.options.address,
             data: encodedABI,
             gasPrice,
@@ -89,8 +106,10 @@ class BlockchainServiceBase {
     async getWeb3Instance(blockchain) {
         this.ensureBlockchainInfo(blockchain);
         if (!this[blockchain.name].web3) {
-            const blockchainOptions = { transactionPollingTimeout: blockchain.transactionPollingTimeout };
-            this.initializeWeb3(blockchain.name, blockchain.rpc, blockchainOptions);
+            const blockchainOptions = {
+                transactionPollingTimeout: blockchain.transactionPollingTimeout,
+            };
+            await this.initializeWeb3(blockchain.name, blockchain.rpc, blockchainOptions);
         }
 
         return this[blockchain.name].web3;
@@ -148,7 +167,7 @@ class BlockchainServiceBase {
         const allowance = await this.callContractFunction(
             'Token',
             'allowance',
-            [blockchain.publicKey, serviceAgreementV1Address],
+            [await this.getPublicKey(blockchain), serviceAgreementV1Address],
             blockchain,
         );
 
@@ -215,7 +234,7 @@ class BlockchainServiceBase {
         const allowance = await this.callContractFunction(
             'Token',
             'allowance',
-            [blockchain.publicKey, serviceAgreementV1Address],
+            [await this.getPublicKey(blockchain), serviceAgreementV1Address],
             blockchain,
         );
 
