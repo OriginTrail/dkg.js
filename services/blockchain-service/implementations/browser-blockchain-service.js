@@ -9,11 +9,10 @@ class BrowserBlockchainService extends BlockchainServiceBase {
     }
 
     async initializeWeb3(blockchainName, blockchainRpc, blockchainOptions) {
-        if (typeof window.Web3 === 'undefined' || !window.Web3) {
-            this.logger.error(
+        if (typeof window.web3 === 'undefined' || !window.web3) {
+            console.error(
                 'No web3 implementation injected, please inject your own Web3 implementation.',
             );
-            return;
         }
         if (window.ethereum) {
             this[blockchainName].web3 = new Web3(window.ethereum);
