@@ -161,7 +161,8 @@ ___
 
 - **Node.js** >= 16.0.0
 - **npm** >= 8.0.0
-- [Running local DKG network](https://github.com/OriginTrail/ot-node?tab=readme-ov-file#local-network-setup)
+
+In order to use in the local environment, make sure to [run the local DKG network](https://github.com/OriginTrail/ot-node?tab=readme-ov-file#local-network-setup).
 
 ___
 <br/>
@@ -175,7 +176,7 @@ Install the SDK:
 npm install dkg.js
 ```
 
-Now you can run a demo example file: 
+Now you can run a demo example file (requires the local DKG network running): 
 ```bash
 node examples/demo.js
 ```
