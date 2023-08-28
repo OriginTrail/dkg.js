@@ -161,6 +161,7 @@ ___
 
 - **Node.js** >= 16.0.0
 - **npm** >= 8.0.0
+- [Running local DKG network](https://github.com/OriginTrail/ot-node?tab=readme-ov-file#local-network-setup)
 
 ___
 <br/>
