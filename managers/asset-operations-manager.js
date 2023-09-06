@@ -102,6 +102,24 @@ class AssetOperationsManager {
         };
     }
 
+    async getCurrentAllowance(options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+
+        const serviceAgreementV1Address = await this.blockchainService.getContractAddress(
+            'ServiceAgreementV1',
+            blockchain,
+        );
+
+        const allowance = await this.blockchainService.callContractFunction(
+            'Token',
+            'allowance',
+            [blockchain.publicKey, serviceAgreementV1Address],
+            blockchain,
+        );
+
+        return allowance;
+    }
+
     /**
      * Creates a new asset.
      * @async
