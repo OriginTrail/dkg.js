@@ -6,8 +6,14 @@ class BlockchainOperationsManager {
         this.inputService = services.inputService;
     }
 
-    async getGasPrice(blockchain){
+    async getGasPrice(options = {}){
+        const blockchain = this.inputService.getBlockchain(options);
         return this.blockchainService.getGasPrice(blockchain);
+    }
+
+    async getWalletBalances(options = {}){
+        const blockchain = this.inputService.getBlockchain(options);
+        return this.blockchainService.getWalletBalances(blockchain);
     }
 }
 
