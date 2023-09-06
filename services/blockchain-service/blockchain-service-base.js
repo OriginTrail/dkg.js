@@ -73,7 +73,7 @@ class BlockchainServiceBase {
 
         const encodedABI = await contractInstance.methods[functionName](...args).encodeABI();
 
-        let gasPrice = BigInt(
+        let gasPrice = Number(
             blockchain.previousTxGasPrice ||
             blockchain.gasPrice ||
             await this.getNetworkGasPrice(blockchain)
@@ -81,7 +81,7 @@ class BlockchainServiceBase {
 
         if (blockchain.retryTx) {
             // Increase gas price by 20%
-            gasPrice = gasPrice * BigInt(120) / BigInt(100);
+            gasPrice *= 1.2;
         }
 
         return {
