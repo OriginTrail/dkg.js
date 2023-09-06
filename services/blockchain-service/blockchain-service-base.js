@@ -488,6 +488,24 @@ class BlockchainServiceBase {
         return gasPrice;
     }
 
+    async getWalletBalances(blockchain) {
+        const web3Instance = await this.getWeb3Instance(blockchain);
+        const publicKey = await this.getPublicKey(blockchain);
+
+        const blockchainTokenBalance = await web3Instance.eth.getBalance(publicKey);
+        const tracBalance = await this.callContractFunction(
+            'Token',
+            'balanceOf',
+            [await this.getPublicKey(blockchain)],
+            blockchain,
+        );
+
+        return {
+            blockchainToken: blockchainTokenBalance,
+            trac: tracBalance
+        }
+    }
+
     async getLatestBlock(blockchain) {
         const web3 = await this.getWeb3Instance(blockchain);
         const blockNumber = await web3.eth.getBlockNumber();
