@@ -83,7 +83,10 @@ class NodeBlockchainService extends BlockchainServiceBase {
                 if (
                     !transactionRetried &&
                     blockchain.handleNotMinedError &&
-                    e.message.includes('Transaction was not mined')
+                    (
+                        e.message.includes('Transaction was not mined')
+                        || e.message.includes('Already known')
+                    )
                 ) {
                     transactionRetried = true;
                     // eslint-disable-next-line no-param-reassign
