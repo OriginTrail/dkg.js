@@ -55,7 +55,7 @@ class BlockchainServiceBase {
         try {
             return await web3Instance.eth.getGasPrice();
         } catch (error) {
-            console.error(`Failed to fetch the gas price from the network: ${error}. Using default value: 100 Gwei.`);
+            console.warn(`Failed to fetch the gas price from the network: ${error}. Using default value: 100 Gwei.`);
             return Web3.utils.toWei('100', 'Gwei');
         }
     }
