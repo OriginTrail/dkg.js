@@ -54,7 +54,9 @@ class BlockchainServiceBase {
             return await web3Instance.eth.getGasPrice();
         } catch (error) {
             // eslint-disable-next-line no-console
-            console.warn(`Failed to fetch the gas price from the network: ${error}. Using default value: 100 Gwei.`);
+            console.warn(
+                `Failed to fetch the gas price from the network: ${error}. Using default value: 100 Gwei.`,
+            );
             return Web3.utils.toWei('100', 'Gwei');
         }
     }
@@ -74,13 +76,13 @@ class BlockchainServiceBase {
 
         let gasPrice = Number(
             blockchain.previousTxGasPrice ||
-            blockchain.gasPrice ||
-            await this.getNetworkGasPrice(blockchain)
+                blockchain.gasPrice ||
+                (await this.getNetworkGasPrice(blockchain)),
         );
 
         if (blockchain.retryTx) {
             // Increase gas price by 20%
-            gasPrice *= 1.2;
+            gasPrice = Math.round(gasPrice * 1.2);
         }
 
         return {
@@ -504,8 +506,8 @@ class BlockchainServiceBase {
 
         return {
             blockchainToken: blockchainTokenBalance,
-            trac: tracBalance
-        }
+            trac: tracBalance,
+        };
     }
 
     async getLatestBlock(blockchain) {
