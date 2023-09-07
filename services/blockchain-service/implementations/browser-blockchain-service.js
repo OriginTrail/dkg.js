@@ -8,8 +8,9 @@ class BrowserBlockchainService extends BlockchainServiceBase {
         this.config = config;
     }
 
-    async initializeWeb3(blockchainName, blockchainRpc, blockchainOptions) {
+    async initializeWeb3(blockchainName, blockchainRpc) {
         if (typeof window.web3 === 'undefined' || !window.web3) {
+            // eslint-disable-next-line no-console
             console.error(
                 'No web3 implementation injected, please inject your own Web3 implementation.',
             );
@@ -21,6 +22,7 @@ class BrowserBlockchainService extends BlockchainServiceBase {
                 // Request account access if needed
                 await window.ethereum.enable();
             } catch (error) {
+                // eslint-disable-next-line no-console
                 console.error(error);
             }
         } else if (blockchainRpc.startsWith('ws')) {
@@ -69,6 +71,7 @@ class BrowserBlockchainService extends BlockchainServiceBase {
                 .request({
                     method: 'eth_requestAccounts',
                 })
+                // eslint-disable-next-line no-console
                 .catch(() => console.error('There was an error fetching your accounts'));
 
             [this.account] = accounts;

@@ -18,7 +18,6 @@ const {
     DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY,
     PRIVATE_ASSERTION_PREDICATE,
     QUERY_TYPES,
-    DEFAULT_PARAMETERS,
     OT_NODE_TRIPLE_STORE_REPOSITORIES,
 } = require('../constants.js');
 const emptyHooks = require('../util/empty-hooks');
@@ -363,8 +362,8 @@ class AssetOperationsManager {
 
         const { tokenId } = resolveUAL(UAL);
 
-        let publicAssertionId,
-            stateFinalized = false;
+        let publicAssertionId;
+        let stateFinalized = false;
         if (state === ASSET_STATES.LATEST) {
             const unfinalizedState = await this.blockchainService.getUnfinalizedState(
                 tokenId,

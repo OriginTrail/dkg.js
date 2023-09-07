@@ -39,14 +39,12 @@ class BlockchainServiceBase {
         return {};
     }
 
-    async decodeEventLogs(receipt, eventName, blockchain) {
+    async decodeEventLogs() {
         // overridden by subclasses
-        return;
     }
 
     async getPublicKey() {
         // overridden by subclasses
-        return;
     }
 
     async getNetworkGasPrice(blockchain) {
@@ -55,6 +53,7 @@ class BlockchainServiceBase {
         try {
             return await web3Instance.eth.getGasPrice();
         } catch (error) {
+            // eslint-disable-next-line no-console
             console.warn(`Failed to fetch the gas price from the network: ${error}. Using default value: 100 Gwei.`);
             return Web3.utils.toWei('100', 'Gwei');
         }
