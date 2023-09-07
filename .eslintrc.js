@@ -30,5 +30,5 @@ module.exports = {
             },
         },
     ],
-    ignorePatterns: ['/dist/*'],
+    ignorePatterns: ['/dist/*', '/examples/*'],
 };
