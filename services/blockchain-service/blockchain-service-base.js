@@ -49,6 +49,17 @@ class BlockchainServiceBase {
         return;
     }
 
+    async getNetworkGasPrice(blockchain) {
+        const web3Instance = await this.getWeb3Instance(blockchain);
+
+        try {
+            return await web3Instance.eth.getGasPrice();
+        } catch (error) {
+            console.warn(`Failed to fetch the gas price from the network: ${error}. Using default value: 100 Gwei.`);
+            return Web3.utils.toWei('100', 'Gwei');
+        }
+    }
+
     async callContractFunction(contractName, functionName, args, blockchain) {
         const contractInstance = await this.getContractInstance(contractName, blockchain);
         return contractInstance.methods[functionName](...args).call();
@@ -56,29 +67,21 @@ class BlockchainServiceBase {
 
     async prepareTransaction(contractInstance, functionName, args, blockchain) {
         const publicKey = await this.getPublicKey(blockchain);
-        const web3Instance = await this.getWeb3Instance(blockchain);
         const gasLimit = await contractInstance.methods[functionName](...args).estimateGas({
             from: blockchain.publicKey,
         });
 
         const encodedABI = await contractInstance.methods[functionName](...args).encodeABI();
 
-        let gasPrice;
-        if (blockchain.gasPrice === undefined) {
-            gasPrice = await web3Instance.eth.getGasPrice();
-        }
+        let gasPrice = Number(
+            blockchain.previousTxGasPrice ||
+            blockchain.gasPrice ||
+            await this.getNetworkGasPrice(blockchain)
+        );
 
-        // Gas price increase for handling `Transaction not mined` error
-        if (blockchain.retryTx && gasPrice <= blockchain.gasPrice) {
-            gasPrice = Number(blockchain.gasPrice) + 1;
-        } else if (blockchain.gasPrice) {
-            // Gas price provided by developers
-            gasPrice = blockchain.gasPrice;
-        }
-
-        // Fallback
-        if (!gasPrice) {
-            gasPrice = Web3.utils.toWei('100', 'Gwei');
+        if (blockchain.retryTx) {
+            // Increase gas price by 20%
+            gasPrice *= 1.2;
         }
 
         return {
