@@ -778,12 +778,22 @@ class AssetOperationsManager {
         };
     }
 
+    /**
+     * Wait for the finalization of an asset update operation.
+     * @async
+     * @param {string} UAL - The Universal Asset Locator of the asset.
+     * @param {Object} [options={}] - Optional parameters for waiting.
+     * @param {string} [options.blockchain] - The blockchain to monitor the update on.
+     * @param {number} [options.frequency] - The polling frequency in seconds.
+     * @param {number} [options.maxNumberOfRetries] - The maximum number of retries before giving up.
+     * @returns {Object} - An object containing the UAL and operation status.
+     */
     async waitFinalization(UAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
         const frequency = this.inputService.getFrequency(options);
         const maxNumberOfRetries = this.inputService.getMaxNumberOfRetries(options);
 
-        this.validationService.validateWaitAssetUpdateFinalization(UAL, blockchain);
+        this.validationService.validateWaitAssetUpdateFinalization(UAL, blockchain, frequency, maxNumberOfRetries);
 
         const { tokenId } = resolveUAL(UAL);
         const response = {
@@ -823,6 +833,13 @@ class AssetOperationsManager {
         };
     }
 
+    /**
+     * Cancel a previously initiated update operation for an asset.
+     * @async
+     * @param {string} UAL - The Universal Asset Locator of the asset.
+     * @param {Object} [options={}] - Optional parameters for blockchain service.
+     * @returns {Object} - An object containing the UAL and operation status.
+     */
     async cancelUpdate(UAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
 
@@ -970,6 +987,13 @@ class AssetOperationsManager {
         };
     }
 
+    /**
+     * Burn an asset on a specified blockchain.
+     * @async
+     * @param {string} UAL - The Universal Asset Locator of the asset.
+     * @param {Object} [options={}] - Optional parameters for blockchain service.
+     * @returns {Object} An object containing the UAL and operation status.
+     */
     async burn(UAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
 
@@ -984,6 +1008,14 @@ class AssetOperationsManager {
         };
     }
 
+    /**
+     * Extend the storing period of an asset on a specified blockchain.
+     * @async
+     * @param {string} UAL - The Universal Asset Locator of the asset.
+     * @param {number} epochsNumber - Nmber of epochs for the extension.
+     * @param {Object} [options={}] - Additional options for asset storing period extension.
+     * @returns {Object} An object containing the UAL and operation status.
+     */
     async extendStoringPeriod(UAL, epochsNumber, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
         const tokenAmount = this.inputService.getTokenAmount(options);
@@ -1043,6 +1075,13 @@ class AssetOperationsManager {
         };
     }
 
+    /**
+     * Add tokens for an asset on the specified blockchain to a ongoing publishing operation.
+     * @async
+     * @param {string} UAL - The Universal Asset Locator of the asset.
+     * @param {Object} [options={}] - Additional options for adding tokens.
+     * @returns {Object} An object containing the UAL and operation status.
+     */
     async addTokens(UAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
         const tokenAmount = this.inputService.getTokenAmount(options);
@@ -1097,6 +1136,13 @@ class AssetOperationsManager {
         };
     }
 
+    /**
+     * Add tokens for an asset on the specified blockchain to a ongoing update operation.
+     * @async
+     * @param {string} UAL - The Universal Asset Locator of the asset.
+     * @param {Object} [options={}] - Additional options for adding tokens.
+     * @returns {Object} An object containing the UAL and operation status.
+     */
     async addUpdateTokens(UAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
         const tokenAmount = this.inputService.getTokenAmount(options);
