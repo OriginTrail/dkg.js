@@ -32,6 +32,58 @@ class AssetOperationsManager {
     }
 
     /**
+     * Gets bid suggestion.
+     * @async
+     * @param {Object} content - The content of the asset for which we are requesting bidding suggestion.
+     * @param {Object} [options={}] - Additional options for getting bid suggestion .
+     * @param {Object} [stepHooks=emptyHooks] - Hooks to execute during bid suggestion.
+     * @returns {string} String containing bid suggestion.
+     */
+    async getBidSuggestion(content, options = {}, stepHooks = emptyHooks) {
+        const {
+            blockchain,
+            endpoint,
+            port,
+            epochsNum,
+            hashFunctionId,
+            authToken,
+            bidSuggestionOption,
+        } = this.inputService.getBidSuggestionArguments(options);
+
+        this.validationService.validateObjectType(content);
+        let jsonContent = {};
+
+        // for backwards compatibility
+        if (!content.public && !content.private) {
+            jsonContent.public = content;
+        } else {
+            jsonContent = content;
+        }
+
+        const {publicAssertionId, publicAssertionSizeInBytes} = await this._getAssertionInfo(jsonContent);
+
+        const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
+            'ContentAssetStorage',
+            blockchain,
+        );
+
+        const bidSuggestion = await this.nodeApiService.getBidSuggestion(
+            endpoint,
+            port,
+            authToken,
+            blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
+            epochsNum,
+            publicAssertionSizeInBytes,
+            contentAssetStorageAddress,
+            publicAssertionId,
+            hashFunctionId,
+            bidSuggestionOption
+        );
+
+        return bidSuggestion;
+    }
+
+    /**
      * Increases allowance for a set quantity of tokens.
      * @async
      * @param {number} tokenAmount - The amount of tokens to increase the allowance for.
@@ -101,6 +153,12 @@ class AssetOperationsManager {
         };
     }
 
+    /**
+     * Gets current allowance.
+     * @async
+     * @param {Object} [options={}] - Optional parameters for blockchain service.
+     * @returns {string} The current allowance.
+     */
     async getCurrentAllowance(options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
 
@@ -150,6 +208,7 @@ class AssetOperationsManager {
             immutable,
             tokenAmount,
             authToken,
+            bidSuggestionOption
         } = this.inputService.getAssetCreateArguments(options);
 
         this.validationService.validateAssetCreate(
@@ -167,35 +226,7 @@ class AssetOperationsManager {
             authToken,
         );
 
-        let privateAssertion;
-        let privateAssertionId;
-        if (jsonContent.private && !isEmptyObject(jsonContent.private)) {
-            privateAssertion = await formatAssertion(jsonContent.private);
-            privateAssertionId = calculateRoot(privateAssertion);
-        }
-        const publicGraph = {
-            '@graph': [
-                jsonContent.public && !isEmptyObject(jsonContent.public)
-                    ? jsonContent.public
-                    : null,
-                jsonContent.private && !isEmptyObject(jsonContent.private)
-                    ? {
-                          [PRIVATE_ASSERTION_PREDICATE]: privateAssertionId,
-                      }
-                    : null,
-            ],
-        };
-        const publicAssertion = await formatAssertion(publicGraph);
-        const publicAssertionSizeInBytes =
-            assertionMetadata.getAssertionSizeInBytes(publicAssertion);
-
-        this.validationService.validateAssertionSizeInBytes(
-            publicAssertionSizeInBytes +
-                (privateAssertion === undefined
-                    ? 0
-                    : assertionMetadata.getAssertionSizeInBytes(privateAssertion)),
-        );
-        const publicAssertionId = calculateRoot(publicAssertion);
+        const {publicAssertionId, publicAssertion, privateAssertionId, privateAssertion, publicAssertionSizeInBytes} = await this._getAssertionInfo(jsonContent);
 
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
             'ContentAssetStorage',
@@ -214,6 +245,7 @@ class AssetOperationsManager {
                 contentAssetStorageAddress,
                 publicAssertionId,
                 hashFunctionId,
+                bidSuggestionOption
             ));
 
         const tokenId = await this.blockchainService.createAsset(
@@ -623,6 +655,7 @@ class AssetOperationsManager {
             scoreFunctionId,
             tokenAmount,
             authToken,
+            bidSuggestionOption
         } = this.inputService.getAssetUpdateArguments(options);
 
         this.validationService.validateAssetUpdate(
@@ -689,6 +722,7 @@ class AssetOperationsManager {
                 publicAssertionId,
                 publicAssertionSizeInBytes,
                 hashFunctionId,
+                bidSuggestionOption
             );
         }
 
@@ -1196,6 +1230,40 @@ class AssetOperationsManager {
         };
     }
 
+    async _getAssertionInfo(content) {
+        let privateAssertion;
+        let privateAssertionId;
+        if (content.private && !isEmptyObject(content.private)) {
+            privateAssertion = await formatAssertion(content.private);
+            privateAssertionId = calculateRoot(privateAssertion);
+        }
+        const publicGraph = {
+            '@graph': [
+                content.public && !isEmptyObject(content.public)
+                    ? content.public
+                    : null,
+                    content.private && !isEmptyObject(content.private)
+                    ? {
+                          [PRIVATE_ASSERTION_PREDICATE]: privateAssertionId,
+                      }
+                    : null,
+            ],
+        };
+        const publicAssertion = await formatAssertion(publicGraph);
+        const publicAssertionSizeInBytes =
+            assertionMetadata.getAssertionSizeInBytes(publicAssertion);
+
+        this.validationService.validateAssertionSizeInBytes(
+            publicAssertionSizeInBytes +
+                (privateAssertion === undefined
+                    ? 0
+                    : assertionMetadata.getAssertionSizeInBytes(privateAssertion)),
+        );
+        const publicAssertionId = calculateRoot(publicAssertion);
+
+        return {publicAssertionId, publicAssertion, privateAssertionId, privateAssertion, publicAssertionSizeInBytes};
+    }
+
     async _getUpdateBidSuggestion(
         UAL,
         blockchain,
@@ -1205,6 +1273,7 @@ class AssetOperationsManager {
         assertionId,
         size,
         hashFunctionId,
+        bidSuggestionOption
     ) {
         const { contract, tokenId } = resolveUAL(UAL);
         const firstAssertionId = await this.blockchainService.getAssertionIdByIndex(
@@ -1240,6 +1309,7 @@ class AssetOperationsManager {
             contract,
             assertionId,
             hashFunctionId,
+            bidSuggestionOption
         );
 
         const tokenAmountInWei =

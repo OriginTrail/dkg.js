@@ -34,36 +34,42 @@ function divider() {
 
     divider();
 
-    const createAssetResult = await DkgClient.asset.create(
-        {
-            public: {
-                '@context': ['https://schema.org'],
-                '@id': 'uuid:1',
-                company: 'OT',
-                user: {
-                    '@id': 'uuid:user:1',
-                },
-                city: {
-                    '@id': 'uuid:belgrade',
-                },
+    const content = {
+        public: {
+            '@context': ['https://schema.org'],
+            '@id': 'uuid:1',
+            company: 'OT',
+            user: {
+                '@id': 'uuid:user:1',
             },
-            private: {
-                '@context': ['https://schema.org'],
-                '@graph': [
-                    {
-                        '@id': 'uuid:user:1',
-                        name: 'Adam',
-                        lastname: 'Smith',
-                    },
-                    {
-                        '@id': 'uuid:belgrade',
-                        title: 'Belgrade',
-                        postCode: '11000',
-                    },
-                ],
+            city: {
+                '@id': 'uuid:belgrade',
             },
         },
-        { epochsNum: 2 },
+        private: {
+            '@context': ['https://schema.org'],
+            '@graph': [
+                {
+                    '@id': 'uuid:user:1',
+                    name: 'Adam',
+                    lastname: 'Smith',
+                },
+                {
+                    '@id': 'uuid:belgrade',
+                    title: 'Belgrade',
+                    postCode: '11000',
+                },
+            ],
+        },
+    };
+
+    const bidSuggestion = await DkgClient.asset.getBidSuggestion(content, { epochsNum: 2 });
+    console.log('======================== GET BID SUGGESTION');
+    console.log(bidSuggestion);
+
+    divider();
+
+    const createAssetResult = await DkgClient.asset.create(content, { epochsNum: 2 },
     );
     console.log('======================== ASSET CREATED');
     console.log(createAssetResult);

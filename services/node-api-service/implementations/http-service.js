@@ -31,6 +31,7 @@ class HttpService {
         contentAssetStorageAddress,
         firstAssertionId,
         hashFunctionId,
+        option
     ) {
         try {
             const response = await axios({
@@ -43,6 +44,7 @@ class HttpService {
                     contentAssetStorageAddress,
                     firstAssertionId,
                     hashFunctionId,
+                    option
                 },
                 headers: this.prepareRequestConfig(authToken),
             });
