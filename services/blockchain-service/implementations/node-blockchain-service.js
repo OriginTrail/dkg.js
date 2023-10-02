@@ -18,7 +18,7 @@ class NodeBlockchainService extends BlockchainServiceBase {
         });
     }
 
-    initializeWeb3(blockchainName, blockchainRpc) {
+    initializeWeb3(blockchainName, blockchainRpc, blockchainOptions) {
         if (blockchainRpc.startsWith('ws')) {
             const provider = new Web3.providers.WebsocketProvider(
                 blockchainRpc,
@@ -29,19 +29,11 @@ class NodeBlockchainService extends BlockchainServiceBase {
         } else {
             this[blockchainName].web3 = new Web3(blockchainRpc);
         }
-    }
 
-    async executeContractFunction(contractName, functionName, args, blockchain) {
-        const web3Instance = await this.getWeb3Instance(blockchain);
-
-        const contractInstance = await this.getContractInstance(contractName, blockchain);
-        const tx = await this.prepareTransaction(contractInstance, functionName, args, blockchain);
-        const createdTransaction = await web3Instance.eth.accounts.signTransaction(
-            tx,
-            blockchain.privateKey,
-        );
-
-        return web3Instance.eth.sendSignedTransaction(createdTransaction.rawTransaction);
+        if (blockchainOptions.transactionPollingTimeout) {
+            this[blockchainName].web3.eth.transactionPollingTimeout =
+                blockchainOptions.transactionPollingTimeout;
+        }
     }
 
     async decodeEventLogs(receipt, eventName, blockchain) {
@@ -52,6 +44,59 @@ class NodeBlockchainService extends BlockchainServiceBase {
             if (row.topics[0] === hash)
                 result = web3Instance.eth.abi.decodeLog(inputs, row.data, row.topics.slice(1));
         });
+        return result;
+    }
+
+    async getPublicKey(blockchain) {
+        return blockchain?.publicKey;
+    }
+
+    async executeContractFunction(contractName, functionName, args, blockchain) {
+        const web3Instance = await this.getWeb3Instance(blockchain);
+        let result;
+        let previousTxGasPrice;
+        let transactionRetried = false;
+
+        while (result === undefined) {
+            try {
+                // eslint-disable-next-line no-await-in-loop
+                const contractInstance = await this.getContractInstance(contractName, blockchain);
+                // eslint-disable-next-line no-await-in-loop
+                const tx = await this.prepareTransaction(
+                    contractInstance,
+                    functionName,
+                    args,
+                    blockchain,
+                );
+                previousTxGasPrice = tx.gasPrice;
+                // eslint-disable-next-line no-await-in-loop
+                const createdTransaction = await web3Instance.eth.accounts.signTransaction(
+                    tx,
+                    blockchain.privateKey,
+                );
+
+                // eslint-disable-next-line no-await-in-loop
+                result = await web3Instance.eth.sendSignedTransaction(
+                    createdTransaction.rawTransaction,
+                );
+            } catch (e) {
+                if (
+                    !transactionRetried &&
+                    blockchain.handleNotMinedError &&
+                    (e.message.includes('Transaction was not mined') ||
+                        e.message.includes('already known'))
+                ) {
+                    transactionRetried = true;
+                    // eslint-disable-next-line no-param-reassign
+                    blockchain.retryTx = true;
+                    // eslint-disable-next-line no-param-reassign
+                    blockchain.previousTxGasPrice = previousTxGasPrice;
+                } else {
+                    throw e;
+                }
+            }
+        }
+
         return result;
     }
 

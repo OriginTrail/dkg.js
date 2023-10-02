@@ -86,6 +86,13 @@ class InputService {
             options.blockchain?.publicKey ?? this.config.blockchain?.publicKey ?? null;
         const privateKey =
             options.blockchain?.privateKey ?? this.config.blockchain?.privateKey ?? null;
+        const handleNotMinedError = options.blockchain?.handleNotMinedError
+            ?? this.config.blockchain?.handleNotMinedError
+            ?? DEFAULT_PARAMETERS.HANDLE_NOT_MINED_ERROR;
+        const gasPrice = options.blockchain?.gasPrice ?? this.config.blockchain?.gasPrice ?? undefined;
+        const transactionPollingTimeout = options.blockchain?.transactionPollingTimeout
+            ?? this.config.blockchain?.transactionPollingTimeout
+            ?? null;
 
         return {
             name,
@@ -93,6 +100,9 @@ class InputService {
             hubContract,
             publicKey,
             privateKey,
+            gasPrice,
+            transactionPollingTimeout,
+            handleNotMinedError
         };
     }
 
