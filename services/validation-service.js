@@ -127,9 +127,11 @@ class ValidationService {
         this.validateAuthToken(authToken);
     }
 
-    validateWaitAssetUpdateFinalization(UAL, blockchain) {
+    validateWaitAssetUpdateFinalization(UAL, blockchain, frequency, maxNumberOfRetries) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
+        this.validateFrequency(frequency);
+        this.validateMaxNumberOfRetries(maxNumberOfRetries);
     }
 
     validateAssetUpdateCancel(UAL, blockchain) {
@@ -197,7 +199,7 @@ class ValidationService {
             parameter = parseInt(param, 10);
         }
         const types = isTypesArray ? typeOrTypes : [typeOrTypes];
-    
+
         // eslint-disable-next-line valid-typeof
         if (!types.some(type => typeof parameter === type)) {
             throw new Error(`${paramName} must be of type ${types.join(" or ")}.`);
@@ -341,6 +343,18 @@ class ValidationService {
         this.validateParamType('tokenAmount', tokenAmount, 'number');
     }
 
+    validateGasPrice(gasPrice) {
+        if (gasPrice == null) return;
+
+        this.validateParamType('gasPrice', gasPrice, 'number');
+    }
+
+    validateTransactionPollingTimeout(transactionPollingTimeout) {
+        if (transactionPollingTimeout == null) return;
+
+        this.validateParamType('tokenAmount', transactionPollingTimeout, 'number');
+    }
+
     validateAuthToken(authToken) {
         if (authToken == null) return;
 
@@ -363,6 +377,8 @@ class ValidationService {
         this.validateRequiredParam('blockchain', blockchain);
         this.validateRequiredParam('blockchain name', blockchain.name);
         this.validateRequiredParam('blockchain hub contract', blockchain.hubContract);
+        this.validateGasPrice(blockchain.gasPrice);
+        this.validateTransactionPollingTimeout(blockchain.transactionPollingTimeout);
         if (nodeSupported()) {
             this.validateRequiredParam('blockchain rpc', blockchain.rpc);
 

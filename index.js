@@ -1,6 +1,7 @@
 // managers
 const AssertionOperationsManager = require('./managers/assertion-operations-manager.js');
 const AssetOperationsManager = require('./managers/asset-operations-manager.js');
+const BlockchainOperationsManager = require('./managers/blockchain-operations-manager');
 const GraphOperationsManager = require('./managers/graph-operations-manager.js');
 const NetworkOperationsManager = require('./managers/network-operations-manager.js');
 const NodeOperationsManager = require('./managers/node-operations-manager.js');

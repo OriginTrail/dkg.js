@@ -1,70 +1,249 @@
-![](./header.png)
+<a name="readme-top"></a>
 
-# DKG.js
+___
 
-**Javascript library for interaction with the OriginTrail Decentralized Knowledge Graph**
+<br />
+<div align="center">
+  <a href="https://github.com/OriginTrail/dkg.js">
+    <img src="images/banner.jpg" alt="JavaScript SDK Banner">
+  </a>
 
-The official OriginTrail documentation for v6 can be found [here](https://docs.origintrail.io/dkg-v6-upcoming-version/introduction-to-dkg-v6-start-here).
+  <h3 align="center"><b>dkg.js</b></h3>
+
+  <p align="center">
+    JavaScript SDK for interacting with the OriginTrail Decentralized Knowledge Graph
+    </br>
+    <a href="https://docs.origintrail.io/">OriginTrail Docs</a>
+    ·
+    <a href="https://github.com/OriginTrail/dkg.js/examples/demo.js">View Demo</a>
+    ·
+    <a href="https://github.com/OriginTrail/dkg.js/issues">Report Bug</a>
+    ·
+    <a href="https://github.com/OriginTrail/dkg.js/issues">Request Feature</a>
+  </p>
+</div>
+
+</br>
+
+<details open>
+  <summary>
+    <b>Table of Contents</b>
+  </summary>
+  <ol>
+    <li>
+      <a href="#📚-about-the-project">📚 About The Project</a>
+      <ul>
+        <li><a href="#what-is-the-decentralized-knowledge-graph">What is the Decentralized Knowledge Graph?</a></li>
+        <li><a href="#the-origintrail-dkg-architecture">The OriginTrail DKG Architecture</a></li>
+        <li><a href="#what-is-a-knowledge-asset">What is a Knowledge Asset?</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="#🚀-getting-started">🚀 Getting Started</a>
+      <ul>
+        <li><a href="#prerequisites">Prerequisites</a></li>
+        <li><a href="#installation">Installation</a></li>
+      </ul>
+    </li>
+    <li><a href="#📄-license">📄 License</a></li>
+    <li><a href="#🤝-contributing">🤝 Contributing</a></li>
+    <li><a href="#❤️-thanks-to-all-contributors">❤️ Contributors</a></li>
+    <li><a href="#📰-social-media">📰 Social Media</a></li>
+  </ol>
+</details>
+
+___
+
+<br/>
+
+## 📚 About The Project
+
+<details open>
+<summary>
+
+### **What is the Decentralized Knowledge Graph?**
+</summary>
+
+<br/>
+
+<div align="center">
+    <img src="images/nodes.png" alt="Knowledge Asset" width="200">
+</div>
+
+OriginTrail Decentralized Knowledge Graph (DKG), hosted on the OriginTrail Decentralized Network (ODN) as trusted knowledge infrastructure, is shared global Knowledge Graph of Knowledge Assets. Running on the basis of the permissionless multi-chain OriginTrail protocol, it combines blockchains and knowledge graph technology to enable trusted AI applications based on key W3C standards.
+</details>
+
+<details open>
+<summary>
+
+### **The OriginTrail DKG Architecture**
+</summary>
+
+<br/>
+
+The OriginTrail tech stack is a three layer structure, consisting of the multi-chain consensus layer (OriginTrail layer 1, running on multiple blockchains), the Decentralized Knowledge Graph layer (OriginTrail Layer 2, hosted on the ODN) and Trusted Knowledge applications in the application layer. 
+
+<div align="center">
+    <img src="images/dkg-architecture.png" alt="DKG Architecture" width="400">
+</div>
+
+Further, the architecture differentiates between **the public, replicated knowledge graph** shared by all network nodes according to the protocol, and **private Knowledge graphs** hosted separately by each of the OriginTrail nodes.
+
+**Anyone can run an OriginTrail node and become part of the ODN, contributing  to the network capacity and hosting the OriginTrail DKG. The OriginTrail node is the ultimate data service for data and knowledge intensive Web3 applications and is used as the key backbone for trusted AI applications (see https://chatdkg.ai)**
+</details>
+
+<details open>
+<summary>
+
+### **What is a Knowledge Asset?**
+</summary>
+
+<br/>
+
+<div align="center">
+    <img src="images/ka.png" alt="Knowledge Asset" width="200">
+</div>
+
+**Knowledge Asset is the new, AI‑ready resource for the Internet**
+
+Knowledge Assets are verifiable containers of structured knowledge that live on the OriginTrail DKG and provide:
+- **Discoverability - UAL is the new URL**. Uniform Asset Locators (UALs, based on the W3C Decentralized Identifiers) are a new Web3 knowledge identifier (extensions of the Uniform Resource Locators - URLs) which identify a specific piece of knowledge and make it easy to find and connect with other Knowledge Assets.
+- **Ownership - NFTs enable ownership**. Each Knowledge Asset contains an NFT token that enables ownership, knowledge asset administration and market mechanisms.
+- **Verifiability - On-chain information origin and verifiable trail**. The blockchain tech increases trust, security, transparency, and the traceability of information.
 
 
-## Intro - What is a Decentralized Knowledge Graph (DKG)
+By their nature, Knowledge Assets are semantic resources (following the W3C Semantic Web set of standards), and through their symbolic representations inherently AI ready. See more at https://chatdkg.ai
+<br/>
+
+**Discover Knowledge Assets with the DKG Explorer:**
+<div align="center">
+    <table>
+        <tr>
+            <td align="center">
+                <a href="https://dkg.origintrail.io/explore?ual=did:dkg:otp/0x5cac41237127f94c2d21dae0b14bfefa99880630/309100">
+                  <img src="images/knowledge-assets-graph1.svg" width="300" alt="Knowledge Assets Graph 1">
+                </a>
+                <br><b>Supply Chains</b>
+            </td>
+            <td align="center">
+                <a href="https://dkg.origintrail.io/explore?ual=did:dkg:otp/0x5cac41237127f94c2d21dae0b14bfefa99880630/309285">
+                  <img src="images/knowledge-assets-graph2.svg" width="300" alt="Knowledge Assets Graph 2">
+                </a>
+                <br><b>Construction</b>
+            </td>
+            <td align="center">
+                <a href="https://dkg.origintrail.io/explore?ual=did:dkg:otp/0x5cac41237127f94c2d21dae0b14bfefa99880630/309222">
+                  <img src="images/knowledge-assets-graph3.svg" width="300" alt="Knowledge Assets Graph 3">
+                </a>
+                <br><b>Life sciences and healthcare</b>
+            </td>
+            <td align="center">
+                <a href="https://dkg.origintrail.io/explore?ual=did:dkg:otp/0x5cac41237127f94c2d21dae0b14bfefa99880630/308028">
+                  <img src="images/knowledge-assets-graph4.svg" width="300" alt="Knowledge Assets Graph 3">
+                </a>
+                <br><b>Metaverse</b>
+            </td>
+        </tr>
+    </table>
+</div>
 
 
-There are many available definitions of a knowledge graph, therefore we will present a simplified one focused on usability, rather than completeness. The purpose of this introduction is not to be a comprehensive guide for knowledge graphs, however it aims to get you started with the basics.
+</details>
 
-A **knowledge graph (KG)** is a network of entities — physical & digital objects, events or concepts — illustrating the relationship between them (aka a semantic network). KGs are used by major companies such as [Amazon](http://lunadong.com/talks/PG.pdf), [Google](https://en.wikipedia.org/wiki/Google_Knowledge_Graph), [Uber](https://www.youtube.com/watch?v=r3yMSl5NB_Q), [IBM](https://www.ibm.com/cloud/learn/knowledge-graph) etc for various applications: search, data integration, knowledge reasoning, recommendation engines, analytics, machine learning and AI etc.
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+<br/>
 
-Key characteristics of knowledge graphs:
-* focus on data connections as "first class citizens" (linked data) 
-* designed to ingest data from multiple sources, usually in different formats
-* flexible data model, easily extendable
+## 🚀 Getting Started
 
-Common knowledge graphs however are deployed within the domain of one organization and are designed to capture knowledge from various sources both from within and outside of the organization.
+___
 
-We define **decentralized knowledge graph (DKG)** as a global shared knowledge graph that is designed to benefit organizations and individuals by providing a common infrastructure for data exchange. The DKG:
+### Prerequisites
 
-* Enables Dapps with search, integration, analytics, AI and ML capabilities for any data source: blockchains, IPFS, enterprise systems, web services, personal devices 
-* Removes central authorities (decentralized infrastructure)
-* Enables permissionless PUBLISH and QUERY (public network)
-* Decentralized identity & Verifiable Credentials based access control (references private data)
+- **Node.js** >= 16.0.0
+- **npm** >= 8.0.0
 
-## The OriginTrail DKG Architecture 
+In order to use in the local environment, make sure to [run the local DKG network](https://github.com/OriginTrail/ot-node?tab=readme-ov-file#local-network-setup).
 
-The OriginTrail Decentralized Network implements the DKG according to the OriginTrail protocol.
+___
+<br/>
 
-It is:
+### Installation
 
-* **a permissionless network** - anyone can run OriginTrail nodes
-* **a multi-chain data exchange network** - connects to several blockchains (currently Ethereum and xDai with more integrations upcoming such as with Polkadot)
-* **designed for off-chain data exchange using standardized data models** (GS1 & W3C standards and recommendations)
-* **public open source software**
-* **infrastructure for knowledge marketplaces & tenders** - more info [here](https://www.youtube.com/watch?v=4uCxYGRh5fk)
+<br/>
 
-More information is available on the OriginTrail [website](https://origintrail.io), [official documentation](https://docs.origintrail.io) and [blog](https://medium.com/origintrail).
+Install the SDK:
+```bash
+npm install dkg.js
+```
 
+Now you can run a demo example file (requires the local DKG network running): 
+```bash
+node examples/demo.js
+```
 
-![](https://i.imgur.com/yTNtZE1.png)
+<br/>
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+## 📄 License
 
+Distributed under the Apache-2.0 License. See `LICENSE` file for more information.
 
-## DKG Client library
+<br/>
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-This library provides an interface into the OriginTrail Decentralized Knowledge Graph, enabling:
+## 🤝 Contributing
 
-* creating & updating assets on the public DKG
-* network and local querying of information based on topics and identifiers
-* verifying the integrity of queried data
+Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
-### Documentation & Usage
+If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
+Don't forget to give the project a star! Thanks again!
 
-Start here: [official DKGv6 documentation](https://docs.origintrail.io/dkg-v6-beta/introduction-to-dkg-v6-start-here)
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-## Learn more
+<br/>
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-More information can be found on the [official DKGv6 documentation](https://docs.origintrail.io/dkg-v6-upcoming-version/introduction-to-dkg-v6-start-here), [website](https://origintrail.io) and [Github](https://github.com/OriginTrail).
+## ❤️ Thanks to all Contributors!
 
-## Get in touch
+<!-- readme: collaborators,contributors/- -start -->
+<!-- readme: collaborators,contributors/- -end -->
 
-Get in touch with the OriginTrail tech community through [Discord](https://discordapp.com/invite/FCgYk2S). 
+<br/>
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-[`#traceon`]()
+## 📰 Social Media
+
+<br/>
+
+<div align="center">
+  <a href="https://medium.com/origintrail">
+    <img src="images/icons/medium.svg" alt="Medium Badge" width="30" style="margin-right: 10px"/>
+  </a>
+  <a href="https://t.me/origintrail">
+    <img src="images/icons/telegram.svg" alt="Telegram Badge" width="30" style="margin-right: 10px"/>
+  </a>
+  <a href="https://x.com/origin_trail">
+    <img src="images/icons/x.svg" alt="X Badge" width="30" style="margin-right: 10px"/>
+  </a>
+  <a href="https://www.youtube.com/c/origintrail">
+    <img src="images/icons/youtube.svg" alt="YouTube Badge" width="30" style="margin-right: 10px"/>
+  </a>
+  <a href="https://www.linkedin.com/company/origintrail/">
+    <img src="images/icons/linkedin.svg" alt="LinkedIn Badge" width="30" style="margin-right: 10px"/>
+  </a>
+  <a href="https://discord.gg/cCRPzzmnNT">
+    <img src="images/icons/discord.svg" alt="Discord Badge" width="30" style="margin-right: 10px"/>
+  </a>
+  <a href="https://www.reddit.com/r/OriginTrail/">
+    <img src="images/icons/reddit.svg" alt="Reddit Badge" width="30" style="margin-right: 10px"/>
+  </a>
+  <a href="https://coinmarketcap.com/currencies/origintrail/">
+    <img src="images/icons/coinmarketcap.svg" alt="Coinmarketcap Badge" width="30" style="margin-right: 10px"/>
+  </a>
+</div>
+
+___

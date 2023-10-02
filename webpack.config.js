@@ -24,8 +24,6 @@ module.exports = {
         fallback: {
             fs: false,
             zlib: false,
-            url: false,
-            os: false,
             path: false,
             net: false,
             tls: false,
@@ -33,6 +31,9 @@ module.exports = {
             http: require.resolve('stream-http/'),
             https: require.resolve('https-browserify/'),
             crypto: require.resolve('crypto-browserify'),
+            assert: require.resolve('assert'),
+            os: require.resolve('os-browserify'),
+            url: require.resolve('url'),
         },
     },
     optimization: {
