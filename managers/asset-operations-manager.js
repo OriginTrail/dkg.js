@@ -1,7 +1,6 @@
-const { assertionMetadata, formatAssertion, calculateRoot } = require('assertion-tools');
+const { assertionMetadata, calculateRoot } = require('assertion-tools');
 const { ethers, ZeroHash } = require('ethers');
 const {
-    isEmptyObject,
     deriveUAL,
     getOperationStatusObject,
     resolveUAL,
@@ -168,25 +167,7 @@ class AssetOperationsManager {
             authToken,
         );
 
-        let privateAssertion;
-        let privateAssertionId;
-        if (jsonContent.private && !isEmptyObject(jsonContent.private)) {
-            privateAssertion = await formatAssertion(jsonContent.private);
-            privateAssertionId = calculateRoot(privateAssertion);
-        }
-        const publicGraph = {
-            '@graph': [
-                jsonContent.public && !isEmptyObject(jsonContent.public)
-                    ? jsonContent.public
-                    : null,
-                jsonContent.private && !isEmptyObject(jsonContent.private)
-                    ? {
-                          [PRIVATE_ASSERTION_PREDICATE]: privateAssertionId,
-                      }
-                    : null,
-            ],
-        };
-        const publicAssertion = await formatAssertion(publicGraph);
+        const {public: publicAssertion, private: privateAssertion} = await formatGraph(jsonContent);
         const publicAssertionSizeInBytes =
             assertionMetadata.getAssertionSizeInBytes(publicAssertion);
 
@@ -248,7 +229,7 @@ class AssetOperationsManager {
         if (privateAssertion?.length) {
             assertions.push({
                 ...resolvedUAL,
-                assertionId: privateAssertionId,
+                assertionId: calculateRoot(privateAssertion),
                 assertion: privateAssertion,
                 storeType: STORE_TYPES.TRIPLE,
             });
