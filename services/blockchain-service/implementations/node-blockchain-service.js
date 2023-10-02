@@ -1,5 +1,5 @@
 const Web3 = require('web3');
-const { WEBSOCKET_PROVIDER_OPTIONS } = require('../../../constants.js');
+const { TRANSACTION_RETRY_ERRORS, WEBSOCKET_PROVIDER_OPTIONS } = require('../../../constants.js');
 const BlockchainServiceBase = require('../blockchain-service-base.js');
 
 class NodeBlockchainService extends BlockchainServiceBase {
@@ -83,8 +83,7 @@ class NodeBlockchainService extends BlockchainServiceBase {
                 if (
                     !transactionRetried &&
                     blockchain.handleNotMinedError &&
-                    (e.message.includes('Transaction was not mined') ||
-                        e.message.includes('already known'))
+                    TRANSACTION_RETRY_ERRORS.some((errorMsg) => e.message.toLowerCase().includes(errorMsg))
                 ) {
                     transactionRetried = true;
                     // eslint-disable-next-line no-param-reassign
