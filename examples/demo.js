@@ -63,7 +63,7 @@ function divider() {
 
     divider();
 
-    const assertions = await DkgClient.assertion.formatContent(content);
+    const assertions = await DkgClient.graph.format(content);
     console.log('======================== ASSERTIONS FORMATTED');
     console.log(JSON.stringify(assertions));
 

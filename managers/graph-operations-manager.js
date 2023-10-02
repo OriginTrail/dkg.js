@@ -1,11 +1,22 @@
 const { OPERATIONS } = require('../constants');
-const { deriveRepository } = require('../services/utilities.js');
+const { deriveRepository, formatGraph } = require('../services/utilities.js');
 
 class GraphOperationsManager {
     constructor(services) {
         this.nodeApiService = services.nodeApiService;
         this.validationService = services.validationService;
         this.inputService = services.inputService;
+    }
+
+    /**
+     * Formats the content provided, producing both a public and, if available, a private assertion.
+     * 
+     * @param {Object} content - The content object containing optional public and private properties.
+     * @returns {Promise<Object>} a promise that resolves with an object containing the 
+     * formatted public assertion and, if available, the private assertion.
+     */
+    async format(content) {
+        return formatGraph(content);
     }
 
     /**

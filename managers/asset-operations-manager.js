@@ -9,6 +9,7 @@ const {
     toJSONLD,
     sleepForMilliseconds,
     deriveRepository,
+    formatGraph,
 } = require('../services/utilities.js');
 const {
     CONTENT_TYPES,
@@ -613,25 +614,7 @@ class AssetOperationsManager {
 
         const { tokenId } = resolveUAL(UAL);
 
-        let privateAssertion;
-        let privateAssertionId;
-        if (jsonContent.private && !isEmptyObject(jsonContent.private)) {
-            privateAssertion = await formatAssertion(jsonContent.private);
-            privateAssertionId = calculateRoot(privateAssertion);
-        }
-        const publicGraph = {
-            '@graph': [
-                jsonContent.public && !isEmptyObject(jsonContent.public)
-                    ? jsonContent.public
-                    : null,
-                jsonContent.private && !isEmptyObject(jsonContent.private)
-                    ? {
-                          [PRIVATE_ASSERTION_PREDICATE]: privateAssertionId,
-                      }
-                    : null,
-            ],
-        };
-        const publicAssertion = await formatAssertion(publicGraph);
+        const {public: publicAssertion, private: privateAssertion} = await formatGraph(jsonContent);
         const publicAssertionSizeInBytes =
             assertionMetadata.getAssertionSizeInBytes(publicAssertion);
 
@@ -693,7 +676,7 @@ class AssetOperationsManager {
         if (privateAssertion?.length) {
             assertions.push({
                 ...resolvedUAL,
-                assertionId: privateAssertionId,
+                assertionId: calculateRoot(privateAssertion),
                 assertion: privateAssertion,
                 storeType: STORE_TYPES.PENDING,
             });
