@@ -43,6 +43,12 @@ const BLOCKCHAINS = {
     },
 };
 
+const TRANSACTION_RETRY_ERRORS = [
+    'transaction was not mined',
+    'already known',
+    'replacement transaction underpriced',
+];
+
 const WEBSOCKET_PROVIDER_OPTIONS = {
     reconnect: {
         auto: true,
@@ -146,6 +152,7 @@ module.exports = {
     DID_PREFIX,
     PRIVATE_ASSERTION_PREDICATE,
     BLOCKCHAINS,
+    TRANSACTION_RETRY_ERRORS,
     WEBSOCKET_PROVIDER_OPTIONS,
     OPERATIONS,
     OPERATION_STATUSES,
