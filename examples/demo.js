@@ -26,6 +26,35 @@ function divider() {
 }
 
 (async () => {
+    const content = {
+        public: {
+            '@context': ['https://schema.org'],
+            '@id': 'uuid:1',
+            company: 'OT',
+            user: {
+                '@id': 'uuid:user:1',
+            },
+            city: {
+                '@id': 'uuid:belgrade',
+            },
+        },
+        private: {
+            '@context': ['https://schema.org'],
+            '@graph': [
+                {
+                    '@id': 'uuid:user:1',
+                    name: 'Adam',
+                    lastname: 'Smith',
+                },
+                {
+                    '@id': 'uuid:belgrade',
+                    title: 'Belgrade',
+                    postCode: '11000',
+                },
+            ],
+        },
+    };
+
     divider();
 
     const nodeInfo = await DkgClient.node.info();
@@ -34,37 +63,35 @@ function divider() {
 
     divider();
 
-    const createAssetResult = await DkgClient.asset.create(
-        {
-            public: {
-                '@context': ['https://schema.org'],
-                '@id': 'uuid:1',
-                company: 'OT',
-                user: {
-                    '@id': 'uuid:user:1',
-                },
-                city: {
-                    '@id': 'uuid:belgrade',
-                },
-            },
-            private: {
-                '@context': ['https://schema.org'],
-                '@graph': [
-                    {
-                        '@id': 'uuid:user:1',
-                        name: 'Adam',
-                        lastname: 'Smith',
-                    },
-                    {
-                        '@id': 'uuid:belgrade',
-                        title: 'Belgrade',
-                        postCode: '11000',
-                    },
-                ],
-            },
-        },
+    const assertions = await DkgClient.assertion.formatContent(content);
+    console.log('======================== ASSERTIONS FORMATTED');
+    console.log(JSON.stringify(assertions));
+
+    divider();
+
+    const publicAssertionId = await DkgClient.assertion.getMerkleRoot(content);
+    console.log('======================== PUBLIC ASSERTION MERKLE ROOT CALCULATED');
+    console.log(publicAssertionId);
+
+    divider();
+
+    const publicAssertionSize = await DkgClient.assertion.getSizeInBytes(content);
+    console.log('======================== PUBLIC ASSERTION SIZE CALCULATED');
+    console.log(publicAssertionSize);
+
+    divider();
+
+    const bidSuggestion = await DkgClient.network.getBidSuggestion(
+        publicAssertionId,
+        publicAssertionSize,
         { epochsNum: 2 },
     );
+    console.log('======================== BID SUGGESTION CALCULATED');
+    console.log(bidSuggestion);
+
+    divider();
+
+    const createAssetResult = await DkgClient.asset.create(content, { epochsNum: 2 });
     console.log('======================== ASSET CREATED');
     console.log(createAssetResult);
 

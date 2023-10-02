@@ -25,7 +25,7 @@ const emptyHooks = require('../util/empty-hooks');
 const { STORE_TYPES, ASSET_STATES } = require('../constants');
 
 class AssetOperationsManager {
-    constructor(config, services) {
+    constructor(services) {
         this.nodeApiService = services.nodeApiService;
         this.validationService = services.validationService;
         this.blockchainService = services.blockchainService;

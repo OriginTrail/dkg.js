@@ -5,6 +5,17 @@ class InputService {
         this.config = config;
     }
 
+    getBidSuggestionArguments(options) {
+        return {
+            blockchain: this.getBlockchain(options),
+            endpoint: this.getEndpoint(options),
+            port: this.getPort(options),
+            epochsNum: this.getEpochsNum(options),
+            hashFunctionId: this.getHashFunctionId(options),
+            authToken: this.getAuthToken(options),
+        }
+    }
+
     getAssetCreateArguments(options) {
         return {
             blockchain: this.getBlockchain(options),

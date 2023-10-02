@@ -2,7 +2,7 @@ const { OPERATIONS } = require('../constants');
 const { deriveRepository } = require('../services/utilities.js');
 
 class GraphOperationsManager {
-    constructor(config, services) {
+    constructor(services) {
         this.nodeApiService = services.nodeApiService;
         this.validationService = services.validationService;
         this.inputService = services.inputService;
