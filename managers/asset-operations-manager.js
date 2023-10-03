@@ -1,7 +1,6 @@
-const { assertionMetadata, formatAssertion, calculateRoot } = require('assertion-tools');
+const { assertionMetadata, calculateRoot, formatGraph } = require('assertion-tools');
 const { ethers, ZeroHash } = require('ethers');
 const {
-    isEmptyObject,
     deriveUAL,
     getOperationStatusObject,
     resolveUAL,
@@ -24,7 +23,7 @@ const emptyHooks = require('../util/empty-hooks');
 const { STORE_TYPES, ASSET_STATES } = require('../constants');
 
 class AssetOperationsManager {
-    constructor(config, services) {
+    constructor(services) {
         this.nodeApiService = services.nodeApiService;
         this.validationService = services.validationService;
         this.blockchainService = services.blockchainService;
@@ -32,9 +31,60 @@ class AssetOperationsManager {
     }
 
     /**
+     * Sets allowance to a given quantity of tokens.
+     * @async
+     * @param {BigInt} tokenAmount - The amount of tokens (Wei) to set the allowance.
+     * @param {Object} [options={}] - Additional options for increasing allowance - currently only blockchain option expected.
+     * @returns {Object} Object containing hash of blockchain transaction and status.
+     */
+    async setAllowance(tokenAmount, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+
+        this.validationService.validateSetAllowance(blockchain);
+
+        const serviceAgreementV1Address = await this.blockchainService.getContractAddress(
+            'ServiceAgreementV1',
+            blockchain,
+        );
+
+        const currentAllowance = BigInt(
+                await this.blockchainService.callContractFunction(
+                'Token',
+                'allowance',
+                [blockchain.publicKey, serviceAgreementV1Address],
+                blockchain,
+            )
+        );
+
+        const allowanceDifference = tokenAmount - currentAllowance;
+
+        let receipt;
+        if (allowanceDifference > 0) {
+            receipt = await this.blockchainService.executeContractFunction(
+                'Token',
+                'increaseAllowance',
+                [serviceAgreementV1Address, allowanceDifference],
+                blockchain,
+            );
+        } else if (allowanceDifference < 0) {
+            receipt = await this.blockchainService.executeContractFunction(
+                'Token',
+                'decreaseAllowance',
+                [serviceAgreementV1Address, -allowanceDifference],
+                blockchain,
+            );
+        }
+
+        return {
+            transactionHash: receipt.transactionHash,
+            status: receipt.status,
+        };
+    }
+
+    /**
      * Increases allowance for a set quantity of tokens.
      * @async
-     * @param {number} tokenAmount - The amount of tokens to increase the allowance for.
+     * @param {BigInt} tokenAmount - The amount of tokens (Wei) to increase the allowance for.
      * @param {Object} [options={}] - Additional options for increasing allowance - currently only blockchain option expected.
      * @returns {Object} Object containing hash of blockchain transaction and status.
      */
@@ -64,7 +114,7 @@ class AssetOperationsManager {
     /**
      * Decreases allowance for a set quantity of tokens.
      * @async
-     * @param {number} tokenAmount - The amount of tokens to decrease the allowance for.
+     * @param {BigInt} tokenAmount - The amount of tokens (Wei) to decrease the allowance for.
      * @param {Object} [options={}] - Additional options for decreasing allowance - currently only blockchain option expected.
      * @returns {Object} Object containing hash of blockchain transaction and status.
      */
@@ -101,6 +151,12 @@ class AssetOperationsManager {
         };
     }
 
+    /**
+     * Gets current allowance in Wei.
+     * @async
+     * @param {Object} [options={}] - Additional options for decreasing allowance - currently only blockchain option expected.
+     * @returns {BigInt} Current allowance (Wei).
+     */
     async getCurrentAllowance(options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
 
@@ -116,7 +172,7 @@ class AssetOperationsManager {
             blockchain,
         );
 
-        return allowance;
+        return BigInt(allowance);
     }
 
     /**
@@ -167,25 +223,10 @@ class AssetOperationsManager {
             authToken,
         );
 
-        let privateAssertion;
-        let privateAssertionId;
-        if (jsonContent.private && !isEmptyObject(jsonContent.private)) {
-            privateAssertion = await formatAssertion(jsonContent.private);
-            privateAssertionId = calculateRoot(privateAssertion);
-        }
-        const publicGraph = {
-            '@graph': [
-                jsonContent.public && !isEmptyObject(jsonContent.public)
-                    ? jsonContent.public
-                    : null,
-                jsonContent.private && !isEmptyObject(jsonContent.private)
-                    ? {
-                          [PRIVATE_ASSERTION_PREDICATE]: privateAssertionId,
-                      }
-                    : null,
-            ],
-        };
-        const publicAssertion = await formatAssertion(publicGraph);
+        const {
+            public: publicAssertion,
+            private: privateAssertion,
+        } = await formatGraph(jsonContent);
         const publicAssertionSizeInBytes =
             assertionMetadata.getAssertionSizeInBytes(publicAssertion);
 
@@ -247,7 +288,7 @@ class AssetOperationsManager {
         if (privateAssertion?.length) {
             assertions.push({
                 ...resolvedUAL,
-                assertionId: privateAssertionId,
+                assertionId: calculateRoot(privateAssertion),
                 assertion: privateAssertion,
                 storeType: STORE_TYPES.TRIPLE,
             });
@@ -640,25 +681,10 @@ class AssetOperationsManager {
 
         const { tokenId } = resolveUAL(UAL);
 
-        let privateAssertion;
-        let privateAssertionId;
-        if (jsonContent.private && !isEmptyObject(jsonContent.private)) {
-            privateAssertion = await formatAssertion(jsonContent.private);
-            privateAssertionId = calculateRoot(privateAssertion);
-        }
-        const publicGraph = {
-            '@graph': [
-                jsonContent.public && !isEmptyObject(jsonContent.public)
-                    ? jsonContent.public
-                    : null,
-                jsonContent.private && !isEmptyObject(jsonContent.private)
-                    ? {
-                          [PRIVATE_ASSERTION_PREDICATE]: privateAssertionId,
-                      }
-                    : null,
-            ],
-        };
-        const publicAssertion = await formatAssertion(publicGraph);
+        const {
+            public: publicAssertion,
+            private: privateAssertion
+        } = await formatGraph(jsonContent);
         const publicAssertionSizeInBytes =
             assertionMetadata.getAssertionSizeInBytes(publicAssertion);
 
@@ -720,7 +746,7 @@ class AssetOperationsManager {
         if (privateAssertion?.length) {
             assertions.push({
                 ...resolvedUAL,
-                assertionId: privateAssertionId,
+                assertionId: calculateRoot(privateAssertion),
                 assertion: privateAssertion,
                 storeType: STORE_TYPES.PENDING,
             });

@@ -1,7 +1,7 @@
 
 class BlockchainOperationsManager {
 
-    constructor(config, services) {
+    constructor(services) {
         this.blockchainService = services.blockchainService;
         this.inputService = services.inputService;
     }

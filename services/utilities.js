@@ -1,17 +1,15 @@
 const jsonld = require('jsonld');
 const { GRAPH_LOCATIONS, GRAPH_STATES, OT_NODE_TRIPLE_STORE_REPOSITORIES } = require('../constants.js');
 
+function isEmptyObject(obj) {
+    return Object.keys(obj).length === 0 && obj.constructor === Object;
+}
+
 module.exports = {
     nodeSupported() {
         return typeof window === 'undefined';
     },
-    isEmptyObject(object) {
-        // eslint-disable-next-line no-unreachable-loop
-        for (const key in object) {
-            return false;
-        }
-        return true;
-    },
+    isEmptyObject,
     toNumber(hex) {
         return parseInt(hex.slice(2), 16);
     },
