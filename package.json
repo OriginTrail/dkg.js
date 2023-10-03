@@ -29,7 +29,7 @@
     },
     "homepage": "https://github.com/OriginTrail/dkg.js/tree/main#readme",
     "dependencies": {
-        "assertion-tools": "^2.0.4",
+        "assertion-tools": "github:OriginTrail/assertion-tools#feature/graph-formatting",
         "axios": "^0.27.2",
         "dkg-evm-module": "^4.0.4",
         "ethers": "^6.1.0",

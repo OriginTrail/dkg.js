@@ -63,14 +63,14 @@ function divider() {
 
     divider();
 
-    const assertions = await DkgClient.graph.format(content);
+    const assertions = await DkgClient.assertion.formatGraph(content);
     console.log('======================== ASSERTIONS FORMATTED');
     console.log(JSON.stringify(assertions));
 
     divider();
 
-    const publicAssertionId = await DkgClient.assertion.getMerkleRoot(content);
-    console.log('======================== PUBLIC ASSERTION MERKLE ROOT CALCULATED');
+    const publicAssertionId = await DkgClient.assertion.getPublicAssertionId(content);
+    console.log('======================== PUBLIC ASSERTION ID (MERKLE ROOT) CALCULATED');
     console.log(publicAssertionId);
 
     divider();
@@ -88,6 +88,24 @@ function divider() {
     );
     console.log('======================== BID SUGGESTION CALCULATED');
     console.log(bidSuggestion);
+
+    divider();
+
+    const increaseAllowanceResult = await DkgClient.asset.increaseAllowance(bidSuggestion);
+    console.log('======================== ALLOWANCE INCREASED');
+    console.log(increaseAllowanceResult);
+
+    divider();
+
+    const decreaseAllowanceResult = await DkgClient.asset.decreaseAllowance(bidSuggestion);
+    console.log('======================== ALLOWANCE DECREASED');
+    console.log(decreaseAllowanceResult);
+
+    divider();
+
+    const setAllowanceResult = await DkgClient.asset.setAllowance(bidSuggestion);
+    console.log('======================== ALLOWANCE SET');
+    console.log(setAllowanceResult);
 
     divider();
 
@@ -214,7 +232,7 @@ function divider() {
     divider();
 
     queryResult = await DkgClient.graph.query(
-        'construct { ?s ?p ?o } where { ?s ?p ?o . <uuid:1> ?p ?o }',
+        'construct { ?s ?p ?o } where { ?s ?p ?o . <uuid:user:1> ?p ?o }',
         'CONSTRUCT',
         { graphState: 'HISTORICAL', graphLocation: 'LOCAL_KG' },
     );

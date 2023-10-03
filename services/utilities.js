@@ -1,6 +1,5 @@
 const jsonld = require('jsonld');
-const { calculateRoot, formatAssertion } = require('assertion-tools');
-const { GRAPH_LOCATIONS, GRAPH_STATES, PRIVATE_ASSERTION_PREDICATE, OT_NODE_TRIPLE_STORE_REPOSITORIES } = require('../constants.js');
+const { GRAPH_LOCATIONS, GRAPH_STATES, OT_NODE_TRIPLE_STORE_REPOSITORIES } = require('../constants.js');
 
 function isEmptyObject(obj) {
     return Object.keys(obj).length === 0 && obj.constructor === Object;
@@ -87,34 +86,4 @@ module.exports = {
             format: 'application/n-quads',
         });
     },
-    async formatGraph(content) {
-        let privateAssertion;
-        if (content.private && !isEmptyObject(content.private)) {
-            privateAssertion = await formatAssertion(content.private);
-        }
-        const publicGraph = {
-            '@graph': [
-                content.public && !isEmptyObject(content.public)
-                    ? content.public
-                    : null,
-                content.private && !isEmptyObject(content.private)
-                    ? {
-                        [PRIVATE_ASSERTION_PREDICATE]: privateAssertion 
-                        ? calculateRoot(privateAssertion) : null,
-                    }
-                    : null,
-            ],
-        };
-        const publicAssertion = await formatAssertion(publicGraph);
-
-        const result = {
-            public: publicAssertion,
-        };
-        
-        if (privateAssertion) {
-            result.private = privateAssertion;
-        }
-        
-        return result;
-    }
 };

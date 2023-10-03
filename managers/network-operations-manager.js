@@ -8,12 +8,12 @@ class NetworkOperationsManager {
     /**
      * Sends request to the DKG node in order to get suggested bid for given parameters.
      * @async
-     * @param {number} merkleRoot - Merkle Root of the file.
+     * @param {string} publicAssertionId - Merkle Root of the data.
      * @param {number} sizeInBytes - Size of the data in bytes.
      * @param {Object} [options={}] - Additional options for getting bid suggestion.
-     * @returns {number} Suggested bid for publishing Knowledge Asset with given parameters.
+     * @returns {BigInt} Suggested bid for publishing Knowledge Asset with given parameters.
      */
-    async getBidSuggestion(merkleRoot, sizeInBytes, options = {}) {
+    async getBidSuggestion(publicAssertionId, sizeInBytes, options = {}) {
         const {
             blockchain,
             endpoint,
@@ -28,16 +28,18 @@ class NetworkOperationsManager {
             blockchain,
         );
 
-        return this.nodeApiService.getBidSuggestion(
-            endpoint,
-            port,
-            authToken,
-            blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
-            epochsNum,
-            sizeInBytes,
-            contentAssetStorageAddress,
-            merkleRoot,
-            hashFunctionId,
+        return BigInt(
+            await this.nodeApiService.getBidSuggestion(
+                endpoint,
+                port,
+                authToken,
+                blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
+                epochsNum,
+                sizeInBytes,
+                contentAssetStorageAddress,
+                publicAssertionId,
+                hashFunctionId,
+            )
         )
     }
     
