@@ -15,7 +15,7 @@ class DkgClient {
 
         this.assertion = new AssertionOperationsManager(services);
         this.asset = new AssetOperationsManager(services);
-        this.blockhain = new BlockchainOperationsManager(services);
+        this.blockchain = new BlockchainOperationsManager(services);
         this.node = new NodeOperationsManager(services);
         this.graph = new GraphOperationsManager(services);
         this.network = new NetworkOperationsManager(services);
