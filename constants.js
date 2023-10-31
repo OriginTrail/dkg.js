@@ -41,6 +41,14 @@ const BLOCKCHAINS = {
         rpc: 'https://astrosat-parachain-rpc.origin-trail.network',
         hubContract: '0x5fA7916c48Fe6D5F1738d12Ad234b78c90B4cAdA',
     },
+    chiado: {
+        rpc: 'https://rpc.chiadochain.net',
+        hubContract: '',
+    },
+    gnosis: {
+        rpc: 'https://rpc.gnosischain.com/',
+        hubContract: '',
+    },
 };
 
 const WEBSOCKET_PROVIDER_OPTIONS = {
