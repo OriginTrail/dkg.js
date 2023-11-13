@@ -12,6 +12,8 @@ const DID_PREFIX = 'did:dkg';
 
 const PRIVATE_ASSERTION_PREDICATE = 'https://ontology.origintrail.io/dkg/1.0#privateAssertionID';
 
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+
 const BLOCKCHAINS = {
     ganache: {
         rpc: 'http://localhost:7545',
@@ -151,6 +153,7 @@ module.exports = {
     MAX_FILE_SIZE,
     DID_PREFIX,
     PRIVATE_ASSERTION_PREDICATE,
+    ZERO_ADDRESS,
     BLOCKCHAINS,
     TRANSACTION_RETRY_ERRORS,
     WEBSOCKET_PROVIDER_OPTIONS,

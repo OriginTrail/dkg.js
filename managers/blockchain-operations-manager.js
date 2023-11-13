@@ -7,12 +7,22 @@ class BlockchainOperationsManager {
     }
 
     /**
+     * @async
+     * @param {Object} [options={}]  - Optional parameters for blockchain service.
+     * @returns {Promise<number>} - A promise that resolves to the chain id.
+     */
+    async getChainId(options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        return this.blockchainService.getChainId(blockchain);
+    }
+
+    /**
      * Retrieve the current gas price.
      * @async
      * @param {Object} [options={}]  - Optional parameters for blockchain service.
      * @returns {Promise<string>} - A promise that resolves to the current gas price.
      */
-    async getGasPrice(options = {}){
+    async getGasPrice(options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
         return this.blockchainService.getGasPrice(blockchain);
     }
@@ -23,7 +33,7 @@ class BlockchainOperationsManager {
      * @param {Object} [options={}] - Optional parameters for blockchain service.
      * @returns {Promise<Object>} - A promise that resolves to an object containing wallet balances.
      */
-    async getWalletBalances(options = {}){
+    async getWalletBalances(options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
         return this.blockchainService.getWalletBalances(blockchain);
     }
