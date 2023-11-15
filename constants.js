@@ -17,7 +17,7 @@ const BLOCKCHAINS = {
         rpc: 'http://localhost:7545',
         hubContract: '0x209679fA3B658Cd0fC74473aF28243bfe78a9b12',
     },
-    hardhat: {
+    'hardhat:31337': {
         rpc: 'http://localhost:8545',
         hubContract: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
     },
@@ -29,15 +29,15 @@ const BLOCKCHAINS = {
         rpc: 'http://parachain-alphanet-02.origin-trail.network:9933',
         hubContract: '0x7585a99C5C150a08f5CDeFD16465C6De8D41EbbD',
     },
-    'otp::devnet': {
+    'otp:2160': {
         rpc: 'https://lofar-tm-rpc.origin-trail.network',
         hubContract: '0x833048F6e6BEa78E0AAdedeCd2Dc2231dda443FB',
     },
-    'otp::testnet': {
+    'otp:20430': {
         rpc: 'https://lofar-testnet.origin-trail.network',
         hubContract: '0xBbfF7Ea6b2Addc1f38A0798329e12C08f03750A6',
     },
-    'otp::mainnet': {
+    'otp:2043': {
         rpc: 'https://astrosat-parachain-rpc.origin-trail.network',
         hubContract: '0x5fA7916c48Fe6D5F1738d12Ad234b78c90B4cAdA',
     },
