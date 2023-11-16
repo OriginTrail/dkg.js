@@ -48,12 +48,12 @@ class AssetOperationsManager {
         );
 
         const currentAllowance = BigInt(
-                await this.blockchainService.callContractFunction(
+            await this.blockchainService.callContractFunction(
                 'Token',
                 'allowance',
                 [blockchain.publicKey, serviceAgreementV1Address],
                 blockchain,
-            )
+            ),
         );
 
         const allowanceDifference = tokenAmount - currentAllowance;
@@ -223,10 +223,9 @@ class AssetOperationsManager {
             authToken,
         );
 
-        const {
-            public: publicAssertion,
-            private: privateAssertion,
-        } = await formatGraph(jsonContent);
+        const { public: publicAssertion, private: privateAssertion } = await formatGraph(
+            jsonContent,
+        );
         const publicAssertionSizeInBytes =
             assertionMetadata.getAssertionSizeInBytes(publicAssertion);
 
@@ -249,7 +248,7 @@ class AssetOperationsManager {
                 endpoint,
                 port,
                 authToken,
-                blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
+                blockchain.name,
                 epochsNum,
                 publicAssertionSizeInBytes,
                 contentAssetStorageAddress,
@@ -273,7 +272,7 @@ class AssetOperationsManager {
         );
 
         const resolvedUAL = {
-            blockchain: blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
+            blockchain: blockchain.name,
             contract: contentAssetStorageAddress,
             tokenId,
         };
@@ -309,11 +308,7 @@ class AssetOperationsManager {
             operationId,
         );
 
-        const UAL = deriveUAL(
-            blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
-            contentAssetStorageAddress,
-            tokenId,
-        );
+        const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, tokenId);
 
         if (operationResult.status === OPERATION_STATUSES.FAILED) {
             return {
@@ -329,7 +324,7 @@ class AssetOperationsManager {
             authToken,
             publicAssertionId,
             publicAssertion,
-            blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
+            blockchain.name,
             contentAssetStorageAddress,
             tokenId,
             hashFunctionId,
@@ -681,10 +676,9 @@ class AssetOperationsManager {
 
         const { tokenId } = resolveUAL(UAL);
 
-        const {
-            public: publicAssertion,
-            private: privateAssertion
-        } = await formatGraph(jsonContent);
+        const { public: publicAssertion, private: privateAssertion } = await formatGraph(
+            jsonContent,
+        );
         const publicAssertionSizeInBytes =
             assertionMetadata.getAssertionSizeInBytes(publicAssertion);
 
@@ -729,7 +723,7 @@ class AssetOperationsManager {
         );
 
         const resolvedUAL = {
-            blockchain: blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
+            blockchain: blockchain.name,
             contract: contentAssetStorageAddress,
             tokenId,
         };
@@ -783,7 +777,7 @@ class AssetOperationsManager {
             authToken,
             publicAssertionId,
             publicAssertion,
-            blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
+            blockchain.name,
             contentAssetStorageAddress,
             tokenId,
             hashFunctionId,
@@ -819,7 +813,12 @@ class AssetOperationsManager {
         const frequency = this.inputService.getFrequency(options);
         const maxNumberOfRetries = this.inputService.getMaxNumberOfRetries(options);
 
-        this.validationService.validateWaitAssetUpdateFinalization(UAL, blockchain, frequency, maxNumberOfRetries);
+        this.validationService.validateWaitAssetUpdateFinalization(
+            UAL,
+            blockchain,
+            frequency,
+            maxNumberOfRetries,
+        );
 
         const { tokenId } = resolveUAL(UAL);
         const response = {
@@ -1079,7 +1078,7 @@ class AssetOperationsManager {
                 endpoint,
                 port,
                 authToken,
-                blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
+                blockchain.name,
                 epochsNumber,
                 latestFinalizedStateSize,
                 contract,
@@ -1260,7 +1259,7 @@ class AssetOperationsManager {
             endpoint,
             port,
             authToken,
-            blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
+            blockchain.name,
             epochsLeft,
             size,
             contract,

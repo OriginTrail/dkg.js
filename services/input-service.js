@@ -13,7 +13,7 @@ class InputService {
             epochsNum: this.getEpochsNum(options),
             hashFunctionId: this.getHashFunctionId(options),
             authToken: this.getAuthToken(options),
-        }
+        };
     }
 
     getAssetCreateArguments(options) {
@@ -75,6 +75,27 @@ class InputService {
     }
 
     getBlockchain(options) {
+        const blockchainName = options.blockchain?.name;
+
+        if (blockchainName) {
+            switch (blockchainName) {
+                case 'hardhat':
+                    config.blockchain.name = 'hardhat:31337';
+                    break;
+                case 'otp::devnet':
+                    config.blockchain.name = 'otp:2160';
+                    break;
+                case 'otp::testnet':
+                    config.blockchain.name = 'otp:20430';
+                    break;
+                case 'otp::mainnet':
+                    config.blockchain.name = 'otp:2043';
+                    break;
+                default:
+                    break;
+            }
+        }
+
         const name = options.blockchain?.name ?? this.config.blockchain?.name ?? null;
         const rpc =
             options.blockchain?.rpc ?? this.config.blockchain?.rpc ?? BLOCKCHAINS[name]?.rpc;
@@ -86,13 +107,16 @@ class InputService {
             options.blockchain?.publicKey ?? this.config.blockchain?.publicKey ?? null;
         const privateKey =
             options.blockchain?.privateKey ?? this.config.blockchain?.privateKey ?? null;
-        const handleNotMinedError = options.blockchain?.handleNotMinedError
-            ?? this.config.blockchain?.handleNotMinedError
-            ?? DEFAULT_PARAMETERS.HANDLE_NOT_MINED_ERROR;
-        const gasPrice = options.blockchain?.gasPrice ?? this.config.blockchain?.gasPrice ?? undefined;
-        const transactionPollingTimeout = options.blockchain?.transactionPollingTimeout
-            ?? this.config.blockchain?.transactionPollingTimeout
-            ?? null;
+        const handleNotMinedError =
+            options.blockchain?.handleNotMinedError ??
+            this.config.blockchain?.handleNotMinedError ??
+            DEFAULT_PARAMETERS.HANDLE_NOT_MINED_ERROR;
+        const gasPrice =
+            options.blockchain?.gasPrice ?? this.config.blockchain?.gasPrice ?? undefined;
+        const transactionPollingTimeout =
+            options.blockchain?.transactionPollingTimeout ??
+            this.config.blockchain?.transactionPollingTimeout ??
+            null;
 
         return {
             name,
@@ -102,7 +126,7 @@ class InputService {
             privateKey,
             gasPrice,
             transactionPollingTimeout,
-            handleNotMinedError
+            handleNotMinedError,
         };
     }
 
