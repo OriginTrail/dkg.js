@@ -42,7 +42,7 @@ class AssetOperationsManager {
      */
     async isValidUAL(UAL, options = {}) {
         if (typeof UAL !== 'string' || UAL.trim() === '') {
-            throw Error('UAL must be a non-empty string.');
+            throw new Error('UAL must be a non-empty string.');
         }
 
         const blockchain = this.inputService.getBlockchain(options);
@@ -50,46 +50,55 @@ class AssetOperationsManager {
 
         const parts = UAL.split('/');
         if (parts.length !== 3) {
-            throw Error('UAL format is incorrect.');
+            throw new Error('UAL format is incorrect.');
         }
 
         const prefixes = parts[0].split(':');
         if (prefixes.length !== 3 && prefixes.length !== 4) {
-            throw Error('Prefix format in UAL is incorrect.');
+            throw new Error('Prefix format in UAL is incorrect.');
         }
 
         if (prefixes[0] !== 'did') {
-            throw Error('Invalid DID prefix.');
+            throw new Error(`Invalid DID prefix. Expected: 'did'. Received: '${prefixes[0]}'.`);
         }
 
         if (prefixes[1] !== 'dkg') {
-            throw Error('Invalid DKG prefix.');
+            throw new Error(`Invalid DKG prefix. Expected: 'dkg'. Received: '${prefixes[1]}'.`);
         }
 
         if (prefixes[2] !== blockchain.name) {
-            throw Error('Invalid blockchain name in the UAL prefix.');
+            throw new Error(
+                `Invalid blockchain name in the UAL prefix. Expected: '${blockchain.name}'. Received: '${prefixes[2]}'.`,
+            );
         }
 
         if (prefixes.length === 4) {
             const chainId = await this.blockchainService.getChainId(blockchain);
             if (Number(prefixes[3]) !== chainId) {
-                throw Error('Chain ID in UAL does not match the blockchain.');
+                throw new Error(
+                    `Chain ID in UAL does not match the blockchain. Expected: '${chainId}'. Received: '${prefixes[3]}'.`,
+                );
             }
         }
 
-        const contractAddress = await this.blockchainService.getContractAddress('ContentAssetStorage', blockchain);
-        if (parts[1] !== contractAddress) {
-            throw Error('Contract address in UAL does not match.');
+        const contractAddress = await this.blockchainService.getContractAddress(
+            'ContentAssetStorage',
+            blockchain,
+        );
+        if (parts[1].toLowerCase() !== contractAddress.toLowerCase()) {
+            throw new Error(
+                `Contract address in UAL does not match. Expected: '${contractAddress}'. Received: '${parts[1]}'.`,
+            );
         }
 
         try {
             const owner = await this.blockchainService.getAssetOwner(parts[2], blockchain);
             if (owner === ZERO_ADDRESS) {
-                throw Error('Token does not exist or has no owner.');
+                throw new Error('Token does not exist or has no owner.');
             }
             return true;
         } catch (error) {
-            throw Error(`Error fetching asset owner: ${error.message}`);
+            throw new Error(`Error fetching asset owner: ${error.message}`);
         }
     }
 
@@ -111,12 +120,12 @@ class AssetOperationsManager {
         );
 
         const currentAllowance = BigInt(
-                await this.blockchainService.callContractFunction(
+            await this.blockchainService.callContractFunction(
                 'Token',
                 'allowance',
                 [blockchain.publicKey, serviceAgreementV1Address],
                 blockchain,
-            )
+            ),
         );
 
         const allowanceDifference = tokenAmount - currentAllowance;
@@ -286,10 +295,9 @@ class AssetOperationsManager {
             authToken,
         );
 
-        const {
-            public: publicAssertion,
-            private: privateAssertion,
-        } = await formatGraph(jsonContent);
+        const { public: publicAssertion, private: privateAssertion } = await formatGraph(
+            jsonContent,
+        );
         const publicAssertionSizeInBytes =
             assertionMetadata.getAssertionSizeInBytes(publicAssertion);
 
@@ -490,7 +498,7 @@ class AssetOperationsManager {
                 stateFinalized = true;
             } else if (typeof state === 'number') {
                 if (state >= assertionIds.length) {
-                    throw Error('State index is out of range.');
+                    throw new Error('State index is out of range.');
                 }
 
                 publicAssertionId = assertionIds[state];
@@ -514,10 +522,10 @@ class AssetOperationsManager {
                     publicAssertionId = unfinalizedState;
                     stateFinalized = false;
                 } else {
-                    throw Error("Given state hash isn't a part of the Knowledge Asset.");
+                    throw new Error("Given state hash isn't a part of the Knowledge Asset.");
                 }
             } else {
-                throw Error('Incorrect state option.');
+                throw new Error('Incorrect state option.');
             }
         }
 
@@ -744,10 +752,9 @@ class AssetOperationsManager {
 
         const { tokenId } = resolveUAL(UAL);
 
-        const {
-            public: publicAssertion,
-            private: privateAssertion
-        } = await formatGraph(jsonContent);
+        const { public: publicAssertion, private: privateAssertion } = await formatGraph(
+            jsonContent,
+        );
         const publicAssertionSizeInBytes =
             assertionMetadata.getAssertionSizeInBytes(publicAssertion);
 
@@ -882,7 +889,12 @@ class AssetOperationsManager {
         const frequency = this.inputService.getFrequency(options);
         const maxNumberOfRetries = this.inputService.getMaxNumberOfRetries(options);
 
-        this.validationService.validateWaitAssetUpdateFinalization(UAL, blockchain, frequency, maxNumberOfRetries);
+        this.validationService.validateWaitAssetUpdateFinalization(
+            UAL,
+            blockchain,
+            frequency,
+            maxNumberOfRetries,
+        );
 
         const { tokenId } = resolveUAL(UAL);
         const response = {
@@ -1211,7 +1223,7 @@ class AssetOperationsManager {
             );
 
             if (tokenAmountInWei <= 0) {
-                throw Error(
+                throw new Error(
                     `Token amount is bigger than default suggested amount, please specify exact tokenAmount if you still want to add more tokens!`,
                 );
             }
@@ -1271,7 +1283,7 @@ class AssetOperationsManager {
                 hashFunctionId,
             );
             if (tokenAmountInWei <= 0) {
-                throw Error(
+                throw new Error(
                     `Token amount is bigger than default suggested amount, please specify exact tokenAmount if you still want to add more tokens!`,
                 );
             }
