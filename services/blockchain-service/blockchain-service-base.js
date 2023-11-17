@@ -472,6 +472,12 @@ class BlockchainServiceBase {
         );
     }
 
+    async getChainId(blockchain) {
+        const web3Instance = await this.getWeb3Instance(blockchain);
+
+        return web3Instance.eth.getChainId();
+    }
+
     async getBlockchainTimestamp(blockchain) {
         if (blockchain.name !== 'hardhat') return Math.floor(Date.now() / 1000);
 

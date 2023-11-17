@@ -18,6 +18,7 @@ const {
     PRIVATE_ASSERTION_PREDICATE,
     QUERY_TYPES,
     OT_NODE_TRIPLE_STORE_REPOSITORIES,
+    ZERO_ADDRESS,
 } = require('../constants.js');
 const emptyHooks = require('../util/empty-hooks');
 const { STORE_TYPES, ASSET_STATES } = require('../constants');
@@ -28,6 +29,68 @@ class AssetOperationsManager {
         this.validationService = services.validationService;
         this.blockchainService = services.blockchainService;
         this.inputService = services.inputService;
+    }
+
+    /**
+     * Checks if given UAL is valid.
+     * @async
+     * @param {string} UAL - Universal Asset Locator.
+     * @param {Object} [options={}] - Additional options - currently only blockchain option expected.
+     * @returns {boolean} UAL have passed validation.
+     * @throws {Error} Throws an error if UAL validation fails.
+     * @example did:dkg:otp:2043/0x5cac41237127f94c2d21dae0b14bfefa99880630/1985318
+     */
+    async isValidUAL(UAL, options = {}) {
+        if (typeof UAL !== 'string' || UAL.trim() === '') {
+            throw Error('UAL must be a non-empty string.');
+        }
+
+        const blockchain = this.inputService.getBlockchain(options);
+        this.validationService.validateIsValidUAL(blockchain);
+
+        const parts = UAL.split('/');
+        if (parts.length !== 3) {
+            throw Error('UAL format is incorrect.');
+        }
+
+        const prefixes = parts[0].split(':');
+        if (prefixes.length !== 3 && prefixes.length !== 4) {
+            throw Error('Prefix format in UAL is incorrect.');
+        }
+
+        if (prefixes[0] !== 'did') {
+            throw Error('Invalid DID prefix.');
+        }
+
+        if (prefixes[1] !== 'dkg') {
+            throw Error('Invalid DKG prefix.');
+        }
+
+        if (prefixes[2] !== blockchain.name) {
+            throw Error('Invalid blockchain name in the UAL prefix.');
+        }
+
+        if (prefixes.length === 4) {
+            const chainId = await this.blockchainService.getChainId(blockchain);
+            if (Number(prefixes[3]) !== chainId) {
+                throw Error('Chain ID in UAL does not match the blockchain.');
+            }
+        }
+
+        const contractAddress = await this.blockchainService.getContractAddress('ContentAssetStorage', blockchain);
+        if (parts[1] !== contractAddress) {
+            throw Error('Contract address in UAL does not match.');
+        }
+
+        try {
+            const owner = await this.blockchainService.getAssetOwner(parts[2], blockchain);
+            if (owner === ZERO_ADDRESS) {
+                throw Error('Token does not exist or has no owner.');
+            }
+            return true;
+        } catch (error) {
+            throw Error(`Error fetching asset owner: ${error.message}`);
+        }
     }
 
     /**
