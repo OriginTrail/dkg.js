@@ -8,28 +8,14 @@ const NodeOperationsManager = require('./managers/node-operations-manager.js');
 
 const BaseServiceManager = require('./services/base-service-manager.js');
 
+const { BLOCKCHAINS_RENAME_PAIRS } = require('./constants.js');
+
 class DkgClient {
     constructor(config) {
         const blockchainName = config.blockchain?.name;
 
-        if (blockchainName) {
-            switch (blockchainName) {
-                case 'hardhat':
-                    config.blockchain.name = 'hardhat:31337';
-                    break;
-                case 'otp::devnet':
-                    config.blockchain.name = 'otp:2160';
-                    break;
-                case 'otp::testnet':
-                    config.blockchain.name = 'otp:20430';
-                    break;
-                case 'otp::mainnet':
-                    config.blockchain.name = 'otp:2043';
-                    break;
-                default:
-                    break;
-            }
-        }
+        if (blockchainName && Object.keys(BLOCKCHAINS_RENAME_PAIRS).includes(blockchainName))
+            config.blockchain.name = BLOCKCHAINS_RENAME_PAIRS[blockchainName];
 
         const baseServiceManager = new BaseServiceManager(config);
         const services = baseServiceManager.getServices();

@@ -43,6 +43,13 @@ const BLOCKCHAINS = {
     },
 };
 
+const BLOCKCHAINS_RENAME_PAIRS = {
+    hardhat: 'hardhat:31337',
+    'otp::devnet': 'otp:2160',
+    'otp::testnet': 'otp:20430',
+    'otp::mainnet': 'otp:2043',
+};
+
 const TRANSACTION_RETRY_ERRORS = [
     'transaction was not mined',
     'already known',
@@ -152,6 +159,7 @@ module.exports = {
     DID_PREFIX,
     PRIVATE_ASSERTION_PREDICATE,
     BLOCKCHAINS,
+    BLOCKCHAINS_RENAME_PAIRS,
     TRANSACTION_RETRY_ERRORS,
     WEBSOCKET_PROVIDER_OPTIONS,
     OPERATIONS,

@@ -1,4 +1,4 @@
-const { DEFAULT_PARAMETERS, BLOCKCHAINS } = require('../constants');
+const { DEFAULT_PARAMETERS, BLOCKCHAINS, BLOCKCHAINS_RENAME_PAIRS } = require('../constants');
 
 class InputService {
     constructor(config = {}) {
@@ -77,24 +77,8 @@ class InputService {
     getBlockchain(options) {
         const blockchainName = options.blockchain?.name;
 
-        if (blockchainName) {
-            switch (blockchainName) {
-                case 'hardhat':
-                    config.blockchain.name = 'hardhat:31337';
-                    break;
-                case 'otp::devnet':
-                    config.blockchain.name = 'otp:2160';
-                    break;
-                case 'otp::testnet':
-                    config.blockchain.name = 'otp:20430';
-                    break;
-                case 'otp::mainnet':
-                    config.blockchain.name = 'otp:2043';
-                    break;
-                default:
-                    break;
-            }
-        }
+        if (blockchainName && Object.keys(BLOCKCHAINS_RENAME_PAIRS).includes(blockchainName))
+            config.blockchain.name = BLOCKCHAINS_RENAME_PAIRS[blockchainName];
 
         const name = options.blockchain?.name ?? this.config.blockchain?.name ?? null;
         const rpc =
