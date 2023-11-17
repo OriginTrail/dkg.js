@@ -69,7 +69,7 @@ class BlockchainServiceBase {
     async prepareTransaction(contractInstance, functionName, args, blockchain) {
         const publicKey = await this.getPublicKey(blockchain);
         const gasLimit = await contractInstance.methods[functionName](...args).estimateGas({
-            from: blockchain.publicKey,
+            from: publicKey,
         });
 
         const encodedABI = await contractInstance.methods[functionName](...args).encodeABI();
