@@ -68,7 +68,7 @@ class AssetOperationsManager {
 
         if (prefixes[2] !== blockchain.name) {
             throw new Error(
-                `Invalid blockchain name in the UAL prefix. Expected: '${blockchain.name}'. Received: '${prefixes[2]}'.`
+                `Invalid blockchain name in the UAL prefix. Expected: '${blockchain.name}'. Received: '${prefixes[2]}'.`,
             );
         }
 
@@ -76,15 +76,18 @@ class AssetOperationsManager {
             const chainId = await this.blockchainService.getChainId(blockchain);
             if (Number(prefixes[3]) !== chainId) {
                 throw new Error(
-                    `Chain ID in UAL does not match the blockchain. Expected: '${chainId}'. Received: '${prefixes[3]}'.`
+                    `Chain ID in UAL does not match the blockchain. Expected: '${chainId}'. Received: '${prefixes[3]}'.`,
                 );
             }
         }
 
-        const contractAddress = await this.blockchainService.getContractAddress('ContentAssetStorage', blockchain);
-        if (parts[1] !== contractAddress) {
+        const contractAddress = await this.blockchainService.getContractAddress(
+            'ContentAssetStorage',
+            blockchain,
+        );
+        if (parts[1].toLowerCase() !== contractAddress.toLowerCase()) {
             throw new Error(
-                `Contract address in UAL does not match. Expected: '${contractAddress}'. Received: '${parts[1]}'.`
+                `Contract address in UAL does not match. Expected: '${contractAddress}'. Received: '${parts[1]}'.`,
             );
         }
 
@@ -117,12 +120,12 @@ class AssetOperationsManager {
         );
 
         const currentAllowance = BigInt(
-                await this.blockchainService.callContractFunction(
+            await this.blockchainService.callContractFunction(
                 'Token',
                 'allowance',
                 [blockchain.publicKey, serviceAgreementV1Address],
                 blockchain,
-            )
+            ),
         );
 
         const allowanceDifference = tokenAmount - currentAllowance;
@@ -292,10 +295,9 @@ class AssetOperationsManager {
             authToken,
         );
 
-        const {
-            public: publicAssertion,
-            private: privateAssertion,
-        } = await formatGraph(jsonContent);
+        const { public: publicAssertion, private: privateAssertion } = await formatGraph(
+            jsonContent,
+        );
         const publicAssertionSizeInBytes =
             assertionMetadata.getAssertionSizeInBytes(publicAssertion);
 
@@ -750,10 +752,9 @@ class AssetOperationsManager {
 
         const { tokenId } = resolveUAL(UAL);
 
-        const {
-            public: publicAssertion,
-            private: privateAssertion
-        } = await formatGraph(jsonContent);
+        const { public: publicAssertion, private: privateAssertion } = await formatGraph(
+            jsonContent,
+        );
         const publicAssertionSizeInBytes =
             assertionMetadata.getAssertionSizeInBytes(publicAssertion);
 
@@ -888,7 +889,12 @@ class AssetOperationsManager {
         const frequency = this.inputService.getFrequency(options);
         const maxNumberOfRetries = this.inputService.getMaxNumberOfRetries(options);
 
-        this.validationService.validateWaitAssetUpdateFinalization(UAL, blockchain, frequency, maxNumberOfRetries);
+        this.validationService.validateWaitAssetUpdateFinalization(
+            UAL,
+            blockchain,
+            frequency,
+            maxNumberOfRetries,
+        );
 
         const { tokenId } = resolveUAL(UAL);
         const response = {
