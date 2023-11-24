@@ -49,7 +49,7 @@ const BLOCKCHAINS = {
 
 const BLOCKCHAINS_RENAME_PAIRS = {
     hardhat: 'hardhat:31337',
-    hardhat2: 'hardhat2:31337'
+    hardhat2: 'hardhat2:31337',
     'otp::devnet': 'otp:2160',
     'otp::testnet': 'otp:20430',
     'otp::mainnet': 'otp:2043',
