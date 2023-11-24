@@ -41,11 +41,11 @@ const BLOCKCHAINS = {
         rpc: 'https://astrosat-parachain-rpc.origin-trail.network',
         hubContract: '0x5fA7916c48Fe6D5F1738d12Ad234b78c90B4cAdA',
     },
-    chiado: {
+    'chiado:10200': {
         rpc: 'https://rpc.chiadochain.net',
         hubContract: '',
     },
-    gnosis: {
+    'gnosis:100': {
         rpc: 'https://rpc.gnosischain.com/',
         hubContract: '',
     },
