@@ -21,6 +21,10 @@ const BLOCKCHAINS = {
         rpc: 'http://localhost:8545',
         hubContract: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
     },
+    'hardhat2:31337': {
+        rpc: 'http://localhost:9545',
+        hubContract: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
+    },
     polygon: {
         rpc: 'https://matic-mumbai.chainstacklabs.com',
         hubContract: '0xdaa16AC171CfE8Df6F79C06E7EEAb2249E2C9Ec8', // TODO: change to Asset Contract
@@ -45,6 +49,7 @@ const BLOCKCHAINS = {
 
 const BLOCKCHAINS_RENAME_PAIRS = {
     hardhat: 'hardhat:31337',
+    hardhat2: 'hardhat2:31337'
     'otp::devnet': 'otp:2160',
     'otp::testnet': 'otp:20430',
     'otp::mainnet': 'otp:2043',
