@@ -66,9 +66,12 @@ class AssetOperationsManager {
             throw new Error(`Invalid DKG prefix. Expected: 'dkg'. Received: '${prefixes[1]}'.`);
         }
 
-        if (prefixes[2] !== blockchain.name) {
+        const expectedBlockchainName = blockchain.name.includes('otp::')
+            ? blockchain.name.split(':')[0]
+            : blockchain.name;
+        if (prefixes[2] !== expectedBlockchainName) {
             throw new Error(
-                `Invalid blockchain name in the UAL prefix. Expected: '${blockchain.name}'. Received: '${prefixes[2]}'.`,
+                `Invalid blockchain name in the UAL prefix. Expected: '${expectedBlockchainName}'. Received: '${prefixes[2]}'.`,
             );
         }
 
