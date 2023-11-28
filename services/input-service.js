@@ -1,4 +1,4 @@
-const { DEFAULT_PARAMETERS, BLOCKCHAINS } = require('../constants');
+const { DEFAULT_PARAMETERS, BLOCKCHAINS, BLOCKCHAINS_RENAME_PAIRS } = require('../constants');
 
 class InputService {
     constructor(config = {}) {
@@ -13,7 +13,7 @@ class InputService {
             epochsNum: this.getEpochsNum(options),
             hashFunctionId: this.getHashFunctionId(options),
             authToken: this.getAuthToken(options),
-        }
+        };
     }
 
     getAssetCreateArguments(options) {
@@ -75,6 +75,11 @@ class InputService {
     }
 
     getBlockchain(options) {
+        const blockchainName = options.blockchain?.name;
+
+        if (blockchainName && Object.keys(BLOCKCHAINS_RENAME_PAIRS).includes(blockchainName))
+            config.blockchain.name = BLOCKCHAINS_RENAME_PAIRS[blockchainName];
+
         const name = options.blockchain?.name ?? this.config.blockchain?.name ?? null;
         const rpc =
             options.blockchain?.rpc ?? this.config.blockchain?.rpc ?? BLOCKCHAINS[name]?.rpc;
@@ -86,13 +91,16 @@ class InputService {
             options.blockchain?.publicKey ?? this.config.blockchain?.publicKey ?? null;
         const privateKey =
             options.blockchain?.privateKey ?? this.config.blockchain?.privateKey ?? null;
-        const handleNotMinedError = options.blockchain?.handleNotMinedError
-            ?? this.config.blockchain?.handleNotMinedError
-            ?? DEFAULT_PARAMETERS.HANDLE_NOT_MINED_ERROR;
-        const gasPrice = options.blockchain?.gasPrice ?? this.config.blockchain?.gasPrice ?? undefined;
-        const transactionPollingTimeout = options.blockchain?.transactionPollingTimeout
-            ?? this.config.blockchain?.transactionPollingTimeout
-            ?? null;
+        const handleNotMinedError =
+            options.blockchain?.handleNotMinedError ??
+            this.config.blockchain?.handleNotMinedError ??
+            DEFAULT_PARAMETERS.HANDLE_NOT_MINED_ERROR;
+        const gasPrice =
+            options.blockchain?.gasPrice ?? this.config.blockchain?.gasPrice ?? undefined;
+        const transactionPollingTimeout =
+            options.blockchain?.transactionPollingTimeout ??
+            this.config.blockchain?.transactionPollingTimeout ??
+            null;
 
         return {
             name,
@@ -102,7 +110,7 @@ class InputService {
             privateKey,
             gasPrice,
             transactionPollingTimeout,
-            handleNotMinedError
+            handleNotMinedError,
         };
     }
 
