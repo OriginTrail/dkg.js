@@ -7,7 +7,9 @@ const ContentAssetStorageAbi = require('dkg-evm-module/abi/ContentAssetStorage.j
 const UnfinalizedStateStorageAbi = require('dkg-evm-module/abi/UnfinalizedStateStorage.json');
 const ContentAssetAbi = require('dkg-evm-module/abi/ContentAsset.json');
 const TokenAbi = require('dkg-evm-module/abi/Token.json');
+const BlockchainError = require('../custom-errors');
 const { OPERATIONS_STEP_STATUS } = require('../../constants');
+const { handleContractUpdates } = require('../utilities');
 const emptyHooks = require('../../util/empty-hooks.js');
 
 class BlockchainServiceBase {
@@ -61,9 +63,18 @@ class BlockchainServiceBase {
         }
     }
 
+    @handleContractUpdates(3)
     async callContractFunction(contractName, functionName, args, blockchain) {
         const contractInstance = await this.getContractInstance(contractName, blockchain);
-        return contractInstance.methods[functionName](...args).call();
+        try {
+            return contractInstance.methods[functionName](...args).call();
+        } catch (error) {
+            if (/revert|VM Exception/i.test(error.message)) {
+                throw new BlockchainError(error.message, this, blockchain, contractName, contractInstance);
+            } else {
+                throw error;
+            }
+        }
     }
 
     async prepareTransaction(contractInstance, functionName, args, blockchain) {
@@ -144,7 +155,7 @@ class BlockchainServiceBase {
         return this[blockchain.name].contractAddresses[blockchain.hubContract][contractName];
     }
 
-    async getContractInstance(contractName, blockchain) {
+    async updateContractInstance(contractName, blockchain) {
         this.ensureBlockchainInfo(blockchain);
         if (!this[blockchain.name].contractAddresses[blockchain.hubContract][contractName]) {
             this[blockchain.name].contractAddresses[blockchain.hubContract][contractName] =
@@ -158,7 +169,10 @@ class BlockchainServiceBase {
                     this[blockchain.name].contractAddresses[blockchain.hubContract][contractName],
                 );
         }
+    }
 
+    async getContractInstance(contractName, blockchain) {
+        this.updateContractInstance(contractName, blockchain);
         return this[blockchain.name].contracts[blockchain.hubContract][contractName];
     }
 
