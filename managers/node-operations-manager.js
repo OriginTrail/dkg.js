@@ -1,5 +1,5 @@
 class NodeOperationsManager {
-    constructor(config, services) {
+    constructor(services) {
         this.nodeApiService = services.nodeApiService;
         this.inputService = services.inputService;
     }

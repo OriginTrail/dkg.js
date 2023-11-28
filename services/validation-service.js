@@ -1,4 +1,13 @@
-const { ASSET_STATES, CONTENT_TYPES, GRAPH_LOCATIONS, GRAPH_STATES, MAX_FILE_SIZE, OPERATIONS, GET_OUTPUT_FORMATS, QUERY_TYPES } = require('../constants.js');
+const {
+    ASSET_STATES,
+    CONTENT_TYPES,
+    GRAPH_LOCATIONS,
+    GRAPH_STATES,
+    MAX_FILE_SIZE,
+    OPERATIONS,
+    GET_OUTPUT_FORMATS,
+    QUERY_TYPES,
+} = require('../constants.js');
 const { nodeSupported } = require('./utilities.js');
 
 class ValidationService {
@@ -30,6 +39,22 @@ class ValidationService {
         this.validateAuthToken(authToken);
     }
 
+    validateIsValidUAL(blockchain) {
+        this.validateBlockchain(blockchain);
+    }
+
+    validateSetAllowance(blockchain) {
+        this.validateBlockchain(blockchain);
+    }
+
+    validateIncreaseAllowance(blockchain) {
+        this.validateBlockchain(blockchain);
+    }
+
+    validateDecreaseAllowance(blockchain) {
+        this.validateBlockchain(blockchain);
+    }
+
     validateAssetCreate(
         content,
         blockchain,
@@ -44,7 +69,7 @@ class ValidationService {
         tokenAmount,
         authToken,
     ) {
-        this.validateContent(content)
+        this.validateContent(content);
         this.validateBlockchain(blockchain, OPERATIONS.PUBLISH);
         this.validateEndpoint(endpoint);
         this.validatePort(port);
@@ -98,7 +123,7 @@ class ValidationService {
         tokenAmount,
         authToken,
     ) {
-        this.validateContent(content)
+        this.validateContent(content);
         this.validateBlockchain(blockchain, OPERATIONS.UPDATE);
         this.validateEndpoint(endpoint);
         this.validatePort(port);
@@ -110,9 +135,11 @@ class ValidationService {
         this.validateAuthToken(authToken);
     }
 
-    validateWaitAssetUpdateFinalization(UAL, blockchain) {
+    validateWaitAssetUpdateFinalization(UAL, blockchain, frequency, maxNumberOfRetries) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
+        this.validateFrequency(frequency);
+        this.validateMaxNumberOfRetries(maxNumberOfRetries);
     }
 
     validateAssetUpdateCancel(UAL, blockchain) {
@@ -127,6 +154,22 @@ class ValidationService {
     }
 
     validateAssetGetOwner(UAL, blockchain) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+    }
+
+    validateAssetGetStateIssuer(UAL, stateIndex, blockchain) {
+        this.validateUAL(UAL);
+        this.validateStateIndex(stateIndex);
+        this.validateBlockchain(blockchain);
+    }
+
+    validateAssetGetStates(UAL, blockchain) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+    }
+
+    validateAssetGetLatestStateIssuer(UAL, blockchain) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
     }
@@ -153,13 +196,22 @@ class ValidationService {
         if (param == null) throw Error(`${paramName} is missing.`);
     }
 
-    validateParamType(paramName, param, type) {
+    validateParamType(paramName, param, typeOrTypes) {
+        const isTypesArray = Array.isArray(typeOrTypes);
+
         let parameter = param;
-        if (type === 'number') {
+        if (isTypesArray && typeOrTypes.includes('number')) {
+            const parsed = parseInt(param, 10);
+            parameter = Number.isNaN(parsed) ? param : parsed;
+        } else if (typeOrTypes === 'number') {
             parameter = parseInt(param, 10);
         }
+        const types = isTypesArray ? typeOrTypes : [typeOrTypes];
+
         // eslint-disable-next-line valid-typeof
-        if (typeof parameter !== type) throw Error(`${paramName} must be of type ${type}.`);
+        if (!types.some(type => typeof parameter === type)) {
+            throw new Error(`${paramName} must be of type ${types.join(" or ")}.`);
+        }
     }
 
     validateQueryString(queryString) {
@@ -199,6 +251,13 @@ class ValidationService {
         if (!(args?.length === 3)) throw Error('Invalid UAL.');
     }
 
+    validateStateIndex(stateIndex) {
+        this.validateRequiredParam('stateIndex', stateIndex);
+        this.validateParamType('stateIndex', stateIndex, 'number');
+
+        if (stateIndex < 0) throw Error('Invalid state index.');
+    }
+
     validateObjectType(obj) {
         if (!(!!obj && typeof obj === 'object')) throw Error('Content must be an object');
     }
@@ -217,8 +276,10 @@ class ValidationService {
         if (!content.public && !content.private) {
             throw Error('Public or private content must be defined');
         }
+    }
 
-        if (Buffer.byteLength(JSON.stringify(content), 'utf-8') > MAX_FILE_SIZE)
+    validateAssertionSizeInBytes(assertionSizeInBytes) {
+        if (assertionSizeInBytes > MAX_FILE_SIZE)
             throw Error(`File size limit is ${MAX_FILE_SIZE / (1024 * 1024)}MB.`);
     }
 
@@ -246,10 +307,14 @@ class ValidationService {
 
     validateState(state) {
         this.validateRequiredParam('state', state);
-        this.validateParamType('state', state, 'string');
-        const validStates = Object.values(ASSET_STATES);
-        if (!validStates.includes(state.toUpperCase()))
-            throw Error(`Invalid state, available states: ${validStates}`);
+        this.validateParamType('state', state, ['number', 'string']);
+        const validStatesEnum = Object.values(ASSET_STATES);
+        if (
+            (typeof state === 'string' && !validStatesEnum.includes(state.toUpperCase())) &&
+            typeof state !== 'number' &&
+            !/^0x[a-fA-F0-9]{64}$/.test(state)
+        )
+            throw Error(`Invalid state, available states: ${validStatesEnum},numerical or hash.`);
     }
 
     validateContentType(contentType) {
@@ -257,7 +322,7 @@ class ValidationService {
 
         const validContentTypes = Object.values(CONTENT_TYPES);
         if (!validContentTypes.includes(contentType))
-          throw Error(`Invalid content visibility! Available parameters: ${validContentTypes}`)
+            throw Error(`Invalid content visibility! Available parameters: ${validContentTypes}`);
     }
 
     validateEpochsNum(epochsNum) {
@@ -286,6 +351,18 @@ class ValidationService {
         this.validateParamType('tokenAmount', tokenAmount, 'number');
     }
 
+    validateGasPrice(gasPrice) {
+        if (gasPrice == null) return;
+
+        this.validateParamType('gasPrice', gasPrice, 'number');
+    }
+
+    validateTransactionPollingTimeout(transactionPollingTimeout) {
+        if (transactionPollingTimeout == null) return;
+
+        this.validateParamType('tokenAmount', transactionPollingTimeout, 'number');
+    }
+
     validateAuthToken(authToken) {
         if (authToken == null) return;
 
@@ -308,6 +385,8 @@ class ValidationService {
         this.validateRequiredParam('blockchain', blockchain);
         this.validateRequiredParam('blockchain name', blockchain.name);
         this.validateRequiredParam('blockchain hub contract', blockchain.hubContract);
+        this.validateGasPrice(blockchain.gasPrice);
+        this.validateTransactionPollingTimeout(blockchain.transactionPollingTimeout);
         if (nodeSupported()) {
             this.validateRequiredParam('blockchain rpc', blockchain.rpc);
 

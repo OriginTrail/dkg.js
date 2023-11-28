@@ -1,0 +1,35 @@
+# Contributing to dkg.js
+
+We appreciate your interest in contributing to `dkg.js`, the JavaScript SDK for interacting with the OriginTrail Decentralized Knowledge Graph! We welcome contributions from anyone and are grateful for even the smallest of fixes!
+
+## Contributions We Are Looking For
+
+Your help is valuable to us in various ways:
+
+- **Code**: Submit a pull request for open issues or propose a new feature you think would be beneficial to the project.
+- **Bugs**: File bug reports in our issue tracker. Providing details such as the `dkg.js` library version, and traceback messages will help us fix problems faster.
+- **Documentation**: Improve our project's documentation, whether it's more detailed explanations, new usage examples, or clearer function descriptions.
+- **Tests**: Add more tests to increase our project's code coverage and overall reliability.
+- **Reviews**: Review changes made in our ongoing pull requests.
+
+## Getting Started
+
+1. Fork the repository to your own GitHub account.
+2. Clone the repository to your local machine.
+3. Create a new branch for each feature, fix or improvement.
+4. Ensure your code follows the repository style guide.
+5. Ensure your code is well-documented.
+6. Ensure your code is thoroughly tested.
+7. Submit a pull request to the `main` branch.
+
+## Code Review Process
+
+The maintainers of `dkg.js` review each pull request. We may suggest some changes, improvements or alternatives. When the pull request is approved, it will be merged into the main codebase.
+
+## Community
+
+Feel free to ask for help or discuss solutions with us. We appreciate your contributions to our community! You can find the list of social media in the README.
+
+## License
+
+By contributing, you agree that your contributions will be licensed under its Apache-2.0 License.
