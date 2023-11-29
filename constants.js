@@ -15,45 +15,49 @@ const PRIVATE_ASSERTION_PREDICATE = 'https://ontology.origintrail.io/dkg/1.0#pri
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 const BLOCKCHAINS = {
-    ganache: {
-        rpc: 'http://localhost:7545',
-        hubContract: '0x209679fA3B658Cd0fC74473aF28243bfe78a9b12',
+    development: {
+        'hardhat:31337': {
+            rpc: 'http://localhost:8545',
+            hubContract: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
+        },
+        'hardhat2:31337': {
+            rpc: 'http://localhost:9545',
+            hubContract: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
+        },
+        'otp::alphanet': {
+            rpc: 'http://parachain-alphanet-02.origin-trail.network:9933',
+            hubContract: '0x7585a99C5C150a08f5CDeFD16465C6De8D41EbbD',
+        },
     },
-    'hardhat:31337': {
-        rpc: 'http://localhost:8545',
-        hubContract: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
+    devnet: {
+        'otp:2160': {
+            rpc: 'https://lofar-tm-rpc.origin-trail.network',
+            hubContract: '0x833048F6e6BEa78E0AAdedeCd2Dc2231dda443FB',
+        },
+        'gnosis:10200': {
+            rpc: 'https://rpc.chiadochain.net',
+            hubContract: '0xD2bA102A0b11944d00180eE8136208ccF87bC39A',
+        },
     },
-    'hardhat2:31337': {
-        rpc: 'http://localhost:9545',
-        hubContract: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
+    testnet: {
+        'otp:20430': {
+            rpc: 'https://lofar-testnet.origin-trail.network',
+            hubContract: '0xBbfF7Ea6b2Addc1f38A0798329e12C08f03750A6',
+        },
+        'gnosis:10200': {
+            rpc: 'https://rpc.chiadochain.net',
+            hubContract: '0xC06210312C9217A0EdF67453618F5eB96668679A',
+        },
     },
-    polygon: {
-        rpc: 'https://matic-mumbai.chainstacklabs.com',
-        hubContract: '0xdaa16AC171CfE8Df6F79C06E7EEAb2249E2C9Ec8', // TODO: change to Asset Contract
-    },
-    'otp::alphanet': {
-        rpc: 'http://parachain-alphanet-02.origin-trail.network:9933',
-        hubContract: '0x7585a99C5C150a08f5CDeFD16465C6De8D41EbbD',
-    },
-    'otp:2160': {
-        rpc: 'https://lofar-tm-rpc.origin-trail.network',
-        hubContract: '0x833048F6e6BEa78E0AAdedeCd2Dc2231dda443FB',
-    },
-    'otp:20430': {
-        rpc: 'https://lofar-testnet.origin-trail.network',
-        hubContract: '0xBbfF7Ea6b2Addc1f38A0798329e12C08f03750A6',
-    },
-    'otp:2043': {
-        rpc: 'https://astrosat-parachain-rpc.origin-trail.network',
-        hubContract: '0x5fA7916c48Fe6D5F1738d12Ad234b78c90B4cAdA',
-    },
-    'gnosis:10200': {
-        rpc: 'https://rpc.chiadochain.net',
-        hubContract: '',
-    },
-    'gnosis:100': {
-        rpc: 'https://rpc.gnosischain.com/',
-        hubContract: '',
+    mainnet: {
+        'otp:2043': {
+            rpc: 'https://astrosat-parachain-rpc.origin-trail.network',
+            hubContract: '0x5fA7916c48Fe6D5F1738d12Ad234b78c90B4cAdA',
+        },
+        'gnosis:100': {
+            rpc: 'https://rpc.gnosischain.com/',
+            hubContract: '',
+        },
     },
 };
 
@@ -64,6 +68,8 @@ const BLOCKCHAINS_RENAME_PAIRS = {
     'otp::testnet': 'otp:20430',
     'otp::mainnet': 'otp:2043',
 };
+
+const MAX_BLOCKCHAIN_CALL_RETRIES = 3;
 
 const TRANSACTION_RETRY_ERRORS = [
     'transaction was not mined',
@@ -154,6 +160,7 @@ const OPERATIONS_STEP_STATUS = {
 const DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY = 0.5;
 
 const DEFAULT_PARAMETERS = {
+    ENVIRONMENT: 'mainnet',
     PORT: 8900,
     FREQUENCY: 5,
     MAX_NUMBER_OF_RETRIES: 5,
@@ -176,6 +183,7 @@ module.exports = {
     ZERO_ADDRESS,
     BLOCKCHAINS,
     BLOCKCHAINS_RENAME_PAIRS,
+    MAX_BLOCKCHAIN_CALL_RETRIES,
     TRANSACTION_RETRY_ERRORS,
     WEBSOCKET_PROVIDER_OPTIONS,
     OPERATIONS,

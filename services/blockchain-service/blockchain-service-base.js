@@ -8,7 +8,7 @@ const UnfinalizedStateStorageAbi = require('dkg-evm-module/abi/UnfinalizedStateS
 const ContentAssetAbi = require('dkg-evm-module/abi/ContentAsset.json');
 const TokenAbi = require('dkg-evm-module/abi/Token.json');
 const BlockchainError = require('../custom-errors');
-const { OPERATIONS_STEP_STATUS } = require('../../constants');
+const { MAX_BLOCKCHAIN_CALL_RETRIES, OPERATIONS_STEP_STATUS } = require('../../constants');
 const { handleContractUpdates } = require('../utilities');
 const emptyHooks = require('../../util/empty-hooks.js');
 
@@ -63,7 +63,7 @@ class BlockchainServiceBase {
         }
     }
 
-    @handleContractUpdates(3)
+    @handleContractUpdates(MAX_BLOCKCHAIN_CALL_RETRIES)
     async callContractFunction(contractName, functionName, args, blockchain) {
         const contractInstance = await this.getContractInstance(contractName, blockchain);
         try {
@@ -222,7 +222,7 @@ class BlockchainServiceBase {
             });
 
             return tokenId;
-        } catch (e) {
+        } catch (error) {
             if (tokensNeeded > 0) {
                 await this.executeContractFunction(
                     'Token',
@@ -231,7 +231,7 @@ class BlockchainServiceBase {
                     blockchain,
                 );
             }
-            throw e;
+            throw error;
         }
     }
 
@@ -281,7 +281,7 @@ class BlockchainServiceBase {
                 ],
                 blockchain,
             );
-        } catch (e) {
+        } catch (error) {
             if (tokensNeeded > 0) {
                 await this.executeContractFunction(
                     'Token',
@@ -290,7 +290,7 @@ class BlockchainServiceBase {
                     blockchain,
                 );
             }
-            throw e;
+            throw error;
         }
     }
 

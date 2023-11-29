@@ -8,15 +8,8 @@ const NodeOperationsManager = require('./managers/node-operations-manager.js');
 
 const BaseServiceManager = require('./services/base-service-manager.js');
 
-const { BLOCKCHAINS_RENAME_PAIRS } = require('./constants.js');
-
 class DkgClient {
     constructor(config) {
-        const blockchainName = config.blockchain?.name;
-
-        if (blockchainName && Object.keys(BLOCKCHAINS_RENAME_PAIRS).includes(blockchainName))
-            config.blockchain.name = BLOCKCHAINS_RENAME_PAIRS[blockchainName];
-
         const baseServiceManager = new BaseServiceManager(config);
         const services = baseServiceManager.getServices();
 

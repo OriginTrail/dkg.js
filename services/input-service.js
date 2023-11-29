@@ -1,4 +1,4 @@
-const { DEFAULT_PARAMETERS, BLOCKCHAINS, BLOCKCHAINS_RENAME_PAIRS } = require('../constants');
+const { DEFAULT_PARAMETERS, BLOCKCHAINS } = require('../constants');
 
 class InputService {
     constructor(config = {}) {
@@ -75,18 +75,14 @@ class InputService {
     }
 
     getBlockchain(options) {
-        const blockchainName = options.blockchain?.name;
-
-        if (blockchainName && Object.keys(BLOCKCHAINS_RENAME_PAIRS).includes(blockchainName))
-            config.blockchain.name = BLOCKCHAINS_RENAME_PAIRS[blockchainName];
-
+        const environment = options.environment ?? this.config.environment ?? DEFAULT_PARAMETERS.ENVIRONMENT;
         const name = options.blockchain?.name ?? this.config.blockchain?.name ?? null;
         const rpc =
-            options.blockchain?.rpc ?? this.config.blockchain?.rpc ?? BLOCKCHAINS[name]?.rpc;
+            options.blockchain?.rpc ?? this.config.blockchain?.rpc ?? BLOCKCHAINS[environment][name]?.rpc;
         const hubContract =
             options.blockchain?.hubContract ??
             this.config.blockchain?.hubContract ??
-            BLOCKCHAINS[name]?.hubContract;
+            BLOCKCHAINS[environment][name]?.hubContract;
         const publicKey =
             options.blockchain?.publicKey ?? this.config.blockchain?.publicKey ?? null;
         const privateKey =

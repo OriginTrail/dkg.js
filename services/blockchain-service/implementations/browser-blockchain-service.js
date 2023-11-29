@@ -1,6 +1,9 @@
 const Web3 = require('web3');
 const BlockchainServiceBase = require('../blockchain-service-base.js');
-const { WEBSOCKET_PROVIDER_OPTIONS } = require('../../../constants.js');
+const { MAX_BLOCKCHAIN_CALL_RETRIES, WEBSOCKET_PROVIDER_OPTIONS } = require('../../../constants.js');
+const BlockchainError = require('../custom-errors');
+const { handleContractUpdates } = require('../utilities');
+
 
 class BrowserBlockchainService extends BlockchainServiceBase {
     constructor(config = {}) {
@@ -51,11 +54,20 @@ class BrowserBlockchainService extends BlockchainServiceBase {
         return result;
     }
 
+    @handleContractUpdates(MAX_BLOCKCHAIN_CALL_RETRIES)
     async executeContractFunction(contractName, functionName, args, blockchain) {
         const contractInstance = await this.getContractInstance(contractName, blockchain);
         const tx = await this.prepareTransaction(contractInstance, functionName, args, blockchain);
 
-        return contractInstance.methods[functionName](...args).send(tx);
+        try {
+            return contractInstance.methods[functionName](...args).send(tx);
+        } catch (error) {
+            if (/revert|VM Exception/i.test(error.message)) {
+                throw new BlockchainError(error.message, this, blockchain, contractName, contractInstance);
+            } else {
+                throw error;
+            }
+        }
     }
 
     async getPublicKey() {
