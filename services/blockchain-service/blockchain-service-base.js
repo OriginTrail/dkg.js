@@ -170,7 +170,7 @@ class BlockchainServiceBase {
     }
 
     async getContractInstance(contractName, blockchain) {
-        this.updateContractInstance(contractName, blockchain);
+        await this.updateContractInstance(contractName, blockchain);
         return this[blockchain.name].contracts[blockchain.hubContract][contractName];
     }
 
