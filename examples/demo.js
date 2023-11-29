@@ -12,7 +12,7 @@ const DkgClient = new DKG({
     endpoint: OT_NODE_HOSTNAME,
     port: OT_NODE_PORT,
     blockchain: {
-        name: 'hardhat',
+        name: 'hardhat1',
         publicKey: PUBLIC_KEY,
         privateKey: PRIVATE_KEY,
     },

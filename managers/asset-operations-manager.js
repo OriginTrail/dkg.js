@@ -66,12 +66,11 @@ class AssetOperationsManager {
             throw new Error(`Invalid DKG prefix. Expected: 'dkg'. Received: '${prefixes[1]}'.`);
         }
 
-        const expectedBlockchainName = blockchain.name.includes('otp::')
-            ? blockchain.name.split(':')[0]
-            : blockchain.name;
-        if (prefixes[2] !== expectedBlockchainName) {
+        if (prefixes[2] !== blockchain.name.split(':')[0]) {
             throw new Error(
-                `Invalid blockchain name in the UAL prefix. Expected: '${expectedBlockchainName}'. Received: '${prefixes[2]}'.`,
+                `Invalid blockchain name in the UAL prefix. Expected: '${
+                    blockchain.name.split(':')[0]
+                }'. Received: '${prefixes[2]}'.`,
             );
         }
 
@@ -96,7 +95,7 @@ class AssetOperationsManager {
 
         try {
             const owner = await this.blockchainService.getAssetOwner(parts[2], blockchain);
-            if (owner === ZERO_ADDRESS) {
+            if (!owner || owner === ZERO_ADDRESS) {
                 throw new Error('Token does not exist or has no owner.');
             }
             return true;

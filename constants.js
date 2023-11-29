@@ -16,7 +16,7 @@ const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 const BLOCKCHAINS = {
     development: {
-        'hardhat:31337': {
+        'hardhat1:31337': {
             rpc: 'http://localhost:8545',
             hubContract: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
         },
@@ -62,7 +62,7 @@ const BLOCKCHAINS = {
 };
 
 const BLOCKCHAINS_RENAME_PAIRS = {
-    hardhat: 'hardhat:31337',
+    hardhat1: 'hardhat1:31337',
     hardhat2: 'hardhat2:31337',
     'otp::devnet': 'otp:2160',
     'otp::testnet': 'otp:20430',

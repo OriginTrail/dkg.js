@@ -493,7 +493,7 @@ class BlockchainServiceBase {
     }
 
     async getBlockchainTimestamp(blockchain) {
-        if (blockchain.name !== 'hardhat') return Math.floor(Date.now() / 1000);
+        if (!blockchain.name.startsWith('hardhat')) return Math.floor(Date.now() / 1000);
 
         const latestBlock = await this.getLatestBlock(blockchain);
         return latestBlock.timestamp;

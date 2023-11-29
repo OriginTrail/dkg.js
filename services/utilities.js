@@ -23,7 +23,7 @@ module.exports = {
     },
     resolveUAL(ual) {
         const segments = ual.split(':');
-        const argsString = segments.length === 3 ? segments[2] : segments[2] + segments[3];
+        const argsString = segments.length === 3 ? segments[2] : segments[2] + ':' + segments[3];
         const args = argsString.split('/');
 
         if (args.length !== 3) {

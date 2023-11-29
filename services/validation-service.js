@@ -209,8 +209,8 @@ class ValidationService {
         const types = isTypesArray ? typeOrTypes : [typeOrTypes];
 
         // eslint-disable-next-line valid-typeof
-        if (!types.some(type => typeof parameter === type)) {
-            throw new Error(`${paramName} must be of type ${types.join(" or ")}.`);
+        if (!types.some((type) => typeof parameter === type)) {
+            throw new Error(`${paramName} must be of type ${types.join(' or ')}.`);
         }
     }
 
@@ -245,7 +245,7 @@ class ValidationService {
         this.validateParamType('UAL', ual, 'string');
 
         const segments = ual.split(':');
-        const argsString = segments.length === 3 ? segments[2] : segments[2] + segments[3];
+        const argsString = segments.length === 3 ? segments[2] : segments[2] + ':' + segments[3];
         const args = argsString.split('/');
 
         if (!(args?.length === 3)) throw Error('Invalid UAL.');
@@ -310,7 +310,8 @@ class ValidationService {
         this.validateParamType('state', state, ['number', 'string']);
         const validStatesEnum = Object.values(ASSET_STATES);
         if (
-            (typeof state === 'string' && !validStatesEnum.includes(state.toUpperCase())) &&
+            typeof state === 'string' &&
+            !validStatesEnum.includes(state.toUpperCase()) &&
             typeof state !== 'number' &&
             !/^0x[a-fA-F0-9]{64}$/.test(state)
         )
