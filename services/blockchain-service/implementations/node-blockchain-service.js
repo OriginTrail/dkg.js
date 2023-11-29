@@ -80,11 +80,13 @@ class NodeBlockchainService extends BlockchainServiceBase {
                 result = await web3Instance.eth.sendSignedTransaction(
                     createdTransaction.rawTransaction,
                 );
-            } catch (e) {
+            } catch (error) {
                 if (
                     !transactionRetried &&
                     blockchain.handleNotMinedError &&
-                    TRANSACTION_RETRY_ERRORS.some((errorMsg) => e.message.toLowerCase().includes(errorMsg))
+                    TRANSACTION_RETRY_ERRORS.some((errorMsg) =>
+                        error.message.toLowerCase().includes(errorMsg),
+                    )
                 ) {
                     transactionRetried = true;
                     // eslint-disable-next-line no-param-reassign
