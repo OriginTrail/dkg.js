@@ -8,8 +8,7 @@ const UnfinalizedStateStorageAbi = require('dkg-evm-module/abi/UnfinalizedStateS
 const ContentAssetAbi = require('dkg-evm-module/abi/ContentAsset.json');
 const TokenAbi = require('dkg-evm-module/abi/Token.json');
 const BlockchainError = require('../custom-errors');
-const { MAX_BLOCKCHAIN_CALL_RETRIES, OPERATIONS_STEP_STATUS } = require('../../constants');
-const { handleContractUpdates } = require('../utilities');
+const { OPERATIONS_STEP_STATUS } = require('../../constants');
 const emptyHooks = require('../../util/empty-hooks.js');
 
 class BlockchainServiceBase {
@@ -63,7 +62,6 @@ class BlockchainServiceBase {
         }
     }
 
-    @handleContractUpdates(MAX_BLOCKCHAIN_CALL_RETRIES)
     async callContractFunction(contractName, functionName, args, blockchain) {
         const contractInstance = await this.getContractInstance(contractName, blockchain);
         try {
