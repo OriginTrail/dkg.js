@@ -103,7 +103,7 @@ class InputService {
         const gasPriceOracleLink =
             options.blockchain?.gasPriceOracleLink ??
             this.config.blockchain?.gasPriceOracleLink ??
-            BLOCKCHAINS[environment][name]?.gasPriceOracleLinn ??
+            BLOCKCHAINS[environment][name]?.gasPriceOracleLink ??
             undefined;
 
         return {

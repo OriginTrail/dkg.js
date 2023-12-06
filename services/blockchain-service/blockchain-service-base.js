@@ -62,7 +62,7 @@ class BlockchainServiceBase {
                 if (blockchain.name.split(':')[1] === '100') {
                     gasPrice = Number(response.result, 10);
                 } else if (blockchain.name.split(':')[1] === '10200') {
-                    gasPrice = Math.round(response.average * 1e9);
+                    gasPrice = Math.round(response.data.average * 1e9);
                 }
             } else {
                 gasPrice = Web3.utils.toWei('100', 'Gwei');
@@ -529,7 +529,7 @@ class BlockchainServiceBase {
             if (blockchain.name.split(':')[1] === '100') {
                 gasPrice = Number(response.result, 10);
             } else if (blockchain.name.split(':')[1] === '10200') {
-                gasPrice = Math.round(response.average * 1e9);
+                gasPrice = Math.round(response.data.average * 1e9);
             }
         } else {
             gasPrice = Web3.utils.toWei('100', 'Gwei');
