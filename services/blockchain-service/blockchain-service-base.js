@@ -59,15 +59,14 @@ class BlockchainServiceBase {
                 gasPrice = await web3Instance.eth.getGasPrice();
             } else if (blockchain.name.startsWith('gnosis')) {
                 const response = await axios.get(blockchain.gasPriceOracleLink);
-                if (this.config.name.split(':')[1] === '100') {
+                if (blockchain.name.split(':')[1] === '100') {
                     gasPrice = Number(response.result, 10);
-                } else if (this.config.name.split(':')[1] === '10200') {
+                } else if (blockchain.name.split(':')[1] === '10200') {
                     gasPrice = Math.round(response.average * 1e9);
                 }
             } else {
                 gasPrice = Web3.utils.toWei('100', 'Gwei');
             }
-            return gasPrice;
         } catch (error) {
             // eslint-disable-next-line no-console
             console.warn(
@@ -526,9 +525,9 @@ class BlockchainServiceBase {
             gasPrice = await web3Instance.eth.getGasPrice();
         } else if (blockchain.name.startsWith('gnosis')) {
             const response = await axios.get(blockchain.gasPriceOracleLink);
-            if (this.config.name.split(':')[1] === '100') {
+            if (blockchain.name.split(':')[1] === '100') {
                 gasPrice = Number(response.result, 10);
-            } else if (this.config.name.split(':')[1] === '10200') {
+            } else if (blockchain.name.split(':')[1] === '10200') {
                 gasPrice = Math.round(response.average * 1e9);
             }
         } else {
