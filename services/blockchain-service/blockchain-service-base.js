@@ -53,7 +53,20 @@ class BlockchainServiceBase {
         const web3Instance = await this.getWeb3Instance(blockchain);
 
         try {
-            return await web3Instance.eth.getGasPrice();
+            let gasPrice;
+
+            if (blockchain.name.startsWith('otp')) {
+                gasPrice = await web3Instance.eth.getGasPrice();
+            } else if (blockchain.name.startsWith('gnosis')) {
+                const response = await axios.get(blockchain.gasPriceOracleLink);
+                if (this.config.name.split(':')[1] === '100') {
+                    gasPrice = Number(response.result, 10);
+                } else if (this.config.name.split(':')[1] === '10200') {
+                    gasPrice = Math.round(response.average * 1e9);
+                }
+            } else {
+                gasPrice = Web3.utils.toWei('100', 'Gwei');
+            }
         } catch (error) {
             // eslint-disable-next-line no-console
             console.warn(
