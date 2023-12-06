@@ -37,6 +37,7 @@ const BLOCKCHAINS = {
         'gnosis:10200': {
             rpc: 'https://rpc.chiadochain.net',
             hubContract: '0xD2bA102A0b11944d00180eE8136208ccF87bC39A',
+            gasPriceOracleLink: 'https://blockscout.chiadochain.net/api/v1/gas-price-oracle',
         },
     },
     testnet: {
@@ -47,6 +48,7 @@ const BLOCKCHAINS = {
         'gnosis:10200': {
             rpc: 'https://rpc.chiadochain.net',
             hubContract: '0xC06210312C9217A0EdF67453618F5eB96668679A',
+            gasPriceOracleLink: 'https://blockscout.chiadochain.net/api/v1/gas-price-oracle',
         },
     },
     mainnet: {
@@ -57,6 +59,7 @@ const BLOCKCHAINS = {
         'gnosis:100': {
             rpc: 'https://rpc.gnosischain.com/',
             hubContract: '',
+            gasPriceOracleLink: 'https://api.gnosisscan.io/api?module=proxy&action=eth_gasPrice',
         },
     },
 };
