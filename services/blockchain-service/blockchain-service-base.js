@@ -67,6 +67,7 @@ class BlockchainServiceBase {
             } else {
                 gasPrice = Web3.utils.toWei('100', 'Gwei');
             }
+            return gasPrice;
         } catch (error) {
             // eslint-disable-next-line no-console
             console.warn(
