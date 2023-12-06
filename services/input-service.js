@@ -75,10 +75,13 @@ class InputService {
     }
 
     getBlockchain(options) {
-        const environment = options.environment ?? this.config.environment ?? DEFAULT_PARAMETERS.ENVIRONMENT;
+        const environment =
+            options.environment ?? this.config.environment ?? DEFAULT_PARAMETERS.ENVIRONMENT;
         const name = options.blockchain?.name ?? this.config.blockchain?.name ?? null;
         const rpc =
-            options.blockchain?.rpc ?? this.config.blockchain?.rpc ?? BLOCKCHAINS[environment][name]?.rpc;
+            options.blockchain?.rpc ??
+            this.config.blockchain?.rpc ??
+            BLOCKCHAINS[environment][name]?.rpc;
         const hubContract =
             options.blockchain?.hubContract ??
             this.config.blockchain?.hubContract ??
@@ -97,6 +100,11 @@ class InputService {
             options.blockchain?.transactionPollingTimeout ??
             this.config.blockchain?.transactionPollingTimeout ??
             null;
+        const gasPriceOracleLink =
+            options.blockchain?.gasPriceOracleLink ??
+            this.config.blockchain?.gasPriceOracleLink ??
+            BLOCKCHAINS[environment][name]?.gasPriceOracleLinn ??
+            undefined;
 
         return {
             name,
@@ -107,6 +115,7 @@ class InputService {
             gasPrice,
             transactionPollingTimeout,
             handleNotMinedError,
+            gasPriceOracleLink,
         };
     }
 
