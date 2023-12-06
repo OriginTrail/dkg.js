@@ -60,7 +60,7 @@ class BlockchainServiceBase {
             } else if (blockchain.name.startsWith('gnosis')) {
                 const response = await axios.get(blockchain.gasPriceOracleLink);
                 if (blockchain.name.split(':')[1] === '100') {
-                    gasPrice = Number(response.result, 10);
+                    gasPrice = Number(response.data.result, 10);
                 } else if (blockchain.name.split(':')[1] === '10200') {
                     gasPrice = Math.round(response.data.average * 1e9);
                 }
