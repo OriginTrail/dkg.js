@@ -1,6 +1,4 @@
-
 class BlockchainOperationsManager {
-
     constructor(services) {
         this.blockchainService = services.blockchainService;
         this.inputService = services.inputService;
@@ -24,7 +22,7 @@ class BlockchainOperationsManager {
      */
     async getGasPrice(options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
-        return this.blockchainService.getGasPrice(blockchain);
+        return await this.blockchainService.getGasPrice(blockchain);
     }
 
     /**
