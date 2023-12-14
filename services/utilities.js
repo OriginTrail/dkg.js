@@ -1,5 +1,4 @@
 const jsonld = require('jsonld');
-const BlockchainError = require('./custom-errors');
 const {
     GRAPH_LOCATIONS,
     GRAPH_STATES,
@@ -23,7 +22,7 @@ module.exports = {
     },
     resolveUAL(ual) {
         const segments = ual.split(':');
-        const argsString = segments.length === 3 ? segments[2] : segments[2] + ':' + segments[3];
+        const argsString = segments.length === 3 ? segments[2] : `${segments[2]}:${segments[3]}`;
         const args = argsString.split('/');
 
         if (args.length !== 3) {
@@ -89,29 +88,4 @@ module.exports = {
             format: 'application/n-quads',
         });
     },
-    handleContractUpdates(func, maxAttempts) {
-        return async function decoratedFunction(...args) {
-            let attempt = 1;
-            while(attempt <= maxAttempts) {
-                try {
-                    // eslint-disable-next-line no-await-in-loop
-                    return await func(...args);
-                } catch (error) {
-                    if (error instanceof BlockchainError) {
-                        const { baseObject, blockchain, contractName, contractInstance } = error;
-                        // eslint-disable-next-line no-await-in-loop
-                        const status = await contractInstance.methods.status.call();
-                        if (status === false) {
-                            baseObject.updateContractInstance(contractName, blockchain);
-                        }
-                    }
-                    if (attempt === maxRetries) {
-                        throw error;
-                    }
-                    attempt += 1;
-                }
-            }
-            return null;
-        };
-    }
 };

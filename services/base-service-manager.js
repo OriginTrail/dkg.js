@@ -13,6 +13,7 @@ class BaseServiceManager {
         const blockchainName = config.blockchain?.name;
 
         if (blockchainName && Object.keys(BLOCKCHAINS_RENAME_PAIRS).includes(blockchainName))
+            // eslint-disable-next-line no-param-reassign
             config.blockchain.name = BLOCKCHAINS_RENAME_PAIRS[blockchainName];
 
         this.initializeServices(config);

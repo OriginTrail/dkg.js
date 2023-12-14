@@ -1,7 +1,6 @@
 const Web3 = require('web3');
 const { TRANSACTION_RETRY_ERRORS, WEBSOCKET_PROVIDER_OPTIONS } = require('../../../constants.js');
 const BlockchainServiceBase = require('../blockchain-service-base.js');
-const BlockchainError = require('../../custom-errors');
 
 class NodeBlockchainService extends BlockchainServiceBase {
     constructor(config = {}) {
@@ -54,14 +53,14 @@ class NodeBlockchainService extends BlockchainServiceBase {
 
     async executeContractFunction(contractName, functionName, args, blockchain) {
         const web3Instance = await this.getWeb3Instance(blockchain);
+        const contractInstance = await this.getContractInstance(contractName, blockchain);
+
         let result;
         let previousTxGasPrice;
         let transactionRetried = false;
 
         while (result === undefined) {
             try {
-                // eslint-disable-next-line no-await-in-loop
-                const contractInstance = await this.getContractInstance(contractName, blockchain);
                 // eslint-disable-next-line no-await-in-loop
                 const tx = await this.prepareTransaction(
                     contractInstance,
@@ -93,12 +92,27 @@ class NodeBlockchainService extends BlockchainServiceBase {
                     blockchain.retryTx = true;
                     // eslint-disable-next-line no-param-reassign
                     blockchain.previousTxGasPrice = previousTxGasPrice;
-                } else {
-                    if (/revert|VM Exception/i.test(error.message)) {
-                        throw new BlockchainError(error.message, this, blockchain, contractName, contractInstance);
+                } else if (!transactionRetried && /revert|VM Exception/i.test(error.message)) {
+                    let status;
+                    try {
+                        // eslint-disable-next-line no-await-in-loop
+                        status = await contractInstance.methods.status().call();
+                    } catch (_) {
+                        status = false;
+                    }
+    
+                    if (!status) {
+                        // eslint-disable-next-line no-await-in-loop
+                        await this.updateContractInstance(contractName, blockchain);
+
+                        transactionRetried = true;
+                        // eslint-disable-next-line no-param-reassign
+                        blockchain.retryTx = true;
                     } else {
                         throw error;
                     }
+                } else {
+                    throw error;
                 }
             }
         }

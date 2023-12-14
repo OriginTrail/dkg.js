@@ -22,7 +22,7 @@ class BlockchainOperationsManager {
      */
     async getGasPrice(options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
-        return await this.blockchainService.getGasPrice(blockchain);
+        return this.blockchainService.getGasPrice(blockchain);
     }
 
     /**
