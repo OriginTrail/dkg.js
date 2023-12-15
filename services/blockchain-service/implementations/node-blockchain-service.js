@@ -1,7 +1,6 @@
 const Web3 = require('web3');
 const { TRANSACTION_RETRY_ERRORS, WEBSOCKET_PROVIDER_OPTIONS } = require('../../../constants.js');
 const BlockchainServiceBase = require('../blockchain-service-base.js');
-const BlockchainError = require('../../custom-errors');
 
 class NodeBlockchainService extends BlockchainServiceBase {
     constructor(config = {}) {
@@ -94,17 +93,7 @@ class NodeBlockchainService extends BlockchainServiceBase {
                     // eslint-disable-next-line no-param-reassign
                     blockchain.previousTxGasPrice = previousTxGasPrice;
                 } else {
-                    if (/revert|VM Exception/i.test(error.message)) {
-                        throw new BlockchainError(
-                            error.message,
-                            this,
-                            blockchain,
-                            contractName,
-                            null,
-                        );
-                    } else {
-                        throw error;
-                    }
+                    throw error;
                 }
             }
         }

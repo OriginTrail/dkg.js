@@ -1,7 +1,6 @@
 const Web3 = require('web3');
 const BlockchainServiceBase = require('../blockchain-service-base.js');
 const { WEBSOCKET_PROVIDER_OPTIONS } = require('../../../constants.js');
-const BlockchainError = require('../../custom-errors');
 
 class BrowserBlockchainService extends BlockchainServiceBase {
     constructor(config = {}) {
@@ -59,11 +58,7 @@ class BrowserBlockchainService extends BlockchainServiceBase {
         try {
             return contractInstance.methods[functionName](...args).send(tx);
         } catch (error) {
-            if (/revert|VM Exception/i.test(error.message)) {
-                throw new BlockchainError(error.message, this, blockchain, contractName, contractInstance);
-            } else {
-                throw error;
-            }
+            throw error;
         }
     }
 
