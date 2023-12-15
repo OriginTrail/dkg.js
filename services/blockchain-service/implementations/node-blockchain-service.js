@@ -95,7 +95,13 @@ class NodeBlockchainService extends BlockchainServiceBase {
                     blockchain.previousTxGasPrice = previousTxGasPrice;
                 } else {
                     if (/revert|VM Exception/i.test(error.message)) {
-                        throw new BlockchainError(error.message, this, blockchain, contractName, contractInstance);
+                        throw new BlockchainError(
+                            error.message,
+                            this,
+                            blockchain,
+                            contractName,
+                            null,
+                        );
                     } else {
                         throw error;
                     }
