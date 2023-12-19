@@ -52,7 +52,7 @@ class BrowserBlockchainService extends BlockchainServiceBase {
     }
 
     async executeContractFunction(contractName, functionName, args, blockchain) {
-        const contractInstance = await this.getContractInstance(contractName, blockchain);
+        let contractInstance = await this.getContractInstance(contractName, blockchain);
         const tx = await this.prepareTransaction(contractInstance, functionName, args, blockchain);
 
         try {
@@ -68,6 +68,7 @@ class BrowserBlockchainService extends BlockchainServiceBase {
 
                 if (!status) {
                     await this.updateContractInstance(contractName, blockchain, true);
+                    contractInstance = await this.getContractInstance(contractName, blockchain);
 
                     return contractInstance.methods[functionName](...args).send(tx);
                 }

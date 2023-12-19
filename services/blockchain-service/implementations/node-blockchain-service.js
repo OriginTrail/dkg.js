@@ -53,7 +53,7 @@ class NodeBlockchainService extends BlockchainServiceBase {
 
     async executeContractFunction(contractName, functionName, args, blockchain) {
         const web3Instance = await this.getWeb3Instance(blockchain);
-        const contractInstance = await this.getContractInstance(contractName, blockchain);
+        let contractInstance = await this.getContractInstance(contractName, blockchain);
 
         let result;
         let previousTxGasPrice;
@@ -61,6 +61,9 @@ class NodeBlockchainService extends BlockchainServiceBase {
 
         while (result === undefined) {
             try {
+                if (transactionRetried) {
+                    console.log(`retry`);
+                }
                 // eslint-disable-next-line no-await-in-loop
                 const tx = await this.prepareTransaction(
                     contractInstance,
@@ -100,11 +103,11 @@ class NodeBlockchainService extends BlockchainServiceBase {
                     } catch (_) {
                         status = false;
                     }
-    
+
                     if (!status) {
                         // eslint-disable-next-line no-await-in-loop
                         await this.updateContractInstance(contractName, blockchain, true);
-
+                        contractInstance = await this.getContractInstance(contractName, blockchain);
                         transactionRetried = true;
                         // eslint-disable-next-line no-param-reassign
                         blockchain.retryTx = true;

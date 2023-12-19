@@ -77,7 +77,7 @@ class BlockchainServiceBase {
     }
 
     async callContractFunction(contractName, functionName, args, blockchain) {
-        const contractInstance = await this.getContractInstance(contractName, blockchain);
+        let contractInstance = await this.getContractInstance(contractName, blockchain);
         try {
             return await contractInstance.methods[functionName](...args).call();
         } catch (error) {
@@ -91,6 +91,7 @@ class BlockchainServiceBase {
 
                 if (!status) {
                     await this.updateContractInstance(contractName, blockchain, true);
+                    contractInstance = await this.getContractInstance(contractName, blockchain);
 
                     return contractInstance.methods[functionName](...args).call();
                 }
@@ -153,7 +154,7 @@ class BlockchainServiceBase {
         return this[blockchain.name].web3;
     }
 
-    async getContractAddress(contractName, blockchain) {
+    async getContractAddress(contractName, blockchain, force = false) {
         this.ensureBlockchainInfo(blockchain);
         if (!this[blockchain.name].contracts[blockchain.hubContract]) {
             this[blockchain.name].contracts[blockchain.hubContract] = {};
@@ -164,7 +165,10 @@ class BlockchainServiceBase {
                 new web3Instance.eth.Contract(this.abis.Hub, blockchain.hubContract);
         }
 
-        if (!this[blockchain.name].contractAddresses[blockchain.hubContract][contractName]) {
+        if (
+            force ||
+            !this[blockchain.name].contractAddresses[blockchain.hubContract][contractName]
+        ) {
             this[blockchain.name].contractAddresses[blockchain.hubContract][contractName] =
                 await this.callContractFunction(
                     'Hub',
@@ -180,14 +184,17 @@ class BlockchainServiceBase {
 
     async updateContractInstance(contractName, blockchain, force = false) {
         this.ensureBlockchainInfo(blockchain);
-        if (!this[blockchain.name].contractAddresses[blockchain.hubContract][contractName]) {
+        if (
+            force ||
+            !this[blockchain.name].contractAddresses[blockchain.hubContract][contractName]
+        ) {
             this[blockchain.name].contractAddresses[blockchain.hubContract][contractName] =
-                await this.getContractAddress(contractName, blockchain);
+                await this.getContractAddress(contractName, blockchain, force);
         }
-        if (!force && !this[blockchain.name].contracts[blockchain.hubContract][contractName]) {
+        if (force || !this[blockchain.name].contracts[blockchain.hubContract][contractName]) {
             const web3Instance = await this.getWeb3Instance(blockchain);
             this[blockchain.name].contracts[blockchain.hubContract][contractName] =
-                new web3Instance.eth.Contract(
+                await new web3Instance.eth.Contract(
                     this.abis[contractName],
                     this[blockchain.name].contractAddresses[blockchain.hubContract][contractName],
                 );
