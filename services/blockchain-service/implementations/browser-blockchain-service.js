@@ -67,7 +67,7 @@ class BrowserBlockchainService extends BlockchainServiceBase {
                 }
 
                 if (!status) {
-                    await this.updateContractInstance(contractName, blockchain);
+                    await this.updateContractInstance(contractName, blockchain, true);
 
                     return contractInstance.methods[functionName](...args).send(tx);
                 }

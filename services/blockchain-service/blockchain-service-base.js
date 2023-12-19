@@ -90,7 +90,7 @@ class BlockchainServiceBase {
                 }
 
                 if (!status) {
-                    await this.updateContractInstance(contractName, blockchain);
+                    await this.updateContractInstance(contractName, blockchain, true);
 
                     return contractInstance.methods[functionName](...args).call();
                 }
@@ -178,13 +178,13 @@ class BlockchainServiceBase {
         return this[blockchain.name].contractAddresses[blockchain.hubContract][contractName];
     }
 
-    async updateContractInstance(contractName, blockchain) {
+    async updateContractInstance(contractName, blockchain, force = false) {
         this.ensureBlockchainInfo(blockchain);
         if (!this[blockchain.name].contractAddresses[blockchain.hubContract][contractName]) {
             this[blockchain.name].contractAddresses[blockchain.hubContract][contractName] =
                 await this.getContractAddress(contractName, blockchain);
         }
-        if (!this[blockchain.name].contracts[blockchain.hubContract][contractName]) {
+        if (!force && !this[blockchain.name].contracts[blockchain.hubContract][contractName]) {
             const web3Instance = await this.getWeb3Instance(blockchain);
             this[blockchain.name].contracts[blockchain.hubContract][contractName] =
                 new web3Instance.eth.Contract(
