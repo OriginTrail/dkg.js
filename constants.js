@@ -58,7 +58,7 @@ const BLOCKCHAINS = {
         },
         'gnosis:100': {
             rpc: 'https://rpc.gnosischain.com/',
-            hubContract: '',
+            hubContract: '0xbEF14fc04F870c2dD65c13Df4faB6ba01A9c746b',
             gasPriceOracleLink: 'https://api.gnosisscan.io/api?module=proxy&action=eth_gasPrice',
         },
     },
