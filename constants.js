@@ -24,7 +24,7 @@ const BLOCKCHAINS = {
             rpc: 'http://localhost:9545',
             hubContract: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
         },
-        'otp::alphanet': {
+        'otp::2043': {
             rpc: 'http://parachain-alphanet-02.origin-trail.network:9933',
             hubContract: '0x7585a99C5C150a08f5CDeFD16465C6De8D41EbbD',
         },
