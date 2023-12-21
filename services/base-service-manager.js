@@ -6,8 +6,15 @@ const ValidationService = require('./validation-service.js');
 const Utilities = require('./utilities.js');
 const InputService = require('./input-service.js');
 
+const { BLOCKCHAINS_RENAME_PAIRS } = require('../constants');
+
 class BaseServiceManager {
     constructor(config) {
+        const blockchainName = config.blockchain?.name;
+
+        if (blockchainName && Object.keys(BLOCKCHAINS_RENAME_PAIRS).includes(blockchainName))
+            config.blockchain.name = BLOCKCHAINS_RENAME_PAIRS[blockchainName];
+
         this.initializeServices(config);
     }
 

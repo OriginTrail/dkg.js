@@ -1,11 +1,13 @@
 const DKG = require('../index.js');
 
+const ENVIRONMENT = 'development';
 const OT_NODE_HOSTNAME = 'http://localhost';
 const OT_NODE_PORT = '8900';
 const PUBLIC_KEY = '0xBaF76aC0d0ef9a2FFF76884d54C9D3e270290a43';
 const PRIVATE_KEY = '0x9b9af041edc816692276ac3c8f1d5565e3c01ddff80ec982943a29bd8d1d8863';
 
 const DkgClient = new DKG({
+    environment: ENVIRONMENT,
     endpoint: OT_NODE_HOSTNAME,
     port: OT_NODE_PORT,
     blockchain: {

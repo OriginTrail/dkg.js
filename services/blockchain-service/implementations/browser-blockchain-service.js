@@ -55,7 +55,11 @@ class BrowserBlockchainService extends BlockchainServiceBase {
         const contractInstance = await this.getContractInstance(contractName, blockchain);
         const tx = await this.prepareTransaction(contractInstance, functionName, args, blockchain);
 
-        return contractInstance.methods[functionName](...args).send(tx);
+        try {
+            return contractInstance.methods[functionName](...args).send(tx);
+        } catch (error) {
+            throw error;
+        }
     }
 
     async getPublicKey() {

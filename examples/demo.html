@@ -157,6 +157,7 @@
                     initializeDKGClient(blockchain) {
                         console.log(this.selectedNetwork)
                         window.DkgClient = new DKG({
+                            environment: 'development',
                             endpoint: 'http://localhost',
                             blockchain: {
                                 name: this.selectedNetwork,

@@ -1,5 +1,10 @@
 const jsonld = require('jsonld');
-const { GRAPH_LOCATIONS, GRAPH_STATES, OT_NODE_TRIPLE_STORE_REPOSITORIES } = require('../constants.js');
+const BlockchainError = require('./custom-errors');
+const {
+    GRAPH_LOCATIONS,
+    GRAPH_STATES,
+    OT_NODE_TRIPLE_STORE_REPOSITORIES,
+} = require('../constants.js');
 
 function isEmptyObject(obj) {
     return Object.keys(obj).length === 0 && obj.constructor === Object;
@@ -14,13 +19,11 @@ module.exports = {
         return parseInt(hex.slice(2), 16);
     },
     deriveUAL(blockchain, contract, tokenId) {
-        return `did:dkg:${
-            blockchain.startsWith('otp') ? 'otp' : blockchain.toLowerCase()
-        }/${contract.toLowerCase()}/${tokenId}`;
+        return `did:dkg:${blockchain.toLowerCase()}/${contract.toLowerCase()}/${tokenId}`;
     },
     resolveUAL(ual) {
         const segments = ual.split(':');
-        const argsString = segments.length === 3 ? segments[2] : segments[2] + segments[3];
+        const argsString = segments.length === 3 ? segments[2] : segments[2] + ':' + segments[3];
         const args = argsString.split('/');
 
         if (args.length !== 3) {

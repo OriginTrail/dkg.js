@@ -66,9 +66,11 @@ class AssetOperationsManager {
             throw new Error(`Invalid DKG prefix. Expected: 'dkg'. Received: '${prefixes[1]}'.`);
         }
 
-        if (prefixes[2] !== blockchain.name) {
+        if (prefixes[2] !== blockchain.name.split(':')[0]) {
             throw new Error(
-                `Invalid blockchain name in the UAL prefix. Expected: '${blockchain.name}'. Received: '${prefixes[2]}'.`,
+                `Invalid blockchain name in the UAL prefix. Expected: '${
+                    blockchain.name.split(':')[0]
+                }'. Received: '${prefixes[2]}'.`,
             );
         }
 
@@ -93,7 +95,7 @@ class AssetOperationsManager {
 
         try {
             const owner = await this.blockchainService.getAssetOwner(parts[2], blockchain);
-            if (owner === ZERO_ADDRESS) {
+            if (!owner || owner === ZERO_ADDRESS) {
                 throw new Error('Token does not exist or has no owner.');
             }
             return true;
@@ -320,7 +322,7 @@ class AssetOperationsManager {
                 endpoint,
                 port,
                 authToken,
-                blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
+                blockchain.name,
                 epochsNum,
                 publicAssertionSizeInBytes,
                 contentAssetStorageAddress,
@@ -344,7 +346,7 @@ class AssetOperationsManager {
         );
 
         const resolvedUAL = {
-            blockchain: blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
+            blockchain: blockchain.name,
             contract: contentAssetStorageAddress,
             tokenId,
         };
@@ -380,11 +382,7 @@ class AssetOperationsManager {
             operationId,
         );
 
-        const UAL = deriveUAL(
-            blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
-            contentAssetStorageAddress,
-            tokenId,
-        );
+        const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, tokenId);
 
         if (operationResult.status === OPERATION_STATUSES.FAILED) {
             return {
@@ -400,7 +398,7 @@ class AssetOperationsManager {
             authToken,
             publicAssertionId,
             publicAssertion,
-            blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
+            blockchain.name,
             contentAssetStorageAddress,
             tokenId,
             hashFunctionId,
@@ -799,7 +797,7 @@ class AssetOperationsManager {
         );
 
         const resolvedUAL = {
-            blockchain: blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
+            blockchain: blockchain.name,
             contract: contentAssetStorageAddress,
             tokenId,
         };
@@ -853,7 +851,7 @@ class AssetOperationsManager {
             authToken,
             publicAssertionId,
             publicAssertion,
-            blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
+            blockchain.name,
             contentAssetStorageAddress,
             tokenId,
             hashFunctionId,
@@ -1154,7 +1152,7 @@ class AssetOperationsManager {
                 endpoint,
                 port,
                 authToken,
-                blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
+                blockchain.name,
                 epochsNumber,
                 latestFinalizedStateSize,
                 contract,
@@ -1335,7 +1333,7 @@ class AssetOperationsManager {
             endpoint,
             port,
             authToken,
-            blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
+            blockchain.name,
             epochsLeft,
             size,
             contract,

@@ -1,4 +1,5 @@
 const Web3 = require('web3');
+const axios = require('axios');
 const AssertionStorageAbi = require('dkg-evm-module/abi/AssertionStorage.json');
 const HubAbi = require('dkg-evm-module/abi/Hub.json');
 const ServiceAgreementV1Abi = require('dkg-evm-module/abi/ServiceAgreementV1.json');
@@ -51,7 +52,21 @@ class BlockchainServiceBase {
         const web3Instance = await this.getWeb3Instance(blockchain);
 
         try {
-            return await web3Instance.eth.getGasPrice();
+            let gasPrice;
+
+            if (blockchain.name.startsWith('otp')) {
+                gasPrice = await web3Instance.eth.getGasPrice();
+            } else if (blockchain.name.startsWith('gnosis')) {
+                const response = await axios.get(blockchain.gasPriceOracleLink);
+                if (blockchain.name.split(':')[1] === '100') {
+                    gasPrice = Number(response.data.result, 10);
+                } else if (blockchain.name.split(':')[1] === '10200') {
+                    gasPrice = Math.round(response.data.average * 1e9);
+                }
+            } else {
+                gasPrice = Web3.utils.toWei('100', 'Gwei');
+            }
+            return gasPrice;
         } catch (error) {
             // eslint-disable-next-line no-console
             console.warn(
@@ -63,7 +78,11 @@ class BlockchainServiceBase {
 
     async callContractFunction(contractName, functionName, args, blockchain) {
         const contractInstance = await this.getContractInstance(contractName, blockchain);
-        return contractInstance.methods[functionName](...args).call();
+        try {
+            return contractInstance.methods[functionName](...args).call();
+        } catch (error) {
+            throw error;
+        }
     }
 
     async prepareTransaction(contractInstance, functionName, args, blockchain) {
@@ -144,7 +163,7 @@ class BlockchainServiceBase {
         return this[blockchain.name].contractAddresses[blockchain.hubContract][contractName];
     }
 
-    async getContractInstance(contractName, blockchain) {
+    async updateContractInstance(contractName, blockchain) {
         this.ensureBlockchainInfo(blockchain);
         if (!this[blockchain.name].contractAddresses[blockchain.hubContract][contractName]) {
             this[blockchain.name].contractAddresses[blockchain.hubContract][contractName] =
@@ -158,7 +177,10 @@ class BlockchainServiceBase {
                     this[blockchain.name].contractAddresses[blockchain.hubContract][contractName],
                 );
         }
+    }
 
+    async getContractInstance(contractName, blockchain) {
+        await this.updateContractInstance(contractName, blockchain);
         return this[blockchain.name].contracts[blockchain.hubContract][contractName];
     }
 
@@ -208,7 +230,7 @@ class BlockchainServiceBase {
             });
 
             return tokenId;
-        } catch (e) {
+        } catch (error) {
             if (tokensNeeded > 0) {
                 await this.executeContractFunction(
                     'Token',
@@ -217,7 +239,7 @@ class BlockchainServiceBase {
                     blockchain,
                 );
             }
-            throw e;
+            throw error;
         }
     }
 
@@ -267,7 +289,7 @@ class BlockchainServiceBase {
                 ],
                 blockchain,
             );
-        } catch (e) {
+        } catch (error) {
             if (tokensNeeded > 0) {
                 await this.executeContractFunction(
                     'Token',
@@ -276,7 +298,7 @@ class BlockchainServiceBase {
                     blockchain,
                 );
             }
-            throw e;
+            throw error;
         }
     }
 
@@ -479,7 +501,7 @@ class BlockchainServiceBase {
     }
 
     async getBlockchainTimestamp(blockchain) {
-        if (blockchain.name !== 'hardhat') return Math.floor(Date.now() / 1000);
+        if (!blockchain.name.startsWith('hardhat')) return Math.floor(Date.now() / 1000);
 
         const latestBlock = await this.getLatestBlock(blockchain);
         return latestBlock.timestamp;
@@ -491,6 +513,13 @@ class BlockchainServiceBase {
 
         if (blockchain.name.startsWith('otp')) {
             gasPrice = await web3Instance.eth.getGasPrice();
+        } else if (blockchain.name.startsWith('gnosis')) {
+            const response = await axios.get(blockchain.gasPriceOracleLink);
+            if (blockchain.name.split(':')[1] === '100') {
+                gasPrice = Number(response.result, 10);
+            } else if (blockchain.name.split(':')[1] === '10200') {
+                gasPrice = Math.round(response.data.average * 1e9);
+            }
         } else {
             gasPrice = Web3.utils.toWei('100', 'Gwei');
         }
