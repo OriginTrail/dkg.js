@@ -1,5 +1,4 @@
 const jsonld = require('jsonld');
-const BlockchainError = require('./custom-errors');
 const {
     GRAPH_LOCATIONS,
     GRAPH_STATES,
@@ -23,7 +22,7 @@ module.exports = {
     },
     resolveUAL(ual) {
         const segments = ual.split(':');
-        const argsString = segments.length === 3 ? segments[2] : segments[2] + ':' + segments[3];
+        const argsString = segments.length === 3 ? segments[2] : `${segments[2]}:${segments[3]}`;
         const args = argsString.split('/');
 
         if (args.length !== 3) {

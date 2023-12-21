@@ -78,11 +78,7 @@ class BlockchainServiceBase {
 
     async callContractFunction(contractName, functionName, args, blockchain) {
         const contractInstance = await this.getContractInstance(contractName, blockchain);
-        try {
-            return contractInstance.methods[functionName](...args).call();
-        } catch (error) {
-            throw error;
-        }
+        return contractInstance.methods[functionName](...args).call();
     }
 
     async prepareTransaction(contractInstance, functionName, args, blockchain) {
