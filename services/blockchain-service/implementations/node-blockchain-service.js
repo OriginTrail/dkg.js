@@ -104,6 +104,7 @@ class NodeBlockchainService extends BlockchainServiceBase {
                     if (!status) {
                         // eslint-disable-next-line no-await-in-loop
                         await this.updateContractInstance(contractName, blockchain, true);
+                        // eslint-disable-next-line no-await-in-loop
                         contractInstance = await this.getContractInstance(contractName, blockchain);
                         transactionRetried = true;
                         // eslint-disable-next-line no-param-reassign
