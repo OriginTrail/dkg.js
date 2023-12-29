@@ -61,9 +61,6 @@ class NodeBlockchainService extends BlockchainServiceBase {
 
         while (result === undefined) {
             try {
-                if (transactionRetried) {
-                    console.log(`retry`);
-                }
                 // eslint-disable-next-line no-await-in-loop
                 const tx = await this.prepareTransaction(
                     contractInstance,
