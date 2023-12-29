@@ -53,14 +53,14 @@ class NodeBlockchainService extends BlockchainServiceBase {
 
     async executeContractFunction(contractName, functionName, args, blockchain) {
         const web3Instance = await this.getWeb3Instance(blockchain);
+        let contractInstance = await this.getContractInstance(contractName, blockchain);
+
         let result;
         let previousTxGasPrice;
         let transactionRetried = false;
 
         while (result === undefined) {
             try {
-                // eslint-disable-next-line no-await-in-loop
-                const contractInstance = await this.getContractInstance(contractName, blockchain);
                 // eslint-disable-next-line no-await-in-loop
                 const tx = await this.prepareTransaction(
                     contractInstance,
@@ -92,6 +92,25 @@ class NodeBlockchainService extends BlockchainServiceBase {
                     blockchain.retryTx = true;
                     // eslint-disable-next-line no-param-reassign
                     blockchain.previousTxGasPrice = previousTxGasPrice;
+                } else if (!transactionRetried && /revert|VM Exception/i.test(error.message)) {
+                    let status;
+                    try {
+                        // eslint-disable-next-line no-await-in-loop
+                        status = await contractInstance.methods.status().call();
+                    } catch (_) {
+                        status = false;
+                    }
+
+                    if (!status) {
+                        // eslint-disable-next-line no-await-in-loop
+                        await this.updateContractInstance(contractName, blockchain, true);
+                        contractInstance = await this.getContractInstance(contractName, blockchain);
+                        transactionRetried = true;
+                        // eslint-disable-next-line no-param-reassign
+                        blockchain.retryTx = true;
+                    } else {
+                        throw error;
+                    }
                 } else {
                     throw error;
                 }
