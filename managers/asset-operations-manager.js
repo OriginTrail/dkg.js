@@ -366,33 +366,10 @@ class AssetOperationsManager {
                 storeType: STORE_TYPES.TRIPLE,
             });
         }
-        let operationId = await this.nodeApiService.localStore(
-            endpoint,
-            port,
-            authToken,
-            assertions,
-        );
-        let operationResult = await this.nodeApiService.getOperationResult(
-            endpoint,
-            port,
-            authToken,
-            OPERATIONS.LOCAL_STORE,
-            maxNumberOfRetries,
-            DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY,
-            operationId,
-        );
 
         const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, tokenId);
 
-        if (operationResult.status === OPERATION_STATUSES.FAILED) {
-            return {
-                UAL,
-                assertionId: publicAssertionId,
-                operation: getOperationStatusObject(operationResult, operationId),
-            };
-        }
-
-        operationId = await this.nodeApiService.publish(
+        let operationId = await this.nodeApiService.publish(
             endpoint,
             port,
             authToken,
@@ -404,13 +381,38 @@ class AssetOperationsManager {
             hashFunctionId,
         );
 
-        operationResult = await this.nodeApiService.getOperationResult(
+        let operationResult = await this.nodeApiService.getOperationResult(
             endpoint,
             port,
             authToken,
             OPERATIONS.PUBLISH,
             maxNumberOfRetries,
             frequency,
+            operationId,
+        );
+
+        if (operationResult.status === OPERATION_STATUSES.FAILED) {
+            return {
+                UAL,
+                assertionId: publicAssertionId,
+                operation: getOperationStatusObject(operationResult, operationId),
+            };
+        }
+
+        operationId = await this.nodeApiService.localStore(
+            endpoint,
+            port,
+            authToken,
+            assertions,
+        );
+
+        operationResult = await this.nodeApiService.getOperationResult(
+            endpoint,
+            port,
+            authToken,
+            OPERATIONS.LOCAL_STORE,
+            maxNumberOfRetries,
+            DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY,
             operationId,
         );
 
