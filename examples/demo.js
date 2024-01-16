@@ -105,11 +105,11 @@ function divider() {
 
     divider();
 
-    // const setAllowanceResult = await DkgClient.asset.setAllowance(bidSuggestion);
-    // console.log('======================== ALLOWANCE SET');
-    // console.log(setAllowanceResult);
+    const setAllowanceResult = await DkgClient.asset.setAllowance(bidSuggestion);
+    console.log('======================== ALLOWANCE SET');
+    console.log(setAllowanceResult);
 
-    // divider();
+    divider();
 
     const createAssetResult = await DkgClient.asset.create(content, { epochsNum: 2 });
     console.log('======================== ASSET CREATED');
