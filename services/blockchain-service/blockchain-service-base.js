@@ -64,15 +64,15 @@ class BlockchainServiceBase {
                     gasPrice = Math.round(response.data.average * 1e9);
                 }
             } else {
-                gasPrice = Web3.utils.toWei('1', 'Gwei');
+                gasPrice = Web3.utils.toWei('2', 'Gwei');
             }
             return gasPrice;
         } catch (error) {
             // eslint-disable-next-line no-console
             console.warn(
-                `Failed to fetch the gas price from the network: ${error}. Using default value: 1 Gwei.`,
+                `Failed to fetch the gas price from the network: ${error}. Using default value: 2 Gwei.`,
             );
-            return Web3.utils.toWei('1', 'Gwei');
+            return Web3.utils.toWei('2', 'Gwei');
         }
     }
 
@@ -549,9 +549,9 @@ class BlockchainServiceBase {
         } catch (error) {
             // eslint-disable-next-line no-console
             console.warn(
-                `Failed to fetch the gas price from the network: ${error}. Using default value: 1 Gwei.`,
+                `Failed to fetch the gas price from the network: ${error}. Using default value: 2 Gwei.`,
             );
-            return Web3.utils.toWei('1', 'Gwei');
+            return Web3.utils.toWei('2', 'Gwei');
         }
     }
 
