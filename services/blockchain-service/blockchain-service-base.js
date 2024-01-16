@@ -543,7 +543,7 @@ class BlockchainServiceBase {
                     gasPrice = Math.round(response.data.average * 1e9);
                 }
             } else {
-                gasPrice = Web3.utils.toWei('1', 'Gwei');
+                gasPrice = Web3.utils.toWei('2', 'Gwei');
             }
             return gasPrice;
         } catch (error) {
