@@ -150,11 +150,21 @@ class InputService {
     }
 
     getScoreFunctionId(options) {
-        return (
-            options.scoreFunctionId ??
-            this.config.scoreFunctionId ??
-            DEFAULT_PARAMETERS.SCORE_FUNCTION_ID
-        );
+        const blockchainName = this.getBlockchain(options).name.toLowerCase();
+
+        if (blockchainName.includes('hardhat1') || blockchainName.includes('otp')) {
+            return (
+                options.scoreFunctionId ??
+                this.config.scoreFunctionId ??
+                DEFAULT_PARAMETERS.SCORE_FUNCTION_ID_OTP
+            );
+        } else if (blockchainName.includes('hardhat2') || blockchainName.includes('gnosis')) {
+            return (
+                options.scoreFunctionId ??
+                this.config.scoreFunctionId ??
+                DEFAULT_PARAMETERS.SCORE_FUNCTION_ID_GNOSIS
+            );
+        }
     }
 
     getEpochsNum(options) {
