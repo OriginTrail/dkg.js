@@ -1,4 +1,8 @@
-const { DEFAULT_PARAMETERS, BLOCKCHAINS } = require('../constants');
+const {
+    DEFAULT_PARAMETERS,
+    DEFAULT_PROXIMITY_SCORE_FUNCTIONS_PAIR_IDS,
+    BLOCKCHAINS,
+} = require('../constants');
 
 class InputService {
     constructor(config = {}) {
@@ -150,21 +154,12 @@ class InputService {
     }
 
     getScoreFunctionId(options) {
-        const blockchainName = this.getBlockchain(options).name.toLowerCase();
+        const environment =
+            options.environment ?? this.config.environment ?? DEFAULT_PARAMETERS.ENVIRONMENT;
+        console.log(environment);
+        const blockchainName = this.getBlockchain(options).name;
 
-        if (blockchainName.includes('hardhat1') || blockchainName.includes('otp')) {
-            return (
-                options.scoreFunctionId ??
-                this.config.scoreFunctionId ??
-                DEFAULT_PARAMETERS.SCORE_FUNCTION_ID_OTP
-            );
-        } else if (blockchainName.includes('hardhat2') || blockchainName.includes('gnosis')) {
-            return (
-                options.scoreFunctionId ??
-                this.config.scoreFunctionId ??
-                DEFAULT_PARAMETERS.SCORE_FUNCTION_ID_GNOSIS
-            );
-        }
+        return DEFAULT_PROXIMITY_SCORE_FUNCTIONS_PAIR_IDS[environment][blockchainName];
     }
 
     getEpochsNum(options) {

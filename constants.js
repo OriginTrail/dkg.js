@@ -157,14 +157,28 @@ const OPERATIONS_STEP_STATUS = {
 
 const DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY = 0.5;
 
+const DEFAULT_PROXIMITY_SCORE_FUNCTIONS_PAIR_IDS = {
+    development: { 'hardhat1:31337': 1, 'hardhat2:31337': 2, 'otp:2043': 1 },
+    devnet: {
+        'otp:2160': 1,
+        'gnosis:10200': 2,
+    },
+    testnet: {
+        'otp:20430': 1,
+        'gnosis:10200': 2,
+    },
+    mainnet: {
+        'otp:2043': 1,
+        'gnosis:100': 2,
+    },
+};
+
 const DEFAULT_PARAMETERS = {
     ENVIRONMENT: 'mainnet',
     PORT: 8900,
     FREQUENCY: 5,
     MAX_NUMBER_OF_RETRIES: 5,
     HASH_FUNCTION_ID: 1,
-    SCORE_FUNCTION_ID_OTP: 1,
-    SCORE_FUNCTION_ID_GNOSIS: 2,
     IMMUTABLE: false,
     VALIDATE: true,
     OUTPUT_FORMAT: GET_OUTPUT_FORMATS.JSON_LD,
@@ -198,5 +212,6 @@ module.exports = {
     QUERY_TYPES,
     OPERATIONS_STEP_STATUS,
     DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY,
+    DEFAULT_PROXIMITY_SCORE_FUNCTIONS_PAIR_IDS,
     DEFAULT_PARAMETERS,
 };
