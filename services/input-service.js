@@ -156,7 +156,6 @@ class InputService {
     getScoreFunctionId(options) {
         const environment =
             options.environment ?? this.config.environment ?? DEFAULT_PARAMETERS.ENVIRONMENT;
-        console.log(environment);
         const blockchainName = this.getBlockchain(options).name;
 
         return DEFAULT_PROXIMITY_SCORE_FUNCTIONS_PAIR_IDS[environment][blockchainName];
