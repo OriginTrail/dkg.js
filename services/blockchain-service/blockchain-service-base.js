@@ -64,15 +64,15 @@ class BlockchainServiceBase {
                     gasPrice = Math.round(response.data.average * 1e9);
                 }
             } else {
-                gasPrice = Web3.utils.toWei('100', 'Gwei');
+                gasPrice = Web3.utils.toWei('2', 'Gwei');
             }
             return gasPrice;
         } catch (error) {
             // eslint-disable-next-line no-console
             console.warn(
-                `Failed to fetch the gas price from the network: ${error}. Using default value: 100 Gwei.`,
+                `Failed to fetch the gas price from the network: ${error}. Using default value: 2 Gwei.`,
             );
-            return Web3.utils.toWei('100', 'Gwei');
+            return Web3.utils.toWei('2', 'Gwei');
         }
     }
 
@@ -531,22 +531,28 @@ class BlockchainServiceBase {
 
     async getGasPrice(blockchain) {
         const web3Instance = await this.getWeb3Instance(blockchain);
-        let gasPrice;
-
-        if (blockchain.name.startsWith('otp')) {
-            gasPrice = await web3Instance.eth.getGasPrice();
-        } else if (blockchain.name.startsWith('gnosis')) {
-            const response = await axios.get(blockchain.gasPriceOracleLink);
-            if (blockchain.name.split(':')[1] === '100') {
-                gasPrice = Number(response.result, 10);
-            } else if (blockchain.name.split(':')[1] === '10200') {
-                gasPrice = Math.round(response.data.average * 1e9);
+        try {
+            let gasPrice;
+            if (blockchain.name.startsWith('otp')) {
+                gasPrice = await web3Instance.eth.getGasPrice();
+            } else if (blockchain.name.startsWith('gnosis')) {
+                const response = await axios.get(blockchain.gasPriceOracleLink);
+                if (blockchain.name.split(':')[1] === '100') {
+                    gasPrice = Number(response.result, 10);
+                } else if (blockchain.name.split(':')[1] === '10200') {
+                    gasPrice = Math.round(response.data.average * 1e9);
+                }
+            } else {
+                gasPrice = Web3.utils.toWei('2', 'Gwei');
             }
-        } else {
-            gasPrice = Web3.utils.toWei('100', 'Gwei');
+            return gasPrice;
+        } catch (error) {
+            // eslint-disable-next-line no-console
+            console.warn(
+                `Failed to fetch the gas price from the network: ${error}. Using default value: 2 Gwei.`,
+            );
+            return Web3.utils.toWei('2', 'Gwei');
         }
-
-        return gasPrice;
     }
 
     async getWalletBalances(blockchain) {
