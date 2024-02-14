@@ -56,6 +56,11 @@ const BLOCKCHAINS = {
             rpc: 'https://astrosat-parachain-rpc.origin-trail.network',
             hubContract: '0x5fA7916c48Fe6D5F1738d12Ad234b78c90B4cAdA',
         },
+        'gnosis:10200': {
+            rpc: 'https://rpc.gnosischain.com/',
+            hubContract: '0xbEF14fc04F870c2dD65c13Df4faB6ba01A9c746b',
+            gasPriceOracleLink: 'https://api.gnosisscan.io/api?module=proxy&action=eth_gasPrice',
+        },
     },
 };
 
