@@ -8,7 +8,7 @@ const ContentAssetStorageAbi = require('dkg-evm-module/abi/ContentAssetStorage.j
 const UnfinalizedStateStorageAbi = require('dkg-evm-module/abi/UnfinalizedStateStorage.json');
 const ContentAssetAbi = require('dkg-evm-module/abi/ContentAsset.json');
 const TokenAbi = require('dkg-evm-module/abi/Token.json');
-const { OPERATIONS_STEP_STATUS } = require('../../constants');
+const { OPERATIONS_STEP_STATUS, DEFAULT_GAS_PRICE } = require('../../constants');
 const emptyHooks = require('../../util/empty-hooks.js');
 
 class BlockchainServiceBase {
