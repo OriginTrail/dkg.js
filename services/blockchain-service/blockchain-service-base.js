@@ -64,7 +64,12 @@ class BlockchainServiceBase {
                     gasPrice = Math.round(response.data.average * 1e9);
                 }
             } else {
-                gasPrice = Web3.utils.toWei('2', 'Gwei');
+                gasPrice = Web3.utils.toWei(
+                    blockchain.name.startsWith('otp')
+                        ? DEFAULT_GAS_PRICE.OTP
+                        : DEFAULT_GAS_PRICE.GNOSIS,
+                    'Gwei',
+                );
             }
             return gasPrice;
         } catch (error) {
@@ -72,7 +77,12 @@ class BlockchainServiceBase {
             console.warn(
                 `Failed to fetch the gas price from the network: ${error}. Using default value: 2 Gwei.`,
             );
-            return Web3.utils.toWei('2', 'Gwei');
+            return Web3.utils.toWei(
+                blockchain.name.startsWith('otp')
+                    ? DEFAULT_GAS_PRICE.OTP
+                    : DEFAULT_GAS_PRICE.GNOSIS,
+                'Gwei',
+            );
         }
     }
 
@@ -543,7 +553,12 @@ class BlockchainServiceBase {
                     gasPrice = Math.round(response.data.average * 1e9);
                 }
             } else {
-                gasPrice = Web3.utils.toWei('2', 'Gwei');
+                gasPrice = Web3.utils.toWei(
+                    blockchain.name.startsWith('otp')
+                        ? DEFAULT_GAS_PRICE.OTP
+                        : DEFAULT_GAS_PRICE.GNOSIS,
+                    'Gwei',
+                );
             }
             return gasPrice;
         } catch (error) {
@@ -551,7 +566,12 @@ class BlockchainServiceBase {
             console.warn(
                 `Failed to fetch the gas price from the network: ${error}. Using default value: 2 Gwei.`,
             );
-            return Web3.utils.toWei('2', 'Gwei');
+            return Web3.utils.toWei(
+                blockchain.name.startsWith('otp')
+                    ? DEFAULT_GAS_PRICE.OTP
+                    : DEFAULT_GAS_PRICE.GNOSIS,
+                'Gwei',
+            );
         }
     }
 
