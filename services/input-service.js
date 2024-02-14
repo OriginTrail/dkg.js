@@ -1,4 +1,8 @@
-const { DEFAULT_PARAMETERS, BLOCKCHAINS } = require('../constants');
+const {
+    DEFAULT_PARAMETERS,
+    DEFAULT_PROXIMITY_SCORE_FUNCTIONS_PAIR_IDS,
+    BLOCKCHAINS,
+} = require('../constants');
 
 class InputService {
     constructor(config = {}) {
@@ -150,11 +154,11 @@ class InputService {
     }
 
     getScoreFunctionId(options) {
-        return (
-            options.scoreFunctionId ??
-            this.config.scoreFunctionId ??
-            DEFAULT_PARAMETERS.SCORE_FUNCTION_ID
-        );
+        const environment =
+            options.environment ?? this.config.environment ?? DEFAULT_PARAMETERS.ENVIRONMENT;
+        const blockchainName = this.getBlockchain(options).name;
+
+        return DEFAULT_PROXIMITY_SCORE_FUNCTIONS_PAIR_IDS[environment][blockchainName];
     }
 
     getEpochsNum(options) {

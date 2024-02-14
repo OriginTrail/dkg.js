@@ -56,6 +56,11 @@ const BLOCKCHAINS = {
             rpc: 'https://astrosat-parachain-rpc.origin-trail.network',
             hubContract: '0x5fA7916c48Fe6D5F1738d12Ad234b78c90B4cAdA',
         },
+        'gnosis:100': {
+            rpc: 'https://rpc.gnosischain.com/',
+            hubContract: '0xbEF14fc04F870c2dD65c13Df4faB6ba01A9c746b',
+            gasPriceOracleLink: 'https://api.gnosisscan.io/api?module=proxy&action=eth_gasPrice',
+        },
     },
 };
 
@@ -157,13 +162,28 @@ const OPERATIONS_STEP_STATUS = {
 
 const DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY = 0.5;
 
+const DEFAULT_PROXIMITY_SCORE_FUNCTIONS_PAIR_IDS = {
+    development: { 'hardhat1:31337': 1, 'hardhat2:31337': 2, 'otp:2043': 1 },
+    devnet: {
+        'otp:2160': 1,
+        'gnosis:10200': 2,
+    },
+    testnet: {
+        'otp:20430': 1,
+        'gnosis:10200': 2,
+    },
+    mainnet: {
+        'otp:2043': 1,
+        'gnosis:100': 2,
+    },
+};
+
 const DEFAULT_PARAMETERS = {
     ENVIRONMENT: 'mainnet',
     PORT: 8900,
     FREQUENCY: 5,
     MAX_NUMBER_OF_RETRIES: 5,
     HASH_FUNCTION_ID: 1,
-    SCORE_FUNCTION_ID: 1,
     IMMUTABLE: false,
     VALIDATE: true,
     OUTPUT_FORMAT: GET_OUTPUT_FORMATS.JSON_LD,
@@ -172,6 +192,11 @@ const DEFAULT_PARAMETERS = {
     GRAPH_LOCATION: GRAPH_LOCATIONS.LOCAL_KG,
     GRAPH_STATE: GRAPH_STATES.CURRENT,
     HANDLE_NOT_MINED_ERROR: false,
+};
+
+const DEFAULT_GAS_PRICE = {
+    GNOSIS: '20',
+    OTP: '1',
 };
 
 module.exports = {
@@ -197,5 +222,7 @@ module.exports = {
     QUERY_TYPES,
     OPERATIONS_STEP_STATUS,
     DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY,
+    DEFAULT_PROXIMITY_SCORE_FUNCTIONS_PAIR_IDS,
     DEFAULT_PARAMETERS,
+    DEFAULT_GAS_PRICE,
 };
