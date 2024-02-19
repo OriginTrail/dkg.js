@@ -34,6 +34,7 @@ module.exports = {
             assert: require.resolve('assert'),
             os: require.resolve('os-browserify'),
             url: require.resolve('url'),
+            buffer: require.resolve('buffer'),
         },
     },
     optimization: {
