@@ -411,7 +411,7 @@ class ValidationService {
     validateBidSuggestionRange(bidSuggestionRange) {
         if (!BID_SUGGESTION_RANGE_ENUM.includes(bidSuggestionRange)) {
             throw Error(
-                `Invalid bidSuggestionRange parametar: supproted parametars ${BID_SUGGESTION_RANGE_ENUM}`,
+                `Invalid bidSuggestionRange parametar: supported parametars ${BID_SUGGESTION_RANGE_ENUM}`,
             );
         }
     }
