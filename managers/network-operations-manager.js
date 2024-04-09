@@ -29,20 +29,20 @@ class NetworkOperationsManager {
             blockchain,
         );
 
-        return BigInt(
-            await this.nodeApiService.getBidSuggestion(
-                endpoint,
-                port,
-                authToken,
-                blockchain.name,
-                epochsNum,
-                sizeInBytes,
-                contentAssetStorageAddress,
-                publicAssertionId,
-                hashFunctionId,
-                bidSuggestionRange,
-            ),
+        const response = await this.nodeApiService.getBidSuggestion(
+            endpoint,
+            port,
+            authToken,
+            blockchain.name,
+            epochsNum,
+            sizeInBytes,
+            contentAssetStorageAddress,
+            publicAssertionId,
+            hashFunctionId,
+            bidSuggestionRange,
         );
+
+        return typeof response === 'string' ? BigInt(response) : response;
     }
 }
 module.exports = NetworkOperationsManager;
