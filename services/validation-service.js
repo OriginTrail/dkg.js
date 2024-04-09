@@ -7,6 +7,7 @@ const {
     OPERATIONS,
     GET_OUTPUT_FORMATS,
     QUERY_TYPES,
+    BID_SUGGESTION_RANGE_ENUM,
 } = require('../constants.js');
 const { nodeSupported } = require('./utilities.js');
 
@@ -401,6 +402,18 @@ class ValidationService {
     validateNewOwner(newOwner) {
         this.validateRequiredParam('newOwner', newOwner);
         this.validateParamType('newOwner', newOwner, 'string');
+    }
+
+    validateGetBidSuggestion(bidSuggestionRange) {
+        this.validateBidSuggestionRange(bidSuggestionRange);
+    }
+
+    validateBidSuggestionRange(bidSuggestionRange) {
+        if (!BID_SUGGESTION_RANGE_ENUM.includes(bidSuggestionRange)) {
+            throw Error(
+                `Invalid bidSuggestionRange parametar: supproted parametars ${BID_SUGGESTION_RANGE_ENUM}`,
+            );
+        }
     }
 }
 module.exports = ValidationService;

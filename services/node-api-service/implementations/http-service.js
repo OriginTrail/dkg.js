@@ -31,19 +31,24 @@ class HttpService {
         contentAssetStorageAddress,
         firstAssertionId,
         hashFunctionId,
+        bidSuggestionRange,
     ) {
         try {
+            const params = {
+                blockchain,
+                epochsNumber,
+                assertionSize,
+                contentAssetStorageAddress,
+                firstAssertionId,
+                hashFunctionId,
+            };
+            if (bidSuggestionRange != null) {
+                params.bidSuggestionRange = bidSuggestionRange;
+            }
             const response = await axios({
                 method: 'get',
                 url: `${endpoint}:${port}/bid-suggestion`,
-                params: {
-                    blockchain,
-                    epochsNumber,
-                    assertionSize,
-                    contentAssetStorageAddress,
-                    firstAssertionId,
-                    hashFunctionId,
-                },
+                params,
                 headers: this.prepareRequestConfig(authToken),
             });
 
