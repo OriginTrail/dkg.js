@@ -14,27 +14,35 @@ class NetworkOperationsManager {
      * @returns {BigInt} Suggested bid for publishing Knowledge Asset with given parameters.
      */
     async getBidSuggestion(publicAssertionId, sizeInBytes, options = {}) {
-        const { blockchain, endpoint, port, epochsNum, hashFunctionId, authToken } =
-            this.inputService.getBidSuggestionArguments(options);
+        const {
+            blockchain,
+            endpoint,
+            port,
+            epochsNum,
+            hashFunctionId,
+            authToken,
+            bidSuggestionRange,
+        } = this.inputService.getBidSuggestionArguments(options);
 
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
             'ContentAssetStorage',
             blockchain,
         );
 
-        return BigInt(
-            await this.nodeApiService.getBidSuggestion(
-                endpoint,
-                port,
-                authToken,
-                blockchain.name,
-                epochsNum,
-                sizeInBytes,
-                contentAssetStorageAddress,
-                publicAssertionId,
-                hashFunctionId,
-            ),
+        const response = await this.nodeApiService.getBidSuggestion(
+            endpoint,
+            port,
+            authToken,
+            blockchain.name,
+            epochsNum,
+            sizeInBytes,
+            contentAssetStorageAddress,
+            publicAssertionId,
+            hashFunctionId,
+            bidSuggestionRange,
         );
+
+        return typeof response === 'string' ? BigInt(response) : response;
     }
 }
 module.exports = NetworkOperationsManager;

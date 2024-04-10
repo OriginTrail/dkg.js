@@ -2,6 +2,7 @@ const {
     DEFAULT_PARAMETERS,
     DEFAULT_PROXIMITY_SCORE_FUNCTIONS_PAIR_IDS,
     BLOCKCHAINS,
+    LOW_BID_SUGGESTION,
 } = require('../constants');
 
 class InputService {
@@ -17,6 +18,7 @@ class InputService {
             epochsNum: this.getEpochsNum(options),
             hashFunctionId: this.getHashFunctionId(options),
             authToken: this.getAuthToken(options),
+            bidSuggestionRange: this.getBidSuggestionRange(options),
         };
     }
 
@@ -199,6 +201,10 @@ class InputService {
 
     getAuthToken(options) {
         return options.auth?.token ?? this.config?.auth?.token ?? null;
+    }
+
+    getBidSuggestionRange(options) {
+        return options.bidSuggestionRange ?? LOW_BID_SUGGESTION;
     }
 }
 
