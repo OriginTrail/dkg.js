@@ -163,17 +163,17 @@ const OPERATIONS_STEP_STATUS = {
 const DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY = 0.5;
 
 const DEFAULT_PROXIMITY_SCORE_FUNCTIONS_PAIR_IDS = {
-    development: { 'hardhat1:31337': 1, 'hardhat2:31337': 2, 'otp:2043': 1 },
+    development: { 'hardhat1:31337': 2, 'hardhat2:31337': 2, 'otp:2043': 2 },
     devnet: {
-        'otp:2160': 1,
+        'otp:2160': 2,
         'gnosis:10200': 2,
     },
     testnet: {
-        'otp:20430': 1,
+        'otp:20430': 2,
         'gnosis:10200': 2,
     },
     mainnet: {
-        'otp:2043': 1,
+        'otp:2043': 2,
         'gnosis:100': 2,
     },
 };
