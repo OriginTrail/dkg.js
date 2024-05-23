@@ -223,7 +223,7 @@ class BlockchainServiceBase {
 
     // Knowledge assets operations
 
-    async createAsset(requestData, blockchain, stepHooks = emptyHooks) {
+    async createAsset(requestData, paranetKaContract, paranetTokenId, blockchain, stepHooks = emptyHooks) {
         const serviceAgreementV1Address = await this.getContractAddress(
             'ServiceAgreementV1',
             blockchain,
@@ -252,12 +252,22 @@ class BlockchainServiceBase {
         }
 
         try {
-            const receipt = await this.executeContractFunction(
-                'ContentAsset',
-                'createAsset',
-                [Object.values(requestData)],
-                blockchain,
-            );
+            let receipt;
+            if(paranetKaContract == null && paranetTokenId == null) {
+                receipt = await this.executeContractFunction(
+                    'ContentAsset',
+                    'createAsset',
+                    [Object.values(requestData)],
+                    blockchain,
+                );
+            } else {
+                receipt = await this.executeContractFunction(
+                    'Paranet',
+                    'mintKnowledgeAsset',
+                    [paranetKaContract, paranetTokenId, Object.values(requestData)],
+                    blockchain,
+                );
+            }
 
             let { tokenId } = await this.decodeEventLogs(receipt, 'AssetMinted', blockchain);
 

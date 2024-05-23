@@ -280,6 +280,7 @@ class AssetOperationsManager {
             immutable,
             tokenAmount,
             authToken,
+            paranetUAL,
         } = this.inputService.getAssetCreateArguments(options);
 
         this.validationService.validateAssetCreate(
@@ -295,6 +296,7 @@ class AssetOperationsManager {
             immutable,
             tokenAmount,
             authToken,
+            paranetUAL
         );
 
         const { public: publicAssertion, private: privateAssertion } = await formatGraph(
@@ -330,20 +332,43 @@ class AssetOperationsManager {
                 hashFunctionId,
             ));
 
-        const tokenId = await this.blockchainService.createAsset(
-            {
-                publicAssertionId,
-                assertionSize: publicAssertionSizeInBytes,
-                triplesNumber: assertionMetadata.getAssertionTriplesNumber(publicAssertion),
-                chunksNumber: assertionMetadata.getAssertionChunksNumber(publicAssertion),
-                epochsNum,
-                tokenAmount: tokenAmountInWei,
-                scoreFunctionId: scoreFunctionId ?? 1,
-                immutable_: immutable,
-            },
-            blockchain,
-            stepHooks,
-        );
+        let tokenId;
+        if(paranetUAL == null) {
+            tokenId = await this.blockchainService.createAsset(
+                {
+                    publicAssertionId,
+                    assertionSize: publicAssertionSizeInBytes,
+                    triplesNumber: assertionMetadata.getAssertionTriplesNumber(publicAssertion),
+                    chunksNumber: assertionMetadata.getAssertionChunksNumber(publicAssertion),
+                    epochsNum,
+                    tokenAmount: tokenAmountInWei,
+                    scoreFunctionId: scoreFunctionId ?? 1,
+                    immutable_: immutable,
+                },
+                null,
+                null,
+                blockchain,
+                stepHooks,
+            );
+        } else {
+            const { contract: paranetKaContract, tokenId: paranetTokenId } = resolveUAL(paranetUAL);
+            tokenId = await this.blockchainService.createAsset(
+                {
+                    publicAssertionId,
+                    assertionSize: publicAssertionSizeInBytes,
+                    triplesNumber: assertionMetadata.getAssertionTriplesNumber(publicAssertion),
+                    chunksNumber: assertionMetadata.getAssertionChunksNumber(publicAssertion),
+                    epochsNum,
+                    tokenAmount: tokenAmountInWei,
+                    scoreFunctionId: scoreFunctionId ?? 1,
+                    immutable_: immutable,
+                },
+                paranetKaContract,
+                paranetTokenId,
+                blockchain,
+                stepHooks,
+            );
+        }
 
         const resolvedUAL = {
             blockchain: blockchain.name,

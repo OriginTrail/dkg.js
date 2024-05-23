@@ -69,6 +69,7 @@ class ValidationService {
         immutable,
         tokenAmount,
         authToken,
+        paranetUAL
     ) {
         this.validateContent(content);
         this.validateBlockchain(blockchain, OPERATIONS.PUBLISH);
@@ -82,6 +83,7 @@ class ValidationService {
         this.validateImmutable(immutable);
         this.validateTokenAmount(tokenAmount);
         this.validateAuthToken(authToken);
+        this.validateParanetUAL(paranetUAL);
     }
 
     validateAssetGet(
@@ -387,6 +389,12 @@ class ValidationService {
         if (authToken == null) return;
 
         this.validateParamType('authToken', authToken, 'string');
+    }
+
+    validateParanetUAL(paranetUAL) {
+        if (paranetUAL == null) return;
+
+        this.validateUAL(paranetUAL);
     }
 
     validateValidate(validate) {

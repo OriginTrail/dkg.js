@@ -35,6 +35,7 @@ class InputService {
             immutable: this.getImmutable(options),
             tokenAmount: this.getTokenAmount(options),
             authToken: this.getAuthToken(options),
+            paranetUAL: this.getParanetUAL(options),
         };
     }
 
@@ -216,6 +217,10 @@ class InputService {
 
     getBidSuggestionRange(options) {
         return options.bidSuggestionRange ?? LOW_BID_SUGGESTION;
+    }
+
+    getParanetUAL(options) {
+        return options.paranetUAL ?? this.config.paranetUAL ?? null;
     }
 
     getParanetName(options) {
