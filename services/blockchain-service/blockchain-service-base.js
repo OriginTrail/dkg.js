@@ -200,11 +200,7 @@ class BlockchainServiceBase {
             force ||
             !this[blockchain.name].contractAddresses[blockchain.hubContract][contractName]
         ) {
-            console.log('Getting contract name');
-            let contractname = await this.getContractAddress(contractName, blockchain, force);
-            console.log(contractname);
-            this[blockchain.name].contractAddresses[blockchain.hubContract][contractName] = contractname;
-
+            this[blockchain.name].contractAddresses[blockchain.hubContract][contractName] = await this.getContractAddress(contractName, blockchain, force);
         }
         if (force || !this[blockchain.name].contracts[blockchain.hubContract][contractName]) {
             const web3Instance = await this.getWeb3Instance(blockchain);
