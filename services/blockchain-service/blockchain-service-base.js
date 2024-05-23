@@ -8,6 +8,7 @@ const ContentAssetStorageAbi = require('dkg-evm-module/abi/ContentAssetStorage.j
 const UnfinalizedStateStorageAbi = require('dkg-evm-module/abi/UnfinalizedStateStorage.json');
 const ContentAssetAbi = require('dkg-evm-module/abi/ContentAsset.json');
 const TokenAbi = require('dkg-evm-module/abi/Token.json');
+const ParanetAbi = require('dkg-evm-module/abi/Paranet.json');
 const { OPERATIONS_STEP_STATUS, DEFAULT_GAS_PRICE } = require('../../constants');
 const emptyHooks = require('../../util/empty-hooks.js');
 
@@ -24,6 +25,7 @@ class BlockchainServiceBase {
         this.abis.UnfinalizedStateStorage = UnfinalizedStateStorageAbi;
         this.abis.ContentAsset = ContentAssetAbi;
         this.abis.Token = TokenAbi;
+        this.abis.Paranet = ParanetAbi;
 
         this.abis.ContentAsset.filter((obj) => obj.type === 'event').forEach((event) => {
             const concatInputs = event.inputs.map((input) => input.internalType);
@@ -198,8 +200,11 @@ class BlockchainServiceBase {
             force ||
             !this[blockchain.name].contractAddresses[blockchain.hubContract][contractName]
         ) {
-            this[blockchain.name].contractAddresses[blockchain.hubContract][contractName] =
-                await this.getContractAddress(contractName, blockchain, force);
+            console.log('Getting contract name');
+            let contractname = await this.getContractAddress(contractName, blockchain, force);
+            console.log(contractname);
+            this[blockchain.name].contractAddresses[blockchain.hubContract][contractName] = contractname;
+
         }
         if (force || !this[blockchain.name].contracts[blockchain.hubContract][contractName]) {
             const web3Instance = await this.getWeb3Instance(blockchain);
@@ -215,6 +220,8 @@ class BlockchainServiceBase {
         await this.updateContractInstance(contractName, blockchain);
         return this[blockchain.name].contracts[blockchain.hubContract][contractName];
     }
+
+    // Knowledge assets operations
 
     async createAsset(requestData, blockchain, stepHooks = emptyHooks) {
         const serviceAgreementV1Address = await this.getContractAddress(
@@ -525,6 +532,19 @@ class BlockchainServiceBase {
             blockchain,
         );
     }
+
+    // Paranets operations
+
+    async registerParanet(requestData, blockchain) {
+        return this.executeContractFunction(
+            'Paranet',
+            'registerParanet',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
+
+    // Blockchain operations
 
     async getChainId(blockchain) {
         const web3Instance = await this.getWeb3Instance(blockchain);

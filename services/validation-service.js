@@ -193,6 +193,24 @@ class ValidationService {
         this.validateBlockchain(blockchain);
     }
 
+    validateParanetCreate(
+        UAL,
+        blockchain,
+        paranetName,
+        paranetDescription,
+        tracToNeuroRation,
+        tracTarget,
+        operatorRewardPercentage,
+    ) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+        this.validateParanetName(paranetName);
+        this.validateParanetDescription(paranetDescription);
+        this.validateTracToNeuroRation(tracToNeuroRation);
+        this.validateTracTarget(tracTarget);
+        this.validateOperatorRewardPercentage(operatorRewardPercentage);
+    }
+
     validateRequiredParam(paramName, param) {
         if (param == null) throw Error(`${paramName} is missing.`);
     }
@@ -414,6 +432,33 @@ class ValidationService {
                 `Invalid bidSuggestionRange parametar: supported parametars ${BID_SUGGESTION_RANGE_ENUM}`,
             );
         }
+    }
+
+    validateParanetName(paranetName) {
+        this.validateRequiredParam('paranetName', paranetName);
+        this.validateParamType('paranetName', paranetName, 'string');
+    }
+
+    validateParanetDescription(paranetDescription) {
+        this.validateRequiredParam('paranetDescription', paranetDescription);
+        this.validateParamType('paranetDescription', paranetDescription, 'string');
+    }
+
+    validateTracToNeuroRation(tracToNeuroRation){
+        this.validateRequiredParam('tracToNeuroRation', tracToNeuroRation);
+        this.validateParamType('tracToNeuroRation', tracToNeuroRation, 'number');
+    }
+
+    validateTracTarget(tracTarget){
+        this.validateRequiredParam('tracTarget', tracTarget);
+        this.validateParamType('tracTarget', tracTarget, 'number');
+    }
+
+    validateOperatorRewardPercentage(operatorRewardPercentage){
+        this.validateRequiredParam('operatorRewardPercentage', operatorRewardPercentage);
+        this.validateParamType('operatorRewardPercentage', operatorRewardPercentage, 'number');
+
+        if (operatorRewardPercentage > 100) throw Error('Invalid percentage value for operator reward.');
     }
 }
 module.exports = ValidationService;

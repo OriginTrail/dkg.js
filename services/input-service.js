@@ -80,6 +80,17 @@ class InputService {
         };
     }
 
+    getParanetCreateArguments(options) {
+        return {
+            blockchain: this.getBlockchain(options),
+            paranetName: this.getParanetName(options),
+            paranetDescription: this.getParanetDescription(options),
+            tracToNeuroRation: this.getTracToNeuroRation(options),
+            tracTarget: this.getTracTarget(options),
+            operatorRewardPercentage: this.getOperatorRewardPercentage(options),
+        }
+    }
+
     getBlockchain(options) {
         const environment =
             options.environment ?? this.config.environment ?? DEFAULT_PARAMETERS.ENVIRONMENT;
@@ -206,6 +217,27 @@ class InputService {
     getBidSuggestionRange(options) {
         return options.bidSuggestionRange ?? LOW_BID_SUGGESTION;
     }
+
+    getParanetName(options) {
+        return options.paranetName ?? null;
+    }
+
+    getParanetDescription(options) {
+        return options.paranetDescription ?? null;
+    }
+
+    getTracToNeuroRation(options) {
+        return options.tracToNeuroRation ?? null;
+    }
+
+    getTracTarget(options) {
+        return options.tracTarget ?? null;
+    }
+
+    getOperatorRewardPercentage(options) {
+        return options.operatorRewardPercentage ?? null;
+    }
+
 }
 
 module.exports = InputService;
