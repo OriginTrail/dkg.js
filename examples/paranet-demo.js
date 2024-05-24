@@ -95,10 +95,36 @@ function divider() {
 
     divider();
 
+    content = {
+        public: {
+            '@context': ['https://schema.org'],
+            '@id': 'uuid:3',
+            company: 'KA1-Company',
+            user: {
+                '@id': 'uuid:user:3',
+            },
+            city: {
+                '@id': 'uuid:budapest',
+            },
+        }
+    };
+
+    const create2AssetResult = await DkgClient.asset.create(content, { epochsNum: 2 });
+    console.log('======================== ASSET 2 CREATED');
+    console.log(create2AssetResult);
+
+    divider();
+
+    const submitResult = await DkgClient.asset.submitToParanet(create2AssetResult.UAL, paranetAssetResult.UAL);
+    console.log('======================== ASSET 2 ADDED TO PARANET');
+    console.log(submitResult);
+
+    divider();
+
     const getAssetResult = await DkgClient.asset.get(createAssetResult.UAL);
     console.log('======================== ASSET RESOLVED');
     console.log(JSON.stringify(getAssetResult, null, 2));
-
+    process.exit(0)
     divider();
 
     const updateAssetResult = await DkgClient.asset.update(createAssetResult.UAL, {

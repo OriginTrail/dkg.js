@@ -550,6 +550,15 @@ class BlockchainServiceBase {
         );
     }
 
+    async submitToParanet(requestData, blockchain) {
+        return this.executeContractFunction(
+            'Paranet',
+            'submitKnowledgeAsset',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
+
     // Blockchain operations
 
     async getChainId(blockchain) {

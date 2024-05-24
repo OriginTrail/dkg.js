@@ -213,6 +213,16 @@ class ValidationService {
         this.validateOperatorRewardPercentage(operatorRewardPercentage);
     }
 
+    validateSubmitToParanet(
+        UAL,
+        paranetUAL,
+        blockchain,
+    ) {
+        this.validateUAL(UAL);
+        this.validateUAL(paranetUAL);
+        this.validateBlockchain(blockchain);
+    }
+
     validateRequiredParam(paramName, param) {
         if (param == null) throw Error(`${paramName} is missing.`);
     }

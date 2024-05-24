@@ -1374,6 +1374,41 @@ class AssetOperationsManager {
 
         return tokenAmountInWei > 0 ? tokenAmountInWei : 0;
     }
+
+    /**
+     * Add knowledge asset to a paranet.
+     * @async
+     * @param {string} UAL - The Universal Asset Locator of the knowledge asset.
+     * @param {string} paranetUAL - The Universal Asset Locator of the Paranet.
+     * @param {Object} [options={}] - Additional options for adding tokens.
+     * @returns {Object} An object containing the UAL and operation status.
+     */
+    async submitToParanet(UAL, paranetUAL, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+
+        this.validationService.validateSubmitToParanet(
+            UAL,
+            paranetUAL,
+            blockchain,
+        );
+
+        const { contract, tokenId } = resolveUAL(UAL);
+        const { contract: paranetContract, tokenId: paranetTokenId } = resolveUAL(paranetUAL);
+
+        await this.blockchainService.submitToParanet({
+                paranetContract,
+                paranetTokenId,
+                contract,
+                tokenId,
+            },
+            blockchain
+        );
+
+        return {
+            UAL,
+            operation: getOperationStatusObject({ status: 'COMPLETED' }, null),
+        };
+    }
 }
 
 module.exports = AssetOperationsManager;
