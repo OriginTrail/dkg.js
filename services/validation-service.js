@@ -260,8 +260,12 @@ class ValidationService {
     validateGraphLocation(graphLocation) {
         this.validateRequiredParam('graphLocation', graphLocation);
         const validGraphLocations = Object.keys(GRAPH_LOCATIONS);
-        if (!validGraphLocations.includes(graphLocation))
-            throw Error(`Invalid graph location: available locations: ${validGraphLocations}`);
+        if (!validGraphLocations.includes(graphLocation)) {
+            if(!this.validateUAL(graphLocation)) {
+                throw Error(`Invalid graph location: available locations are valid Paranet UAL or: ${validGraphLocations}`);
+            }
+        }
+
     }
 
     validateGraphState(graphState) {
@@ -278,8 +282,8 @@ class ValidationService {
         const segments = ual.split(':');
         const argsString = segments.length === 3 ? segments[2] : `${segments[2]}:${segments[3]}`;
         const args = argsString.split('/');
-
         if (!(args?.length === 3)) throw Error('Invalid UAL.');
+        return true;
     }
 
     validateStateIndex(stateIndex) {
