@@ -86,9 +86,22 @@ class InputService {
             blockchain: this.getBlockchain(options),
             paranetName: this.getParanetName(options),
             paranetDescription: this.getParanetDescription(options),
-            tracToNeuroRation: this.getTracToNeuroRation(options),
-            tracTarget: this.getTracTarget(options),
+        }
+    }
+
+    getParanetDeployIncentivesContractArguments(options) {
+        return {
+            blockchain: this.getBlockchain(options),
+            incentiveType: this.getIncentiveType(options),
+            tracToNeuroEmissionMultiplier: this.getTracToNeuroEmissionMultiplier(options),
             operatorRewardPercentage: this.getOperatorRewardPercentage(options),
+            incentivizationProposalVotersRewardPercentage: this.getIncentivizationProposalVotersRewardPercentage(options),
+        }
+    }
+
+    getParanetCollectMinerRewardArguments(options) {
+        return {
+            blockchain: this.getBlockchain(options),
         }
     }
 
@@ -231,16 +244,20 @@ class InputService {
         return options.paranetDescription ?? null;
     }
 
-    getTracToNeuroRation(options) {
-        return options.tracToNeuroRation ?? null;
+    getTracToNeuroEmissionMultiplier(options) {
+        return options.tracToNeuroEmissionMultiplier ?? null;
     }
 
-    getTracTarget(options) {
-        return options.tracTarget ?? null;
+    getIncentivizationProposalVotersRewardPercentage(options) {
+        return options.incentivizationProposalVotersRewardPercentage * 100 ?? null;
     }
 
     getOperatorRewardPercentage(options) {
         return options.operatorRewardPercentage ?? null;
+    }
+
+    getIncentiveType(options) {
+        return options.incentiveType ?? null;
     }
 
 }

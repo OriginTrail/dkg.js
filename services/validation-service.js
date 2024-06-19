@@ -200,17 +200,33 @@ class ValidationService {
         blockchain,
         paranetName,
         paranetDescription,
-        tracToNeuroRation,
-        tracTarget,
-        operatorRewardPercentage,
     ) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
         this.validateParanetName(paranetName);
         this.validateParanetDescription(paranetDescription);
-        this.validateTracToNeuroRation(tracToNeuroRation);
-        this.validateTracTarget(tracTarget);
+    }
+
+    validateDeployIncentivesContract(
+        UAL,
+        blockchain,
+        tracToNeuroEmissionMultiplier,
+        operatorRewardPercentage,
+        incentivizationProposalVotersRewardPercentage,
+    ) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+        this.validateTracToNeuroEmissionMultiplier(tracToNeuroEmissionMultiplier);
         this.validateOperatorRewardPercentage(operatorRewardPercentage);
+        this.validateIncentivizationProposalVotersRewardPercentage(incentivizationProposalVotersRewardPercentage);
+    }
+
+    validateParanetCollectMinerRewardArguments(
+        UAL,
+        blockchain,
+    ) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
     }
 
     validateSubmitToParanet(
@@ -466,21 +482,23 @@ class ValidationService {
         this.validateParamType('paranetDescription', paranetDescription, 'string');
     }
 
-    validateTracToNeuroRation(tracToNeuroRation){
-        this.validateRequiredParam('tracToNeuroRation', tracToNeuroRation);
-        this.validateParamType('tracToNeuroRation', tracToNeuroRation, 'number');
+    validateTracToNeuroEmissionMultiplier(tracToNeuroEmissionMultiplier){
+        this.validateRequiredParam('tracToNeuroEmissionMultiplier', tracToNeuroEmissionMultiplier);
+        this.validateParamType('tracToNeuroEmissionMultiplier', tracToNeuroEmissionMultiplier, 'number');
     }
 
-    validateTracTarget(tracTarget){
-        this.validateRequiredParam('tracTarget', tracTarget);
-        this.validateParamType('tracTarget', tracTarget, 'number');
+    validateIncentivizationProposalVotersRewardPercentage(incentivizationProposalVotersRewardPercentage){
+        this.validateRequiredParam('incentivizationProposalVotersRewardPercentage', incentivizationProposalVotersRewardPercentage);
+        this.validateParamType('incentivizationProposalVotersRewardPercentage', incentivizationProposalVotersRewardPercentage, 'number');
+
+        if (incentivizationProposalVotersRewardPercentage > 10000 || incentivizationProposalVotersRewardPercentage < 0) throw Error('Invalid percentage value for incentivization proposal voters reward.');
     }
 
     validateOperatorRewardPercentage(operatorRewardPercentage){
         this.validateRequiredParam('operatorRewardPercentage', operatorRewardPercentage);
         this.validateParamType('operatorRewardPercentage', operatorRewardPercentage, 'number');
 
-        if (operatorRewardPercentage > 100) throw Error('Invalid percentage value for operator reward.');
+        if (operatorRewardPercentage > 10000 || operatorRewardPercentage < 0) throw Error('Invalid percentage value for operator reward.');
     }
 }
 module.exports = ValidationService;
