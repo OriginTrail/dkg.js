@@ -9,23 +9,11 @@ class ParanetOperationsManager {
         this.validationService = services.validationService;
     }
 
-    /*
-        address paranetKAStorageContract, <- UAL
-        uint256 paranetKATokenId, <- UAL
-        string calldata paranetName,
-        string calldata paranetDescription,
-        uint256 tracToNeuroRatio,
-        uint96 tracTarget,
-        uint16 operatorRewardPercentage
-     */
     async create(UAL, options = {}) {
         const {
             blockchain,
             paranetName,
             paranetDescription,
-            tracToNeuroRation,
-            tracTarget,
-            operatorRewardPercentage,
         } = this.inputService.getParanetCreateArguments(options);
 
         this.validationService.validateParanetCreate(
@@ -33,9 +21,6 @@ class ParanetOperationsManager {
             blockchain,
             paranetName,
             paranetDescription,
-            tracToNeuroRation,
-            tracTarget,
-            operatorRewardPercentage,
         );
 
         const { contract, tokenId } = resolveUAL(UAL);
@@ -45,18 +30,54 @@ class ParanetOperationsManager {
                 tokenId,
                 paranetName,
                 paranetDescription,
-                tracToNeuroRation,
-                tracTarget,
-                operatorRewardPercentage
             },
             blockchain
         );
 
-        const paranetId = ethers.keccak256(
-            ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
-        );
+        return UAL;
+    }
 
-        return paranetId;
+    async deployIncentivesContract(paranetUAL, incentiveType, options = {}) {
+        const {
+            blockchain,
+            tracToNeuroEmissionMultiplier,
+            operatorRewardPercentage,
+            incentivizationProposalVotersRewardPercentage,
+        } = this.inputService.getParanetDeployIncentivesContractArguments(options);
+
+        this.validationService.validateDeployIncentivesContract(
+            paranetUAL,
+            blockchain,
+            tracToNeuroEmissionMultiplier,
+            operatorRewardPercentage,
+            incentivizationProposalVotersRewardPercentage,
+        );
+        if(incentiveType === 'Neuroweb') {
+            const {contract, tokenId} = resolveUAL(paranetUAL);
+
+            await this.blockchainService.deployNeuroIncentivesPool({
+                    contract,
+                    tokenId,
+                    tracToNeuroEmissionMultiplier,
+                    operatorRewardPercentage,
+                    incentivizationProposalVotersRewardPercentage,
+                },
+                blockchain
+            );
+
+            const paranetId = ethers.keccak256(
+                ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
+            );
+
+            const neuroIncentivesPoolAddress = await this.blockchainService.getNeuroIncentivesPoolAddress(paranetId, blockchain);
+
+            // Temporary funding of neuro incentives pool address
+            await this.blockchainService.sendTokens(neuroIncentivesPoolAddress, blockchain);
+
+            return neuroIncentivesPoolAddress;
+        } else {
+            throw Error(`Unsupported incentive type: ${incentiveType}.`)
+        }
     }
 
     async registerService(paranetUAL, serviceOBj, options = {}) {
@@ -64,7 +85,20 @@ class ParanetOperationsManager {
     }
 
     async collectMinerReward(paranetUAL, options = {}) {
+        const {
+            blockchain,
+        } = this.inputService.getParanetCollectMinerRewardArguments(options);
+        this.validationService.validateParanetCollectMinerRewardArguments(
+            paranetUAL,
+            blockchain,
+        );
 
+        const { contract, tokenId } = resolveUAL(paranetUAL);
+        const paranetId = ethers.keccak256(
+            ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
+        );
+
+        await this.blockchainService.claimKnowledgeMinerReward(paranetId, blockchain);
     }
 
     async collectVoterReward(paranetUAL, options = {}) {
@@ -73,6 +107,25 @@ class ParanetOperationsManager {
 
     async collectOperatorReward(paranetUAL, options = {}) {
 
+    }
+
+    async getClaimableMinerReward(paranetUAL, options = {}) {
+        const {
+            blockchain,
+        } = this.inputService.getParanetCollectMinerRewardArguments(options);
+        this.validationService.validateParanetCollectMinerRewardArguments(
+            paranetUAL,
+            blockchain,
+        );
+
+        const { contract, tokenId } = resolveUAL(paranetUAL);
+        const paranetId = ethers.keccak256(
+            ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
+        );
+
+        const claimableValue = await this.blockchainService.getClaimableKnowledgeMinerReward(paranetId, blockchain);
+
+        return claimableValue;
     }
 }
 module.exports = ParanetOperationsManager;

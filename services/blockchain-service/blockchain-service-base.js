@@ -9,6 +9,9 @@ const UnfinalizedStateStorageAbi = require('dkg-evm-module/abi/UnfinalizedStateS
 const ContentAssetAbi = require('dkg-evm-module/abi/ContentAsset.json');
 const TokenAbi = require('dkg-evm-module/abi/Token.json');
 const ParanetAbi = require('dkg-evm-module/abi/Paranet.json');
+const ParanetsRegistryAbi = require('dkg-evm-module/abi/ParanetsRegistry.json');
+const ParanetIncentivesPoolFactoryAbi = require('dkg-evm-module/abi/ParanetIncentivesPoolFactory.json');
+const ParanetNeuroIncentivesPoolAbi = require('dkg-evm-module/abi/ParanetNeuroIncentivesPool.json');
 const { OPERATIONS_STEP_STATUS, DEFAULT_GAS_PRICE } = require('../../constants');
 const emptyHooks = require('../../util/empty-hooks.js');
 
@@ -26,6 +29,9 @@ class BlockchainServiceBase {
         this.abis.ContentAsset = ContentAssetAbi;
         this.abis.Token = TokenAbi;
         this.abis.Paranet = ParanetAbi;
+        this.abis.ParanetsRegistry = ParanetsRegistryAbi;
+        this.abis.ParanetIncentivesPoolFactory = ParanetIncentivesPoolFactoryAbi;
+        this.abis.ParanetNeuroIncentivesPool = ParanetNeuroIncentivesPoolAbi;
 
         this.abis.ContentAsset.filter((obj) => obj.type === 'event').forEach((event) => {
             const concatInputs = event.inputs.map((input) => input.internalType);
@@ -550,11 +556,75 @@ class BlockchainServiceBase {
         );
     }
 
+    async deployNeuroIncentivesPool(requestData, blockchain) {
+        return this.executeContractFunction(
+            'ParanetIncentivesPoolFactory',
+            'deployNeuroIncentivesPool',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
+
     async submitToParanet(requestData, blockchain) {
         return this.executeContractFunction(
             'Paranet',
             'submitKnowledgeAsset',
             Object.values(requestData),
+            blockchain,
+        );
+    }
+
+    async getIncentivesPoolAddress(requestData, blockchain) {
+        return this.callContractFunction(
+            'ParanetsRegistry',
+            'getIncentivesPoolAddress',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
+
+    async getNeuroIncentivesPoolAddress(paranetId,blockchain) {
+        return this.getIncentivesPoolAddress(
+            {
+                paranetId,
+                incentivesPoolType: 'Neuroweb',
+            },
+            blockchain
+        )
+    }
+
+    async setIncentivesPool(contractAddress, blockchain){
+        const web3Instance = await this.getWeb3Instance(blockchain);
+        this[blockchain.name].contractAddresses[blockchain.hubContract]['ParanetNeuroIncentivesPool'] = contractAddress;
+        this[blockchain.name].contracts[blockchain.hubContract]['ParanetNeuroIncentivesPool'] =
+            await new web3Instance.eth.Contract(
+                this.abis['ParanetNeuroIncentivesPool'],
+                this[blockchain.name].contractAddresses[blockchain.hubContract]['ParanetNeuroIncentivesPool'],
+            );
+    }
+
+    async claimKnowledgeMinerReward(paranetId, blockchain) {
+        const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(paranetId, blockchain);
+
+        await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
+
+        return this.executeContractFunction(
+            'ParanetNeuroIncentivesPool',
+            'claimKnowledgeMinerReward',
+            [],
+            blockchain,
+        );
+    }
+
+    async getClaimableKnowledgeMinerReward(paranetId, blockchain) {
+        const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(paranetId, blockchain);
+
+        await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
+
+        return this.callContractFunction(
+            'ParanetNeuroIncentivesPool',
+            'getClaimableKnowledgeMinerRewardAmount',
+            [],
             blockchain,
         );
     }
@@ -633,6 +703,18 @@ class BlockchainServiceBase {
         const blockNumber = await web3.eth.getBlockNumber();
 
         return web3.eth.getBlock(blockNumber);
+    }
+
+    // TODO: Temporary to remove
+    async sendTokens( targetAddress , blockchain) {
+        const web3 = await this.getWeb3Instance(blockchain);
+        const sendAmount = web3.utils.toWei('20', 'ether');
+        await web3.eth.sendTransaction({
+            from: blockchain.publicKey,
+            to: targetAddress,
+            value: sendAmount
+        });
+        return true;
     }
 
     convertToWei(ether) {
