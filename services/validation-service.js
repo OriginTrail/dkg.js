@@ -229,6 +229,24 @@ class ValidationService {
         this.validateBlockchain(blockchain);
     }
 
+    validateParanetRoleCheckArguments(
+        address,
+        UAL,
+        blockchain,
+    ) {
+        this.validateAddress(address);
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+    }
+
+    validateParanetCreateServiceArguments(
+        UAL,
+        blockchain,
+    ) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+    }
+
     validateSubmitToParanet(
         UAL,
         paranetUAL,
@@ -499,6 +517,11 @@ class ValidationService {
         this.validateParamType('operatorRewardPercentage', operatorRewardPercentage, 'number');
 
         if (operatorRewardPercentage > 10000 || operatorRewardPercentage < 0) throw Error('Invalid percentage value for operator reward.');
+    }
+
+    validateAddress(address) {
+        this.validateRequiredParam('address', address);
+        this.validateParamType('address', address, 'string');
     }
 }
 module.exports = ValidationService;

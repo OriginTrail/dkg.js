@@ -99,9 +99,19 @@ class InputService {
         }
     }
 
-    getParanetRewardArguments(options) {
+    getParanetCreateServiceArguments(options) {
         return {
             blockchain: this.getBlockchain(options),
+            paranetServiceName: this.getParanetName(options),
+            paranetServiceDescription: this.getParanetServiceDescription(options),
+            paranetServiceAddresses: this.getParanetServiceAddresses(options),
+        }
+    }
+
+    getParanetRoleCheckArguments(options){
+        return {
+            blockchain: this.getBlockchain(options),
+            roleAddress: this.getRoleAddress(options),
         }
     }
 
@@ -253,11 +263,27 @@ class InputService {
     }
 
     getOperatorRewardPercentage(options) {
-        return options.operatorRewardPercentage ?? null;
+        return options.operatorRewardPercentage * 100 ?? null;
     }
 
     getIncentiveType(options) {
         return options.incentiveType ?? null;
+    }
+
+    getParanetServiceName(options) {
+        return options.paranetServiceName ?? null;
+    }
+
+    getParanetServiceDescription(options) {
+        return options.paranetServiceDescription ?? null;
+    }
+
+    getParanetServiceAddresses(options) {
+        return options.paranetServiceAddresses ?? [];
+    }
+
+    getRoleAddress(options) {
+        return options.roleAddress ?? null;
     }
 
 }

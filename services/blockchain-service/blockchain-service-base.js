@@ -107,7 +107,7 @@ class BlockchainServiceBase {
                     status = false;
                 }
 
-                if (!status) {
+                if (!status && contractName !== 'ParanetNeuroIncentivesPool') {
                     await this.updateContractInstance(contractName, blockchain, true);
                     contractInstance = await this.getContractInstance(contractName, blockchain);
 
@@ -709,6 +709,45 @@ class BlockchainServiceBase {
         );
     }
 
+    async isParanetKnowledgeMiner(address ,paranetId, blockchain) {
+        const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(paranetId, blockchain);
+
+        await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
+
+        return this.callContractFunction(
+            'ParanetNeuroIncentivesPool',
+            'isKnowledgeMiner',
+            [address],
+            blockchain,
+        );
+    }
+
+    async isParanetOperator(address ,paranetId, blockchain) {
+        const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(paranetId, blockchain);
+
+        await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
+
+        return this.callContractFunction(
+            'ParanetNeuroIncentivesPool',
+            'isParanetOperator',
+            [address],
+            blockchain,
+        );
+    }
+
+    async isParanetProposalVoter(address ,paranetId, blockchain) {
+        const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(paranetId, blockchain);
+
+        await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
+
+        return this.callContractFunction(
+            'ParanetNeuroIncentivesPool',
+            'isProposalVoter',
+            [address],
+            blockchain,
+        );
+    }
+
     // Blockchain operations
 
     async getChainId(blockchain) {
@@ -788,7 +827,7 @@ class BlockchainServiceBase {
     // TODO: Temporary to remove
     async sendTokens( targetAddress , blockchain) {
         const web3 = await this.getWeb3Instance(blockchain);
-        const sendAmount = web3.utils.toWei('20', 'ether');
+        const sendAmount = web3.utils.toWei('2000', 'ether');
         await web3.eth.sendTransaction({
             from: blockchain.publicKey,
             to: targetAddress,
