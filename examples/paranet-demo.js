@@ -35,19 +35,18 @@ function divider() {
     console.log('======================== NODE INFO RECEIVED');
     console.log(nodeInfo);
 
-    /**/
     divider();
 
     let content = {
         public: {
             '@context': ['https://schema.org'],
             '@id': 'uuid:1',
-            company: 'ParanetOperator',
+            company: 'ParanetOperatorsDAO',
             user: {
                 '@id': 'uuid:user:1',
             },
             city: {
-                '@id': 'uuid:belgrade',
+                '@id': 'uuid:Belgrade',
             },
         }
     };
@@ -55,24 +54,57 @@ function divider() {
     divider();
 
     const paranetAssetResult = await DkgClient.asset.create(content, { epochsNum: 2 });
-    console.log('======================== PARANET ASSET CREATED');
+    console.log('======================== PARANET KNOWLEDGE ASSET CREATED');
     console.log(paranetAssetResult);
 
     divider();
-    /**/
 
-    // Paranet testing
     const paranetOptions = {
         paranetName: 'FirstParanet',
         paranetDescription: 'First ever paranet on DKG!',
-        tracToNeuroRation: 5,
-        tracTarget: 1200,
-        operatorRewardPercentage: 10,
+        tracToNeuroEmissionMultiplier: 5,
+        incentivizationProposalVotersRewardPercentage: 12.00,
+        operatorRewardPercentage: 10.00,
     };
-    const paranetUAL = 'did:dkg:hardhat2:31337/0x8aafc28174bb6c3bdc7be92f18c2f134e876c05e/1';
     const paranetRegistered = await DkgClient.paranet.create(paranetAssetResult.UAL, paranetOptions);
     console.log('======================== PARANET REGISTERED');
     console.log(paranetRegistered);
+    divider();
+
+    const paranetDeployed = await DkgClient.paranet.deployIncentivesContract(paranetAssetResult.UAL, 'Neuroweb', paranetOptions);
+    console.log('======================== PARANET INCENTIVES POOL DEPLOYED');
+    console.log(paranetDeployed);
+    divider();
+
+    content = {
+        public: {
+            '@context': ['https://schema.org'],
+            '@id': 'uuid:6',
+            company: 'ServiceExample',
+            user: {
+                '@id': 'uuid:user:6',
+            },
+            city: {
+                '@id': 'uuid:Ljubljana',
+            },
+        }
+    };
+    const createServiceKAResult = await DkgClient.asset.create(content, { epochsNum: 2 });
+    console.log('======================== SERVICE KA CREATED');
+    console.log(createServiceKAResult);
+    divider();
+
+    const paranetServiceUAL = await DkgClient.paranet.createService(createServiceKAResult.UAL, {
+        paranetServiceName: 'FKPS',
+        paranetServiceDescription: 'Fast Knowledge Processing Service',
+        paranetServiceAddresses: [],
+    });
+    console.log('======================== SERVICE KA CREATED');
+    console.log(paranetServiceUAL);
+    divider();
+
+    await DkgClient.paranet.addServices(paranetAssetResult.UAL, [ createServiceKAResult.UAL]);
+    console.log('======================== SERVICE ADDED TO PARANET');
     divider();
 
     content = {
@@ -88,11 +120,9 @@ function divider() {
             },
         }
     };
-
     const createAssetResult = await DkgClient.asset.create(content, { epochsNum: 2, paranetUAL: paranetAssetResult.UAL });
-    console.log('======================== ASSET CREATED TO PARANET');
+    console.log('======================== KNOWLEDGE ASSET CREATED TO PARANET');
     console.log(createAssetResult);
-
     divider();
 
     content = {
@@ -104,30 +134,56 @@ function divider() {
                 '@id': 'uuid:user:3',
             },
             city: {
-                '@id': 'uuid:budapest',
+                '@id': 'uuid:Belgrade',
             },
         }
     };
-
-    const create2AssetResult = await DkgClient.asset.create(content, { epochsNum: 2 });
-    console.log('======================== ASSET 2 CREATED');
-    console.log(create2AssetResult);
-
+    const createSecondAssetResult = await DkgClient.asset.create(content, { epochsNum: 2 });
+    console.log('======================== SECOND KNOWLEDGE ASSET CREATED');
+    console.log(createSecondAssetResult);
     divider();
 
-    const submitResult = await DkgClient.asset.submitToParanet(create2AssetResult.UAL, paranetAssetResult.UAL);
-    console.log('======================== ASSET 2 ADDED TO PARANET');
+    const submitResult = await DkgClient.asset.submitToParanet(createSecondAssetResult.UAL, paranetAssetResult.UAL);
+    console.log('======================== SECOND KA ADDED TO PARANET');
     console.log(submitResult);
-
     divider();
 
-    const getAssetResult = await DkgClient.asset.get(createAssetResult.UAL);
-    console.log('======================== ASSET RESOLVED');
-    console.log(JSON.stringify(getAssetResult, null, 2));
-    process.exit(0)
+    console.log('======================== IS MINER : ', await DkgClient.paranet.isKnowledgeMiner(paranetAssetResult.UAL, { roleAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266' }));
+    console.log('======================== IS OPERATOR : ', await DkgClient.paranet.isParanetOperator(paranetAssetResult.UAL));
+    console.log('======================== IS VOTER : ', await DkgClient.paranet.isProposalVoter(paranetAssetResult.UAL, { roleAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266' }));
     divider();
 
-    const updateAssetResult = await DkgClient.asset.update(createAssetResult.UAL, {
+    let claimable = await DkgClient.paranet.getClaimableMinerReward(paranetAssetResult.UAL);
+    console.log('======================== KA MINER REWARD TO CLAIM')
+    console.log(claimable);
+    divider();
+
+    claimable = await DkgClient.paranet.getClaimableOperatorReward(paranetAssetResult.UAL);
+    console.log('======================== OPERATOR REWARD TO CLAIM');
+    console.log(claimable);
+    divider();
+
+    let claimedResult = await DkgClient.paranet.claimMinerReward(paranetAssetResult.UAL);
+    console.log('======================== KA MINER REWARD CLAIMED');
+    console.log(claimedResult);
+    divider();
+
+    claimedResult = await DkgClient.paranet.claimOperatorReward(paranetAssetResult.UAL);
+    console.log('======================== OPERATOR REWARD CLAIMED');
+    console.log(claimedResult);
+    divider();
+
+    claimable = await DkgClient.paranet.getClaimableMinerReward(paranetAssetResult.UAL);
+    console.log('======================== KA MINER REWARD TO CLAIM');
+    console.log(claimable);
+    divider();
+
+    claimable = await DkgClient.paranet.getClaimableOperatorReward(paranetAssetResult.UAL);
+    console.log('======================== OPERATOR REWARD TO CLAIM');
+    console.log(claimable);
+    divider();
+
+    const updateAssetResult = await DkgClient.asset.update(createSecondAssetResult.UAL, {
         public: {
             '@context': ['https://schema.org'],
             '@id': 'uuid:1',
@@ -136,124 +192,63 @@ function divider() {
                 '@id': 'uuid:user:2',
             },
             city: {
-                '@id': 'uuid:Nis',
+                '@id': 'uuid:Madrid',
             },
         },
-        private: {
-            '@context': ['https://schema.org'],
-            '@graph': [
-                {
-                    '@id': 'uuid:user:1',
-                    name: 'Adam',
-                    lastname: 'Smith',
-                    identifier: `${Math.floor(Math.random() * 1e10)}`,
-                },
-            ],
-        },
     });
-    console.log('======================== ASSET UPDATED');
+    console.log('========================KNOWLEDGE ASSET UPDATED');
     console.log(updateAssetResult);
-
     divider();
 
-    const getLatestAssetResult = await DkgClient.asset.get(createAssetResult.UAL);
-    console.log('======================== ASSET LATEST  RESOLVED');
-    console.log(JSON.stringify(getLatestAssetResult, null, 2));
-
-    divider();
-
-    let getLatestFinalizedAssetResult = await DkgClient.asset.get(createAssetResult.UAL, {
-        state: 'LATEST_FINALIZED',
-    });
-    console.log('======================== ASSET LATEST FINALIZED RESOLVED');
-    console.log(JSON.stringify(getLatestFinalizedAssetResult, null, 2));
-
-    divider();
-
-    await DkgClient.asset.waitFinalization(createAssetResult.UAL);
+    await DkgClient.asset.waitFinalization(createSecondAssetResult.UAL);
     console.log('======================== FINALIZATION COMPLETED');
-
     divider();
 
-    getLatestFinalizedAssetResult = await DkgClient.asset.get(createAssetResult.UAL, {
-        state: 'LATEST_FINALIZED',
-    });
-    console.log('======================== ASSET LATEST FINALIZED RESOLVED');
-    console.log(JSON.stringify(getLatestFinalizedAssetResult, null, 2));
-
+    await DkgClient.paranet.updateClaimableRewards(paranetAssetResult.UAL);
+    console.log('======================== CLAIMABLE REWARDS UPDATED');
     divider();
 
-    const getFirstStateByIndex = await DkgClient.asset.get(createAssetResult.UAL, {
-        state: 0,
-    });
-    console.log('======================== ASSET FIRST STATE (GET BY STATE INDEX) RESOLVED');
-    console.log(JSON.stringify(getFirstStateByIndex, null, 2));
-
-    divider();
-
-    const getSecondStateByIndex = await DkgClient.asset.get(createAssetResult.UAL, {
-        state: 1,
-    });
-    console.log('======================== ASSET SECOND STATE (GET BY STATE INDEX) RESOLVED');
-    console.log(JSON.stringify(getSecondStateByIndex, null, 2));
-
-    divider();
-
-    const getFirstStateByHash = await DkgClient.asset.get(createAssetResult.UAL, {
-        state: createAssetResult.publicAssertionId,
-    });
-    console.log('======================== ASSET FIRST STATE (GET BY STATE HASH) RESOLVED');
-    console.log(JSON.stringify(getFirstStateByHash, null, 2));
-
-    divider();
-
-    const getSecondStateByHash = await DkgClient.asset.get(createAssetResult.UAL, {
-        state: updateAssetResult.publicAssertionId,
-    });
-    console.log('======================== ASSET SECOND STATE (GET BY STATE HASH) RESOLVED');
-    console.log(JSON.stringify(getSecondStateByHash, null, 2));
+    const queryWhereMadrid = `PREFIX schema: <http://schema.org/>
+        SELECT DISTINCT ?graphName
+        WHERE {
+          GRAPH ?graphName {
+            ?s schema:city <uuid:uzice> .
+          }
+        }`;
 
     let queryResult = await DkgClient.graph.query(
-        'construct { ?s ?p ?o } where { ?s ?p ?o . <uuid:1> ?p ?o }',
-        'CONSTRUCT',
+        queryWhereMadrid,
+        'SELECT',
+        { paranetUAL: paranetAssetResult.UAL },
     );
-    console.log('======================== QUERY LOCAL CURRENT RESULT');
-    console.log(
-        JSON.stringify(
-            await jsonld.fromRDF(queryResult.data, {
-                algorithm: 'URDNA2015',
-                format: 'application/n-quads',
-            }),
-            null,
-            2,
-        ),
-    );
-
+    console.log('======================== QUERY PARANET REPO RESULT');
+    console.log(queryResult.data);
     divider();
+
+    const federatedQuery = `
+    PREFIX schema: <http://schema.org/>
+        SELECT DISTINCT ?s ?city1 ?user1 ?s2 ?city2 ?user2 ?company1
+        WHERE {
+          ?s schema:city ?city1 .
+          ?s schema:company ?company1 .
+          ?s schema:user ?user1;
+        
+          SERVICE <${createSecondAssetResult.UAL}> {
+            ?s2 schema:city <uuid:Belgrade> .
+            ?s2 schema:city ?city2 .
+            ?s2 schema:user ?user2;
+          }
+        
+          filter(contains(str(?city2), "Belgrade"))
+        }
+    `;
 
     queryResult = await DkgClient.graph.query(
-        'construct { ?s ?p ?o } where { ?s ?p ?o . <uuid:user:1> ?p ?o }',
-        'CONSTRUCT',
-        { graphState: 'HISTORICAL', graphLocation: 'LOCAL_KG' },
+        federatedQuery,
+        'SELECT',
+        { graphLocation: paranetAssetResult.UAL },
     );
-    console.log('======================== QUERY LOCAL HISTORY RESULT');
-    console.log(
-        JSON.stringify(
-            await jsonld.fromRDF(queryResult.data, {
-                algorithm: 'URDNA2015',
-                format: 'application/n-quads',
-            }),
-            null,
-            2,
-        ),
-    );
-
-    divider();
-
-    const newOwner = '0x2ACa90078563133db78085F66e6B8Cf5531623Ad';
-    const transferResult = await DkgClient.asset.transfer(createAssetResult.UAL, newOwner);
-    console.log(`======================== ASSET TRANSFERRED TO ${newOwner}`);
-    console.log(transferResult);
-
+    console.log('======================== FEDERATED QUERY RESULT');
+    console.log(queryResult.data);
     divider();
 })();
