@@ -221,7 +221,7 @@ class ValidationService {
         this.validateIncentivizationProposalVotersRewardPercentage(incentivizationProposalVotersRewardPercentage);
     }
 
-    validateParanetCollectMinerRewardArguments(
+    validateParanetRewardArguments(
         UAL,
         blockchain,
     ) {

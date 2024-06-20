@@ -99,7 +99,7 @@ class InputService {
         }
     }
 
-    getParanetCollectMinerRewardArguments(options) {
+    getParanetRewardArguments(options) {
         return {
             blockchain: this.getBlockchain(options),
         }
