@@ -39,6 +39,10 @@ const BLOCKCHAINS = {
             hubContract: '0xD2bA102A0b11944d00180eE8136208ccF87bC39A',
             gasPriceOracleLink: 'https://blockscout.chiadochain.net/api/v1/gas-price-oracle',
         },
+        'base:84532': {
+            hubContract: '0x6C861Cb69300C34DfeF674F7C00E734e840C29C0',
+            rpc: 'https://sepolia.base.org',
+        },
     },
     testnet: {
         'otp:20430': {
@@ -167,6 +171,7 @@ const DEFAULT_PROXIMITY_SCORE_FUNCTIONS_PAIR_IDS = {
     devnet: {
         'otp:2160': 2,
         'gnosis:10200': 2,
+        'base:84532': 2,
     },
     testnet: {
         'otp:20430': 2,
