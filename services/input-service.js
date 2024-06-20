@@ -102,7 +102,7 @@ class InputService {
     getParanetCreateServiceArguments(options) {
         return {
             blockchain: this.getBlockchain(options),
-            paranetServiceName: this.getParanetName(options),
+            paranetServiceName: this.getParanetServiceName(options),
             paranetServiceDescription: this.getParanetServiceDescription(options),
             paranetServiceAddresses: this.getParanetServiceAddresses(options),
         }

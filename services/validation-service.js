@@ -241,10 +241,29 @@ class ValidationService {
 
     validateParanetCreateServiceArguments(
         UAL,
+        paranetServiceName,
+        paranetServiceDescription,
+        paranetServiceAddresses,
         blockchain,
     ) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
+        this.validateParanetServiceName(paranetServiceName);
+        this.validateParanetServiceDescription(paranetServiceDescription);
+        this.validateParanetServiceAddresses(paranetServiceAddresses);
+    }
+
+    validateParanetAddServicesArguments(
+        paranetUAL,
+        paranetServiceUALs,
+        blockchain,
+    ) {
+        this.validateUAL(paranetUAL);
+        this.validateBlockchain(blockchain);
+
+        for(let UAL of paranetServiceUALs){
+            this.validateUAL(UAL);
+        }
     }
 
     validateSubmitToParanet(
@@ -517,6 +536,24 @@ class ValidationService {
         this.validateParamType('operatorRewardPercentage', operatorRewardPercentage, 'number');
 
         if (operatorRewardPercentage > 10000 || operatorRewardPercentage < 0) throw Error('Invalid percentage value for operator reward.');
+    }
+
+    validateParanetServiceName(paranetServiceName) {
+        this.validateRequiredParam('paranetServiceName', paranetServiceName);
+        this.validateParamType('paranetServiceName', paranetServiceName, 'string');
+    }
+
+    validateParanetServiceDescription(paranetServiceDescription) {
+        this.validateRequiredParam('paranetServiceDescription', paranetServiceDescription);
+        this.validateParamType('paranetServiceDescription', paranetServiceDescription, 'string');
+    }
+
+    validateParanetServiceAddresses(paranetServiceAddresses) {
+        if(paranetServiceAddresses.length != 0) {
+            for(let address of paranetServiceAddresses) {
+                this.validateAddress(address);
+            }
+        }
     }
 
     validateAddress(address) {

@@ -83,13 +83,57 @@ class ParanetOperationsManager {
     async createService(UAL, options = {}) {
         const {
             blockchain,
+            paranetServiceName,
+            paranetServiceDescription,
+            paranetServiceAddresses,
         } = this.inputService.getParanetCreateServiceArguments(options);
         this.validationService.validateParanetCreateServiceArguments(
             UAL,
+            paranetServiceName,
+            paranetServiceDescription,
+            paranetServiceAddresses,
             blockchain,
         );
 
         const { contract, tokenId } = resolveUAL(UAL);
+
+        await this.blockchainService.registerParanetService({
+                contract,
+                tokenId,
+                paranetServiceName,
+                paranetServiceDescription,
+                paranetServiceAddresses,
+            },
+            blockchain
+        );
+
+        return UAL;
+    }
+
+    async addServices(paranetUAL, paranetServiceUALs, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        this.validationService.validateParanetAddServicesArguments(
+            paranetUAL,
+            paranetServiceUALs,
+            blockchain,
+        );
+        const { contract, tokenId } = resolveUAL(paranetUAL);
+
+        const processedServicesArray = [];
+        for(let serviceUAL of paranetServiceUALs) {
+            const { contract: serviceContract, tokenId: serviceTokenId } = resolveUAL(serviceUAL)
+            processedServicesArray.push([ serviceContract, serviceTokenId ]);
+        }
+
+        await this.blockchainService.addParanetServices({
+                contract,
+                tokenId,
+                processedServicesArray
+            },
+            blockchain
+        );
+
+        return paranetUAL;
     }
 
     async claimMinerReward(paranetUAL, options = {}) {
@@ -220,6 +264,29 @@ class ParanetOperationsManager {
         const claimableValue = await this.blockchainService.getClaimableOperatorReward(paranetId, blockchain);
 
         return claimableValue;
+    }
+
+    async updateClaimableRewards(paranetUAL, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        this.validationService.validateParanetRewardArguments(
+            paranetUAL,
+            blockchain,
+        );
+
+        const { contract, tokenId } = resolveUAL(paranetUAL);
+        const paranetId = ethers.keccak256(
+            ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
+        );
+
+        const updatingKnowledgeAssetStates = await this.blockchainService.getUpdatingKnowledgeAssetStates({ miner: blockchain.publicKey, paranetId }, blockchain);
+        if(updatingKnowledgeAssetStates.length > 0) {
+            await this.blockchainService.updateClaimableRewards({
+                contract,
+                tokenId,
+                start: 0,
+                end: updatingKnowledgeAssetStates.length
+            }, blockchain);
+        }
     }
 
     async isKnowledgeMiner(paranetUAL, options = {}) {

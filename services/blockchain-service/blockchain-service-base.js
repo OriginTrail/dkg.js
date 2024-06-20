@@ -12,6 +12,7 @@ const ParanetAbi = require('dkg-evm-module/abi/Paranet.json');
 const ParanetsRegistryAbi = require('dkg-evm-module/abi/ParanetsRegistry.json');
 const ParanetIncentivesPoolFactoryAbi = require('dkg-evm-module/abi/ParanetIncentivesPoolFactory.json');
 const ParanetNeuroIncentivesPoolAbi = require('dkg-evm-module/abi/ParanetNeuroIncentivesPool.json');
+const ParanetKnowledgeMinersRegistryAbi = require('dkg-evm-module/abi/ParanetKnowledgeMinersRegistry.json');
 const { OPERATIONS_STEP_STATUS, DEFAULT_GAS_PRICE } = require('../../constants');
 const emptyHooks = require('../../util/empty-hooks.js');
 
@@ -32,6 +33,7 @@ class BlockchainServiceBase {
         this.abis.ParanetsRegistry = ParanetsRegistryAbi;
         this.abis.ParanetIncentivesPoolFactory = ParanetIncentivesPoolFactoryAbi;
         this.abis.ParanetNeuroIncentivesPool = ParanetNeuroIncentivesPoolAbi;
+        this.abis.ParanetKnowledgeMinersRegistry = ParanetKnowledgeMinersRegistryAbi;
 
         this.abis.ContentAsset.filter((obj) => obj.type === 'event').forEach((event) => {
             const concatInputs = event.inputs.map((input) => input.internalType);
@@ -565,10 +567,46 @@ class BlockchainServiceBase {
         );
     }
 
+    async registerParanetService(requestData, blockchain) {
+        return this.executeContractFunction(
+            'Paranet',
+            'registerParanetService',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
+
+    async addParanetServices(requestData, blockchain) {
+        return this.executeContractFunction(
+            'Paranet',
+            'addParanetServices',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
+
     async submitToParanet(requestData, blockchain) {
         return this.executeContractFunction(
             'Paranet',
             'submitKnowledgeAsset',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
+
+    async getUpdatingKnowledgeAssetStates(requestData, blockchain) {
+        return this.callContractFunction(
+            'ParanetKnowledgeMinersRegistry',
+            'getUpdatingKnowledgeAssetStates',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
+
+    async updateClaimableRewards(requestData, blockchain) {
+        return this.executeContractFunction(
+            'Paranet',
+            'processUpdatedKnowledgeAssetStatesMetadata',
             Object.values(requestData),
             blockchain,
         );
