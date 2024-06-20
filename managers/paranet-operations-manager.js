@@ -1,4 +1,4 @@
-const {resolveUAL} = require("../services/utilities.js");
+const {resolveUAL, getOperationStatusObject} = require('../services/utilities.js');
 const { ethers } = require('ethers');
 
 class ParanetOperationsManager {
@@ -34,7 +34,9 @@ class ParanetOperationsManager {
             blockchain
         );
 
-        return UAL;
+        return {
+            paranetUAL: UAL,
+        };
     }
 
     async deployIncentivesContract(paranetUAL, incentiveType, options = {}) {
@@ -74,7 +76,10 @@ class ParanetOperationsManager {
             // Temporary funding of neuro incentives pool address
             await this.blockchainService.sendTokens(neuroIncentivesPoolAddress, blockchain);
 
-            return neuroIncentivesPoolAddress;
+            return {
+                paranetUAL,
+                incentivesPoolContractAddress: neuroIncentivesPoolAddress
+            };
         } else {
             throw Error(`Unsupported incentive type: ${incentiveType}.`)
         }
@@ -107,7 +112,9 @@ class ParanetOperationsManager {
             blockchain
         );
 
-        return UAL;
+        return {
+            serviceUAL: UAL
+        };
     }
 
     async addServices(paranetUAL, paranetServiceUALs, options = {}) {
@@ -133,7 +140,10 @@ class ParanetOperationsManager {
             blockchain
         );
 
-        return paranetUAL;
+        return {
+            paranetUAL,
+            paranetServiceUALs
+        };
     }
 
     async claimMinerReward(paranetUAL, options = {}) {
@@ -148,7 +158,12 @@ class ParanetOperationsManager {
             ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
         );
 
-        await this.blockchainService.claimKnowledgeMinerReward(paranetId, blockchain);
+        const receipt = await this.blockchainService.claimKnowledgeMinerReward(paranetId, blockchain);
+
+        return {
+            transactionHash: receipt.transactionHash,
+            status: receipt.status,
+        };
     }
 
     async claimVoterReward(paranetUAL, options = {}) {
@@ -163,7 +178,11 @@ class ParanetOperationsManager {
             ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
         );
 
-        await this.blockchainService.claimVoterReward(paranetId, blockchain);
+        const receipt = await this.blockchainService.claimVoterReward(paranetId, blockchain);
+        return {
+            transactionHash: receipt.transactionHash,
+            status: receipt.status,
+        };
     }
 
     async claimOperatorReward(paranetUAL, options = {}) {
@@ -178,7 +197,11 @@ class ParanetOperationsManager {
             ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
         );
 
-        await this.blockchainService.claimOperatorReward(paranetId, blockchain);
+        const receipt = await this.blockchainService.claimOperatorReward(paranetId, blockchain);
+        return {
+            transactionHash: receipt.transactionHash,
+            status: receipt.status,
+        };
     }
 
     async getClaimableMinerReward(paranetUAL, options = {}) {
@@ -280,12 +303,17 @@ class ParanetOperationsManager {
 
         const updatingKnowledgeAssetStates = await this.blockchainService.getUpdatingKnowledgeAssetStates({ miner: blockchain.publicKey, paranetId }, blockchain);
         if(updatingKnowledgeAssetStates.length > 0) {
-            await this.blockchainService.updateClaimableRewards({
+            const receipt = await this.blockchainService.updateClaimableRewards({
                 contract,
                 tokenId,
                 start: 0,
                 end: updatingKnowledgeAssetStates.length
             }, blockchain);
+
+            return {
+                transactionHash: receipt.transactionHash,
+                status: receipt.status,
+            };
         }
     }
 
