@@ -162,7 +162,7 @@ class InputService {
 
     getGraphLocation(options) {
         return (
-            options.graphLocation ?? this.config.graphLocation ?? DEFAULT_PARAMETERS.GRAPH_LOCATION
+            options.graphLocation ?? options.paranetUAL ?? this.config.graphLocation ?? DEFAULT_PARAMETERS.GRAPH_LOCATION
         );
     }
 
