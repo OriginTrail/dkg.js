@@ -1,5 +1,5 @@
-const { resolveUAL } = require('../services/utilities.js');
 const { ethers } = require('ethers');
+const { resolveUAL } = require('../services/utilities.js');
 const {
     INCENTIVE_TYPE,
 } = require('../constants.js');
@@ -111,9 +111,9 @@ class ParanetOperationsManager {
                 paranetUAL,
                 incentivesPoolContractAddress: neuroIncentivesPoolAddress
             };
-        } else {
-            throw Error(`Unsupported incentive type: ${incentiveType}.`)
         }
+
+        throw Error(`Unsupported incentive type: ${incentiveType}.`);
     }
 
     /**
@@ -181,7 +181,7 @@ class ParanetOperationsManager {
         const { contract, tokenId } = resolveUAL(paranetUAL);
 
         const processedServicesArray = [];
-        for(let serviceUAL of paranetServiceUALs) {
+        for(const serviceUAL of paranetServiceUALs) {
             const { contract: serviceContract, tokenId: serviceTokenId } = resolveUAL(serviceUAL)
             processedServicesArray.push([ serviceContract, serviceTokenId ]);
         }
@@ -449,6 +449,10 @@ class ParanetOperationsManager {
                 status: receipt.status,
             };
         }
+
+        return {
+            status: 'No updated knowledge assets.'
+        };
     }
 
     /**
@@ -461,6 +465,7 @@ class ParanetOperationsManager {
      * const isMiner = await dkg.paranet.isKnowledgeMiner('paranetUAL123', { roleAddress: '0xMinerAddress' });
      */
     async isKnowledgeMiner(paranetUAL, options = {}) {
+        // eslint-disable-next-line prefer-const
         let { blockchain, roleAddress }  = this.inputService.getParanetRoleCheckArguments(options);
         if (roleAddress == null) {
             roleAddress = blockchain.publicKey;
@@ -491,6 +496,7 @@ class ParanetOperationsManager {
      * const isOperator = await dkg.paranet.isParanetOperator('paranetUAL123', { roleAddress: '0xOperatorAddress' });
      */
     async isParanetOperator(paranetUAL, options = {}) {
+        // eslint-disable-next-line prefer-const
         let { blockchain, roleAddress }  = this.inputService.getParanetRoleCheckArguments(options);
         if (roleAddress == null) {
             roleAddress = blockchain.publicKey;
@@ -521,6 +527,7 @@ class ParanetOperationsManager {
      * const isVoter = await dkg.paranet.isProposalVoter('paranetUAL123', { roleAddress: '0xVoterAddress' });
      */
     async isProposalVoter(paranetUAL, options = {}) {
+        // eslint-disable-next-line prefer-const
         let { blockchain, roleAddress }  = this.inputService.getParanetRoleCheckArguments(options);
         if (roleAddress == null) {
             roleAddress = blockchain.publicKey;
