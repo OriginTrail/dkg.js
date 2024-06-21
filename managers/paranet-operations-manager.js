@@ -1,5 +1,8 @@
-const {resolveUAL, getOperationStatusObject} = require('../services/utilities.js');
+const { resolveUAL } = require('../services/utilities.js');
 const { ethers } = require('ethers');
+const {
+    INCENTIVE_TYPE,
+} = require('../constants.js');
 
 class ParanetOperationsManager {
     constructor(services) {
@@ -85,7 +88,7 @@ class ParanetOperationsManager {
             operatorRewardPercentage,
             incentivizationProposalVotersRewardPercentage,
         );
-        if(incentiveType === 'Neuroweb') {
+        if(incentiveType === INCENTIVE_TYPE.NEUROWEB) {
             const {contract, tokenId} = resolveUAL(paranetUAL);
 
             await this.blockchainService.deployNeuroIncentivesPool({
