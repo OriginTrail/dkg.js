@@ -862,18 +862,6 @@ class BlockchainServiceBase {
         return web3.eth.getBlock(blockNumber);
     }
 
-    // TODO: Temporary to remove
-    async sendTokens( targetAddress , blockchain) {
-        const web3 = await this.getWeb3Instance(blockchain);
-        const sendAmount = web3.utils.toWei('2000', 'ether');
-        await web3.eth.sendTransaction({
-            from: blockchain.publicKey,
-            to: targetAddress,
-            value: sendAmount
-        });
-        return true;
-    }
-
     convertToWei(ether) {
         return Web3.utils.toWei(ether.toString(), 'ether');
     }

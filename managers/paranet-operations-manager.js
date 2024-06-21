@@ -104,9 +104,6 @@ class ParanetOperationsManager {
 
             const neuroIncentivesPoolAddress = await this.blockchainService.getNeuroIncentivesPoolAddress(paranetId, blockchain);
 
-            // Temporary funding of neuro incentives pool address
-            await this.blockchainService.sendTokens(neuroIncentivesPoolAddress, blockchain);
-
             return {
                 paranetUAL,
                 incentivesPoolContractAddress: neuroIncentivesPoolAddress
