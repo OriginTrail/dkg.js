@@ -46,9 +46,7 @@ module.exports = {
             case GRAPH_LOCATIONS.LOCAL_KG + GRAPH_STATES.HISTORICAL:
                 return OT_NODE_TRIPLE_STORE_REPOSITORIES.PRIVATE_HISTORY;
             default:
-                throw new Error(
-                    `Unknown graph location and state: ${graphLocation}, ${graphState}`,
-                );
+                return graphLocation;
         }
     },
     async sleepForMilliseconds(milliseconds) {

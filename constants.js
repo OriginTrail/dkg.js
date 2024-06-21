@@ -64,6 +64,10 @@ const BLOCKCHAINS = {
     },
 };
 
+const INCENTIVE_TYPE = {
+    NEUROWEB: 'Neuroweb',
+}
+
 const BLOCKCHAINS_RENAME_PAIRS = {
     hardhat1: 'hardhat1:31337',
     hardhat2: 'hardhat2:31337',
