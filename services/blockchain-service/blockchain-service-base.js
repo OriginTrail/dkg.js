@@ -633,11 +633,16 @@ class BlockchainServiceBase {
 
     async setIncentivesPool(contractAddress, blockchain){
         const web3Instance = await this.getWeb3Instance(blockchain);
-        if (this[blockchain.name].contractAddresses[blockchain.hubContract]['ParanetNeuroIncentivesPool'] != contractAddress) {
+        // eslint-disable-next-line dot-notation
+        if (this[blockchain.name].contractAddresses[blockchain.hubContract]['ParanetNeuroIncentivesPool'] !== contractAddress) {
+            // eslint-disable-next-line dot-notation
             this[blockchain.name].contractAddresses[blockchain.hubContract]['ParanetNeuroIncentivesPool'] = contractAddress;
+            // eslint-disable-next-line dot-notation
             this[blockchain.name].contracts[blockchain.hubContract]['ParanetNeuroIncentivesPool'] =
                 await new web3Instance.eth.Contract(
+                    // eslint-disable-next-line dot-notation
                     this.abis['ParanetNeuroIncentivesPool'],
+                    // eslint-disable-next-line dot-notation
                     this[blockchain.name].contractAddresses[blockchain.hubContract]['ParanetNeuroIncentivesPool'],
                 );
         }

@@ -261,7 +261,7 @@ class ValidationService {
         this.validateUAL(paranetUAL);
         this.validateBlockchain(blockchain);
 
-        for(let UAL of paranetServiceUALs){
+        for(const UAL of paranetServiceUALs){
             this.validateUAL(UAL);
         }
     }
@@ -549,8 +549,8 @@ class ValidationService {
     }
 
     validateParanetServiceAddresses(paranetServiceAddresses) {
-        if(paranetServiceAddresses.length != 0) {
-            for(let address of paranetServiceAddresses) {
+        if(paranetServiceAddresses.length !== 0) {
+            for(const address of paranetServiceAddresses) {
                 this.validateAddress(address);
             }
         }
