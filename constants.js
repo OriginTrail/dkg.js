@@ -54,6 +54,10 @@ const BLOCKCHAINS = {
             hubContract: '0xC06210312C9217A0EdF67453618F5eB96668679A',
             gasPriceOracleLink: 'https://blockscout.chiadochain.net/api/v1/gas-price-oracle',
         },
+        'base:84532': {
+            hubContract: '0x144eDa5cbf8926327cb2cceef168A121F0E4A299',
+            rpc: 'https://sepolia.base.org',
+        },
     },
     mainnet: {
         'otp:2043': {
