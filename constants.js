@@ -180,6 +180,7 @@ const DEFAULT_PROXIMITY_SCORE_FUNCTIONS_PAIR_IDS = {
     testnet: {
         'otp:20430': 2,
         'gnosis:10200': 2,
+        'base:84532': 2,
     },
     mainnet: {
         'otp:2043': 2,
