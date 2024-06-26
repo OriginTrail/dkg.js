@@ -35,6 +35,7 @@ class InputService {
             immutable: this.getImmutable(options),
             tokenAmount: this.getTokenAmount(options),
             authToken: this.getAuthToken(options),
+            paranetUAL: this.getParanetUAL(options),
         };
     }
 
@@ -78,6 +79,40 @@ class InputService {
             frequency: this.getFrequency(options),
             authToken: this.getAuthToken(options),
         };
+    }
+
+    getParanetCreateArguments(options) {
+        return {
+            blockchain: this.getBlockchain(options),
+            paranetName: this.getParanetName(options),
+            paranetDescription: this.getParanetDescription(options),
+        }
+    }
+
+    getParanetDeployIncentivesContractArguments(options) {
+        return {
+            blockchain: this.getBlockchain(options),
+            incentiveType: this.getIncentiveType(options),
+            tracToNeuroEmissionMultiplier: this.getTracToNeuroEmissionMultiplier(options),
+            operatorRewardPercentage: this.getOperatorRewardPercentage(options),
+            incentivizationProposalVotersRewardPercentage: this.getIncentivizationProposalVotersRewardPercentage(options),
+        }
+    }
+
+    getParanetCreateServiceArguments(options) {
+        return {
+            blockchain: this.getBlockchain(options),
+            paranetServiceName: this.getParanetServiceName(options),
+            paranetServiceDescription: this.getParanetServiceDescription(options),
+            paranetServiceAddresses: this.getParanetServiceAddresses(options),
+        }
+    }
+
+    getParanetRoleCheckArguments(options){
+        return {
+            blockchain: this.getBlockchain(options),
+            roleAddress: this.getRoleAddress(options),
+        }
     }
 
     getBlockchain(options) {
@@ -127,7 +162,7 @@ class InputService {
 
     getGraphLocation(options) {
         return (
-            options.graphLocation ?? this.config.graphLocation ?? DEFAULT_PARAMETERS.GRAPH_LOCATION
+            options.graphLocation ?? options.paranetUAL ?? this.config.graphLocation ?? DEFAULT_PARAMETERS.GRAPH_LOCATION
         );
     }
 
@@ -206,6 +241,51 @@ class InputService {
     getBidSuggestionRange(options) {
         return options.bidSuggestionRange ?? LOW_BID_SUGGESTION;
     }
+
+    getParanetUAL(options) {
+        return options.paranetUAL ?? this.config.paranetUAL ?? null;
+    }
+
+    getParanetName(options) {
+        return options.paranetName ?? null;
+    }
+
+    getParanetDescription(options) {
+        return options.paranetDescription ?? null;
+    }
+
+    getTracToNeuroEmissionMultiplier(options) {
+        return options.tracToNeuroEmissionMultiplier ?? null;
+    }
+
+    getIncentivizationProposalVotersRewardPercentage(options) {
+        return options.incentivizationProposalVotersRewardPercentage * 100 ?? null;
+    }
+
+    getOperatorRewardPercentage(options) {
+        return options.operatorRewardPercentage * 100 ?? null;
+    }
+
+    getIncentiveType(options) {
+        return options.incentiveType ?? null;
+    }
+
+    getParanetServiceName(options) {
+        return options.paranetServiceName ?? null;
+    }
+
+    getParanetServiceDescription(options) {
+        return options.paranetServiceDescription ?? null;
+    }
+
+    getParanetServiceAddresses(options) {
+        return options.paranetServiceAddresses ?? [];
+    }
+
+    getRoleAddress(options) {
+        return options.roleAddress ?? null;
+    }
+
 }
 
 module.exports = InputService;

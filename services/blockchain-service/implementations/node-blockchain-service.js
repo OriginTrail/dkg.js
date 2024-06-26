@@ -101,7 +101,7 @@ class NodeBlockchainService extends BlockchainServiceBase {
                         status = false;
                     }
 
-                    if (!status) {
+                    if (!status && contractName !== 'ParanetNeuroIncentivesPool') {
                         // eslint-disable-next-line no-await-in-loop
                         await this.updateContractInstance(contractName, blockchain, true);
                         // eslint-disable-next-line no-await-in-loop

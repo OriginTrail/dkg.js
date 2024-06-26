@@ -69,6 +69,7 @@ class ValidationService {
         immutable,
         tokenAmount,
         authToken,
+        paranetUAL
     ) {
         this.validateContent(content);
         this.validateBlockchain(blockchain, OPERATIONS.PUBLISH);
@@ -82,6 +83,7 @@ class ValidationService {
         this.validateImmutable(immutable);
         this.validateTokenAmount(tokenAmount);
         this.validateAuthToken(authToken);
+        this.validateParanetUAL(paranetUAL);
     }
 
     validateAssetGet(
@@ -193,6 +195,87 @@ class ValidationService {
         this.validateBlockchain(blockchain);
     }
 
+    validateParanetCreate(
+        UAL,
+        blockchain,
+        paranetName,
+        paranetDescription,
+    ) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+        this.validateParanetName(paranetName);
+        this.validateParanetDescription(paranetDescription);
+    }
+
+    validateDeployIncentivesContract(
+        UAL,
+        blockchain,
+        tracToNeuroEmissionMultiplier,
+        operatorRewardPercentage,
+        incentivizationProposalVotersRewardPercentage,
+    ) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+        this.validateTracToNeuroEmissionMultiplier(tracToNeuroEmissionMultiplier);
+        this.validateOperatorRewardPercentage(operatorRewardPercentage);
+        this.validateIncentivizationProposalVotersRewardPercentage(incentivizationProposalVotersRewardPercentage);
+    }
+
+    validateParanetRewardArguments(
+        UAL,
+        blockchain,
+    ) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+    }
+
+    validateParanetRoleCheckArguments(
+        address,
+        UAL,
+        blockchain,
+    ) {
+        this.validateAddress(address);
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+    }
+
+    validateParanetCreateServiceArguments(
+        UAL,
+        paranetServiceName,
+        paranetServiceDescription,
+        paranetServiceAddresses,
+        blockchain,
+    ) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+        this.validateParanetServiceName(paranetServiceName);
+        this.validateParanetServiceDescription(paranetServiceDescription);
+        this.validateParanetServiceAddresses(paranetServiceAddresses);
+    }
+
+    validateParanetAddServicesArguments(
+        paranetUAL,
+        paranetServiceUALs,
+        blockchain,
+    ) {
+        this.validateUAL(paranetUAL);
+        this.validateBlockchain(blockchain);
+
+        for(const UAL of paranetServiceUALs){
+            this.validateUAL(UAL);
+        }
+    }
+
+    validateSubmitToParanet(
+        UAL,
+        paranetUAL,
+        blockchain,
+    ) {
+        this.validateUAL(UAL);
+        this.validateUAL(paranetUAL);
+        this.validateBlockchain(blockchain);
+    }
+
     validateRequiredParam(paramName, param) {
         if (param == null) throw Error(`${paramName} is missing.`);
     }
@@ -230,8 +313,12 @@ class ValidationService {
     validateGraphLocation(graphLocation) {
         this.validateRequiredParam('graphLocation', graphLocation);
         const validGraphLocations = Object.keys(GRAPH_LOCATIONS);
-        if (!validGraphLocations.includes(graphLocation))
-            throw Error(`Invalid graph location: available locations: ${validGraphLocations}`);
+        if (!validGraphLocations.includes(graphLocation)) {
+            if(!this.validateUAL(graphLocation)) {
+                throw Error(`Invalid graph location: available locations are valid Paranet UAL or: ${validGraphLocations}`);
+            }
+        }
+
     }
 
     validateGraphState(graphState) {
@@ -248,8 +335,8 @@ class ValidationService {
         const segments = ual.split(':');
         const argsString = segments.length === 3 ? segments[2] : `${segments[2]}:${segments[3]}`;
         const args = argsString.split('/');
-
         if (!(args?.length === 3)) throw Error('Invalid UAL.');
+        return true;
     }
 
     validateStateIndex(stateIndex) {
@@ -371,6 +458,12 @@ class ValidationService {
         this.validateParamType('authToken', authToken, 'string');
     }
 
+    validateParanetUAL(paranetUAL) {
+        if (paranetUAL == null) return;
+
+        this.validateUAL(paranetUAL);
+    }
+
     validateValidate(validate) {
         this.validateRequiredParam('validate', validate);
         this.validateParamType('validate', validate, 'boolean');
@@ -414,6 +507,58 @@ class ValidationService {
                 `Invalid bidSuggestionRange parametar: supported parametars ${BID_SUGGESTION_RANGE_ENUM}`,
             );
         }
+    }
+
+    validateParanetName(paranetName) {
+        this.validateRequiredParam('paranetName', paranetName);
+        this.validateParamType('paranetName', paranetName, 'string');
+    }
+
+    validateParanetDescription(paranetDescription) {
+        this.validateRequiredParam('paranetDescription', paranetDescription);
+        this.validateParamType('paranetDescription', paranetDescription, 'string');
+    }
+
+    validateTracToNeuroEmissionMultiplier(tracToNeuroEmissionMultiplier){
+        this.validateRequiredParam('tracToNeuroEmissionMultiplier', tracToNeuroEmissionMultiplier);
+        this.validateParamType('tracToNeuroEmissionMultiplier', tracToNeuroEmissionMultiplier, 'number');
+    }
+
+    validateIncentivizationProposalVotersRewardPercentage(incentivizationProposalVotersRewardPercentage){
+        this.validateRequiredParam('incentivizationProposalVotersRewardPercentage', incentivizationProposalVotersRewardPercentage);
+        this.validateParamType('incentivizationProposalVotersRewardPercentage', incentivizationProposalVotersRewardPercentage, 'number');
+
+        if (incentivizationProposalVotersRewardPercentage > 10000 || incentivizationProposalVotersRewardPercentage < 0) throw Error('Invalid percentage value for incentivization proposal voters reward.');
+    }
+
+    validateOperatorRewardPercentage(operatorRewardPercentage){
+        this.validateRequiredParam('operatorRewardPercentage', operatorRewardPercentage);
+        this.validateParamType('operatorRewardPercentage', operatorRewardPercentage, 'number');
+
+        if (operatorRewardPercentage > 10000 || operatorRewardPercentage < 0) throw Error('Invalid percentage value for operator reward.');
+    }
+
+    validateParanetServiceName(paranetServiceName) {
+        this.validateRequiredParam('paranetServiceName', paranetServiceName);
+        this.validateParamType('paranetServiceName', paranetServiceName, 'string');
+    }
+
+    validateParanetServiceDescription(paranetServiceDescription) {
+        this.validateRequiredParam('paranetServiceDescription', paranetServiceDescription);
+        this.validateParamType('paranetServiceDescription', paranetServiceDescription, 'string');
+    }
+
+    validateParanetServiceAddresses(paranetServiceAddresses) {
+        if(paranetServiceAddresses.length !== 0) {
+            for(const address of paranetServiceAddresses) {
+                this.validateAddress(address);
+            }
+        }
+    }
+
+    validateAddress(address) {
+        this.validateRequiredParam('address', address);
+        this.validateParamType('address', address, 'string');
     }
 }
 module.exports = ValidationService;

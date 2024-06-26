@@ -72,6 +72,10 @@ const BLOCKCHAINS = {
     },
 };
 
+const INCENTIVE_TYPE = {
+    NEUROWEB: 'Neuroweb',
+}
+
 const BLOCKCHAINS_RENAME_PAIRS = {
     hardhat1: 'hardhat1:31337',
     hardhat2: 'hardhat2:31337',
@@ -235,6 +239,7 @@ module.exports = {
     ASSERTION_STATES,
     CONTENT_TYPES,
     GET_OUTPUT_FORMATS,
+    INCENTIVE_TYPE,
     ASSET_STATES,
     STORE_TYPES,
     GRAPH_LOCATIONS,
