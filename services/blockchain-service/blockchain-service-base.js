@@ -7,6 +7,7 @@ const ServiceAgreementStorageProxyAbi = require('dkg-evm-module/abi/ServiceAgree
 const ContentAssetStorageAbi = require('dkg-evm-module/abi/ContentAssetStorage.json');
 const UnfinalizedStateStorageAbi = require('dkg-evm-module/abi/UnfinalizedStateStorage.json');
 const ContentAssetAbi = require('dkg-evm-module/abi/ContentAsset.json');
+const KnowledgeCollectionAbi = require('dkg-evm-module/abi/KnowledgeCollection.json');
 const TokenAbi = require('dkg-evm-module/abi/Token.json');
 const { OPERATIONS_STEP_STATUS, DEFAULT_GAS_PRICE } = require('../../constants');
 const emptyHooks = require('../../util/empty-hooks.js');
@@ -23,6 +24,7 @@ class BlockchainServiceBase {
         this.abis.ContentAssetStorage = ContentAssetStorageAbi;
         this.abis.UnfinalizedStateStorage = UnfinalizedStateStorageAbi;
         this.abis.ContentAsset = ContentAssetAbi;
+        this.abis.KnowledgeCollection = KnowledgeCollectionAbi;
         this.abis.Token = TokenAbi;
 
         this.abis.ContentAsset.filter((obj) => obj.type === 'event').forEach((event) => {
@@ -268,6 +270,58 @@ class BlockchainServiceBase {
                     'Token',
                     'decreaseAllowance',
                     [serviceAgreementV1Address, tokensNeeded],
+                    blockchain,
+                );
+            }
+            throw error;
+        }
+    }
+
+    async createCollection(requestData, blockchain, stepHooks = emptyHooks) {
+        const knowledgeCollectionAddress = await this.getContractAddress(
+            'KnowledgeCollection',
+            blockchain,
+        );
+
+        const allowance = await this.callContractFunction(
+            'Token',
+            'allowance',
+            [await this.getPublicKey(blockchain), knowledgeCollectionAddress],
+            blockchain,
+        );
+
+        const tokensNeeded = BigInt(requestData.tokenAmount) - BigInt(allowance);
+
+        if (tokensNeeded > 0) {
+            await this.executeContractFunction(
+                'Token',
+                'increaseAllowance',
+                [knowledgeCollectionAddress, tokensNeeded],
+                blockchain,
+            );
+
+            stepHooks.afterHook({
+                status: OPERATIONS_STEP_STATUS.INCREASE_ALLOWANCE_COMPLETED,
+            });
+        }
+
+        try {
+            await this.executeContractFunction(
+                'KnowledgeCollection',
+                'batchMint',
+                Object.values(requestData),
+                blockchain,
+            );
+
+            stepHooks.afterHook({
+                status: OPERATIONS_STEP_STATUS.CREATE_ASSET_COMPLETED,
+            });
+        } catch (error) {
+            if (tokensNeeded > 0) {
+                await this.executeContractFunction(
+                    'Token',
+                    'decreaseAllowance',
+                    [knowledgeCollectionAddress, tokensNeeded],
                     blockchain,
                 );
             }

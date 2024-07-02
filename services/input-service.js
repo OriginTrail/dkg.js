@@ -38,6 +38,17 @@ class InputService {
         };
     }
 
+    getCollectionCreateArguments(options) {
+        return {
+            blockchain: this.getBlockchain(options),
+            endpoint: this.getEndpoint(options),
+            port: this.getPort(options),
+            maxNumberOfRetries: this.getMaxNumberOfRetries(options),
+            frequency: this.getFrequency(options),
+            authToken: this.getAuthToken(options),
+        }
+    }
+
     getAssetGetArguments(options) {
         return {
             blockchain: this.getBlockchain(options),

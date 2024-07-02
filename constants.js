@@ -97,6 +97,7 @@ const OPERATIONS = {
     GET: 'get',
     UPDATE: 'update',
     LOCAL_STORE: 'local-store',
+    COLLECTION_LOCAL_STORE: 'collection-local-store',
     QUERY: 'query',
 };
 

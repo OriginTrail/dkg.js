@@ -1,6 +1,7 @@
 // managers
 const AssertionOperationsManager = require('./managers/assertion-operations-manager.js');
 const AssetOperationsManager = require('./managers/asset-operations-manager.js');
+const CollectionOperationsManager = require('./managers/collection-operations-manager.js');
 const BlockchainOperationsManager = require('./managers/blockchain-operations-manager');
 const GraphOperationsManager = require('./managers/graph-operations-manager.js');
 const NetworkOperationsManager = require('./managers/network-operations-manager.js');
@@ -15,6 +16,7 @@ class DkgClient {
 
         this.assertion = new AssertionOperationsManager(services);
         this.asset = new AssetOperationsManager(services);
+        this.collection = new CollectionOperationsManager(services);
         this.blockchain = new BlockchainOperationsManager(services);
         this.node = new NodeOperationsManager(services);
         this.graph = new GraphOperationsManager(services);

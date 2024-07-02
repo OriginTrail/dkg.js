@@ -73,6 +73,21 @@ class HttpService {
         }
     }
 
+    async collectionLocalStore(endpoint, port, authToken, data) {
+        try {
+            const response = await axios({
+                method: 'post',
+                url: `${endpoint}:${port}/collection/local-store`,
+                data,
+                headers: this.prepareRequestConfig(authToken),
+            });
+
+            return response.data.operationId;
+        } catch (error) {
+            throw Error(`Unable to store collection: ${error.message}`)
+        }
+    }
+
     async publish(
         endpoint,
         port,
