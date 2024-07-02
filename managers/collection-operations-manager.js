@@ -31,7 +31,6 @@ class CollectionOperationsManager {
       let totalSize = 0;
       let totalTriplesNumber = 0;
       for (const [index, content] of contentArray.entries()) {
-        console.log(`Processing KA ${index + 1}`);
         const { public: publicAssertion } = await formatGraph(
             {public: content},
         );
@@ -55,7 +54,6 @@ class CollectionOperationsManager {
       );
       const merkleRoot = '0x2a1acd26847576a128e3dba3aa984feafffdf81f7c7b23bdf51e7bec1c15944c';
 
-      console.log(`Minting ${knowledgeAssets.length} KnowledgeAsset tokens!`);
       await this.blockchainService.createCollection(
           {
               newMerkleRoot: merkleRoot,
@@ -70,7 +68,6 @@ class CollectionOperationsManager {
 
       const UAL = deriveUAL(blockchain.name, knowledgeCollectionAddress, 1);
 
-      console.log(`Sending KnowledgeCollection of ${knowledgeAssets.length} KnowledgeAssets to the DKG Node V8!`)
       const operationId = await this.nodeApiService.collectionLocalStore(
           endpoint,
           port,
