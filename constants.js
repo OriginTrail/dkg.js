@@ -69,12 +69,16 @@ const BLOCKCHAINS = {
             hubContract: '0xbEF14fc04F870c2dD65c13Df4faB6ba01A9c746b',
             gasPriceOracleLink: 'https://api.gnosisscan.io/api?module=proxy&action=eth_gasPrice',
         },
+        'base:8453': {
+            hubContract: '0xaBfcf2ad1718828E7D3ec20435b0d0b5EAfbDf2c',
+            rpc: 'https://mainnet.base.org',
+        },
     },
 };
 
 const INCENTIVE_TYPE = {
     NEUROWEB: 'Neuroweb',
-}
+};
 
 const BLOCKCHAINS_RENAME_PAIRS = {
     hardhat1: 'hardhat1:31337',
@@ -189,6 +193,7 @@ const DEFAULT_PROXIMITY_SCORE_FUNCTIONS_PAIR_IDS = {
     mainnet: {
         'otp:2043': 2,
         'gnosis:100': 2,
+        'base:8453': 2,
     },
 };
 
