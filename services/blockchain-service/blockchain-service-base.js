@@ -66,6 +66,8 @@ class BlockchainServiceBase {
 
             if (blockchain.name.startsWith('otp')) {
                 gasPrice = await web3Instance.eth.getGasPrice();
+            } else if (blockchain.name.startsWith('base')) {
+                gasPrice = await web3Instance.eth.getGasPrice();
             } else if (blockchain.name.startsWith('gnosis')) {
                 const response = await axios.get(blockchain.gasPriceOracleLink);
                 if (blockchain.name.split(':')[1] === '100') {
@@ -810,7 +812,7 @@ class BlockchainServiceBase {
         const web3Instance = await this.getWeb3Instance(blockchain);
         try {
             let gasPrice;
-            if (blockchain.name.startsWith('otp')) {
+            if (blockchain.name.startsWith('otp') || blockchain.name.startsWith('base')) {
                 gasPrice = await web3Instance.eth.getGasPrice();
             } else if (blockchain.name.startsWith('gnosis')) {
                 const response = await axios.get(blockchain.gasPriceOracleLink);

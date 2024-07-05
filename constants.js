@@ -39,6 +39,10 @@ const BLOCKCHAINS = {
             hubContract: '0xD2bA102A0b11944d00180eE8136208ccF87bC39A',
             gasPriceOracleLink: 'https://blockscout.chiadochain.net/api/v1/gas-price-oracle',
         },
+        'base:84532': {
+            hubContract: '0x6C861Cb69300C34DfeF674F7C00E734e840C29C0',
+            rpc: 'https://sepolia.base.org',
+        },
     },
     testnet: {
         'otp:20430': {
@@ -49,6 +53,10 @@ const BLOCKCHAINS = {
             rpc: 'https://rpc.chiadochain.net',
             hubContract: '0xC06210312C9217A0EdF67453618F5eB96668679A',
             gasPriceOracleLink: 'https://blockscout.chiadochain.net/api/v1/gas-price-oracle',
+        },
+        'base:84532': {
+            hubContract: '0x144eDa5cbf8926327cb2cceef168A121F0E4A299',
+            rpc: 'https://sepolia.base.org',
         },
     },
     mainnet: {
@@ -61,12 +69,16 @@ const BLOCKCHAINS = {
             hubContract: '0xbEF14fc04F870c2dD65c13Df4faB6ba01A9c746b',
             gasPriceOracleLink: 'https://api.gnosisscan.io/api?module=proxy&action=eth_gasPrice',
         },
+        'base:8453': {
+            hubContract: '0xaBfcf2ad1718828E7D3ec20435b0d0b5EAfbDf2c',
+            rpc: 'https://mainnet.base.org',
+        },
     },
 };
 
 const INCENTIVE_TYPE = {
     NEUROWEB: 'Neuroweb',
-}
+};
 
 const BLOCKCHAINS_RENAME_PAIRS = {
     hardhat1: 'hardhat1:31337',
@@ -171,14 +183,17 @@ const DEFAULT_PROXIMITY_SCORE_FUNCTIONS_PAIR_IDS = {
     devnet: {
         'otp:2160': 2,
         'gnosis:10200': 2,
+        'base:84532': 2,
     },
     testnet: {
         'otp:20430': 2,
         'gnosis:10200': 2,
+        'base:84532': 2,
     },
     mainnet: {
         'otp:2043': 2,
         'gnosis:100': 2,
+        'base:8453': 2,
     },
 };
 
