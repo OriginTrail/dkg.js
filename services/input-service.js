@@ -1,8 +1,25 @@
-const { DEFAULT_PARAMETERS, BLOCKCHAINS } = require('../constants');
+const {
+    DEFAULT_PARAMETERS,
+    DEFAULT_PROXIMITY_SCORE_FUNCTIONS_PAIR_IDS,
+    BLOCKCHAINS,
+    LOW_BID_SUGGESTION,
+} = require('../constants');
 
 class InputService {
     constructor(config = {}) {
         this.config = config;
+    }
+
+    getBidSuggestionArguments(options) {
+        return {
+            blockchain: this.getBlockchain(options),
+            endpoint: this.getEndpoint(options),
+            port: this.getPort(options),
+            epochsNum: this.getEpochsNum(options),
+            hashFunctionId: this.getHashFunctionId(options),
+            authToken: this.getAuthToken(options),
+            bidSuggestionRange: this.getBidSuggestionRange(options),
+        };
     }
 
     getAssetCreateArguments(options) {
@@ -18,6 +35,7 @@ class InputService {
             immutable: this.getImmutable(options),
             tokenAmount: this.getTokenAmount(options),
             authToken: this.getAuthToken(options),
+            paranetUAL: this.getParanetUAL(options),
         };
     }
 
@@ -63,18 +81,71 @@ class InputService {
         };
     }
 
+    getParanetCreateArguments(options) {
+        return {
+            blockchain: this.getBlockchain(options),
+            paranetName: this.getParanetName(options),
+            paranetDescription: this.getParanetDescription(options),
+        }
+    }
+
+    getParanetDeployIncentivesContractArguments(options) {
+        return {
+            blockchain: this.getBlockchain(options),
+            incentiveType: this.getIncentiveType(options),
+            tracToNeuroEmissionMultiplier: this.getTracToNeuroEmissionMultiplier(options),
+            operatorRewardPercentage: this.getOperatorRewardPercentage(options),
+            incentivizationProposalVotersRewardPercentage: this.getIncentivizationProposalVotersRewardPercentage(options),
+        }
+    }
+
+    getParanetCreateServiceArguments(options) {
+        return {
+            blockchain: this.getBlockchain(options),
+            paranetServiceName: this.getParanetServiceName(options),
+            paranetServiceDescription: this.getParanetServiceDescription(options),
+            paranetServiceAddresses: this.getParanetServiceAddresses(options),
+        }
+    }
+
+    getParanetRoleCheckArguments(options){
+        return {
+            blockchain: this.getBlockchain(options),
+            roleAddress: this.getRoleAddress(options),
+        }
+    }
+
     getBlockchain(options) {
+        const environment =
+            options.environment ?? this.config.environment ?? DEFAULT_PARAMETERS.ENVIRONMENT;
         const name = options.blockchain?.name ?? this.config.blockchain?.name ?? null;
         const rpc =
-            options.blockchain?.rpc ?? this.config.blockchain?.rpc ?? BLOCKCHAINS[name]?.rpc;
+            options.blockchain?.rpc ??
+            this.config.blockchain?.rpc ??
+            BLOCKCHAINS[environment][name]?.rpc;
         const hubContract =
             options.blockchain?.hubContract ??
             this.config.blockchain?.hubContract ??
-            BLOCKCHAINS[name]?.hubContract;
+            BLOCKCHAINS[environment][name]?.hubContract;
         const publicKey =
             options.blockchain?.publicKey ?? this.config.blockchain?.publicKey ?? null;
         const privateKey =
             options.blockchain?.privateKey ?? this.config.blockchain?.privateKey ?? null;
+        const handleNotMinedError =
+            options.blockchain?.handleNotMinedError ??
+            this.config.blockchain?.handleNotMinedError ??
+            DEFAULT_PARAMETERS.HANDLE_NOT_MINED_ERROR;
+        const gasPrice =
+            options.blockchain?.gasPrice ?? this.config.blockchain?.gasPrice ?? undefined;
+        const transactionPollingTimeout =
+            options.blockchain?.transactionPollingTimeout ??
+            this.config.blockchain?.transactionPollingTimeout ??
+            null;
+        const gasPriceOracleLink =
+            options.blockchain?.gasPriceOracleLink ??
+            this.config.blockchain?.gasPriceOracleLink ??
+            BLOCKCHAINS[environment][name]?.gasPriceOracleLink ??
+            undefined;
 
         return {
             name,
@@ -82,12 +153,16 @@ class InputService {
             hubContract,
             publicKey,
             privateKey,
+            gasPrice,
+            transactionPollingTimeout,
+            handleNotMinedError,
+            gasPriceOracleLink,
         };
     }
 
     getGraphLocation(options) {
         return (
-            options.graphLocation ?? this.config.graphLocation ?? DEFAULT_PARAMETERS.GRAPH_LOCATION
+            options.graphLocation ?? options.paranetUAL ?? this.config.graphLocation ?? DEFAULT_PARAMETERS.GRAPH_LOCATION
         );
     }
 
@@ -116,11 +191,11 @@ class InputService {
     }
 
     getScoreFunctionId(options) {
-        return (
-            options.scoreFunctionId ??
-            this.config.scoreFunctionId ??
-            DEFAULT_PARAMETERS.SCORE_FUNCTION_ID
-        );
+        const environment =
+            options.environment ?? this.config.environment ?? DEFAULT_PARAMETERS.ENVIRONMENT;
+        const blockchainName = this.getBlockchain(options).name;
+
+        return DEFAULT_PROXIMITY_SCORE_FUNCTIONS_PAIR_IDS[environment][blockchainName];
     }
 
     getEpochsNum(options) {
@@ -162,6 +237,55 @@ class InputService {
     getAuthToken(options) {
         return options.auth?.token ?? this.config?.auth?.token ?? null;
     }
+
+    getBidSuggestionRange(options) {
+        return options.bidSuggestionRange ?? LOW_BID_SUGGESTION;
+    }
+
+    getParanetUAL(options) {
+        return options.paranetUAL ?? this.config.paranetUAL ?? null;
+    }
+
+    getParanetName(options) {
+        return options.paranetName ?? null;
+    }
+
+    getParanetDescription(options) {
+        return options.paranetDescription ?? null;
+    }
+
+    getTracToNeuroEmissionMultiplier(options) {
+        return options.tracToNeuroEmissionMultiplier ?? null;
+    }
+
+    getIncentivizationProposalVotersRewardPercentage(options) {
+        return options.incentivizationProposalVotersRewardPercentage * 100 ?? null;
+    }
+
+    getOperatorRewardPercentage(options) {
+        return options.operatorRewardPercentage * 100 ?? null;
+    }
+
+    getIncentiveType(options) {
+        return options.incentiveType ?? null;
+    }
+
+    getParanetServiceName(options) {
+        return options.paranetServiceName ?? null;
+    }
+
+    getParanetServiceDescription(options) {
+        return options.paranetServiceDescription ?? null;
+    }
+
+    getParanetServiceAddresses(options) {
+        return options.paranetServiceAddresses ?? [];
+    }
+
+    getRoleAddress(options) {
+        return options.roleAddress ?? null;
+    }
+
 }
 
 module.exports = InputService;

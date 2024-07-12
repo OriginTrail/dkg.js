@@ -1,28 +1,28 @@
 const jsonld = require('jsonld');
-const { GRAPH_LOCATIONS, GRAPH_STATES, OT_NODE_TRIPLE_STORE_REPOSITORIES } = require('../constants.js');
+const {
+    GRAPH_LOCATIONS,
+    GRAPH_STATES,
+    OT_NODE_TRIPLE_STORE_REPOSITORIES,
+} = require('../constants.js');
+
+function isEmptyObject(obj) {
+    return Object.keys(obj).length === 0 && obj.constructor === Object;
+}
 
 module.exports = {
     nodeSupported() {
         return typeof window === 'undefined';
     },
-    isEmptyObject(object) {
-        // eslint-disable-next-line no-unreachable-loop
-        for (const key in object) {
-            return false;
-        }
-        return true;
-    },
+    isEmptyObject,
     toNumber(hex) {
         return parseInt(hex.slice(2), 16);
     },
     deriveUAL(blockchain, contract, tokenId) {
-        return `did:dkg:${
-            blockchain.startsWith('otp') ? 'otp' : blockchain.toLowerCase()
-        }/${contract.toLowerCase()}/${tokenId}`;
+        return `did:dkg:${blockchain.toLowerCase()}/${contract.toLowerCase()}/${tokenId}`;
     },
     resolveUAL(ual) {
         const segments = ual.split(':');
-        const argsString = segments.length === 3 ? segments[2] : segments[2] + segments[3];
+        const argsString = segments.length === 3 ? segments[2] : `${segments[2]}:${segments[3]}`;
         const args = argsString.split('/');
 
         if (args.length !== 3) {
@@ -46,9 +46,7 @@ module.exports = {
             case GRAPH_LOCATIONS.LOCAL_KG + GRAPH_STATES.HISTORICAL:
                 return OT_NODE_TRIPLE_STORE_REPOSITORIES.PRIVATE_HISTORY;
             default:
-                throw new Error(
-                    `Unknown graph location and state: ${graphLocation}, ${graphState}`,
-                );
+                return graphLocation;
         }
     },
     async sleepForMilliseconds(milliseconds) {

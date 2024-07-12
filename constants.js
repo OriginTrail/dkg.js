@@ -2,49 +2,101 @@
  * @constant {number} MAX_FILE_SIZE
  * - Max file size for publish
  */
-module.exports.MAX_FILE_SIZE = 2621440;
+const MAX_FILE_SIZE = 2621440;
 
 /**
  * @constant {number} DID_PREFIX
  * - DID prefix for graph database
  */
-module.exports.DID_PREFIX = 'did:dkg';
+const DID_PREFIX = 'did:dkg';
 
-module.exports.PRIVATE_ASSERTION_PREDICATE =
-    'https://ontology.origintrail.io/dkg/1.0#privateAssertionID';
+const PRIVATE_ASSERTION_PREDICATE = 'https://ontology.origintrail.io/dkg/1.0#privateAssertionID';
 
-module.exports.BLOCKCHAINS = {
-    ganache: {
-        rpc: 'http://localhost:7545',
-        hubContract: '0x209679fA3B658Cd0fC74473aF28243bfe78a9b12',
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+
+const BLOCKCHAINS = {
+    development: {
+        'hardhat1:31337': {
+            rpc: 'http://localhost:8545',
+            hubContract: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
+        },
+        'hardhat2:31337': {
+            rpc: 'http://localhost:9545',
+            hubContract: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
+        },
+        'otp:2043': {
+            rpc: 'http://parachain-alphanet-02.origin-trail.network:9933',
+            hubContract: '0x7585a99C5C150a08f5CDeFD16465C6De8D41EbbD',
+        },
     },
-    hardhat: {
-        rpc: 'http://localhost:8545',
-        hubContract: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
+    devnet: {
+        'otp:2160': {
+            rpc: 'https://lofar-tm-rpc.origin-trail.network',
+            hubContract: '0x833048F6e6BEa78E0AAdedeCd2Dc2231dda443FB',
+        },
+        'gnosis:10200': {
+            rpc: 'https://rpc.chiadochain.net',
+            hubContract: '0xD2bA102A0b11944d00180eE8136208ccF87bC39A',
+            gasPriceOracleLink: 'https://blockscout.chiadochain.net/api/v1/gas-price-oracle',
+        },
+        'base:84532': {
+            hubContract: '0x6C861Cb69300C34DfeF674F7C00E734e840C29C0',
+            rpc: 'https://sepolia.base.org',
+        },
     },
-    polygon: {
-        rpc: 'https://matic-mumbai.chainstacklabs.com',
-        hubContract: '0xdaa16AC171CfE8Df6F79C06E7EEAb2249E2C9Ec8', // TODO: change to Asset Contract
+    testnet: {
+        'otp:20430': {
+            rpc: 'https://lofar-testnet.origin-trail.network',
+            hubContract: '0xBbfF7Ea6b2Addc1f38A0798329e12C08f03750A6',
+        },
+        'gnosis:10200': {
+            rpc: 'https://rpc.chiadochain.net',
+            hubContract: '0xC06210312C9217A0EdF67453618F5eB96668679A',
+            gasPriceOracleLink: 'https://blockscout.chiadochain.net/api/v1/gas-price-oracle',
+        },
+        'base:84532': {
+            hubContract: '0x144eDa5cbf8926327cb2cceef168A121F0E4A299',
+            rpc: 'https://sepolia.base.org',
+        },
     },
-    'otp::alphanet': {
-        rpc: 'http://parachain-alphanet-02.origin-trail.network:9933',
-        hubContract: '0x7585a99C5C150a08f5CDeFD16465C6De8D41EbbD',
-    },
-    'otp::devnet': {
-        rpc: 'https://lofar-tm-rpc.origin-trail.network',
-        hubContract: '0x833048F6e6BEa78E0AAdedeCd2Dc2231dda443FB',
-    },
-    'otp::testnet': {
-        rpc: 'https://lofar-testnet.origin-trail.network',
-        hubContract: '0xBbfF7Ea6b2Addc1f38A0798329e12C08f03750A6',
-    },
-    'otp::mainnet': {
-        rpc: 'https://astrosat-parachain-rpc.origin-trail.network',
-        hubContract: '0x5fA7916c48Fe6D5F1738d12Ad234b78c90B4cAdA',
+    mainnet: {
+        'otp:2043': {
+            rpc: 'https://astrosat-parachain-rpc.origin-trail.network',
+            hubContract: '0x5fA7916c48Fe6D5F1738d12Ad234b78c90B4cAdA',
+        },
+        'gnosis:100': {
+            rpc: 'https://rpc.gnosischain.com/',
+            hubContract: '0xbEF14fc04F870c2dD65c13Df4faB6ba01A9c746b',
+            gasPriceOracleLink: 'https://api.gnosisscan.io/api?module=proxy&action=eth_gasPrice',
+        },
+        'base:8453': {
+            hubContract: '0xaBfcf2ad1718828E7D3ec20435b0d0b5EAfbDf2c',
+            rpc: 'https://mainnet.base.org',
+        },
     },
 };
 
-module.exports.WEBSOCKET_PROVIDER_OPTIONS = {
+const INCENTIVE_TYPE = {
+    NEUROWEB: 'Neuroweb',
+};
+
+const BLOCKCHAINS_RENAME_PAIRS = {
+    hardhat1: 'hardhat1:31337',
+    hardhat2: 'hardhat2:31337',
+    'otp::devnet': 'otp:2160',
+    'otp::testnet': 'otp:20430',
+    'otp::mainnet': 'otp:2043',
+};
+
+const MAX_BLOCKCHAIN_CALL_RETRIES = 3;
+
+const TRANSACTION_RETRY_ERRORS = [
+    'transaction was not mined',
+    'already known',
+    'replacement transaction underpriced',
+];
+
+const WEBSOCKET_PROVIDER_OPTIONS = {
     reconnect: {
         auto: true,
         delay: 1000, // ms
@@ -56,7 +108,7 @@ module.exports.WEBSOCKET_PROVIDER_OPTIONS = {
     },
 };
 
-module.exports.OPERATIONS = {
+const OPERATIONS = {
     PUBLISH: 'publish',
     GET: 'get',
     UPDATE: 'update',
@@ -64,79 +116,149 @@ module.exports.OPERATIONS = {
     QUERY: 'query',
 };
 
-module.exports.OPERATION_STATUSES = {
+const OPERATION_STATUSES = {
     PENDING: 'PENDING',
     COMPLETED: 'COMPLETED',
     FAILED: 'FAILED',
 };
 
-module.exports.ASSERTION_STATES = {
+const ASSERTION_STATES = {
     LATEST: 'latest',
     LATEST_FINALIZED: 'latest_finalized',
 };
 
-module.exports.CONTENT_TYPES = {
+const CONTENT_TYPES = {
     PUBLIC: 'public',
     PRIVATE: 'private',
     ALL: 'all',
 };
 
-module.exports.GET_OUTPUT_FORMATS = {
+const GET_OUTPUT_FORMATS = {
     N_QUADS: 'n-quads',
     JSON_LD: 'json-ld',
 };
 
-module.exports.ASSET_STATES = {
+const ASSET_STATES = {
     LATEST: 'LATEST',
     FINALIZED: 'LATEST_FINALIZED',
 };
 
-module.exports.STORE_TYPES = {
+const STORE_TYPES = {
     TRIPLE: 'TRIPLE',
     PENDING: 'PENDING',
 };
 
-module.exports.GRAPH_LOCATIONS = {
+const GRAPH_LOCATIONS = {
     PUBLIC_KG: 'PUBLIC_KG',
     LOCAL_KG: 'LOCAL_KG',
 };
 
-module.exports.GRAPH_STATES = {
+const GRAPH_STATES = {
     CURRENT: 'CURRENT',
     HISTORICAL: 'HISTORICAL',
 };
 
-module.exports.OT_NODE_TRIPLE_STORE_REPOSITORIES = {
+const OT_NODE_TRIPLE_STORE_REPOSITORIES = {
     PUBLIC_CURRENT: 'publicCurrent',
     PUBLIC_HISTORY: 'publicHistory',
     PRIVATE_CURRENT: 'privateCurrent',
     PRIVATE_HISTORY: 'privateHistory',
 };
 
-module.exports.QUERY_TYPES = {
+const QUERY_TYPES = {
     CONSTRUCT: 'CONSTRUCT',
     SELECT: 'SELECT',
 };
 
-module.exports.OPERATIONS_STEP_STATUS = {
+const OPERATIONS_STEP_STATUS = {
     INCREASE_ALLOWANCE_COMPLETED: 'INCREASE_ALLOWANCE_COMPLETED',
     CREATE_ASSET_COMPLETED: 'CREATE_ASSET_COMPLETED',
     NETWORK_PUBLISH_COMPLETED: 'NETWORK_PUBLISH_COMPLETED',
 };
 
-module.exports.DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY = 0.5;
+const DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY = 0.5;
 
-module.exports.DEFAULT_PARAMETERS = {
+const DEFAULT_PROXIMITY_SCORE_FUNCTIONS_PAIR_IDS = {
+    development: { 'hardhat1:31337': 2, 'hardhat2:31337': 2, 'otp:2043': 2 },
+    devnet: {
+        'otp:2160': 2,
+        'gnosis:10200': 2,
+        'base:84532': 2,
+    },
+    testnet: {
+        'otp:20430': 2,
+        'gnosis:10200': 2,
+        'base:84532': 2,
+    },
+    mainnet: {
+        'otp:2043': 2,
+        'gnosis:100': 2,
+        'base:8453': 2,
+    },
+};
+
+const DEFAULT_PARAMETERS = {
+    ENVIRONMENT: 'mainnet',
     PORT: 8900,
     FREQUENCY: 5,
     MAX_NUMBER_OF_RETRIES: 5,
     HASH_FUNCTION_ID: 1,
-    SCORE_FUNCTION_ID: 1,
     IMMUTABLE: false,
     VALIDATE: true,
-    OUTPUT_FORMAT: this.GET_OUTPUT_FORMATS.JSON_LD,
-    STATE: this.ASSET_STATES.LATEST,
-    CONTENT_TYPE: this.CONTENT_TYPES.PUBLIC,
-    GRAPH_LOCATION: this.GRAPH_LOCATIONS.LOCAL_KG,
-    GRAPH_STATE: this.GRAPH_STATES.CURRENT,
+    OUTPUT_FORMAT: GET_OUTPUT_FORMATS.JSON_LD,
+    STATE: ASSET_STATES.LATEST,
+    CONTENT_TYPE: CONTENT_TYPES.PUBLIC,
+    GRAPH_LOCATION: GRAPH_LOCATIONS.LOCAL_KG,
+    GRAPH_STATE: GRAPH_STATES.CURRENT,
+    HANDLE_NOT_MINED_ERROR: false,
+};
+
+const DEFAULT_GAS_PRICE = {
+    GNOSIS: '20',
+    OTP: '1',
+};
+
+const LOW_BID_SUGGESTION = 'low';
+const MED_BID_SUGGESTION = 'med';
+const HIGH_BID_SUGGESTION = 'high';
+const ALL_BID_SUGGESTION = 'all';
+const BID_SUGGESTION_RANGE_ENUM = [
+    LOW_BID_SUGGESTION,
+    MED_BID_SUGGESTION,
+    HIGH_BID_SUGGESTION,
+    ALL_BID_SUGGESTION,
+];
+
+module.exports = {
+    MAX_FILE_SIZE,
+    DID_PREFIX,
+    PRIVATE_ASSERTION_PREDICATE,
+    ZERO_ADDRESS,
+    BLOCKCHAINS,
+    BLOCKCHAINS_RENAME_PAIRS,
+    MAX_BLOCKCHAIN_CALL_RETRIES,
+    TRANSACTION_RETRY_ERRORS,
+    WEBSOCKET_PROVIDER_OPTIONS,
+    OPERATIONS,
+    OPERATION_STATUSES,
+    ASSERTION_STATES,
+    CONTENT_TYPES,
+    GET_OUTPUT_FORMATS,
+    INCENTIVE_TYPE,
+    ASSET_STATES,
+    STORE_TYPES,
+    GRAPH_LOCATIONS,
+    GRAPH_STATES,
+    OT_NODE_TRIPLE_STORE_REPOSITORIES,
+    QUERY_TYPES,
+    OPERATIONS_STEP_STATUS,
+    DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY,
+    DEFAULT_PROXIMITY_SCORE_FUNCTIONS_PAIR_IDS,
+    DEFAULT_PARAMETERS,
+    DEFAULT_GAS_PRICE,
+    LOW_BID_SUGGESTION,
+    MED_BID_SUGGESTION,
+    HIGH_BID_SUGGESTION,
+    ALL_BID_SUGGESTION,
+    BID_SUGGESTION_RANGE_ENUM,
 };

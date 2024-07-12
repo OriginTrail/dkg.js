@@ -1,14 +1,12 @@
-const { assertionMetadata, formatAssertion, calculateRoot } = require('assertion-tools');
-const { ethers } = require('ethers');
+const { assertionMetadata, calculateRoot, formatGraph } = require('assertion-tools');
+const { ethers, ZeroHash } = require('ethers');
 const {
-    isEmptyObject,
     deriveUAL,
     getOperationStatusObject,
     resolveUAL,
     toNQuads,
     toJSONLD,
     sleepForMilliseconds,
-    deriveRepository,
 } = require('../services/utilities.js');
 const {
     CONTENT_TYPES,
@@ -19,13 +17,14 @@ const {
     DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY,
     PRIVATE_ASSERTION_PREDICATE,
     QUERY_TYPES,
-    DEFAULT_PARAMETERS,
+    OT_NODE_TRIPLE_STORE_REPOSITORIES,
+    ZERO_ADDRESS,
 } = require('../constants.js');
 const emptyHooks = require('../util/empty-hooks');
 const { STORE_TYPES, ASSET_STATES } = require('../constants');
 
 class AssetOperationsManager {
-    constructor(config, services) {
+    constructor(services) {
         this.nodeApiService = services.nodeApiService;
         this.validationService = services.validationService;
         this.blockchainService = services.blockchainService;
@@ -33,9 +32,133 @@ class AssetOperationsManager {
     }
 
     /**
+     * Checks if given UAL is valid.
+     * @async
+     * @param {string} UAL - Universal Asset Locator.
+     * @param {Object} [options={}] - Additional options - currently only blockchain option expected.
+     * @returns {boolean} UAL have passed validation.
+     * @throws {Error} Throws an error if UAL validation fails.
+     * @example did:dkg:otp:2043/0x5cac41237127f94c2d21dae0b14bfefa99880630/1985318
+     */
+    async isValidUAL(UAL, options = {}) {
+        if (typeof UAL !== 'string' || UAL.trim() === '') {
+            throw new Error('UAL must be a non-empty string.');
+        }
+
+        const blockchain = this.inputService.getBlockchain(options);
+        this.validationService.validateIsValidUAL(blockchain);
+
+        const parts = UAL.split('/');
+        if (parts.length !== 3) {
+            throw new Error('UAL format is incorrect.');
+        }
+
+        const prefixes = parts[0].split(':');
+        if (prefixes.length !== 3 && prefixes.length !== 4) {
+            throw new Error('Prefix format in UAL is incorrect.');
+        }
+
+        if (prefixes[0] !== 'did') {
+            throw new Error(`Invalid DID prefix. Expected: 'did'. Received: '${prefixes[0]}'.`);
+        }
+
+        if (prefixes[1] !== 'dkg') {
+            throw new Error(`Invalid DKG prefix. Expected: 'dkg'. Received: '${prefixes[1]}'.`);
+        }
+
+        if (prefixes[2] !== blockchain.name.split(':')[0]) {
+            throw new Error(
+                `Invalid blockchain name in the UAL prefix. Expected: '${
+                    blockchain.name.split(':')[0]
+                }'. Received: '${prefixes[2]}'.`,
+            );
+        }
+
+        if (prefixes.length === 4) {
+            const chainId = await this.blockchainService.getChainId(blockchain);
+            if (Number(prefixes[3]) !== chainId) {
+                throw new Error(
+                    `Chain ID in UAL does not match the blockchain. Expected: '${chainId}'. Received: '${prefixes[3]}'.`,
+                );
+            }
+        }
+
+        const contractAddress = await this.blockchainService.getContractAddress(
+            'ContentAssetStorage',
+            blockchain,
+        );
+        if (parts[1].toLowerCase() !== contractAddress.toLowerCase()) {
+            throw new Error(
+                `Contract address in UAL does not match. Expected: '${contractAddress}'. Received: '${parts[1]}'.`,
+            );
+        }
+
+        try {
+            const owner = await this.blockchainService.getAssetOwner(parts[2], blockchain);
+            if (!owner || owner === ZERO_ADDRESS) {
+                throw new Error('Token does not exist or has no owner.');
+            }
+            return true;
+        } catch (error) {
+            throw new Error(`Error fetching asset owner: ${error.message}`);
+        }
+    }
+
+    /**
+     * Sets allowance to a given quantity of tokens.
+     * @async
+     * @param {BigInt} tokenAmount - The amount of tokens (Wei) to set the allowance.
+     * @param {Object} [options={}] - Additional options for increasing allowance - currently only blockchain option expected.
+     * @returns {Object} Object containing hash of blockchain transaction and status.
+     */
+    async setAllowance(tokenAmount, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+
+        this.validationService.validateSetAllowance(blockchain);
+
+        const serviceAgreementV1Address = await this.blockchainService.getContractAddress(
+            'ServiceAgreementV1',
+            blockchain,
+        );
+
+        const currentAllowance = BigInt(
+            await this.blockchainService.callContractFunction(
+                'Token',
+                'allowance',
+                [blockchain.publicKey, serviceAgreementV1Address],
+                blockchain,
+            ),
+        );
+
+        const allowanceDifference = tokenAmount - currentAllowance;
+
+        let receipt;
+        if (allowanceDifference > 0) {
+            receipt = await this.blockchainService.executeContractFunction(
+                'Token',
+                'increaseAllowance',
+                [serviceAgreementV1Address, allowanceDifference],
+                blockchain,
+            );
+        } else if (allowanceDifference < 0) {
+            receipt = await this.blockchainService.executeContractFunction(
+                'Token',
+                'decreaseAllowance',
+                [serviceAgreementV1Address, -allowanceDifference],
+                blockchain,
+            );
+        }
+
+        return {
+            transactionHash: receipt.transactionHash,
+            status: receipt.status,
+        };
+    }
+
+    /**
      * Increases allowance for a set quantity of tokens.
      * @async
-     * @param {number} tokenAmount - The amount of tokens to increase the allowance for.
+     * @param {BigInt} tokenAmount - The amount of tokens (Wei) to increase the allowance for.
      * @param {Object} [options={}] - Additional options for increasing allowance - currently only blockchain option expected.
      * @returns {Object} Object containing hash of blockchain transaction and status.
      */
@@ -65,7 +188,7 @@ class AssetOperationsManager {
     /**
      * Decreases allowance for a set quantity of tokens.
      * @async
-     * @param {number} tokenAmount - The amount of tokens to decrease the allowance for.
+     * @param {BigInt} tokenAmount - The amount of tokens (Wei) to decrease the allowance for.
      * @param {Object} [options={}] - Additional options for decreasing allowance - currently only blockchain option expected.
      * @returns {Object} Object containing hash of blockchain transaction and status.
      */
@@ -103,6 +226,30 @@ class AssetOperationsManager {
     }
 
     /**
+     * Gets current allowance in Wei.
+     * @async
+     * @param {Object} [options={}] - Additional options for decreasing allowance - currently only blockchain option expected.
+     * @returns {BigInt} Current allowance (Wei).
+     */
+    async getCurrentAllowance(options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+
+        const serviceAgreementV1Address = await this.blockchainService.getContractAddress(
+            'ServiceAgreementV1',
+            blockchain,
+        );
+
+        const allowance = await this.blockchainService.callContractFunction(
+            'Token',
+            'allowance',
+            [blockchain.publicKey, serviceAgreementV1Address],
+            blockchain,
+        );
+
+        return BigInt(allowance);
+    }
+
+    /**
      * Creates a new asset.
      * @async
      * @param {Object} content - The content of the asset to be created, contains public, private or both keys.
@@ -133,6 +280,7 @@ class AssetOperationsManager {
             immutable,
             tokenAmount,
             authToken,
+            paranetUAL,
         } = this.inputService.getAssetCreateArguments(options);
 
         this.validationService.validateAssetCreate(
@@ -148,27 +296,21 @@ class AssetOperationsManager {
             immutable,
             tokenAmount,
             authToken,
+            paranetUAL
         );
 
-        let privateAssertion;
-        let privateAssertionId;
-        if (jsonContent.private && !isEmptyObject(jsonContent.private)) {
-            privateAssertion = await formatAssertion(jsonContent.private);
-            privateAssertionId = calculateRoot(privateAssertion);
-        }
-        const publicGraph = {
-            '@graph': [
-                jsonContent.public && !isEmptyObject(jsonContent.public)
-                    ? jsonContent.public
-                    : null,
-                jsonContent.private && !isEmptyObject(jsonContent.private)
-                    ? {
-                          [PRIVATE_ASSERTION_PREDICATE]: privateAssertionId,
-                      }
-                    : null,
-            ],
-        };
-        const publicAssertion = await formatAssertion(publicGraph);
+        const { public: publicAssertion, private: privateAssertion } = await formatGraph(
+            jsonContent,
+        );
+        const publicAssertionSizeInBytes =
+            assertionMetadata.getAssertionSizeInBytes(publicAssertion);
+
+        this.validationService.validateAssertionSizeInBytes(
+            publicAssertionSizeInBytes +
+                (privateAssertion === undefined
+                    ? 0
+                    : assertionMetadata.getAssertionSizeInBytes(privateAssertion)),
+        );
         const publicAssertionId = calculateRoot(publicAssertion);
 
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
@@ -182,31 +324,54 @@ class AssetOperationsManager {
                 endpoint,
                 port,
                 authToken,
-                blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
+                blockchain.name,
                 epochsNum,
-                assertionMetadata.getAssertionSizeInBytes(publicAssertion),
+                publicAssertionSizeInBytes,
                 contentAssetStorageAddress,
                 publicAssertionId,
                 hashFunctionId,
             ));
 
-        const tokenId = await this.blockchainService.createAsset(
-            {
-                publicAssertionId,
-                assertionSize: assertionMetadata.getAssertionSizeInBytes(publicAssertion),
-                triplesNumber: assertionMetadata.getAssertionTriplesNumber(publicAssertion),
-                chunksNumber: assertionMetadata.getAssertionChunksNumber(publicAssertion),
-                epochsNum,
-                tokenAmount: tokenAmountInWei,
-                scoreFunctionId: scoreFunctionId ?? 1,
-                immutable_: immutable,
-            },
-            blockchain,
-            stepHooks,
-        );
+        let tokenId;
+        if(paranetUAL == null) {
+            tokenId = await this.blockchainService.createAsset(
+                {
+                    publicAssertionId,
+                    assertionSize: publicAssertionSizeInBytes,
+                    triplesNumber: assertionMetadata.getAssertionTriplesNumber(publicAssertion),
+                    chunksNumber: assertionMetadata.getAssertionChunksNumber(publicAssertion),
+                    epochsNum,
+                    tokenAmount: tokenAmountInWei,
+                    scoreFunctionId: scoreFunctionId ?? 1,
+                    immutable_: immutable,
+                },
+                null,
+                null,
+                blockchain,
+                stepHooks,
+            );
+        } else {
+            const { contract: paranetKaContract, tokenId: paranetTokenId } = resolveUAL(paranetUAL);
+            tokenId = await this.blockchainService.createAsset(
+                {
+                    publicAssertionId,
+                    assertionSize: publicAssertionSizeInBytes,
+                    triplesNumber: assertionMetadata.getAssertionTriplesNumber(publicAssertion),
+                    chunksNumber: assertionMetadata.getAssertionChunksNumber(publicAssertion),
+                    epochsNum,
+                    tokenAmount: tokenAmountInWei,
+                    scoreFunctionId: scoreFunctionId ?? 1,
+                    immutable_: immutable,
+                },
+                paranetKaContract,
+                paranetTokenId,
+                blockchain,
+                stepHooks,
+            );
+        }
 
         const resolvedUAL = {
-            blockchain: blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
+            blockchain: blockchain.name,
             contract: contentAssetStorageAddress,
             tokenId,
         };
@@ -221,31 +386,34 @@ class AssetOperationsManager {
         if (privateAssertion?.length) {
             assertions.push({
                 ...resolvedUAL,
-                assertionId: privateAssertionId,
+                assertionId: calculateRoot(privateAssertion),
                 assertion: privateAssertion,
                 storeType: STORE_TYPES.TRIPLE,
             });
         }
-        let operationId = await this.nodeApiService.localStore(
+
+        const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, tokenId);
+
+        let operationId = await this.nodeApiService.publish(
             endpoint,
             port,
             authToken,
-            assertions,
+            publicAssertionId,
+            publicAssertion,
+            blockchain.name,
+            contentAssetStorageAddress,
+            tokenId,
+            hashFunctionId,
         );
+
         let operationResult = await this.nodeApiService.getOperationResult(
             endpoint,
             port,
             authToken,
-            OPERATIONS.LOCAL_STORE,
+            OPERATIONS.PUBLISH,
             maxNumberOfRetries,
-            DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY,
+            frequency,
             operationId,
-        );
-
-        const UAL = deriveUAL(
-            blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
-            contentAssetStorageAddress,
-            tokenId,
         );
 
         if (operationResult.status === OPERATION_STATUSES.FAILED) {
@@ -256,25 +424,20 @@ class AssetOperationsManager {
             };
         }
 
-        operationId = await this.nodeApiService.publish(
+        operationId = await this.nodeApiService.localStore(
             endpoint,
             port,
             authToken,
-            publicAssertionId,
-            publicAssertion,
-            blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
-            contentAssetStorageAddress,
-            tokenId,
-            hashFunctionId,
+            assertions,
         );
 
         operationResult = await this.nodeApiService.getOperationResult(
             endpoint,
             port,
             authToken,
-            OPERATIONS.PUBLISH,
+            OPERATIONS.LOCAL_STORE,
             maxNumberOfRetries,
-            frequency,
+            DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY,
             operationId,
         );
 
@@ -298,7 +461,7 @@ class AssetOperationsManager {
      * @async
      * @param {string} UAL - The Universal Asset Locator
      * @param {Object} [options={}] - Optional parameters for the asset get operation.
-     * @param {string} [options.state] - The state of the asset, "latest" or "finalized".
+     * @param {string} [options.state] - The state or state index of the asset, "latest", "finalized", numerical, hash.
      * @param {string} [options.contentType] - The type of content to retrieve, either "public", "private" or "all".
      * @param {boolean} [options.validate] - Whether to validate the retrieved assertion.
      * @param {string} [options.outputFormat] - The format of the retrieved assertion output, either "n-quads" or "json-ld".
@@ -335,21 +498,68 @@ class AssetOperationsManager {
         );
 
         const { tokenId } = resolveUAL(UAL);
-        let hasPendingUpdate = false;
+
+        let publicAssertionId;
+        let stateFinalized = false;
         if (state === ASSET_STATES.LATEST) {
-            hasPendingUpdate = await this.blockchainService.hasPendingUpdate(tokenId, blockchain);
+            const unfinalizedState = await this.blockchainService.getUnfinalizedState(
+                tokenId,
+                blockchain,
+            );
+
+            if (unfinalizedState != null && unfinalizedState !== ZeroHash) {
+                publicAssertionId = unfinalizedState;
+                stateFinalized = false;
+            }
         }
 
-        const publicAssertionId = hasPendingUpdate
-            ? await this.blockchainService.getUnfinalizedState(tokenId, blockchain)
-            : await this.blockchainService.getLatestAssertionId(tokenId, blockchain);
+        let assertionIds = [];
+        const isEnumState = Object.values(ASSET_STATES).includes(state);
+        if (!publicAssertionId) {
+            assertionIds = await this.blockchainService.getAssertionIds(tokenId, blockchain);
+
+            if (isEnumState) {
+                publicAssertionId = assertionIds[assertionIds.length - 1];
+                stateFinalized = true;
+            } else if (typeof state === 'number') {
+                if (state >= assertionIds.length) {
+                    throw new Error('State index is out of range.');
+                }
+
+                publicAssertionId = assertionIds[state];
+
+                if (state === assertionIds.length - 1) stateFinalized = true;
+            } else if (assertionIds.includes(state)) {
+                publicAssertionId = state;
+
+                if (state === assertionIds[assertionIds.length - 1]) stateFinalized = true;
+            } else if (/^0x[a-fA-F0-9]{64}$/.test(state)) {
+                const unfinalizedState = await this.blockchainService.getUnfinalizedState(
+                    tokenId,
+                    blockchain,
+                );
+
+                if (
+                    unfinalizedState != null &&
+                    unfinalizedState !== ZeroHash &&
+                    state === unfinalizedState
+                ) {
+                    publicAssertionId = unfinalizedState;
+                    stateFinalized = false;
+                } else {
+                    throw new Error("Given state hash isn't a part of the Knowledge Asset.");
+                }
+            } else {
+                throw new Error('Incorrect state option.');
+            }
+        }
 
         const getPublicOperationId = await this.nodeApiService.get(
             endpoint,
             port,
             authToken,
             UAL,
-            state,
+            isEnumState ? state : publicAssertionId,
             hashFunctionId,
         );
 
@@ -364,9 +574,21 @@ class AssetOperationsManager {
         );
 
         if (!getPublicOperationResult.data.assertion) {
+            if (getPublicOperationResult.status !== 'FAILED') {
+                getPublicOperationResult.data = {
+                    errorType: 'DKG_CLIENT_ERROR',
+                    errorMessage: 'Unable to find assertion on the network!',
+                };
+                getPublicOperationResult.status = 'FAILED';
+            }
+
             return {
-                errorType: 'DKG_CLIENT_ERROR',
-                errorMessage: 'Unable to find assertion on the network!',
+                operation: {
+                    publicGet: getOperationStatusObject(
+                        getPublicOperationResult,
+                        getPublicOperationId,
+                    ),
+                },
             };
         }
 
@@ -438,17 +660,15 @@ class AssetOperationsManager {
                         }
                     }`;
 
-                    const repository = deriveRepository(
-                        DEFAULT_PARAMETERS.GRAPH_LOCATION,
-                        DEFAULT_PARAMETERS.GRAPH_STATE,
-                    );
                     queryPrivateOperationId = await this.nodeApiService.query(
                         endpoint,
                         port,
                         authToken,
                         queryString,
                         QUERY_TYPES.CONSTRUCT,
-                        repository,
+                        stateFinalized
+                            ? OT_NODE_TRIPLE_STORE_REPOSITORIES.PRIVATE_CURRENT
+                            : OT_NODE_TRIPLE_STORE_REPOSITORIES.PRIVATE_HISTORY,
                     );
 
                     queryPrivateOperationResult = await this.nodeApiService.getOperationResult(
@@ -557,25 +777,18 @@ class AssetOperationsManager {
 
         const { tokenId } = resolveUAL(UAL);
 
-        let privateAssertion;
-        let privateAssertionId;
-        if (jsonContent.private && !isEmptyObject(jsonContent.private)) {
-            privateAssertion = await formatAssertion(jsonContent.private);
-            privateAssertionId = calculateRoot(privateAssertion);
-        }
-        const publicGraph = {
-            '@graph': [
-                jsonContent.public && !isEmptyObject(jsonContent.public)
-                    ? jsonContent.public
-                    : null,
-                jsonContent.private && !isEmptyObject(jsonContent.private)
-                    ? {
-                          [PRIVATE_ASSERTION_PREDICATE]: privateAssertionId,
-                      }
-                    : null,
-            ],
-        };
-        const publicAssertion = await formatAssertion(publicGraph);
+        const { public: publicAssertion, private: privateAssertion } = await formatGraph(
+            jsonContent,
+        );
+        const publicAssertionSizeInBytes =
+            assertionMetadata.getAssertionSizeInBytes(publicAssertion);
+
+        this.validationService.validateAssertionSizeInBytes(
+            publicAssertionSizeInBytes +
+                (privateAssertion === undefined
+                    ? 0
+                    : assertionMetadata.getAssertionSizeInBytes(privateAssertion)),
+        );
         const publicAssertionId = calculateRoot(publicAssertion);
 
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
@@ -595,7 +808,7 @@ class AssetOperationsManager {
                 port,
                 authToken,
                 publicAssertionId,
-                assertionMetadata.getAssertionSizeInBytes(publicAssertion),
+                publicAssertionSizeInBytes,
                 hashFunctionId,
             );
         }
@@ -603,7 +816,7 @@ class AssetOperationsManager {
         await this.blockchainService.updateAsset(
             tokenId,
             publicAssertionId,
-            assertionMetadata.getAssertionSizeInBytes(publicAssertion),
+            publicAssertionSizeInBytes,
             assertionMetadata.getAssertionTriplesNumber(publicAssertion),
             assertionMetadata.getAssertionChunksNumber(publicAssertion),
             tokenAmountInWei,
@@ -611,7 +824,7 @@ class AssetOperationsManager {
         );
 
         const resolvedUAL = {
-            blockchain: blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
+            blockchain: blockchain.name,
             contract: contentAssetStorageAddress,
             tokenId,
         };
@@ -628,7 +841,7 @@ class AssetOperationsManager {
         if (privateAssertion?.length) {
             assertions.push({
                 ...resolvedUAL,
-                assertionId: privateAssertionId,
+                assertionId: calculateRoot(privateAssertion),
                 assertion: privateAssertion,
                 storeType: STORE_TYPES.PENDING,
             });
@@ -665,7 +878,7 @@ class AssetOperationsManager {
             authToken,
             publicAssertionId,
             publicAssertion,
-            blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
+            blockchain.name,
             contentAssetStorageAddress,
             tokenId,
             hashFunctionId,
@@ -681,17 +894,32 @@ class AssetOperationsManager {
         );
         return {
             UAL,
-            publicAssertionId: publicAssertionId,
+            publicAssertionId,
             operation: getOperationStatusObject(operationResult, operationId),
         };
     }
 
+    /**
+     * Wait for the finalization of an asset update operation.
+     * @async
+     * @param {string} UAL - The Universal Asset Locator of the asset.
+     * @param {Object} [options={}] - Optional parameters for waiting.
+     * @param {string} [options.blockchain] - The blockchain to monitor the update on.
+     * @param {number} [options.frequency] - The polling frequency in seconds.
+     * @param {number} [options.maxNumberOfRetries] - The maximum number of retries before giving up.
+     * @returns {Object} - An object containing the UAL and operation status.
+     */
     async waitFinalization(UAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
         const frequency = this.inputService.getFrequency(options);
         const maxNumberOfRetries = this.inputService.getMaxNumberOfRetries(options);
 
-        this.validationService.validateWaitAssetUpdateFinalization(UAL, blockchain);
+        this.validationService.validateWaitAssetUpdateFinalization(
+            UAL,
+            blockchain,
+            frequency,
+            maxNumberOfRetries,
+        );
 
         const { tokenId } = resolveUAL(UAL);
         const response = {
@@ -731,6 +959,13 @@ class AssetOperationsManager {
         };
     }
 
+    /**
+     * Cancel a previously initiated update operation for an asset.
+     * @async
+     * @param {string} UAL - The Universal Asset Locator of the asset.
+     * @param {Object} [options={}] - Optional parameters for blockchain service.
+     * @returns {Object} - An object containing the UAL and operation status.
+     */
     async cancelUpdate(UAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
 
@@ -789,6 +1024,102 @@ class AssetOperationsManager {
         };
     }
 
+    /**
+     * Retrieves the issuer of a specified asset for a specified state index and a given blockchain.
+     * @async
+     * @param {string} UAL - The Universal Asset Locator of the asset.
+     * @param {string} stateIndex - The state index of the assertion we want to get issuer of.
+     * @param {Object} [options={}] - Optional parameters for blockchain service.
+     * @returns {Object} An object containing the UAL, issuer and operation status.
+     */
+    async getStateIssuer(UAL, stateIndex, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        this.validationService.validateAssetGetStateIssuer(UAL, stateIndex, blockchain);
+
+        const { tokenId } = resolveUAL(UAL);
+
+        const state = await this.blockchainService.getAssertionIdByIndex(
+            tokenId,
+            stateIndex,
+            blockchain,
+        );
+
+        const issuer = await this.blockchainService.getAssertionIssuer(
+            tokenId,
+            state,
+            stateIndex,
+            blockchain,
+        );
+        return {
+            UAL,
+            issuer,
+            state,
+            operation: getOperationStatusObject({ data: {}, status: 'COMPLETED' }, null),
+        };
+    }
+
+    /**
+     * Retrieves the latest issuer of a specified asset and a given blockchain.
+     * @async
+     * @param {string} UAL - The Universal Asset Locator of the asset.
+     * @param {Object} [options={}] - Optional parameters for blockchain service.
+     * @returns {Object} An object containing the UAL, issuer and operation status.
+     */
+    async getLatestStateIssuer(UAL, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        this.validationService.validateAssetGetLatestStateIssuer(UAL, blockchain);
+
+        const { tokenId } = resolveUAL(UAL);
+
+        const states = await this.blockchainService.getAssertionIds(tokenId, blockchain);
+
+        const latestStateIndex = states.length - 1;
+
+        const latestState = states[latestStateIndex];
+
+        const issuer = await this.blockchainService.getAssertionIssuer(
+            tokenId,
+            latestState,
+            latestStateIndex,
+            blockchain,
+        );
+        return {
+            UAL,
+            issuer,
+            latestState,
+            operation: getOperationStatusObject({ data: {}, status: 'COMPLETED' }, null),
+        };
+    }
+
+    /**
+     * Retrieves all assertion ids for a specified asset and a given blockchain.
+     * @async
+     * @param {string} UAL - The Universal Asset Locator of the asset.
+     * @param {Object} [options={}] - Optional parameters for blockchain service.
+     * @returns {Object} An object containing the UAL, issuer and operation status.
+     */
+    async getStates(UAL, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        this.validationService.validateAssetGetStates(UAL, blockchain);
+
+        const { tokenId } = resolveUAL(UAL);
+
+        const states = await this.blockchainService.getAssertionIds(tokenId, blockchain);
+
+        return {
+            UAL,
+            states,
+            operation: getOperationStatusObject({ data: {}, status: 'COMPLETED' }, null),
+        };
+    }
+
+    /**
+     * Burn an asset on a specified blockchain.
+     * @async
+     * @param {string} UAL - The Universal Asset Locator of the asset.
+     * @param {Object} [options={}] - Optional parameters for blockchain service.
+     * @returns {Object} An object containing the UAL and operation status.
+     */
     async burn(UAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
 
@@ -803,11 +1134,26 @@ class AssetOperationsManager {
         };
     }
 
+    /**
+     * Extend the storing period of an asset on a specified blockchain.
+     * @async
+     * @param {string} UAL - The Universal Asset Locator of the asset.
+     * @param {number} epochsNumber - Nmber of epochs for the extension.
+     * @param {Object} [options={}] - Additional options for asset storing period extension.
+     * @returns {Object} An object containing the UAL and operation status.
+     */
     async extendStoringPeriod(UAL, epochsNumber, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
         const tokenAmount = this.inputService.getTokenAmount(options);
 
-        const { tokenId } = resolveUAL(UAL);
+        this.validationService.validateExtendAssetStoringPeriod(
+            UAL,
+            epochsNumber,
+            tokenAmount,
+            blockchain,
+        );
+
+        const { tokenId, contract } = resolveUAL(UAL);
 
         let tokenAmountInWei;
 
@@ -829,28 +1175,18 @@ class AssetOperationsManager {
                 blockchain,
             );
 
-            tokenAmountInWei = await this._getUpdateBidSuggestion(
-                UAL,
-                blockchain,
+            tokenAmountInWei = await this.nodeApiService.getBidSuggestion(
                 endpoint,
                 port,
                 authToken,
-                latestFinalizedState,
+                blockchain.name,
+                epochsNumber,
                 latestFinalizedStateSize,
+                contract,
+                latestFinalizedState,
                 hashFunctionId,
             );
-
-            if (tokenAmountInWei < 0) {
-                tokenAmountInWei = 0;
-            }
         }
-
-        this.validationService.validateExtendAssetStoringPeriod(
-            UAL,
-            epochsNumber,
-            tokenAmountInWei,
-            blockchain,
-        );
 
         await this.blockchainService.extendAssetStoringPeriod(
             tokenId,
@@ -865,9 +1201,18 @@ class AssetOperationsManager {
         };
     }
 
+    /**
+     * Add tokens for an asset on the specified blockchain to a ongoing publishing operation.
+     * @async
+     * @param {string} UAL - The Universal Asset Locator of the asset.
+     * @param {Object} [options={}] - Additional options for adding tokens.
+     * @returns {Object} An object containing the UAL and operation status.
+     */
     async addTokens(UAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
         const tokenAmount = this.inputService.getTokenAmount(options);
+
+        this.validationService.validateAddTokens(UAL, tokenAmount, blockchain);
 
         const { tokenId } = resolveUAL(UAL);
 
@@ -903,13 +1248,11 @@ class AssetOperationsManager {
             );
 
             if (tokenAmountInWei <= 0) {
-                throw Error(
+                throw new Error(
                     `Token amount is bigger than default suggested amount, please specify exact tokenAmount if you still want to add more tokens!`,
                 );
             }
         }
-
-        this.validationService.validateAddTokens(UAL, tokenAmountInWei, blockchain);
 
         await this.blockchainService.addTokens(tokenId, tokenAmountInWei, blockchain);
 
@@ -919,9 +1262,18 @@ class AssetOperationsManager {
         };
     }
 
+    /**
+     * Add tokens for an asset on the specified blockchain to a ongoing update operation.
+     * @async
+     * @param {string} UAL - The Universal Asset Locator of the asset.
+     * @param {Object} [options={}] - Additional options for adding tokens.
+     * @returns {Object} An object containing the UAL and operation status.
+     */
     async addUpdateTokens(UAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
         const tokenAmount = this.inputService.getTokenAmount(options);
+
+        this.validationService.validateAddTokens(UAL, tokenAmount, blockchain);
 
         const { tokenId } = resolveUAL(UAL);
 
@@ -956,13 +1308,11 @@ class AssetOperationsManager {
                 hashFunctionId,
             );
             if (tokenAmountInWei <= 0) {
-                throw Error(
+                throw new Error(
                     `Token amount is bigger than default suggested amount, please specify exact tokenAmount if you still want to add more tokens!`,
                 );
             }
         }
-
-        this.validationService.validateAddTokens(UAL, tokenAmountInWei, blockchain);
 
         await this.blockchainService.addUpdateTokens(tokenId, tokenAmountInWei, blockchain);
 
@@ -1010,7 +1360,7 @@ class AssetOperationsManager {
             endpoint,
             port,
             authToken,
-            blockchain.name.startsWith('otp') ? 'otp' : blockchain.name,
+            blockchain.name,
             epochsLeft,
             size,
             contract,
@@ -1023,6 +1373,41 @@ class AssetOperationsManager {
             (BigInt(agreementData.tokenAmount) + BigInt(agreementData.updateTokenAmount ?? 0));
 
         return tokenAmountInWei > 0 ? tokenAmountInWei : 0;
+    }
+
+    /**
+     * Add knowledge asset to a paranet.
+     * @async
+     * @param {string} UAL - The Universal Asset Locator of the knowledge asset.
+     * @param {string} paranetUAL - The Universal Asset Locator of the Paranet.
+     * @param {Object} [options={}] - Additional options for adding tokens.
+     * @returns {Object} An object containing the UAL and operation status.
+     */
+    async submitToParanet(UAL, paranetUAL, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+
+        this.validationService.validateSubmitToParanet(
+            UAL,
+            paranetUAL,
+            blockchain,
+        );
+
+        const { contract, tokenId } = resolveUAL(UAL);
+        const { contract: paranetContract, tokenId: paranetTokenId } = resolveUAL(paranetUAL);
+
+        await this.blockchainService.submitToParanet({
+                paranetContract,
+                paranetTokenId,
+                contract,
+                tokenId,
+            },
+            blockchain
+        );
+
+        return {
+            UAL,
+            operation: getOperationStatusObject({ status: 'COMPLETED' }, null),
+        };
     }
 }
 

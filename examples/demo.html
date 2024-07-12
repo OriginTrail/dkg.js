@@ -1,196 +1,221 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>DKG Client demo</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
-          integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
-    <!-- import CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
-    <link rel="stylesheet"
-          href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/styles/default.min.css">
-    <style>
-        .form {
-            margin-top: 30px;
-            width: 500px;
-        }
+    <head>
+        <meta charset="UTF-8" />
+        <meta
+            name="viewport"
+            content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0"
+        />
+        <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+        <title>DKG Client demo</title>
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+            integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC"
+            crossorigin="anonymous"
+        />
+        <!-- import CSS -->
+        <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css" />
+        <link
+            rel="stylesheet"
+            href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/styles/default.min.css"
+        />
+        <style>
+            .form {
+                margin-top: 30px;
+                width: 500px;
+            }
 
-        .el-notification__content p {
-            word-break: break-all;
-        }
-    </style>
-</head>
-<body>
-<div id="app" class="container pt-5">
-    <h1>DKG Client demo</h1>
-    <h3 class="mt-3">Current network: {{ selectedNetwork }}</h3>
-    <div class="row">
-        <div class="col-6">
-            <div class="form">
-                <h3>Select network</h3>
-                <select class="form-select mb-4" aria-label="Default select example" v-model="selectedNetwork">
-                    <option value="ganache">Ganache</option>
-                    <option value="polygon">Polygon</option>
-                    <option value="otp">OTP Devnet</option>
-                </select>
-                <h3>Asset data</h3>
-                <p>Context</p>
-                <el-input :disabled="disabled" class="mb-3" placeholder="Please input"
-                          v-model="assetData['@context']"></el-input>
-                <p>ID</p>
-                <el-input :disabled="disabled" class="mb-3" placeholder="Please input"
-                          v-model="assetData['@id']"></el-input>
-                <p>Name</p>
-                <el-input :disabled="disabled" class="mb-3" placeholder="Please input"
-                          v-model="assetData.name"></el-input>
-                <p>Born</p>
-                <el-input :disabled="disabled" class="mb-3" placeholder="Please input"
-                          v-model="assetData.born"></el-input>
+            .el-notification__content p {
+                word-break: break-all;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="app" class="container pt-5">
+            <h1>DKG Client demo</h1>
+            <h3 class="mt-3">Current network: {{ selectedNetwork }}</h3>
+            <div class="row">
+                <div class="col-6">
+                    <div class="form">
+                        <h3>Select network</h3>
+                        <select
+                            class="form-select mb-4"
+                            aria-label="Default select example"
+                            v-model="selectedNetwork"
+                        >
+                            <option value="hardhat">Hardhat</option>
+                            <option value="polygon">Polygon</option>
+                            <option value="otp">OTP Devnet</option>
+                        </select>
+                        <h3>Asset data</h3>
+                        <p>Context</p>
+                        <el-input
+                            :disabled="disabled"
+                            class="mb-3"
+                            placeholder="Please input"
+                            v-model="assetData['@context']"
+                        ></el-input>
+                        <p>ID</p>
+                        <el-input
+                            :disabled="disabled"
+                            class="mb-3"
+                            placeholder="Please input"
+                            v-model="assetData['@id']"
+                        ></el-input>
+                        <p>Name</p>
+                        <el-input
+                            :disabled="disabled"
+                            class="mb-3"
+                            placeholder="Please input"
+                            v-model="assetData.name"
+                        ></el-input>
+                        <p>Born</p>
+                        <el-input
+                            :disabled="disabled"
+                            class="mb-3"
+                            placeholder="Please input"
+                            v-model="assetData.born"
+                        ></el-input>
+                    </div>
+                    <el-button type="primary" @click="publish">Publish</el-button>
+                </div>
+                <div class="col-6">
+                    <el-table :data="tableData" style="width: 100%">
+                        <el-table-column prop="assertionId" label="Assertion ID"> </el-table-column>
+                        <el-table-column prop="UAL" label="UAL"> </el-table-column>
+                        <el-table-column label="Operations">
+                            <template slot-scope="scope">
+                                <el-button type="primary" size="mini" @click="get">GET </el-button>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                </div>
             </div>
-            <el-button type="primary" @click="publish">Publish</el-button>
-        </div>
-        <div class="col-6">
-            <el-table
-                    :data="tableData"
-                    style="width: 100%">
-                <el-table-column
-                        prop="assertionId"
-                        label="Assertion ID">
-                </el-table-column>
-                <el-table-column
-                        prop="UAL"
-                        label="UAL">
-                </el-table-column>
-                <el-table-column label="Operations">
-                    <template slot-scope="scope">
-                        <el-button
-                                type="primary"
-                                size="mini"
-                                @click="get">GET
-                        </el-button>
-                    </template>
-                </el-table-column>
-            </el-table>
-        </div>
-    </div>
-    <div class="mt-5">
-        <el-input placeholder="Please input" v-model="getUAL" class="input-with-select">
-            <el-button type="primary" slot="prepend" @click="get">GET</el-button>
-        </el-input>
-    </div>
-    <div class="row mt-3">
-        <pre>
+            <div class="mt-5">
+                <el-input placeholder="Please input" v-model="getUAL" class="input-with-select">
+                    <el-button type="primary" slot="prepend" @click="get">GET</el-button>
+                </el-input>
+            </div>
+            <div class="row mt-3">
+                <pre>
             <code class="language-javascript">
-            {{ resolveResult }}
+            {{ getResult }}
             </code>
         </pre>
-    </div>
-</div>
+            </div>
+        </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
-        crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
-<script src="../dist/dkg.min.js"></script>
-<script>
-
-</script>
-<!-- import Vue before Element -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.1.9/vue.js"></script>
-<!-- import JavaScript -->
-<script src="https://unpkg.com/element-ui/lib/index.js"></script>
-<script>
-    new Vue({
-        el: '#app',
-        data: function () {
-            return {
-                selectedNetwork: 'ganache',
-                disabled: false,
-                resolveResult: [],
-                getUAL: '',
-                tableData: [
-                    {
-                        assertionId: '',
-                        UAL: ''
-                    }
-                ],
-                assetData: {
-                    "@context": "https://json-ld.org/contexts/person.jsonld",
-                    "@id": `http://dbpedia.org/resource/John_Lennon_${Math.random()}`,
-                    "name": "John",
-                    "born": "1940-10-09",
+        <script
+            src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+            crossorigin="anonymous"
+        ></script>
+        <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+        <script src="../dist/dkg.min.js"></script>
+        <script></script>
+        <!-- import Vue before Element -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.1.9/vue.js"></script>
+        <!-- import JavaScript -->
+        <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+        <script>
+            new Vue({
+                el: '#app',
+                data: function () {
+                    return {
+                        selectedNetwork: 'hardhat1',
+                        disabled: false,
+                        getResult: [],
+                        getUAL: '',
+                        tableData: [
+                            {
+                                assertionId: '',
+                                UAL: '',
+                            },
+                        ],
+                        assetData: {
+                            '@context': 'https://json-ld.org/contexts/person.jsonld',
+                            '@id': `http://dbpedia.org/resource/John_Lennon_${Math.random()}`,
+                            name: 'John',
+                            born: '1940-10-09',
+                        },
+                        publishOptions: {
+                            epochsNum: 2,
+                        },
+                        visible: false,
+                    };
                 },
-                publishOptions: {
-                    epochsNum: 2,
-                    maxNumberOfRetries: 30,
-                    frequency: 1,
-                    tokenAmount: 15,
-                    blockchain : {
-                        name: "otp"
-                    }
+                watch: {
+                    selectedNetwork(value) {
+                        this.initializeDKGClient(value);
+                    },
                 },
-                getOptions: {
-                    validate: true,
-                    commitOffset: 0,
-                    maxNumberOfRetries: 5,
-                    blockchain : {
-                        name: "otp"
-                    }
+                mounted() {
+                    this.initializeDKGClient(this.selectedNetwork);
                 },
-                visible: false
-            }
-        },
-        watch: {
-            selectedNetwork(value) {
-                this.initializeDKGClient(value);
-            }
-        },
-        mounted() {
-            this.initializeDKGClient(this.selectedNetwork);
-        },
-        methods: {
-            initializeDKGClient(blockchain) {
-                const OT_NODE_HOSTNAME = 'localhost';
-                const OT_NODE_PORT = '8900';
-                const options = {
-                    endpoint: OT_NODE_HOSTNAME,
-                    port: OT_NODE_PORT,
-                    blockchain: {
-                        name: "otp"
-                    }
-                };
-                window.DkgClient = new DKG(options);
-            },
-            async publish() {
-                this.disabled = true;
-                let loading = this.notification("Asset", "Creating new asset", "el-icon-loading", 0);
-                let {UAL, assertionId} = await DkgClient.asset.create(this.assetData, this.publishOptions);
-                loading.close();
-                this.notification("Asset", `Asset with UAL ${UAL} created!`, "el-icon-success", 4000);
-                this.disabled = false;
-                this.tableData.push({assertionId: assertionId, UAL: UAL});
-            },
-            async get() {
-                let loading = this.notification("Asset", "Resolving asset..", "el-icon-loading", 0);
-                let { assertion } = await DkgClient.asset.get(this.getUAL, this.getOptions);
-                this.resolveResult = assertion;
-                loading.close();
-                this.notification("Asset", `Asset with UAL ${this.getUAL} resolved!`, "el-icon-success", 4000);
-                console.log(this.resolveResult, 'getAssetResult');
-            },
-            notification(title, message, icon, duration) {
-                return this.$notify({
-                    title: title,
-                    message: message,
-                    iconClass: icon,
-                    duration: duration
-                })
-            }
-        }
-    })
-</script>
-</body>
+                methods: {
+                    initializeDKGClient(blockchain) {
+                        console.log(this.selectedNetwork)
+                        window.DkgClient = new DKG({
+                            environment: 'development',
+                            endpoint: 'http://localhost',
+                            blockchain: {
+                                name: this.selectedNetwork,
+                            },
+                            maxNumberOfRetries: 30,
+                            frequency: 1,
+                        });
+                    },
+                    async publish() {
+                        this.disabled = true;
+                        let loading = this.notification(
+                            'Asset',
+                            'Creating new asset',
+                            'el-icon-loading',
+                            0,
+                        );
+                        let { UAL, assertionId } = await DkgClient.asset.create(
+                            this.assetData,
+                            this.publishOptions,
+                        );
+                        loading.close();
+                        this.notification(
+                            'Asset',
+                            `Asset with UAL ${UAL} created!`,
+                            'el-icon-success',
+                            4000,
+                        );
+                        this.disabled = false;
+                        this.tableData.push({ assertionId, UAL });
+                    },
+                    async get() {
+                        let loading = this.notification(
+                            'Asset',
+                            'Resolving asset..',
+                            'el-icon-loading',
+                            0,
+                        );
+                        let { assertion } = await DkgClient.asset.get(this.getUAL);
+                        this.getResult = assertion;
+                        loading.close();
+                        this.notification(
+                            'Asset',
+                            `Asset with UAL ${this.getUAL} retrieved!`,
+                            'el-icon-success',
+                            4000,
+                        );
+                        console.log(this.getResult, 'getAssetResult');
+                    },
+                    notification(title, message, icon, duration) {
+                        return this.$notify({
+                            title: title,
+                            message: message,
+                            iconClass: icon,
+                            duration: duration,
+                        });
+                    },
+                },
+            });
+        </script>
+    </body>
 </html>

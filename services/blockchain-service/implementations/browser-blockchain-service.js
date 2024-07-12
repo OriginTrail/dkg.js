@@ -8,34 +8,78 @@ class BrowserBlockchainService extends BlockchainServiceBase {
         this.config = config;
     }
 
-    initializeWeb3(blockchainName, blockchainRpc) {
-        if (typeof window.Web3 === 'undefined' || !window.Web3) {
-            this.logger.error(
+    async initializeWeb3(blockchainName, blockchainRpc) {
+        if (typeof window.web3 === 'undefined' || !window.web3) {
+            // eslint-disable-next-line no-console
+            console.error(
                 'No web3 implementation injected, please inject your own Web3 implementation.',
             );
-            return;
         }
         if (window.ethereum) {
-            this[blockchainName].web3 = new window.Web3(window.ethereum);
+            this[blockchainName].web3 = new Web3(window.ethereum);
+
+            try {
+                // Request account access if needed
+                await window.ethereum.enable();
+            } catch (error) {
+                // eslint-disable-next-line no-console
+                console.error(error);
+            }
         } else if (blockchainRpc.startsWith('ws')) {
-            const provider = new window.Web3.providers.WebsocketProvider(
+            const provider = new Web3().providers.WebsocketProvider(
                 blockchainRpc,
                 WEBSOCKET_PROVIDER_OPTIONS,
             );
             this[blockchainName].web3 = new Web3(provider);
         } else {
-            this[blockchainName].web3 = new window.Web3(blockchainRpc);
+            this[blockchainName].web3 = new Web3(blockchainRpc);
         }
     }
 
-    async executeContractFunction(contractName, functionName, args, blockchain) {
-        const contractInstance = await this.getContractInstance(contractName, blockchain);
-        const tx = await this.prepareTransaction(contractInstance, functionName, args, {
-            name: blockchain.name,
-            publicKey: await this.getAccount(),
+    async decodeEventLogs(receipt, eventName, blockchain) {
+        const web3Instance = await this.getWeb3Instance(blockchain);
+        let result;
+        const { hash, inputs } = this.events[eventName];
+        Object.values(receipt.events).forEach((row) => {
+            if (row.raw.topics[0] === hash)
+                result = web3Instance.eth.abi.decodeLog(
+                    inputs,
+                    row.raw.data,
+                    row.raw.topics.slice(1),
+                );
         });
+        return result;
+    }
 
-        return contractInstance.methods[functionName](...args).send(tx);
+    async executeContractFunction(contractName, functionName, args, blockchain) {
+        let contractInstance = await this.getContractInstance(contractName, blockchain);
+        const tx = await this.prepareTransaction(contractInstance, functionName, args, blockchain);
+
+        try {
+            return await contractInstance.methods[functionName](...args).send(tx);
+        } catch (error) {
+            if (/revert|VM Exception/i.test(error.message)) {
+                let status;
+                try {
+                    status = await contractInstance.methods.status().call();
+                } catch (_) {
+                    status = false;
+                }
+
+                if (!status) {
+                    await this.updateContractInstance(contractName, blockchain, true);
+                    contractInstance = await this.getContractInstance(contractName, blockchain);
+
+                    return contractInstance.methods[functionName](...args).send(tx);
+                }
+            }
+
+            throw error;
+        }
+    }
+
+    async getPublicKey() {
+        return this.getAccount();
     }
 
     async getAccount() {
@@ -47,15 +91,12 @@ class BrowserBlockchainService extends BlockchainServiceBase {
                 .request({
                     method: 'eth_requestAccounts',
                 })
-                .catch(() => this.logger.error('There was an error fetching your accounts'));
+                // eslint-disable-next-line no-console
+                .catch(() => console.error('There was an error fetching your accounts'));
 
             [this.account] = accounts;
         }
         return this.account;
-    }
-
-    async decodeEventLogs(receipt, eventName) {
-        return receipt.events[eventName].returnValues;
     }
 
     async transferAsset(tokenId, to, blockchain) {
