@@ -184,7 +184,7 @@ class BlockchainServiceBase {
         if (!this[blockchain.name].contracts[blockchain.hubContract].Hub) {
             const web3Instance = await this.getWeb3Instance(blockchain);
             this[blockchain.name].contracts[blockchain.hubContract].Hub =
-                new web3Instance.eth.Contract(this.abis.Hub, blockchain.hubContract);
+                new web3Instance.eth.Contract(this.abis.Hub, blockchain.hubContract, { from: blockchain.publicKey });
         }
 
         if (
@@ -218,6 +218,7 @@ class BlockchainServiceBase {
                 await new web3Instance.eth.Contract(
                     this.abis[contractName],
                     this[blockchain.name].contractAddresses[blockchain.hubContract][contractName],
+                    { from: blockchain.publicKey },
                 );
         }
     }
@@ -646,6 +647,7 @@ class BlockchainServiceBase {
                     this.abis['ParanetNeuroIncentivesPool'],
                     // eslint-disable-next-line dot-notation
                     this[blockchain.name].contractAddresses[blockchain.hubContract]['ParanetNeuroIncentivesPool'],
+                    { from: blockchain.publicKey },
                 );
         }
     }
