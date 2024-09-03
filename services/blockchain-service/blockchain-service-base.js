@@ -181,6 +181,9 @@ class BlockchainServiceBase {
         if (!this[blockchain.name].contracts[blockchain.hubContract]) {
             this[blockchain.name].contracts[blockchain.hubContract] = {};
         }
+        if(!this[blockchain.name].contractAddresses[blockchain.hubContract]) {
+            this[blockchain.name].contractAddresses[blockchain.hubContract] = {};
+        }
         if (!this[blockchain.name].contracts[blockchain.hubContract].Hub) {
             const web3Instance = await this.getWeb3Instance(blockchain);
             this[blockchain.name].contracts[blockchain.hubContract].Hub =
