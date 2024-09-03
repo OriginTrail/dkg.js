@@ -12,3 +12,6 @@ kg-example.json
 
 client-d-n.html
 client-d-n.js
+
+examples/credentials-demo.js
+examples/credentials-showcase.html
