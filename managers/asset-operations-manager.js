@@ -9,17 +9,20 @@ const {
     sleepForMilliseconds,
 } = require('../services/utilities.js');
 const {
+    ASSET_STATES,
     CONTENT_TYPES,
     OPERATIONS,
+    OPERATIONS_STEP_STATUS,
     GET_OUTPUT_FORMATS,
     OPERATION_STATUSES,
     DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY,
     PRIVATE_ASSERTION_PREDICATE,
+    STORE_TYPES,
     QUERY_TYPES,
     OT_NODE_TRIPLE_STORE_REPOSITORIES,
     ZERO_ADDRESS,
 } = require('../constants.js');
-const { STORE_TYPES, ASSET_STATES } = require('../constants');
+const emptyHooks = require('../util/empty-hooks');
 
 class AssetOperationsManager {
     constructor(services) {
@@ -256,9 +259,10 @@ class AssetOperationsManager {
      * @async
      * @param {Object} content - The content of the asset to be created, contains public, private or both keys.
      * @param {Object} [options={}] - Additional options for asset creation.
+     * @param {Object} [stepHooks=emptyHooks] - Hooks to execute during asset creation.
      * @returns {Object} Object containing UAL, publicAssertionId and operation status.
      */
-    async create(content, options = {}) {
+    async create(content, options = {}, stepHooks = emptyHooks) {
         this.validationService.validateObjectType(content);
         let jsonContent = {};
 
@@ -349,6 +353,7 @@ class AssetOperationsManager {
                 null,
                 null,
                 blockchain,
+                stepHooks,
             );
         } else {
             const { contract: paranetKaContract, tokenId: paranetTokenId } = resolveUAL(paranetUAL);
@@ -366,6 +371,7 @@ class AssetOperationsManager {
                 paranetKaContract,
                 paranetTokenId,
                 blockchain,
+                stepHooks,
             );
         }
 
@@ -439,6 +445,14 @@ class AssetOperationsManager {
             DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY,
             operationId,
         );
+
+        stepHooks.afterHook({
+            status: OPERATIONS_STEP_STATUS.CREATE_ASSET_COMPLETED,
+            data: {
+                operationId,
+                operationResult,
+            },
+        });
 
         return {
             UAL,

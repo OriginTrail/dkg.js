@@ -13,7 +13,8 @@ const ParanetsRegistryAbi = require('dkg-evm-module/abi/ParanetsRegistry.json');
 const ParanetIncentivesPoolFactoryAbi = require('dkg-evm-module/abi/ParanetIncentivesPoolFactory.json');
 const ParanetNeuroIncentivesPoolAbi = require('dkg-evm-module/abi/ParanetNeuroIncentivesPool.json');
 const ParanetKnowledgeMinersRegistryAbi = require('dkg-evm-module/abi/ParanetKnowledgeMinersRegistry.json');
-const { DEFAULT_GAS_PRICE } = require('../../constants');
+const { OPERATIONS_STEP_STATUS, DEFAULT_GAS_PRICE } = require('../../constants');
+const emptyHooks = require('../../util/empty-hooks.js');
 
 class BlockchainServiceBase {
     constructor(config = {}) {
@@ -273,7 +274,7 @@ class BlockchainServiceBase {
 
     // Knowledge assets operations
 
-    async createAsset(requestData, paranetKaContract, paranetTokenId, blockchain) {
+    async createAsset(requestData, paranetKaContract, paranetTokenId, blockchain, stepHooks = emptyHooks) {
         const sender = await this.getPublicKey(blockchain);
         let serviceAgreementV1Address;
         let allowanceIncreased = false;
@@ -291,6 +292,10 @@ class BlockchainServiceBase {
                 requestData.tokenAmount,
                 blockchain
             ));
+
+            stepHooks.afterHook({
+                status: OPERATIONS_STEP_STATUS.INCREASE_ALLOWANCE_COMPLETED,
+            });
 
             let receipt;
             if(paranetKaContract == null && paranetTokenId == null) {
@@ -312,6 +317,11 @@ class BlockchainServiceBase {
             let { tokenId } = await this.decodeEventLogs(receipt, 'AssetMinted', blockchain);
 
             tokenId = parseInt(tokenId, 10);
+
+            stepHooks.afterHook({
+                status: OPERATIONS_STEP_STATUS.CREATE_ASSET_COMPLETED,
+                data: { tokenId },
+            });
 
             return tokenId;
         } catch (error) {
