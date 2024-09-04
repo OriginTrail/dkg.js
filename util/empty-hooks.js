@@ -5,5 +5,5 @@
  */
 // TODO: Either to be deprecated or added to all operations
 module.exports = {
-  afterHook: () => {},
+    afterHook: () => {},
 };
