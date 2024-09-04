@@ -11,7 +11,6 @@ const {
 const {
     CONTENT_TYPES,
     OPERATIONS,
-    OPERATIONS_STEP_STATUS,
     GET_OUTPUT_FORMATS,
     OPERATION_STATUSES,
     DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY,
@@ -20,7 +19,6 @@ const {
     OT_NODE_TRIPLE_STORE_REPOSITORIES,
     ZERO_ADDRESS,
 } = require('../constants.js');
-const emptyHooks = require('../util/empty-hooks');
 const { STORE_TYPES, ASSET_STATES } = require('../constants');
 
 class AssetOperationsManager {
@@ -149,10 +147,14 @@ class AssetOperationsManager {
             );
         }
 
-        return {
-            transactionHash: receipt.transactionHash,
-            status: receipt.status,
-        };
+        if (receipt) {
+            return {
+                transactionHash: receipt.transactionHash,
+                status: receipt.status,
+            };
+        }
+
+        return { status: 'Skipped: Allowance is already equal to the requested amount.' };
     }
 
     /**
@@ -254,10 +256,9 @@ class AssetOperationsManager {
      * @async
      * @param {Object} content - The content of the asset to be created, contains public, private or both keys.
      * @param {Object} [options={}] - Additional options for asset creation.
-     * @param {Object} [stepHooks=emptyHooks] - Hooks to execute during asset creation.
      * @returns {Object} Object containing UAL, publicAssertionId and operation status.
      */
-    async create(content, options = {}, stepHooks = emptyHooks) {
+    async create(content, options = {}) {
         this.validationService.validateObjectType(content);
         let jsonContent = {};
 
@@ -348,7 +349,6 @@ class AssetOperationsManager {
                 null,
                 null,
                 blockchain,
-                stepHooks,
             );
         } else {
             const { contract: paranetKaContract, tokenId: paranetTokenId } = resolveUAL(paranetUAL);
@@ -366,7 +366,6 @@ class AssetOperationsManager {
                 paranetKaContract,
                 paranetTokenId,
                 blockchain,
-                stepHooks,
             );
         }
 
@@ -440,14 +439,6 @@ class AssetOperationsManager {
             DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY,
             operationId,
         );
-
-        stepHooks.afterHook({
-            status: OPERATIONS_STEP_STATUS.CREATE_ASSET_COMPLETED,
-            data: {
-                operationId,
-                operationResult,
-            },
-        });
 
         return {
             UAL,
@@ -637,9 +628,10 @@ class AssetOperationsManager {
         }
 
         if (contentType !== CONTENT_TYPES.PUBLIC) {
-            const privateAssertionLinkTriple = publicAssertion.filter((element) =>
+            const filteredTriples = publicAssertion.filter((element) =>
                 element.includes(PRIVATE_ASSERTION_PREDICATE),
-            )[0];
+            );
+            const privateAssertionLinkTriple = filteredTriples.length > 0 ? filteredTriples[0] : null;
 
             let queryPrivateOperationId;
             let queryPrivateOperationResult = {};
