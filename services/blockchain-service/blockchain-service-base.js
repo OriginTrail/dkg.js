@@ -145,15 +145,10 @@ class BlockchainServiceBase {
             gasLimit *= 1.2;
         }
 
-        let gasPrice = Number(
-            blockchain.previousTxGasPrice ||
-                blockchain.gasPrice ||
-                (await this.getNetworkGasPrice(blockchain)),
-        );
-
-        if (blockchain.retryTx) {
-            // Increase gas price by 20%
-            gasPrice = Math.round(gasPrice * 1.2);
+        let gasPrice;
+        if (blockchain.previousTxGasPrice && blockchain.retryTx) {
+            // Increase previous tx gas price by 20%
+            gasPrice = Math.round(blockchain.previousTxGasPrice * 1.2);
         } else if (blockchain.forceReplaceTxs) {
             // Get the current transaction count (nonce) of the wallet, including pending transactions
             const currentNonce = await this[blockchain.name].web3.eth.getTransactionCount(publicKey, 'pending');
@@ -163,9 +158,24 @@ class BlockchainServiceBase {
 
             // If there are any pending transactions
             if (currentNonce > confirmedNonce) {
-                // Increase gas price by 20%
-                gasPrice = Math.round(gasPrice * 1.2);
+                const pendingBlock = await this[blockchain.name].web3.eth.getBlock('pending', true);
+
+                // Search for pending tx in the pending block
+                const pendingTx = pendingBlock.transactions.find(
+                    tx => tx.from.toLowerCase() === publicKey.toLowerCase() && tx.nonce === currentNonce
+                );
+
+                if (pendingTx) {
+                    // If found, increase gas price of pending tx by 20%
+                    gasPrice = Math.round(pendingTx.gasPrice * 1.2);
+                } else {
+                    // If not found, use default/network gas price increased by 20%
+                    // Theoretically this should never happen
+                    gasPrice = Math.round((blockchain.gasPrice || (await this.getNetworkGasPrice(blockchain))) * 1.2);
+                }
             }
+        } else {
+            gasPrice = blockchain.gasPrice || (await this.getNetworkGasPrice(blockchain));
         }
 
         return {
