@@ -161,13 +161,13 @@ class BlockchainServiceBase {
                 const pendingBlock = await this[blockchain.name].web3.eth.getBlock('pending', true);
 
                 // Search for pending tx in the pending block
-                const pendingTx = pendingBlock.transactions.find(
-                    tx => tx.from.toLowerCase() === publicKey.toLowerCase() && tx.nonce === currentNonce
+                const pendingTx = Object.values(pendingBlock.transactions).find(
+                    tx => tx.from.toLowerCase() === publicKey.toLowerCase() && tx.nonce === confirmedNonce
                 );
 
                 if (pendingTx) {
                     // If found, increase gas price of pending tx by 20%
-                    gasPrice = Math.round(pendingTx.gasPrice * 1.2);
+                    gasPrice = Math.round(Number(pendingTx.gasPrice) * 1.2);
                 } else {
                     // If not found, use default/network gas price increased by 20%
                     // Theoretically this should never happen
