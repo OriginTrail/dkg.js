@@ -123,11 +123,11 @@ class BlockchainServiceBase {
         }
     }
 
-    async prepareTransaction(contractInstance, functionName, args, blockchain, simulate = false) {
+    async prepareTransaction(contractInstance, functionName, args, blockchain) {
         const publicKey = await this.getPublicKey(blockchain);
         const encodedABI = await contractInstance.methods[functionName](...args).encodeABI();
 
-        if (simulate) {
+        if (blockchain.simulateTx) {
             await this[blockchain.name].web3.eth.call({
                 to: contractInstance.options.address,
                 data: encodedABI,
@@ -154,7 +154,7 @@ class BlockchainServiceBase {
         if (blockchain.retryTx) {
             // Increase gas price by 20%
             gasPrice = Math.round(gasPrice * 1.2);
-        } else if (blockchain.forceReplace) {
+        } else if (blockchain.forceReplaceTxs) {
             // Get the current transaction count (nonce) of the wallet, including pending transactions
             const currentNonce = await this[blockchain.name].web3.eth.getTransactionCount(publicKey, 'pending');
 

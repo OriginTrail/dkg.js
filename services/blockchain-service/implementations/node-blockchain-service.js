@@ -71,7 +71,6 @@ class NodeBlockchainService extends BlockchainServiceBase {
                     functionName,
                     args,
                     blockchain,
-                    true,
                 );
                 previousTxGasPrice = tx.gasPrice;
                 simulationSucceeded = true;
