@@ -60,7 +60,7 @@ class BrowserBlockchainService extends BlockchainServiceBase {
         let tx;
 
         try {
-            tx = await this.prepareTransaction(contractInstance, functionName, args, blockchain, true);
+            tx = await this.prepareTransaction(contractInstance, functionName, args, blockchain);
 
             return await contractInstance.methods[functionName](...args).send(tx);
         } catch (error) {
