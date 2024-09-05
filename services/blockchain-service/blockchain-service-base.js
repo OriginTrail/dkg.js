@@ -154,6 +154,18 @@ class BlockchainServiceBase {
         if (blockchain.retryTx) {
             // Increase gas price by 20%
             gasPrice = Math.round(gasPrice * 1.2);
+        } else if (blockchain.forceReplace) {
+            // Get the current transaction count (nonce) of the wallet, including pending transactions
+            const currentNonce = await this[blockchain.name].web3.eth.getTransactionCount(publicKey, 'pending');
+
+            // Get the transaction count of the wallet excluding pending transactions
+            const confirmedNonce = await this[blockchain.name].web3.eth.getTransactionCount(publicKey, 'latest');
+
+            // If there are any pending transactions
+            if (currentNonce > confirmedNonce) {
+                // Increase gas price by 20%
+                gasPrice = Math.round(gasPrice * 1.2);
+            }
         }
 
         return {
