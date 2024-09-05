@@ -141,10 +141,10 @@ class InputService {
             options.blockchain?.transactionPollingTimeout ??
             this.config.blockchain?.transactionPollingTimeout ??
             null;
-        const simulateTx =
-            options.blockchain?.simulateTx ??
-            this.config.blockchain?.simulateTx ??
-            DEFAULT_PARAMETERS.SIMULATE_TX;
+        const simulateTxs =
+            options.blockchain?.simulateTxs ??
+            this.config.blockchain?.simulateTxs ??
+            DEFAULT_PARAMETERS.SIMULATE_TXS;
         const forceReplaceTxs =
             options.blockchain?.forceReplaceTxs ??
             this.config.blockchain?.forceReplaceTxs ??
@@ -164,7 +164,7 @@ class InputService {
             gasPrice,
             transactionPollingTimeout,
             handleNotMinedError,
-            simulateTx,
+            simulateTxs,
             forceReplaceTxs,
             gasPriceOracleLink,
         };

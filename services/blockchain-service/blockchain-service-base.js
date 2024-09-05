@@ -127,7 +127,7 @@ class BlockchainServiceBase {
         const publicKey = await this.getPublicKey(blockchain);
         const encodedABI = await contractInstance.methods[functionName](...args).encodeABI();
 
-        if (blockchain.simulateTx) {
+        if (blockchain.simulateTxs) {
             await this[blockchain.name].web3.eth.call({
                 to: contractInstance.options.address,
                 data: encodedABI,
