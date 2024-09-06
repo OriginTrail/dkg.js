@@ -103,8 +103,9 @@ function divider() {
     console.log(paranetServiceUAL);
     divider();
 
-    await DkgClient.paranet.addServices(paranetAssetResult.UAL, [ createServiceKAResult.UAL]);
+    const addServiceToParanet = await DkgClient.paranet.addServices(paranetAssetResult.UAL, [createServiceKAResult.UAL,]);
     console.log('======================== SERVICE ADDED TO PARANET');
+    console.log(addServiceToParanet);
     divider();
 
     content = {
@@ -154,7 +155,7 @@ function divider() {
     divider();
 
     let claimable = await DkgClient.paranet.getClaimableMinerReward(paranetAssetResult.UAL);
-    console.log('======================== KA MINER REWARD TO CLAIM')
+    console.log('======================== KA MINER REWARD TO CLAIM');
     console.log(claimable);
     divider();
 
