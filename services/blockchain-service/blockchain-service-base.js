@@ -125,21 +125,57 @@ class BlockchainServiceBase {
 
     async prepareTransaction(contractInstance, functionName, args, blockchain) {
         const publicKey = await this.getPublicKey(blockchain);
-        const gasLimit = await contractInstance.methods[functionName](...args).estimateGas({
-            from: publicKey,
-        });
-
         const encodedABI = await contractInstance.methods[functionName](...args).encodeABI();
 
-        let gasPrice = Number(
-            blockchain.previousTxGasPrice ||
-                blockchain.gasPrice ||
-                (await this.getNetworkGasPrice(blockchain)),
+        if (blockchain.simulateTxs) {
+            await this[blockchain.name].web3.eth.call({
+                to: contractInstance.options.address,
+                data: encodedABI,
+                from: publicKey,
+            });
+        }
+
+        let gasLimit = Number(
+            await contractInstance.methods[functionName](...args).estimateGas({
+                from: publicKey,
+            })
         );
 
-        if (blockchain.retryTx) {
-            // Increase gas price by 20%
-            gasPrice = Math.round(gasPrice * 1.2);
+        if (blockchain.name.startsWith('base')) {
+            gasLimit *= 1.2;
+        }
+
+        let gasPrice;
+        if (blockchain.previousTxGasPrice && blockchain.retryTx) {
+            // Increase previous tx gas price by 20%
+            gasPrice = Math.round(blockchain.previousTxGasPrice * 1.2);
+        } else if (blockchain.forceReplaceTxs) {
+            // Get the current transaction count (nonce) of the wallet, including pending transactions
+            const currentNonce = await this[blockchain.name].web3.eth.getTransactionCount(publicKey, 'pending');
+
+            // Get the transaction count of the wallet excluding pending transactions
+            const confirmedNonce = await this[blockchain.name].web3.eth.getTransactionCount(publicKey, 'latest');
+
+            // If there are any pending transactions
+            if (currentNonce > confirmedNonce) {
+                const pendingBlock = await this[blockchain.name].web3.eth.getBlock('pending', true);
+
+                // Search for pending tx in the pending block
+                const pendingTx = Object.values(pendingBlock.transactions).find(
+                    tx => tx.from.toLowerCase() === publicKey.toLowerCase() && tx.nonce === confirmedNonce
+                );
+
+                if (pendingTx) {
+                    // If found, increase gas price of pending tx by 20%
+                    gasPrice = Math.round(Number(pendingTx.gasPrice) * 1.2);
+                } else {
+                    // If not found, use default/network gas price increased by 20%
+                    // Theoretically this should never happen
+                    gasPrice = Math.round((blockchain.gasPrice || (await this.getNetworkGasPrice(blockchain))) * 1.2);
+                }
+            }
+        } else {
+            gasPrice = blockchain.gasPrice || (await this.getNetworkGasPrice(blockchain));
         }
 
         return {
@@ -223,6 +259,36 @@ class BlockchainServiceBase {
         }
     }
 
+    async increaseServiceAgreementV1Allowance(sender, serviceAgreementV1Address, tokenAmount, blockchain) {
+        const allowance = await this.callContractFunction(
+            'Token',
+            'allowance',
+            [sender, serviceAgreementV1Address],
+            blockchain,
+        );
+
+        const allowanceGap = BigInt(tokenAmount) - BigInt(allowance);
+
+        if (allowanceGap > 0) {
+            await this.executeContractFunction(
+                'Token',
+                'increaseAllowance',
+                [serviceAgreementV1Address, allowanceGap],
+                blockchain,
+            );
+
+            return {
+                allowanceIncreased: true,
+                allowanceGap,
+            };
+        }
+
+        return {
+            allowanceIncreased: false,
+            allowanceGap,
+        }
+    }
+
     async getContractInstance(contractName, blockchain) {
         await this.updateContractInstance(contractName, blockchain);
         return this[blockchain.name].contracts[blockchain.hubContract][contractName];
@@ -231,34 +297,28 @@ class BlockchainServiceBase {
     // Knowledge assets operations
 
     async createAsset(requestData, paranetKaContract, paranetTokenId, blockchain, stepHooks = emptyHooks) {
-        const serviceAgreementV1Address = await this.getContractAddress(
-            'ServiceAgreementV1',
-            blockchain,
-        );
+        const sender = await this.getPublicKey(blockchain);
+        let serviceAgreementV1Address;
+        let allowanceIncreased = false;
+        let allowanceGap = 0;
 
-        const allowance = await this.callContractFunction(
-            'Token',
-            'allowance',
-            [await this.getPublicKey(blockchain), serviceAgreementV1Address],
-            blockchain,
-        );
-
-        const tokensNeeded = BigInt(requestData.tokenAmount) - BigInt(allowance);
-
-        if (tokensNeeded > 0) {
-            await this.executeContractFunction(
-                'Token',
-                'increaseAllowance',
-                [serviceAgreementV1Address, tokensNeeded],
+        try {
+            serviceAgreementV1Address = await this.getContractAddress(
+                'ServiceAgreementV1',
                 blockchain,
             );
+
+            ({ allowanceIncreased, allowanceGap } = await this.increaseServiceAgreementV1Allowance(
+                sender,
+                serviceAgreementV1Address,
+                requestData.tokenAmount,
+                blockchain
+            ));
 
             stepHooks.afterHook({
                 status: OPERATIONS_STEP_STATUS.INCREASE_ALLOWANCE_COMPLETED,
             });
-        }
 
-        try {
             let receipt;
             if(paranetKaContract == null && paranetTokenId == null) {
                 receipt = await this.executeContractFunction(
@@ -287,11 +347,11 @@ class BlockchainServiceBase {
 
             return tokenId;
         } catch (error) {
-            if (tokensNeeded > 0) {
+            if (allowanceIncreased) {
                 await this.executeContractFunction(
                     'Token',
                     'decreaseAllowance',
-                    [serviceAgreementV1Address, tokensNeeded],
+                    [serviceAgreementV1Address, allowanceGap],
                     blockchain,
                 );
             }
@@ -308,30 +368,24 @@ class BlockchainServiceBase {
         tokenAmount,
         blockchain,
     ) {
-        const serviceAgreementV1Address = await this.getContractAddress(
-            'ServiceAgreementV1',
-            blockchain,
-        );
-
-        const allowance = await this.callContractFunction(
-            'Token',
-            'allowance',
-            [await this.getPublicKey(blockchain), serviceAgreementV1Address],
-            blockchain,
-        );
-
-        const tokensNeeded = BigInt(tokenAmount) - BigInt(allowance);
-
-        if (tokensNeeded > 0) {
-            await this.executeContractFunction(
-                'Token',
-                'increaseAllowance',
-                [serviceAgreementV1Address, tokensNeeded],
-                blockchain,
-            );
-        }
+        const sender = await this.getPublicKey(blockchain);
+        let serviceAgreementV1Address;
+        let allowanceIncreased = false;
+        let allowanceGap = 0;
 
         try {
+            serviceAgreementV1Address = await this.getContractAddress(
+                'ServiceAgreementV1',
+                blockchain,
+            );
+
+            ({ allowanceIncreased, allowanceGap } = await this.increaseServiceAgreementV1Allowance(
+                sender,
+                serviceAgreementV1Address,
+                tokenAmount,
+                blockchain
+            ));
+
             return this.executeContractFunction(
                 'ContentAsset',
                 'updateAssetState',
@@ -346,11 +400,11 @@ class BlockchainServiceBase {
                 blockchain,
             );
         } catch (error) {
-            if (tokensNeeded > 0) {
+            if (allowanceIncreased) {
                 await this.executeContractFunction(
                     'Token',
                     'decreaseAllowance',
-                    [serviceAgreementV1Address, tokensNeeded],
+                    [serviceAgreementV1Address, allowanceGap],
                     blockchain,
                 );
             }
@@ -403,95 +457,116 @@ class BlockchainServiceBase {
     }
 
     async extendAssetStoringPeriod(tokenId, epochsNumber, tokenAmount, blockchain) {
-        const serviceAgreementV1Address = await this.getContractAddress(
-            'ServiceAgreementV1',
-            blockchain,
-        );
-
-        await this.executeContractFunction(
-            'Token',
-            'increaseAllowance',
-            [serviceAgreementV1Address, tokenAmount],
-            blockchain,
-        );
+        const sender = await this.getPublicKey(blockchain);
+        let serviceAgreementV1Address;
+        let allowanceIncreased = false;
+        let allowanceGap = 0;
 
         try {
+            serviceAgreementV1Address = await this.getContractAddress(
+                'ServiceAgreementV1',
+                blockchain,
+            );
+
+            ({ allowanceIncreased, allowanceGap } = await this.increaseServiceAgreementV1Allowance(
+                sender,
+                serviceAgreementV1Address,
+                tokenAmount,
+                blockchain
+            ));
+
             return this.executeContractFunction(
                 'ContentAsset',
                 'extendAssetStoringPeriod',
                 [tokenId, epochsNumber, tokenAmount],
                 blockchain,
             );
-        } catch (e) {
-            await this.executeContractFunction(
-                'Token',
-                'decreaseAllowance',
-                [serviceAgreementV1Address, tokenAmount],
-                blockchain,
-            );
-            throw e;
+        } catch (error) {
+            if (allowanceIncreased) {
+                await this.executeContractFunction(
+                    'Token',
+                    'decreaseAllowance',
+                    [serviceAgreementV1Address, allowanceGap],
+                    blockchain,
+                );
+            }
+            throw error;
         }
     }
 
     async addTokens(tokenId, tokenAmount, blockchain) {
-        const serviceAgreementV1Address = await this.getContractAddress(
-            'ServiceAgreementV1',
-            blockchain,
-        );
-
-        await this.executeContractFunction(
-            'Token',
-            'increaseAllowance',
-            [serviceAgreementV1Address, tokenAmount],
-            blockchain,
-        );
+        const sender = await this.getPublicKey(blockchain);
+        let serviceAgreementV1Address;
+        let allowanceIncreased = false;
+        let allowanceGap = 0;
 
         try {
+            serviceAgreementV1Address = await this.getContractAddress(
+                'ServiceAgreementV1',
+                blockchain,
+            );
+
+            ({ allowanceIncreased, allowanceGap } = await this.increaseServiceAgreementV1Allowance(
+                sender,
+                serviceAgreementV1Address,
+                tokenAmount,
+                blockchain
+            ));
+
             return this.executeContractFunction(
                 'ContentAsset',
                 'increaseAssetTokenAmount',
                 [tokenId, tokenAmount],
                 blockchain,
             );
-        } catch (e) {
-            await this.executeContractFunction(
-                'Token',
-                'decreaseAllowance',
-                [serviceAgreementV1Address, tokenAmount],
-                blockchain,
-            );
-            throw e;
+        } catch (error) {
+            if (allowanceIncreased) {
+                await this.executeContractFunction(
+                    'Token',
+                    'decreaseAllowance',
+                    [serviceAgreementV1Address, allowanceGap],
+                    blockchain,
+                );
+            }
+            throw error;
         }
     }
 
     async addUpdateTokens(tokenId, tokenAmount, blockchain) {
-        const serviceAgreementV1Address = await this.getContractAddress(
-            'ServiceAgreementV1',
-            blockchain,
-        );
-
-        await this.executeContractFunction(
-            'Token',
-            'increaseAllowance',
-            [serviceAgreementV1Address, tokenAmount],
-            blockchain,
-        );
+        const sender = await this.getPublicKey(blockchain);
+        let serviceAgreementV1Address;
+        let allowanceIncreased = false;
+        let allowanceGap = 0;
 
         try {
+            serviceAgreementV1Address = await this.getContractAddress(
+                'ServiceAgreementV1',
+                blockchain,
+            );
+
+            ({ allowanceIncreased, allowanceGap } = await this.increaseServiceAgreementV1Allowance(
+                sender,
+                serviceAgreementV1Address,
+                tokenAmount,
+                blockchain
+            ));
+
             return this.executeContractFunction(
                 'ContentAsset',
                 'increaseAssetUpdateTokenAmount',
                 [tokenId, tokenAmount],
                 blockchain,
             );
-        } catch (e) {
-            await this.executeContractFunction(
-                'Token',
-                'decreaseAllowance',
-                [serviceAgreementV1Address, tokenAmount],
-                blockchain,
-            );
-            throw e;
+        } catch (error) {
+            if (allowanceIncreased) {
+                await this.executeContractFunction(
+                    'Token',
+                    'decreaseAllowance',
+                    [serviceAgreementV1Address, allowanceGap],
+                    blockchain,
+                );
+            }
+            throw error;
         }
     }
 

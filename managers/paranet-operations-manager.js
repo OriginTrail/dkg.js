@@ -251,6 +251,7 @@ class ParanetOperationsManager {
         );
 
         const receipt = await this.blockchainService.claimVoterReward(paranetId, blockchain);
+
         return {
             transactionHash: receipt.transactionHash,
             status: receipt.status,
@@ -279,6 +280,7 @@ class ParanetOperationsManager {
         );
 
         const receipt = await this.blockchainService.claimOperatorReward(paranetId, blockchain);
+
         return {
             transactionHash: receipt.transactionHash,
             status: receipt.status,
