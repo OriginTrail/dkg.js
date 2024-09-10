@@ -58,7 +58,37 @@ class BlockchainServiceBase {
         // overridden by subclasses
     }
 
+    async ensureBlockchainInfo(blockchain) {
+        if (!this[blockchain.name]) {
+            this[blockchain.name] = {
+                contracts: { [blockchain.hubContract]: {} },
+                contractAddresses: {
+                    [blockchain.hubContract]: {
+                        Hub: blockchain.hubContract,
+                    },
+                },
+            };
+
+            const web3Instance = await this.getWeb3Instance(blockchain);
+            this[blockchain.name].contracts[blockchain.hubContract].Hub =
+                    new web3Instance.eth.Contract(this.abis.Hub, blockchain.hubContract, { from: blockchain.publicKey });
+    
+        }
+    }
+
+    async getWeb3Instance(blockchain) {
+        if (!this[blockchain.name].web3) {
+            const blockchainOptions = {
+                transactionPollingTimeout: blockchain.transactionPollingTimeout,
+            };
+            await this.initializeWeb3(blockchain.name, blockchain.rpc, blockchainOptions);
+        }
+
+        return this[blockchain.name].web3;
+    }
+
     async getNetworkGasPrice(blockchain) {
+        await this.ensureBlockchainInfo(blockchain);
         const web3Instance = await this.getWeb3Instance(blockchain);
 
         try {
@@ -99,7 +129,9 @@ class BlockchainServiceBase {
     }
 
     async callContractFunction(contractName, functionName, args, blockchain) {
+        await this.ensureBlockchainInfo(blockchain);
         let contractInstance = await this.getContractInstance(contractName, blockchain);
+
         try {
             return await contractInstance.methods[functionName](...args).call();
         } catch (error) {
@@ -124,26 +156,17 @@ class BlockchainServiceBase {
     }
 
     async prepareTransaction(contractInstance, functionName, args, blockchain) {
+        await this.ensureBlockchainInfo(blockchain);
+        const web3Instance = await this.getWeb3Instance(blockchain);
         const publicKey = await this.getPublicKey(blockchain);
         const encodedABI = await contractInstance.methods[functionName](...args).encodeABI();
-
-        if (blockchain.simulateTxs) {
-            await this[blockchain.name].web3.eth.call({
-                to: contractInstance.options.address,
-                data: encodedABI,
-                from: publicKey,
-            });
-        }
 
         let gasLimit = Number(
             await contractInstance.methods[functionName](...args).estimateGas({
                 from: publicKey,
             })
         );
-
-        if (blockchain.name.startsWith('base')) {
-            gasLimit *= 1.2;
-        }
+        gasLimit = Math.round(gasLimit * blockchain.gasLimitMultiplier);
 
         let gasPrice;
         if (blockchain.previousTxGasPrice && blockchain.retryTx) {
@@ -151,14 +174,14 @@ class BlockchainServiceBase {
             gasPrice = Math.round(blockchain.previousTxGasPrice * 1.2);
         } else if (blockchain.forceReplaceTxs) {
             // Get the current transaction count (nonce) of the wallet, including pending transactions
-            const currentNonce = await this[blockchain.name].web3.eth.getTransactionCount(publicKey, 'pending');
+            const currentNonce = await web3Instance.eth.getTransactionCount(publicKey, 'pending');
 
             // Get the transaction count of the wallet excluding pending transactions
-            const confirmedNonce = await this[blockchain.name].web3.eth.getTransactionCount(publicKey, 'latest');
+            const confirmedNonce = await web3Instance.eth.getTransactionCount(publicKey, 'latest');
 
             // If there are any pending transactions
             if (currentNonce > confirmedNonce) {
-                const pendingBlock = await this[blockchain.name].web3.eth.getBlock('pending', true);
+                const pendingBlock = await web3Instance.eth.getBlock('pending', true);
 
                 // Search for pending tx in the pending block
                 const pendingTx = Object.values(pendingBlock.transactions).find(
@@ -178,6 +201,16 @@ class BlockchainServiceBase {
             gasPrice = blockchain.gasPrice || (await this.getNetworkGasPrice(blockchain));
         }
 
+        if (blockchain.simulateTxs) {
+            await web3Instance.eth.call({
+                to: contractInstance.options.address,
+                data: encodedABI,
+                from: publicKey,
+                gasPrice,
+                gas: gasLimit,
+            });
+        }
+
         return {
             from: publicKey,
             to: contractInstance.options.address,
@@ -187,41 +220,8 @@ class BlockchainServiceBase {
         };
     }
 
-    ensureBlockchainInfo(blockchain) {
-        if (!this[blockchain.name]) {
-            this[blockchain.name] = {
-                contracts: { [blockchain.hubContract]: {} },
-                contractAddresses: {
-                    [blockchain.hubContract]: {
-                        Hub: blockchain.hubContract,
-                    },
-                },
-            };
-        }
-    }
-
-    async getWeb3Instance(blockchain) {
-        this.ensureBlockchainInfo(blockchain);
-        if (!this[blockchain.name].web3) {
-            const blockchainOptions = {
-                transactionPollingTimeout: blockchain.transactionPollingTimeout,
-            };
-            await this.initializeWeb3(blockchain.name, blockchain.rpc, blockchainOptions);
-        }
-
-        return this[blockchain.name].web3;
-    }
-
     async getContractAddress(contractName, blockchain, force = false) {
-        this.ensureBlockchainInfo(blockchain);
-        if (!this[blockchain.name].contracts[blockchain.hubContract]) {
-            this[blockchain.name].contracts[blockchain.hubContract] = {};
-        }
-        if (!this[blockchain.name].contracts[blockchain.hubContract].Hub) {
-            const web3Instance = await this.getWeb3Instance(blockchain);
-            this[blockchain.name].contracts[blockchain.hubContract].Hub =
-                new web3Instance.eth.Contract(this.abis.Hub, blockchain.hubContract, { from: blockchain.publicKey });
-        }
+        await this.ensureBlockchainInfo(blockchain);
 
         if (
             force ||
@@ -241,13 +241,9 @@ class BlockchainServiceBase {
     }
 
     async updateContractInstance(contractName, blockchain, force = false) {
-        this.ensureBlockchainInfo(blockchain);
-        if (
-            force ||
-            !this[blockchain.name].contractAddresses[blockchain.hubContract][contractName]
-        ) {
-            this[blockchain.name].contractAddresses[blockchain.hubContract][contractName] = await this.getContractAddress(contractName, blockchain, force);
-        }
+        await this.ensureBlockchainInfo(blockchain);
+        await this.getContractAddress(contractName, blockchain, force);
+
         if (force || !this[blockchain.name].contracts[blockchain.hubContract][contractName]) {
             const web3Instance = await this.getWeb3Instance(blockchain);
             this[blockchain.name].contracts[blockchain.hubContract][contractName] =
@@ -257,6 +253,11 @@ class BlockchainServiceBase {
                     { from: blockchain.publicKey },
                 );
         }
+    }
+
+    async getContractInstance(contractName, blockchain) {
+        await this.updateContractInstance(contractName, blockchain);
+        return this[blockchain.name].contracts[blockchain.hubContract][contractName];
     }
 
     async increaseServiceAgreementV1Allowance(sender, serviceAgreementV1Address, tokenAmount, blockchain) {
@@ -287,11 +288,6 @@ class BlockchainServiceBase {
             allowanceIncreased: false,
             allowanceGap,
         }
-    }
-
-    async getContractInstance(contractName, blockchain) {
-        await this.updateContractInstance(contractName, blockchain);
-        return this[blockchain.name].contracts[blockchain.hubContract][contractName];
     }
 
     // Knowledge assets operations
@@ -710,11 +706,13 @@ class BlockchainServiceBase {
     }
 
     async setIncentivesPool(contractAddress, blockchain){
-        const web3Instance = await this.getWeb3Instance(blockchain);
+        await this.ensureBlockchainInfo(blockchain);
+
         // eslint-disable-next-line dot-notation
         if (this[blockchain.name].contractAddresses[blockchain.hubContract]['ParanetNeuroIncentivesPool'] !== contractAddress) {
             // eslint-disable-next-line dot-notation
             this[blockchain.name].contractAddresses[blockchain.hubContract]['ParanetNeuroIncentivesPool'] = contractAddress;
+            const web3Instance = await this.getWeb3Instance(blockchain);
             // eslint-disable-next-line dot-notation
             this[blockchain.name].contracts[blockchain.hubContract]['ParanetNeuroIncentivesPool'] =
                 await new web3Instance.eth.Contract(
@@ -873,6 +871,7 @@ class BlockchainServiceBase {
     // Blockchain operations
 
     async getChainId(blockchain) {
+        await this.ensureBlockchainInfo(blockchain);
         const web3Instance = await this.getWeb3Instance(blockchain);
 
         return web3Instance.eth.getChainId();
@@ -886,6 +885,7 @@ class BlockchainServiceBase {
     }
 
     async getGasPrice(blockchain) {
+        await this.ensureBlockchainInfo(blockchain);
         const web3Instance = await this.getWeb3Instance(blockchain);
         try {
             let gasPrice;
@@ -922,6 +922,7 @@ class BlockchainServiceBase {
     }
 
     async getWalletBalances(blockchain) {
+        await this.ensureBlockchainInfo(blockchain);
         const web3Instance = await this.getWeb3Instance(blockchain);
         const publicKey = await this.getPublicKey(blockchain);
 
@@ -940,6 +941,7 @@ class BlockchainServiceBase {
     }
 
     async getLatestBlock(blockchain) {
+        await this.ensureBlockchainInfo(blockchain);
         const web3 = await this.getWeb3Instance(blockchain);
         const blockNumber = await web3.eth.getBlockNumber();
 

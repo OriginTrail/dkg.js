@@ -37,6 +37,7 @@ class BrowserBlockchainService extends BlockchainServiceBase {
     }
 
     async decodeEventLogs(receipt, eventName, blockchain) {
+        await this.ensureBlockchainInfo(blockchain);
         const web3Instance = await this.getWeb3Instance(blockchain);
         let result;
         const { hash, inputs } = this.events[eventName];
@@ -75,8 +76,9 @@ class BrowserBlockchainService extends BlockchainServiceBase {
                 if (!status) {
                     await this.updateContractInstance(contractName, blockchain, true);
                     contractInstance = await this.getContractInstance(contractName, blockchain);
+                    const web3Instance = await this.getWeb3Instance(blockchain);
 
-                    await this[blockchain.name].web3.eth.call({
+                    await web3Instance.eth.call({
                         to: contractInstance.options.address,
                         data: tx.data,
                         from: tx.from,

@@ -37,6 +37,7 @@ class NodeBlockchainService extends BlockchainServiceBase {
     }
 
     async decodeEventLogs(receipt, eventName, blockchain) {
+        await this.ensureBlockchainInfo(blockchain);
         const web3Instance = await this.getWeb3Instance(blockchain);
         let result;
         const { hash, inputs } = this.events[eventName];
@@ -55,6 +56,7 @@ class NodeBlockchainService extends BlockchainServiceBase {
     }
 
     async executeContractFunction(contractName, functionName, args, blockchain) {
+        await this.ensureBlockchainInfo(blockchain);
         const web3Instance = await this.getWeb3Instance(blockchain);
         let contractInstance = await this.getContractInstance(contractName, blockchain);
 
