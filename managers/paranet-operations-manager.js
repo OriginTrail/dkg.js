@@ -53,7 +53,7 @@ class ParanetOperationsManager {
 
         return {
             paranetUAL: UAL,
-            createParanetReceipt: receipt
+            operation: receipt
         };
     }
 
@@ -111,7 +111,7 @@ class ParanetOperationsManager {
             return {
                 paranetUAL,
                 incentivesPoolContractAddress: neuroIncentivesPoolAddress,
-                deployNeuroIncentivesPoolReceipt: receipt
+                operation: receipt
             };
         }
 
@@ -160,7 +160,7 @@ class ParanetOperationsManager {
 
         return {
             serviceUAL: UAL,
-            createParanetServiceReceipt: receipt
+            operation: receipt
         };
     }
 
@@ -200,7 +200,7 @@ class ParanetOperationsManager {
         return {
             paranetUAL,
             paranetServiceUALs,
-            addServicesToParanetReceipt: receipt
+            operation: receipt
         };
     }
 
@@ -227,7 +227,11 @@ class ParanetOperationsManager {
 
         const receipt = await this.blockchainService.claimKnowledgeMinerReward(paranetId, blockchain);
 
-        return receipt;
+        return {
+            operation: receipt,
+            transactionHash: receipt.transactionHash,
+            status: receipt.status,
+        };
     }
 
     /**
@@ -252,7 +256,11 @@ class ParanetOperationsManager {
         );
 
         const receipt = await this.blockchainService.claimVoterReward(paranetId, blockchain);
-        return receipt;
+        return {
+            operation: receipt,
+            transactionHash: receipt.transactionHash,
+            status: receipt.status,
+        };
     }
 
     /**
@@ -277,7 +285,11 @@ class ParanetOperationsManager {
         );
 
         const receipt = await this.blockchainService.claimOperatorReward(paranetId, blockchain);
-        return receipt;
+        return {
+            operation: receipt,
+            transactionHash: receipt.transactionHash,
+            status: receipt.status,
+        };
     }
 
     /**
@@ -439,7 +451,11 @@ class ParanetOperationsManager {
                 end: updatingKnowledgeAssetStates.length
             }, blockchain);
 
-            return receipt;
+            return {
+                operation: receipt,
+                transactionHash: receipt.transactionHash,
+                status: receipt.status,
+            };
         }
 
         return {

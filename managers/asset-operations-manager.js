@@ -149,7 +149,11 @@ class AssetOperationsManager {
             );
         }
 
-        return receipt;
+        return {
+            operation: receipt,
+            transactionHash: receipt.transactionHash,
+            status: receipt.status,
+        };
     }
 
     /**
@@ -176,7 +180,11 @@ class AssetOperationsManager {
             blockchain,
         );
 
-        return receipt;
+        return {
+            operation: receipt,
+            transactionHash: receipt.transactionHash,
+            status: receipt.status,
+        };
     }
 
     /**
@@ -213,7 +221,11 @@ class AssetOperationsManager {
             blockchain,
         );
 
-        return receipt;
+        return {
+            operation: receipt,
+            transactionHash: receipt.transactionHash,
+            status: receipt.status,
+        };
     }
 
     /**
@@ -326,7 +338,7 @@ class AssetOperationsManager {
         let tokenId;
         let receipt;
         if (paranetUAL == null) {
-            [tokenId, receipt] = await this.blockchainService.createAsset(
+            ({tokenId, receipt} = await this.blockchainService.createAsset(
                 {
                     publicAssertionId,
                     assertionSize: publicAssertionSizeInBytes,
@@ -341,10 +353,10 @@ class AssetOperationsManager {
                 null,
                 blockchain,
                 stepHooks,
-            );
+            ));
         } else {
             const { contract: paranetKaContract, tokenId: paranetTokenId } = resolveUAL(paranetUAL);
-            [tokenId, receipt] = await this.blockchainService.createAsset(
+            ({tokenId, receipt} = await this.blockchainService.createAsset(
                 {
                     publicAssertionId,
                     assertionSize: publicAssertionSizeInBytes,
@@ -359,7 +371,7 @@ class AssetOperationsManager {
                 paranetTokenId,
                 blockchain,
                 stepHooks,
-            );
+            ));
         }
 
         const resolvedUAL = {
@@ -445,7 +457,7 @@ class AssetOperationsManager {
             UAL,
             publicAssertionId,
             operation: {
-                mintKnowledgeAssetReceipt: receipt,
+                mintKnowledgeAsset: receipt,
                 publish: getOperationStatusObject(publishOperationResult, publishOperationId),
                 localStore: getOperationStatusObject(
                     localStoreOperationResult,
@@ -874,7 +886,7 @@ class AssetOperationsManager {
             };
         }
 
-        let UpdateOperationId = await this.nodeApiService.update(
+        let updateOperationId = await this.nodeApiService.update(
             endpoint,
             port,
             authToken,
@@ -892,14 +904,14 @@ class AssetOperationsManager {
             OPERATIONS.UPDATE,
             maxNumberOfRetries,
             frequency,
-            UpdateOperationId,
+            updateOperationId,
         );
         return {
             UAL,
             publicAssertionId,
             operation: {
-                updateKnowledgeAssetReceipt: receipt,
-                localStore: getOperationStatusObject(localStoreOperationResult, UpdateOperationId),
+                updateKnowledgeAsset: receipt,
+                localStore: getOperationStatusObject(localStoreOperationResult, updateOperationId),
                 update: getOperationStatusObject(updateOperationResult, localStoreOperationId),
             },
         };
@@ -982,11 +994,7 @@ class AssetOperationsManager {
 
         return {
             UAL,
-            operation: {
-                status: getOperationStatusObject({ status: 'COMPLETED' }, null),
-                cancelKnowledgeAssetUpdateReceipt: receipt,
-            },
-            cancelAssetUpdateReceipt: receipt,
+            operation: receipt,
         };
     }
 
@@ -1009,10 +1017,7 @@ class AssetOperationsManager {
         return {
             UAL,
             owner,
-            operation: {
-                status: getOperationStatusObject({ status: 'COMPLETED' }, null),
-                transferAssetReceipt: receipt,
-            },
+            operation: receipt,
         };
     }
 
@@ -1142,10 +1147,7 @@ class AssetOperationsManager {
         let receipt = await this.blockchainService.burnAsset(tokenId, blockchain);
         return {
             UAL,
-            operation: {
-                status: getOperationStatusObject({ status: 'COMPLETED' }, null),
-                burnKnowledgeAssetReceipt: receipt,
-            },
+            operation: receipt,
         };
     }
 
@@ -1212,10 +1214,7 @@ class AssetOperationsManager {
 
         return {
             UAL,
-            operation: {
-                status: getOperationStatusObject({ status: 'COMPLETED' }, null),
-                extendKnowledgeAssetStoringPeriodReceipt: receipt,
-            },
+            operation: receipt,
         };
     }
 
@@ -1276,10 +1275,7 @@ class AssetOperationsManager {
 
         return {
             UAL,
-            operation: {
-                status: getOperationStatusObject({ status: 'COMPLETED' }, null),
-                addTokensForKnowledgeAssetReceipt: receipt,
-            },
+            operation: receipt,
         };
     }
 
@@ -1343,10 +1339,7 @@ class AssetOperationsManager {
 
         return {
             UAL,
-            operation: {
-                status: getOperationStatusObject({ status: 'COMPLETED' }, null),
-                addUpdateKnowledgeAssetTokenReceipt: receipt,
-            },
+            operation: receipt
         };
     }
 
@@ -1431,10 +1424,7 @@ class AssetOperationsManager {
 
         return {
             UAL,
-            operation: {
-                status: getOperationStatusObject({ status: 'COMPLETED' }, null),
-                submitKnowledgeAssetToParanetReceipt: receipt,
-            },
+            operation: receipt
         };
     }
 }

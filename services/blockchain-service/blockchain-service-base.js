@@ -285,7 +285,7 @@ class BlockchainServiceBase {
                 data: { tokenId },
             });
 
-            return [tokenId, receipt];
+            return { tokenId, receipt };
         } catch (error) {
             if (tokensNeeded > 0) {
                 await this.executeContractFunction(
