@@ -57,6 +57,7 @@ class BrowserBlockchainService extends BlockchainServiceBase {
     }
 
     async executeContractFunction(contractName, functionName, args, blockchain) {
+        await this.ensureBlockchainInfo(blockchain);
         let contractInstance = await this.getContractInstance(contractName, blockchain);
         let tx;
 
