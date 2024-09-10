@@ -9,6 +9,7 @@ const {
     sleepForMilliseconds,
 } = require('../services/utilities.js');
 const {
+    ASSET_STATES,
     CONTENT_TYPES,
     OPERATIONS,
     OPERATIONS_STEP_STATUS,
@@ -16,12 +17,12 @@ const {
     OPERATION_STATUSES,
     DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY,
     PRIVATE_ASSERTION_PREDICATE,
+    STORE_TYPES,
     QUERY_TYPES,
     OT_NODE_TRIPLE_STORE_REPOSITORIES,
     ZERO_ADDRESS,
 } = require('../constants.js');
 const emptyHooks = require('../util/empty-hooks');
-const { STORE_TYPES, ASSET_STATES } = require('../constants');
 
 class AssetOperationsManager {
     constructor(services) {
@@ -149,10 +150,14 @@ class AssetOperationsManager {
             );
         }
 
-        return {
-            transactionHash: receipt.transactionHash,
-            status: receipt.status,
-        };
+        if (receipt) {
+            return {
+                transactionHash: receipt.transactionHash,
+                status: receipt.status,
+            };
+        }
+
+        return { status: 'Skipped: Allowance is already equal to the requested amount.' };
     }
 
     /**
@@ -637,9 +642,10 @@ class AssetOperationsManager {
         }
 
         if (contentType !== CONTENT_TYPES.PUBLIC) {
-            const privateAssertionLinkTriple = publicAssertion.filter((element) =>
+            const filteredTriples = publicAssertion.filter((element) =>
                 element.includes(PRIVATE_ASSERTION_PREDICATE),
-            )[0];
+            );
+            const privateAssertionLinkTriple = filteredTriples.length > 0 ? filteredTriples[0] : null;
 
             let queryPrivateOperationId;
             let queryPrivateOperationResult = {};

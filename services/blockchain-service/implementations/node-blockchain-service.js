@@ -37,13 +37,17 @@ class NodeBlockchainService extends BlockchainServiceBase {
     }
 
     async decodeEventLogs(receipt, eventName, blockchain) {
+        await this.ensureBlockchainInfo(blockchain);
         const web3Instance = await this.getWeb3Instance(blockchain);
         let result;
         const { hash, inputs } = this.events[eventName];
-        receipt.logs.forEach((row) => {
-            if (row.topics[0] === hash)
-                result = web3Instance.eth.abi.decodeLog(inputs, row.data, row.topics.slice(1));
-        });
+
+        for (const log of receipt.logs) {
+            if (log.topics && log.topics.length > 0 && log.topics[0] === hash) {
+                result = web3Instance.eth.abi.decodeLog(inputs, log.data, log.topics.slice(1));
+                break;
+            }
+        }
         return result;
     }
 
@@ -52,11 +56,13 @@ class NodeBlockchainService extends BlockchainServiceBase {
     }
 
     async executeContractFunction(contractName, functionName, args, blockchain) {
+        await this.ensureBlockchainInfo(blockchain);
         const web3Instance = await this.getWeb3Instance(blockchain);
         let contractInstance = await this.getContractInstance(contractName, blockchain);
 
         let result;
         let previousTxGasPrice;
+        let simulationSucceeded = false;
         let transactionRetried = false;
 
         while (result === undefined) {
@@ -69,6 +75,8 @@ class NodeBlockchainService extends BlockchainServiceBase {
                     blockchain,
                 );
                 previousTxGasPrice = tx.gasPrice;
+                simulationSucceeded = true;
+
                 // eslint-disable-next-line no-await-in-loop
                 const createdTransaction = await web3Instance.eth.accounts.signTransaction(
                     tx,
@@ -81,6 +89,7 @@ class NodeBlockchainService extends BlockchainServiceBase {
                 );
             } catch (error) {
                 if (
+                    simulationSucceeded &&
                     !transactionRetried &&
                     blockchain.handleNotMinedError &&
                     TRANSACTION_RETRY_ERRORS.some((errorMsg) =>
