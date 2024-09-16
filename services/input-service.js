@@ -1,4 +1,5 @@
 const {
+    DEFAULT_NEUROWEB_FINALITY_PARAMETERS,
     DEFAULT_PARAMETERS,
     DEFAULT_PROXIMITY_SCORE_FUNCTIONS_PAIR_IDS,
     BLOCKCHAINS,
@@ -159,7 +160,7 @@ class InputService {
             BLOCKCHAINS[environment][name]?.gasPriceOracleLink ??
             undefined;
 
-        return {
+        const blockchainConfig = {
             name,
             rpc,
             hubContract,
@@ -173,6 +174,23 @@ class InputService {
             forceReplaceTxs,
             gasPriceOracleLink,
         };
+
+        if (name && name.startsWith('otp')) {
+            blockchainConfig.transactionFinalityPollingInterval = options.blockchain?.transactionFinalityPollingInterval ??
+                this.config.blockchain?.transactionFinalityPollingInterval ??
+                DEFAULT_NEUROWEB_FINALITY_PARAMETERS.TX_FINALITY_POLLING_INTERVAL;
+            blockchainConfig.transactionFinalityMaxWaitTime = options.blockchain?.transactionFinalityMaxWaitTime ??
+                this.config.blockchain?.transactionFinalityMaxWaitTime ??
+                DEFAULT_NEUROWEB_FINALITY_PARAMETERS.TX_FINALITY_MAX_WAIT_TIME;
+            blockchainConfig.transactionReminingPollingInterval = options.blockchain?.transactionReminingPollingInterval ??
+                this.config.blockchain?.transactionReminingPollingInterval ??
+                DEFAULT_NEUROWEB_FINALITY_PARAMETERS.TX_REMINING_POLLING_INTERVAL;
+            blockchainConfig.transactionReminingMaxWaitTime = options.blockchain?.transactionReminingMaxWaitTime ??
+                this.config.blockchain?.transactionReminingMaxWaitTime ??
+                DEFAULT_NEUROWEB_FINALITY_PARAMETERS.TX_REMINING_MAX_WAIT_TIME;
+        }
+
+        return blockchainConfig
     }
 
     getGraphLocation(options) {

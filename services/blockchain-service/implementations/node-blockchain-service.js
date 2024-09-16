@@ -1,3 +1,5 @@
+/* eslint-disable no-param-reassign */
+/* eslint-disable no-await-in-loop */
 const Web3 = require('web3');
 const { TRANSACTION_RETRY_ERRORS, WEBSOCKET_PROVIDER_OPTIONS } = require('../../../constants.js');
 const BlockchainServiceBase = require('../blockchain-service-base.js');
@@ -60,14 +62,13 @@ class NodeBlockchainService extends BlockchainServiceBase {
         const web3Instance = await this.getWeb3Instance(blockchain);
         let contractInstance = await this.getContractInstance(contractName, blockchain);
 
-        let result;
+        let receipt;
         let previousTxGasPrice;
         let simulationSucceeded = false;
         let transactionRetried = false;
 
-        while (result === undefined) {
+        while (receipt === undefined) {
             try {
-                // eslint-disable-next-line no-await-in-loop
                 const tx = await this.prepareTransaction(
                     contractInstance,
                     functionName,
@@ -77,16 +78,17 @@ class NodeBlockchainService extends BlockchainServiceBase {
                 previousTxGasPrice = tx.gasPrice;
                 simulationSucceeded = true;
 
-                // eslint-disable-next-line no-await-in-loop
                 const createdTransaction = await web3Instance.eth.accounts.signTransaction(
                     tx,
                     blockchain.privateKey,
                 );
 
-                // eslint-disable-next-line no-await-in-loop
-                result = await web3Instance.eth.sendSignedTransaction(
+                receipt = await web3Instance.eth.sendSignedTransaction(
                     createdTransaction.rawTransaction,
                 );
+                if (blockchain.name.startsWith('otp')) {
+                    receipt = await this.waitForTransactionFinalization(receipt, blockchain);
+                }
             } catch (error) {
                 if (
                     simulationSucceeded &&
@@ -97,26 +99,20 @@ class NodeBlockchainService extends BlockchainServiceBase {
                     )
                 ) {
                     transactionRetried = true;
-                    // eslint-disable-next-line no-param-reassign
                     blockchain.retryTx = true;
-                    // eslint-disable-next-line no-param-reassign
                     blockchain.previousTxGasPrice = previousTxGasPrice;
                 } else if (!transactionRetried && /revert|VM Exception/i.test(error.message)) {
                     let status;
                     try {
-                        // eslint-disable-next-line no-await-in-loop
                         status = await contractInstance.methods.status().call();
                     } catch (_) {
                         status = false;
                     }
 
                     if (!status && contractName !== 'ParanetNeuroIncentivesPool') {
-                        // eslint-disable-next-line no-await-in-loop
                         await this.updateContractInstance(contractName, blockchain, true);
-                        // eslint-disable-next-line no-await-in-loop
                         contractInstance = await this.getContractInstance(contractName, blockchain);
                         transactionRetried = true;
-                        // eslint-disable-next-line no-param-reassign
                         blockchain.retryTx = true;
                     } else {
                         throw error;
@@ -127,7 +123,7 @@ class NodeBlockchainService extends BlockchainServiceBase {
             }
         }
 
-        return result;
+        return receipt;
     }
 
     async transferAsset(tokenId, to, blockchain) {
