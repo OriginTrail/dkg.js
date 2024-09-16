@@ -53,6 +53,17 @@ class BlockchainServiceBase {
         return {};
     }
 
+    extendWeb3(blockchain) {
+        this[blockchain.name].web3.extend({
+            property: 'chain',
+            methods: [{
+                name: 'getFinalizedHead',
+                call: 'chain_getFinalizedHead',
+                params: 0,
+            }]
+        });
+    }
+
     async decodeEventLogs() {
         // overridden by subclasses
     }
@@ -85,6 +96,7 @@ class BlockchainServiceBase {
                 transactionPollingTimeout: blockchain.transactionPollingTimeout,
             };
             await this.initializeWeb3(blockchain.name, blockchain.rpc, blockchainOptions);
+            this.extendWeb3(blockchain);
         }
 
         return this[blockchain.name].web3;
@@ -130,38 +142,6 @@ class BlockchainServiceBase {
             );
         }
     }
-
-    async getFinalizedBlockHash(blockchain) {
-        await this.ensureBlockchainInfo(blockchain);
-        const web3Instance = await this.getWeb3Instance(blockchain);
-
-        try {
-            const response = await web3Instance.currentProvider.send({
-                jsonrpc: '2.0',
-                id: 1,
-                method: 'chain_getFinalizedHead',
-                params: [],
-            });
-            return response.result;
-        } catch (error) {
-            throw new Error(`Failed to get finalized block hash: ${error.message}`);
-        }
-    }
-
-    async isTransactionFinalized(txReceipt, blockchain) {
-        await this.ensureBlockchainInfo(blockchain);
-        const web3Instance = await this.getWeb3Instance(blockchain);
-
-        try {
-          const txBlockNumber = txReceipt.blockNumber;
-          const finalizedBlockHash = await this.getFinalizedBlockHash();
-          const finalizedBlock = await web3Instance.eth.getBlock(finalizedBlockHash);
-          const finalizedBlockNumber = finalizedBlock.number;
-          return finalizedBlockNumber >= txBlockNumber;
-        } catch (error) {
-          throw new Error(`Error checking transaction finality: ${error.message}`);
-        }
-      }
 
     async callContractFunction(contractName, functionName, args, blockchain) {
         await this.ensureBlockchainInfo(blockchain);
@@ -263,11 +243,11 @@ class BlockchainServiceBase {
         let receipt = initialReceipt;
         let finalized = false;
       
-        try {      
+        try {
           while (!finalized && (Date.now() - startTime) < blockchain.transactionFinalityMaxWaitTime) {
             try {
               // Check if the block containing the transaction is finalized
-              const finalizedBlockHash = await this.getFinalizedBlockHash(blockchain);
+              const finalizedBlockHash = await web3Instance.chain.getFinalizedHead();
               const finalizedBlockNumber = (await web3Instance.eth.getBlock(finalizedBlockHash)).number;
               if (finalizedBlockNumber >= receipt.blockNumber) {
                 finalized = true;
