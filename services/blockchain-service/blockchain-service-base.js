@@ -56,11 +56,19 @@ class BlockchainServiceBase {
     extendWeb3(blockchain) {
         this[blockchain.name].web3.extend({
             property: 'chain',
-            methods: [{
-                name: 'getFinalizedHead',
-                call: 'chain_getFinalizedHead',
-                params: 0,
-            }]
+            methods: [
+                {
+                    name: 'getFinalizedHead',
+                    call: 'chain_getFinalizedHead',
+                    params: 0,
+                },
+                {
+                    name: 'getBlock',
+                    call: 'chain_getBlock',
+                    params: 1,
+                    inputFormatter: [null],
+                },
+            ]
         });
     }
 
@@ -248,7 +256,8 @@ class BlockchainServiceBase {
             try {
               // Check if the block containing the transaction is finalized
               const finalizedBlockHash = await web3Instance.chain.getFinalizedHead();
-              const finalizedBlockNumber = (await web3Instance.eth.getBlock(finalizedBlockHash)).number;
+              const finalizedBlock = (await web3Instance.chain.getBlock(finalizedBlockHash)).block;
+              const finalizedBlockNumber = Web3.utils.hexToNumber(finalizedBlock.header.number);
               if (finalizedBlockNumber >= receipt.blockNumber) {
                 finalized = true;
                 break;
