@@ -83,10 +83,12 @@ class NodeBlockchainService extends BlockchainServiceBase {
                     blockchain.privateKey,
                 );
 
-                const initialReceipt = await web3Instance.eth.sendSignedTransaction(
+                receipt = await web3Instance.eth.sendSignedTransaction(
                     createdTransaction.rawTransaction,
                 );
-                receipt = await this.waitForTransactionFinalization(initialReceipt, blockchain);
+                if (blockchain.name.startsWith('otp')) {
+                    receipt = await this.waitForTransactionFinalization(receipt, blockchain);
+                }
             } catch (error) {
                 if (
                     simulationSucceeded &&

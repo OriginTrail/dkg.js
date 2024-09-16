@@ -54,22 +54,24 @@ class BlockchainServiceBase {
     }
 
     extendWeb3(blockchain) {
-        this[blockchain.name].web3.extend({
-            property: 'chain',
-            methods: [
-                {
-                    name: 'getFinalizedHead',
-                    call: 'chain_getFinalizedHead',
-                    params: 0,
-                },
-                {
-                    name: 'getBlock',
-                    call: 'chain_getBlock',
-                    params: 1,
-                    inputFormatter: [null],
-                },
-            ]
-        });
+        if (blockchain.name.startsWith('otp')) {
+            this[blockchain.name].web3.extend({
+                property: 'chain',
+                methods: [
+                    {
+                        name: 'getFinalizedHead',
+                        call: 'chain_getFinalizedHead',
+                        params: 0,
+                    },
+                    {
+                        name: 'getBlock',
+                        call: 'chain_getBlock',
+                        params: 1,
+                        inputFormatter: [null],
+                    },
+                ]
+            });
+        }
     }
 
     async decodeEventLogs() {

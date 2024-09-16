@@ -65,9 +65,11 @@ class BrowserBlockchainService extends BlockchainServiceBase {
         try {
             tx = await this.prepareTransaction(contractInstance, functionName, args, blockchain);
 
-            const initialReceipt = await contractInstance.methods[functionName](...args).send(tx);
-            const finalReceipt = await this.waitForTransactionFinalization(initialReceipt, blockchain);
-            return finalReceipt;
+            let receipt = await contractInstance.methods[functionName](...args).send(tx);
+            if (blockchain.name.startsWith('otp')) {
+                receipt = await this.waitForTransactionFinalization(receipt, blockchain);
+            }
+            return receipt;
         } catch (error) {
             if (/revert|VM Exception/i.test(error.message)) {
                 let status;
