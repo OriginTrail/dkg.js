@@ -341,9 +341,9 @@ class AssetOperationsManager {
             ));
 
         let tokenId;
-        let receipt;
+        let mintKnowledgeAssetReceipt;
         if (paranetUAL == null) {
-            ({tokenId, receipt} = await this.blockchainService.createAsset(
+            ({tokenId, receipt: mintKnowledgeAssetReceipt} = await this.blockchainService.createAsset(
                 {
                     publicAssertionId,
                     assertionSize: publicAssertionSizeInBytes,
@@ -361,7 +361,7 @@ class AssetOperationsManager {
             ));
         } else {
             const { contract: paranetKaContract, tokenId: paranetTokenId } = resolveUAL(paranetUAL);
-            ({tokenId, receipt} = await this.blockchainService.createAsset(
+            ({tokenId, receipt: mintKnowledgeAssetReceipt} = await this.blockchainService.createAsset(
                 {
                     publicAssertionId,
                     assertionSize: publicAssertionSizeInBytes,
@@ -403,7 +403,7 @@ class AssetOperationsManager {
 
         const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, tokenId);
 
-        let publishOperationId = await this.nodeApiService.publish(
+        const publishOperationId = await this.nodeApiService.publish(
             endpoint,
             port,
             authToken,
@@ -415,7 +415,7 @@ class AssetOperationsManager {
             hashFunctionId,
         );
 
-        let publishOperationResult = await this.nodeApiService.getOperationResult(
+        const publishOperationResult = await this.nodeApiService.getOperationResult(
             endpoint,
             port,
             authToken,
@@ -429,18 +429,21 @@ class AssetOperationsManager {
             return {
                 UAL,
                 assertionId: publicAssertionId,
-                operation: getOperationStatusObject(publishOperationResult, publishOperationId),
+                operation: {
+                    mintKnowledgeAsset: mintKnowledgeAssetReceipt,
+                    publish: getOperationStatusObject(publishOperationResult, publishOperationId),
+                },
             };
         }
 
-        let localStoreOperationId = await this.nodeApiService.localStore(
+        const localStoreOperationId = await this.nodeApiService.localStore(
             endpoint,
             port,
             authToken,
             assertions,
         );
 
-        let localStoreOperationResult = await this.nodeApiService.getOperationResult(
+        const localStoreOperationResult = await this.nodeApiService.getOperationResult(
             endpoint,
             port,
             authToken,
@@ -462,7 +465,7 @@ class AssetOperationsManager {
             UAL,
             publicAssertionId,
             operation: {
-                mintKnowledgeAsset: receipt,
+                mintKnowledgeAsset: mintKnowledgeAssetReceipt,
                 publish: getOperationStatusObject(publishOperationResult, publishOperationId),
                 localStore: getOperationStatusObject(
                     localStoreOperationResult,
@@ -830,7 +833,7 @@ class AssetOperationsManager {
             );
         }
 
-        let receipt = await this.blockchainService.updateAsset(
+        const updateKnowledgeAssetReceipt = await this.blockchainService.updateAsset(
             tokenId,
             publicAssertionId,
             publicAssertionSizeInBytes,
@@ -864,14 +867,14 @@ class AssetOperationsManager {
             });
         }
 
-        let localStoreOperationId = await this.nodeApiService.localStore(
+        const localStoreOperationId = await this.nodeApiService.localStore(
             endpoint,
             port,
             authToken,
             assertions,
         );
 
-        let localStoreOperationResult = await this.nodeApiService.getOperationResult(
+        const localStoreOperationResult = await this.nodeApiService.getOperationResult(
             endpoint,
             port,
             authToken,
@@ -885,14 +888,14 @@ class AssetOperationsManager {
             return {
                 UAL,
                 assertionId: publicAssertionId,
-                operation: getOperationStatusObject(
-                    localStoreOperationResult,
-                    localStoreOperationId,
-                ),
+                operation: {
+                    updateKnowledgeAsset: updateKnowledgeAssetReceipt,
+                    localStore: getOperationStatusObject(localStoreOperationResult, localStoreOperationId),
+                },
             };
         }
 
-        let updateOperationId = await this.nodeApiService.update(
+        const updateOperationId = await this.nodeApiService.update(
             endpoint,
             port,
             authToken,
@@ -903,7 +906,7 @@ class AssetOperationsManager {
             tokenId,
             hashFunctionId,
         );
-        let updateOperationResult = await this.nodeApiService.getOperationResult(
+        const updateOperationResult = await this.nodeApiService.getOperationResult(
             endpoint,
             port,
             authToken,
@@ -916,9 +919,9 @@ class AssetOperationsManager {
             UAL,
             publicAssertionId,
             operation: {
-                updateKnowledgeAsset: receipt,
-                localStore: getOperationStatusObject(localStoreOperationResult, updateOperationId),
-                update: getOperationStatusObject(updateOperationResult, localStoreOperationId),
+                updateKnowledgeAsset: updateKnowledgeAssetReceipt,
+                localStore: getOperationStatusObject(localStoreOperationResult, localStoreOperationId),
+                update: getOperationStatusObject(updateOperationResult, updateOperationId),
             },
         };
     }
@@ -996,7 +999,7 @@ class AssetOperationsManager {
         this.validationService.validateAssetUpdateCancel(UAL, blockchain);
 
         const { tokenId } = resolveUAL(UAL);
-        let receipt = await this.blockchainService.cancelAssetUpdate(tokenId, blockchain);
+        const receipt = await this.blockchainService.cancelAssetUpdate(tokenId, blockchain);
 
         return {
             UAL,
@@ -1018,8 +1021,9 @@ class AssetOperationsManager {
         this.validationService.validateAssetTransfer(UAL, newOwner, blockchain);
 
         const { tokenId } = resolveUAL(UAL);
-        let receipt = await this.blockchainService.transferAsset(tokenId, newOwner, blockchain);
+        const receipt = await this.blockchainService.transferAsset(tokenId, newOwner, blockchain);
         const owner = await this.blockchainService.getAssetOwner(tokenId, blockchain);
+
         return {
             UAL,
             owner,
@@ -1150,7 +1154,8 @@ class AssetOperationsManager {
         this.validationService.validateAssetBurn(UAL, blockchain);
 
         const { tokenId } = resolveUAL(UAL);
-        let receipt = await this.blockchainService.burnAsset(tokenId, blockchain);
+        const receipt = await this.blockchainService.burnAsset(tokenId, blockchain);
+
         return {
             UAL,
             operation: receipt,
@@ -1211,7 +1216,7 @@ class AssetOperationsManager {
             );
         }
 
-        let receipt = await this.blockchainService.extendAssetStoringPeriod(
+        const receipt = await this.blockchainService.extendAssetStoringPeriod(
             tokenId,
             epochsNumber,
             tokenAmountInWei,
@@ -1277,7 +1282,7 @@ class AssetOperationsManager {
             }
         }
 
-        let receipt = await this.blockchainService.addTokens(tokenId, tokenAmountInWei, blockchain);
+        const receipt = await this.blockchainService.addTokens(tokenId, tokenAmountInWei, blockchain);
 
         return {
             UAL,
@@ -1337,7 +1342,7 @@ class AssetOperationsManager {
             }
         }
 
-        let receipt = await this.blockchainService.addUpdateTokens(
+        const receipt = await this.blockchainService.addUpdateTokens(
             tokenId,
             tokenAmountInWei,
             blockchain,
@@ -1418,7 +1423,7 @@ class AssetOperationsManager {
         const { contract, tokenId } = resolveUAL(UAL);
         const { contract: paranetContract, tokenId: paranetTokenId } = resolveUAL(paranetUAL);
 
-        let receipt = await this.blockchainService.submitToParanet(
+        const receipt = await this.blockchainService.submitToParanet(
             {
                 paranetContract,
                 paranetTokenId,

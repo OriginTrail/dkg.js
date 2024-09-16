@@ -42,7 +42,7 @@ class ParanetOperationsManager {
 
         const { contract, tokenId } = resolveUAL(UAL);
 
-       let receipt = await this.blockchainService.registerParanet({
+       const receipt = await this.blockchainService.registerParanet({
                 contract,
                 tokenId,
                 paranetName,
@@ -92,7 +92,7 @@ class ParanetOperationsManager {
         if(incentiveType === INCENTIVE_TYPE.NEUROWEB) {
             const {contract, tokenId} = resolveUAL(paranetUAL);
 
-            let receipt = await this.blockchainService.deployNeuroIncentivesPool({
+            const receipt = await this.blockchainService.deployNeuroIncentivesPool({
                     contract,
                     tokenId,
                     tracToNeuroEmissionMultiplier,
@@ -148,7 +148,7 @@ class ParanetOperationsManager {
 
         const { contract, tokenId } = resolveUAL(UAL);
 
-        let receipt = await this.blockchainService.registerParanetService({
+        const receipt = await this.blockchainService.registerParanetService({
                 contract,
                 tokenId,
                 paranetServiceName,
@@ -189,7 +189,7 @@ class ParanetOperationsManager {
             processedServicesArray.push([ serviceContract, serviceTokenId ]);
         }
 
-        let receipt = await this.blockchainService.addParanetServices({
+        const receipt = await this.blockchainService.addParanetServices({
                 contract,
                 tokenId,
                 processedServicesArray
