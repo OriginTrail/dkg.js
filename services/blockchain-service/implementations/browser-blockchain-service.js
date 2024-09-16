@@ -1,3 +1,4 @@
+/* eslint-disable no-await-in-loop */
 const Web3 = require('web3');
 const BlockchainServiceBase = require('../blockchain-service-base.js');
 const { WEBSOCKET_PROVIDER_OPTIONS } = require('../../../constants.js');
@@ -64,7 +65,9 @@ class BrowserBlockchainService extends BlockchainServiceBase {
         try {
             tx = await this.prepareTransaction(contractInstance, functionName, args, blockchain);
 
-            return await contractInstance.methods[functionName](...args).send(tx);
+            const initialReceipt = await contractInstance.methods[functionName](...args).send(tx);
+            const finalReceipt = await this.waitForTransactionFinalization(initialReceipt, blockchain);
+            return finalReceipt;
         } catch (error) {
             if (/revert|VM Exception/i.test(error.message)) {
                 let status;

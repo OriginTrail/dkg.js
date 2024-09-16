@@ -1,3 +1,5 @@
+/* eslint-disable dot-notation */
+/* eslint-disable no-await-in-loop */
 const Web3 = require('web3');
 const axios = require('axios');
 const AssertionStorageAbi = require('dkg-evm-module/abi/AssertionStorage.json');
@@ -15,6 +17,7 @@ const ParanetNeuroIncentivesPoolAbi = require('dkg-evm-module/abi/ParanetNeuroIn
 const ParanetKnowledgeMinersRegistryAbi = require('dkg-evm-module/abi/ParanetKnowledgeMinersRegistry.json');
 const { OPERATIONS_STEP_STATUS, DEFAULT_GAS_PRICE } = require('../../constants');
 const emptyHooks = require('../../util/empty-hooks.js');
+const { sleepForMilliseconds } = require('../utilities.js');
 
 class BlockchainServiceBase {
     constructor(config = {}) {
@@ -128,6 +131,38 @@ class BlockchainServiceBase {
         }
     }
 
+    async getFinalizedBlockHash(blockchain) {
+        await this.ensureBlockchainInfo(blockchain);
+        const web3Instance = await this.getWeb3Instance(blockchain);
+
+        try {
+            const response = await web3Instance.currentProvider.send({
+                jsonrpc: '2.0',
+                id: 1,
+                method: 'chain_getFinalizedHead',
+                params: [],
+            });
+            return response.result;
+        } catch (error) {
+            throw new Error(`Failed to get finalized block hash: ${error.message}`);
+        }
+    }
+
+    async isTransactionFinalized(txReceipt, blockchain) {
+        await this.ensureBlockchainInfo(blockchain);
+        const web3Instance = await this.getWeb3Instance(blockchain);
+
+        try {
+          const txBlockNumber = txReceipt.blockNumber;
+          const finalizedBlockHash = await this.getFinalizedBlockHash();
+          const finalizedBlock = await web3Instance.eth.getBlock(finalizedBlockHash);
+          const finalizedBlockNumber = finalizedBlock.number;
+          return finalizedBlockNumber >= txBlockNumber;
+        } catch (error) {
+          throw new Error(`Error checking transaction finality: ${error.message}`);
+        }
+      }
+
     async callContractFunction(contractName, functionName, args, blockchain) {
         await this.ensureBlockchainInfo(blockchain);
         let contractInstance = await this.getContractInstance(contractName, blockchain);
@@ -218,6 +253,59 @@ class BlockchainServiceBase {
             gasPrice,
             gas: gasLimit,
         };
+    }
+
+    async waitForTransactionFinalization(initialReceipt, blockchain) {
+        await this.ensureBlockchainInfo(blockchain);
+        const web3Instance = await this.getWeb3Instance(blockchain);
+
+        const startTime = Date.now();
+        let receipt = initialReceipt;
+        let finalized = false;
+      
+        try {      
+          while (!finalized && (Date.now() - startTime) < blockchain.transactionFinalityMaxWaitTime) {
+            try {
+              // Check if the block containing the transaction is finalized
+              const finalizedBlockHash = await this.getFinalizedBlockHash(blockchain);
+              const finalizedBlockNumber = (await web3Instance.eth.getBlock(finalizedBlockHash)).number;
+              if (finalizedBlockNumber >= receipt.blockNumber) {
+                finalized = true;
+                break;
+              } else {
+                let currentReceipt = await web3Instance.eth.getTransactionReceipt(receipt.transactionHash);
+                if (currentReceipt && currentReceipt.blockNumber === receipt.blockNumber) {
+                    // Transaction is still in the same block, wait and check again
+                  } else if (currentReceipt && currentReceipt.blockNumber !== receipt.blockNumber) {
+                    // Transaction has been re-included in a different block
+                    receipt = currentReceipt; // Update the receipt with the new block information
+                  } else {
+                    // Transaction is no longer mined, wait for it to be mined again
+                    while (!currentReceipt && (Date.now() - startTime) < blockchain.maxWaitTime) {
+                      await sleepForMilliseconds(blockchain.transactionFinalityPollingInterval);
+                      currentReceipt = await web3Instance.eth.getTransactionReceipt(receipt.transactionHash);
+                    }
+                    if (!currentReceipt) {
+                      throw new Error('Transaction was not re-mined within the expected time frame.');
+                    }
+                    receipt = currentReceipt; // Update the receipt
+                  }
+                // Wait before the next check
+                await sleepForMilliseconds(blockchain.transactionFinalityPollingInterval);
+              }
+            } catch (error) {
+              throw new Error(`Error during finality polling: ${error.message}`);
+            }
+          }
+      
+          if (!finalized) {
+            throw new Error('Transaction was not finalized within the expected time frame.');
+          }
+      
+          return receipt;
+        } catch (error) {
+          throw new Error(`Failed to wait for transaction finalization: ${error.message}`);
+        }
     }
 
     async getContractAddress(contractName, blockchain, force = false) {
@@ -708,17 +796,12 @@ class BlockchainServiceBase {
     async setIncentivesPool(contractAddress, blockchain){
         await this.ensureBlockchainInfo(blockchain);
 
-        // eslint-disable-next-line dot-notation
         if (this[blockchain.name].contractAddresses[blockchain.hubContract]['ParanetNeuroIncentivesPool'] !== contractAddress) {
-            // eslint-disable-next-line dot-notation
             this[blockchain.name].contractAddresses[blockchain.hubContract]['ParanetNeuroIncentivesPool'] = contractAddress;
             const web3Instance = await this.getWeb3Instance(blockchain);
-            // eslint-disable-next-line dot-notation
             this[blockchain.name].contracts[blockchain.hubContract]['ParanetNeuroIncentivesPool'] =
                 await new web3Instance.eth.Contract(
-                    // eslint-disable-next-line dot-notation
                     this.abis['ParanetNeuroIncentivesPool'],
-                    // eslint-disable-next-line dot-notation
                     this[blockchain.name].contractAddresses[blockchain.hubContract]['ParanetNeuroIncentivesPool'],
                     { from: blockchain.publicKey },
                 );

@@ -145,6 +145,12 @@ class InputService {
             options.blockchain?.transactionPollingTimeout ??
             this.config.blockchain?.transactionPollingTimeout ??
             null;
+        const transactionFinalityPollingInterval = options.blockchain?.transactionFinalityPollingInterval ??
+            this.config.blockchain?.transactionFinalityPollingInterval ??
+            DEFAULT_PARAMETERS.TX_FINALITY_POLLING_INTERVAL;
+        const transactionFinalityMaxWaitTime = options.blockchain?.transactionFinalityMaxWaitTime ??
+            this.config.blockchain?.transactionFinalityMaxWaitTime ??
+            DEFAULT_PARAMETERS.TX_FINALITY_MAX_WAIT_TIME;
         const simulateTxs =
             options.blockchain?.simulateTxs ??
             this.config.blockchain?.simulateTxs ??
@@ -168,6 +174,8 @@ class InputService {
             gasLimitMultiplier,
             gasPrice,
             transactionPollingTimeout,
+            transactionFinalityPollingInterval,
+            transactionFinalityMaxWaitTime,
             handleNotMinedError,
             simulateTxs,
             forceReplaceTxs,
