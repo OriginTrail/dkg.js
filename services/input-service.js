@@ -182,6 +182,12 @@ class InputService {
             blockchainConfig.transactionFinalityMaxWaitTime = options.blockchain?.transactionFinalityMaxWaitTime ??
                 this.config.blockchain?.transactionFinalityMaxWaitTime ??
                 DEFAULT_NEUROWEB_FINALITY_PARAMETERS.TX_FINALITY_MAX_WAIT_TIME;
+            blockchainConfig.transactionReminingPollingInterval = options.blockchain?.transactionReminingPollingInterval ??
+                this.config.blockchain?.transactionReminingPollingInterval ??
+                DEFAULT_NEUROWEB_FINALITY_PARAMETERS.TX_REMINING_POLLING_INTERVAL;
+            blockchainConfig.transactionReminingMaxWaitTime = options.blockchain?.transactionReminingMaxWaitTime ??
+                this.config.blockchain?.transactionReminingMaxWaitTime ??
+                DEFAULT_NEUROWEB_FINALITY_PARAMETERS.TX_REMINING_MAX_WAIT_TIME;
         }
 
         return blockchainConfig
