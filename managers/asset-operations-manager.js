@@ -152,6 +152,7 @@ class AssetOperationsManager {
 
         if (receipt) {
             return {
+                operation: receipt,
                 transactionHash: receipt.transactionHash,
                 status: receipt.status,
             };
@@ -185,6 +186,7 @@ class AssetOperationsManager {
         );
 
         return {
+            operation: receipt,
             transactionHash: receipt.transactionHash,
             status: receipt.status,
         };
@@ -225,6 +227,7 @@ class AssetOperationsManager {
         );
 
         return {
+            operation: receipt,
             transactionHash: receipt.transactionHash,
             status: receipt.status,
         };
@@ -301,7 +304,7 @@ class AssetOperationsManager {
             immutable,
             tokenAmount,
             authToken,
-            paranetUAL
+            paranetUAL,
         );
 
         const { public: publicAssertion, private: privateAssertion } = await formatGraph(
@@ -338,8 +341,9 @@ class AssetOperationsManager {
             ));
 
         let tokenId;
-        if(paranetUAL == null) {
-            tokenId = await this.blockchainService.createAsset(
+        let receipt;
+        if (paranetUAL == null) {
+            ({tokenId, receipt} = await this.blockchainService.createAsset(
                 {
                     publicAssertionId,
                     assertionSize: publicAssertionSizeInBytes,
@@ -354,10 +358,10 @@ class AssetOperationsManager {
                 null,
                 blockchain,
                 stepHooks,
-            );
+            ));
         } else {
             const { contract: paranetKaContract, tokenId: paranetTokenId } = resolveUAL(paranetUAL);
-            tokenId = await this.blockchainService.createAsset(
+            ({tokenId, receipt} = await this.blockchainService.createAsset(
                 {
                     publicAssertionId,
                     assertionSize: publicAssertionSizeInBytes,
@@ -372,7 +376,7 @@ class AssetOperationsManager {
                 paranetTokenId,
                 blockchain,
                 stepHooks,
-            );
+            ));
         }
 
         const resolvedUAL = {
@@ -399,7 +403,7 @@ class AssetOperationsManager {
 
         const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, tokenId);
 
-        let operationId = await this.nodeApiService.publish(
+        let publishOperationId = await this.nodeApiService.publish(
             endpoint,
             port,
             authToken,
@@ -411,53 +415,60 @@ class AssetOperationsManager {
             hashFunctionId,
         );
 
-        let operationResult = await this.nodeApiService.getOperationResult(
+        let publishOperationResult = await this.nodeApiService.getOperationResult(
             endpoint,
             port,
             authToken,
             OPERATIONS.PUBLISH,
             maxNumberOfRetries,
             frequency,
-            operationId,
+            publishOperationId,
         );
 
-        if (operationResult.status === OPERATION_STATUSES.FAILED) {
+        if (publishOperationResult.status === OPERATION_STATUSES.FAILED) {
             return {
                 UAL,
                 assertionId: publicAssertionId,
-                operation: getOperationStatusObject(operationResult, operationId),
+                operation: getOperationStatusObject(publishOperationResult, publishOperationId),
             };
         }
 
-        operationId = await this.nodeApiService.localStore(
+        let localStoreOperationId = await this.nodeApiService.localStore(
             endpoint,
             port,
             authToken,
             assertions,
         );
 
-        operationResult = await this.nodeApiService.getOperationResult(
+        let localStoreOperationResult = await this.nodeApiService.getOperationResult(
             endpoint,
             port,
             authToken,
             OPERATIONS.LOCAL_STORE,
             maxNumberOfRetries,
             DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY,
-            operationId,
+            localStoreOperationId,
         );
 
         stepHooks.afterHook({
             status: OPERATIONS_STEP_STATUS.CREATE_ASSET_COMPLETED,
             data: {
-                operationId,
-                operationResult,
+                localStoreOperationId,
+                localStoreOperationResult,
             },
         });
 
         return {
             UAL,
             publicAssertionId,
-            operation: getOperationStatusObject(operationResult, operationId),
+            operation: {
+                mintKnowledgeAsset: receipt,
+                publish: getOperationStatusObject(publishOperationResult, publishOperationId),
+                localStore: getOperationStatusObject(
+                    localStoreOperationResult,
+                    localStoreOperationId,
+                ),
+            },
         };
     }
 
@@ -819,7 +830,7 @@ class AssetOperationsManager {
             );
         }
 
-        await this.blockchainService.updateAsset(
+        let receipt = await this.blockchainService.updateAsset(
             tokenId,
             publicAssertionId,
             publicAssertionSizeInBytes,
@@ -853,32 +864,35 @@ class AssetOperationsManager {
             });
         }
 
-        let operationId = await this.nodeApiService.localStore(
+        let localStoreOperationId = await this.nodeApiService.localStore(
             endpoint,
             port,
             authToken,
             assertions,
         );
 
-        let operationResult = await this.nodeApiService.getOperationResult(
+        let localStoreOperationResult = await this.nodeApiService.getOperationResult(
             endpoint,
             port,
             authToken,
             OPERATIONS.LOCAL_STORE,
             maxNumberOfRetries,
             DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY,
-            operationId,
+            localStoreOperationId,
         );
 
-        if (operationResult.status === OPERATION_STATUSES.FAILED) {
+        if (localStoreOperationResult.status === OPERATION_STATUSES.FAILED) {
             return {
                 UAL,
                 assertionId: publicAssertionId,
-                operation: getOperationStatusObject(operationResult, operationId),
+                operation: getOperationStatusObject(
+                    localStoreOperationResult,
+                    localStoreOperationId,
+                ),
             };
         }
 
-        operationId = await this.nodeApiService.update(
+        let updateOperationId = await this.nodeApiService.update(
             endpoint,
             port,
             authToken,
@@ -889,19 +903,23 @@ class AssetOperationsManager {
             tokenId,
             hashFunctionId,
         );
-        operationResult = await this.nodeApiService.getOperationResult(
+        let updateOperationResult = await this.nodeApiService.getOperationResult(
             endpoint,
             port,
             authToken,
             OPERATIONS.UPDATE,
             maxNumberOfRetries,
             frequency,
-            operationId,
+            updateOperationId,
         );
         return {
             UAL,
             publicAssertionId,
-            operation: getOperationStatusObject(operationResult, operationId),
+            operation: {
+                updateKnowledgeAsset: receipt,
+                localStore: getOperationStatusObject(localStoreOperationResult, updateOperationId),
+                update: getOperationStatusObject(updateOperationResult, localStoreOperationId),
+            },
         };
     }
 
@@ -978,11 +996,11 @@ class AssetOperationsManager {
         this.validationService.validateAssetUpdateCancel(UAL, blockchain);
 
         const { tokenId } = resolveUAL(UAL);
-        await this.blockchainService.cancelAssetUpdate(tokenId, blockchain);
+        let receipt = await this.blockchainService.cancelAssetUpdate(tokenId, blockchain);
 
         return {
             UAL,
-            operation: getOperationStatusObject({ status: 'COMPLETED' }, null),
+            operation: receipt,
         };
     }
 
@@ -1000,12 +1018,12 @@ class AssetOperationsManager {
         this.validationService.validateAssetTransfer(UAL, newOwner, blockchain);
 
         const { tokenId } = resolveUAL(UAL);
-        await this.blockchainService.transferAsset(tokenId, newOwner, blockchain);
+        let receipt = await this.blockchainService.transferAsset(tokenId, newOwner, blockchain);
         const owner = await this.blockchainService.getAssetOwner(tokenId, blockchain);
         return {
             UAL,
             owner,
-            operation: getOperationStatusObject({ status: 'COMPLETED' }, null),
+            operation: receipt,
         };
     }
 
@@ -1132,11 +1150,10 @@ class AssetOperationsManager {
         this.validationService.validateAssetBurn(UAL, blockchain);
 
         const { tokenId } = resolveUAL(UAL);
-        await this.blockchainService.burnAsset(tokenId, blockchain);
-
+        let receipt = await this.blockchainService.burnAsset(tokenId, blockchain);
         return {
             UAL,
-            operation: getOperationStatusObject({ status: 'COMPLETED' }, null),
+            operation: receipt,
         };
     }
 
@@ -1194,7 +1211,7 @@ class AssetOperationsManager {
             );
         }
 
-        await this.blockchainService.extendAssetStoringPeriod(
+        let receipt = await this.blockchainService.extendAssetStoringPeriod(
             tokenId,
             epochsNumber,
             tokenAmountInWei,
@@ -1203,7 +1220,7 @@ class AssetOperationsManager {
 
         return {
             UAL,
-            operation: getOperationStatusObject({ status: 'COMPLETED' }, null),
+            operation: receipt,
         };
     }
 
@@ -1260,11 +1277,11 @@ class AssetOperationsManager {
             }
         }
 
-        await this.blockchainService.addTokens(tokenId, tokenAmountInWei, blockchain);
+        let receipt = await this.blockchainService.addTokens(tokenId, tokenAmountInWei, blockchain);
 
         return {
             UAL,
-            operation: getOperationStatusObject({ status: 'COMPLETED' }, null),
+            operation: receipt,
         };
     }
 
@@ -1320,11 +1337,15 @@ class AssetOperationsManager {
             }
         }
 
-        await this.blockchainService.addUpdateTokens(tokenId, tokenAmountInWei, blockchain);
+        let receipt = await this.blockchainService.addUpdateTokens(
+            tokenId,
+            tokenAmountInWei,
+            blockchain,
+        );
 
         return {
             UAL,
-            operation: getOperationStatusObject({ status: 'COMPLETED' }, null),
+            operation: receipt
         };
     }
 
@@ -1392,27 +1413,24 @@ class AssetOperationsManager {
     async submitToParanet(UAL, paranetUAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
 
-        this.validationService.validateSubmitToParanet(
-            UAL,
-            paranetUAL,
-            blockchain,
-        );
+        this.validationService.validateSubmitToParanet(UAL, paranetUAL, blockchain);
 
         const { contract, tokenId } = resolveUAL(UAL);
         const { contract: paranetContract, tokenId: paranetTokenId } = resolveUAL(paranetUAL);
 
-        await this.blockchainService.submitToParanet({
+        let receipt = await this.blockchainService.submitToParanet(
+            {
                 paranetContract,
                 paranetTokenId,
                 contract,
                 tokenId,
             },
-            blockchain
+            blockchain,
         );
 
         return {
             UAL,
-            operation: getOperationStatusObject({ status: 'COMPLETED' }, null),
+            operation: receipt
         };
     }
 }

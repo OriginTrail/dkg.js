@@ -42,7 +42,7 @@ class ParanetOperationsManager {
 
         const { contract, tokenId } = resolveUAL(UAL);
 
-       await this.blockchainService.registerParanet({
+       let receipt = await this.blockchainService.registerParanet({
                 contract,
                 tokenId,
                 paranetName,
@@ -53,6 +53,7 @@ class ParanetOperationsManager {
 
         return {
             paranetUAL: UAL,
+            operation: receipt
         };
     }
 
@@ -91,7 +92,7 @@ class ParanetOperationsManager {
         if(incentiveType === INCENTIVE_TYPE.NEUROWEB) {
             const {contract, tokenId} = resolveUAL(paranetUAL);
 
-            await this.blockchainService.deployNeuroIncentivesPool({
+            let receipt = await this.blockchainService.deployNeuroIncentivesPool({
                     contract,
                     tokenId,
                     tracToNeuroEmissionMultiplier,
@@ -109,7 +110,8 @@ class ParanetOperationsManager {
 
             return {
                 paranetUAL,
-                incentivesPoolContractAddress: neuroIncentivesPoolAddress
+                incentivesPoolContractAddress: neuroIncentivesPoolAddress,
+                operation: receipt
             };
         }
 
@@ -146,7 +148,7 @@ class ParanetOperationsManager {
 
         const { contract, tokenId } = resolveUAL(UAL);
 
-        await this.blockchainService.registerParanetService({
+        let receipt = await this.blockchainService.registerParanetService({
                 contract,
                 tokenId,
                 paranetServiceName,
@@ -157,7 +159,8 @@ class ParanetOperationsManager {
         );
 
         return {
-            serviceUAL: UAL
+            serviceUAL: UAL,
+            operation: receipt
         };
     }
 
@@ -186,7 +189,7 @@ class ParanetOperationsManager {
             processedServicesArray.push([ serviceContract, serviceTokenId ]);
         }
 
-        await this.blockchainService.addParanetServices({
+        let receipt = await this.blockchainService.addParanetServices({
                 contract,
                 tokenId,
                 processedServicesArray
@@ -196,7 +199,8 @@ class ParanetOperationsManager {
 
         return {
             paranetUAL,
-            paranetServiceUALs
+            paranetServiceUALs,
+            operation: receipt
         };
     }
 
@@ -224,6 +228,7 @@ class ParanetOperationsManager {
         const receipt = await this.blockchainService.claimKnowledgeMinerReward(paranetId, blockchain);
 
         return {
+            operation: receipt,
             transactionHash: receipt.transactionHash,
             status: receipt.status,
         };
@@ -253,6 +258,7 @@ class ParanetOperationsManager {
         const receipt = await this.blockchainService.claimVoterReward(paranetId, blockchain);
 
         return {
+            operation: receipt,
             transactionHash: receipt.transactionHash,
             status: receipt.status,
         };
@@ -282,6 +288,7 @@ class ParanetOperationsManager {
         const receipt = await this.blockchainService.claimOperatorReward(paranetId, blockchain);
 
         return {
+            operation: receipt,
             transactionHash: receipt.transactionHash,
             status: receipt.status,
         };
@@ -447,6 +454,7 @@ class ParanetOperationsManager {
             }, blockchain);
 
             return {
+                operation: receipt,
                 transactionHash: receipt.transactionHash,
                 status: receipt.status,
             };
