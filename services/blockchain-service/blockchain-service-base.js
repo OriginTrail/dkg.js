@@ -53,27 +53,6 @@ class BlockchainServiceBase {
         return {};
     }
 
-    extendWeb3(blockchain) {
-        if (blockchain.name.startsWith('otp')) {
-            this[blockchain.name].web3.extend({
-                property: 'chain',
-                methods: [
-                    {
-                        name: 'getFinalizedHead',
-                        call: 'chain_getFinalizedHead',
-                        params: 0,
-                    },
-                    {
-                        name: 'getBlock',
-                        call: 'chain_getBlock',
-                        params: 1,
-                        inputFormatter: [null],
-                    },
-                ]
-            });
-        }
-    }
-
     async decodeEventLogs() {
         // overridden by subclasses
     }
@@ -106,7 +85,6 @@ class BlockchainServiceBase {
                 transactionPollingTimeout: blockchain.transactionPollingTimeout,
             };
             await this.initializeWeb3(blockchain.name, blockchain.rpc, blockchainOptions);
-            this.extendWeb3(blockchain);
         }
 
         return this[blockchain.name].web3;
@@ -258,9 +236,7 @@ class BlockchainServiceBase {
             while (!finalized && (Date.now() - startTime + reminingTime) < blockchain.transactionFinalityMaxWaitTime) {
                 try {
                     // Check if the block containing the transaction is finalized
-                    const finalizedBlockHash = await web3Instance.chain.getFinalizedHead();
-                    const finalizedBlock = (await web3Instance.chain.getBlock(finalizedBlockHash)).block;
-                    const finalizedBlockNumber = Web3.utils.hexToNumber(finalizedBlock.header.number);
+                    const finalizedBlockNumber = (await web3Instance.eth.getBlock('finalized')).number;
                     if (finalizedBlockNumber >= receipt.blockNumber) {
                         finalized = true;
                         break;
