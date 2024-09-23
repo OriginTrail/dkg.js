@@ -86,7 +86,7 @@ class NodeBlockchainService extends BlockchainServiceBase {
                 receipt = await web3Instance.eth.sendSignedTransaction(
                     createdTransaction.rawTransaction,
                 );
-                if (blockchain.name.startsWith('otp')) {
+                if (blockchain.name.startsWith('otp') && blockchain.waitNeurowebTxFinalization) {
                     receipt = await this.waitForTransactionFinalization(receipt, blockchain);
                 }
             } catch (error) {

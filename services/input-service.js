@@ -176,6 +176,9 @@ class InputService {
         };
 
         if (name && name.startsWith('otp')) {
+            blockchainConfig.waitNeurowebTxFinalization = options.blockchain?.waitNeurowebTxFinalization ??
+                this.config.blockchain?.waitNeurowebTxFinalization ??
+                DEFAULT_NEUROWEB_FINALITY_PARAMETERS.WAIT_NEUROWEB_TX_FINALIZATION;
             blockchainConfig.transactionFinalityPollingInterval = options.blockchain?.transactionFinalityPollingInterval ??
                 this.config.blockchain?.transactionFinalityPollingInterval ??
                 DEFAULT_NEUROWEB_FINALITY_PARAMETERS.TX_FINALITY_POLLING_INTERVAL;
