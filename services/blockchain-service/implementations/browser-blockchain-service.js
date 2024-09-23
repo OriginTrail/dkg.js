@@ -66,7 +66,7 @@ class BrowserBlockchainService extends BlockchainServiceBase {
             tx = await this.prepareTransaction(contractInstance, functionName, args, blockchain);
 
             let receipt = await contractInstance.methods[functionName](...args).send(tx);
-            if (blockchain.name.startsWith('otp')) {
+            if (blockchain.name.startsWith('otp') && blockchain.waitNeurowebTxFinalization) {
                 receipt = await this.waitForTransactionFinalization(receipt, blockchain);
             }
             return receipt;
