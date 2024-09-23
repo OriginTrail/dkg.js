@@ -252,6 +252,18 @@ function divider() {
 
     divider();
 
+    const extendStoringResult = await DkgClient.asset.extendStoringPeriod(createAssetResult.UAL, 2);
+    console.log(`======================== ASSET STORING PERIOD EXTENDED`);
+    console.log(extendStoringResult);
+
+    divider();
+
+    const addTokensResult = await DkgClient.asset.addTokens(createAssetResult.UAL, {tokenAmount: 1000});
+    console.log(`======================== ADD TOKENS FOR AN ASSET`);
+    console.log(addTokensResult);
+
+    divider();
+
     const newOwner = '0x2ACa90078563133db78085F66e6B8Cf5531623Ad';
     const transferResult = await DkgClient.asset.transfer(createAssetResult.UAL, newOwner);
     console.log(`======================== ASSET TRANSFERRED TO ${newOwner}`);
