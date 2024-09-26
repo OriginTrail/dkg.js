@@ -8,6 +8,9 @@ const {
     GET_OUTPUT_FORMATS,
     QUERY_TYPES,
     BID_SUGGESTION_RANGE_ENUM,
+    PARANET_NODES_ACCESS_POLICY,
+    PARANET_MINERS_ACCESS_POLICY,
+    PARANET_KNOWLEDGE_ASSET_ACCESS_POLICY,
 } = require('../constants.js');
 const { nodeSupported } = require('./utilities.js');
 
@@ -69,7 +72,7 @@ class ValidationService {
         immutable,
         tokenAmount,
         authToken,
-        paranetUAL
+        paranetUAL,
     ) {
         this.validateContent(content);
         this.validateBlockchain(blockchain, OPERATIONS.PUBLISH);
@@ -200,11 +203,16 @@ class ValidationService {
         blockchain,
         paranetName,
         paranetDescription,
+        nodesAccessPolicy,
+        minersAccessPolicy,
+        knowledgeAssetsAccessPolicy,
     ) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
         this.validateParanetName(paranetName);
         this.validateParanetDescription(paranetDescription);
+        this.validateNodesAccessPolicy(nodesAccessPolicy);
+        this.validateMinersAccessPolicy(minersAccessPolicy);
     }
 
     validateDeployIncentivesContract(
@@ -218,22 +226,17 @@ class ValidationService {
         this.validateBlockchain(blockchain);
         this.validateTracToNeuroEmissionMultiplier(tracToNeuroEmissionMultiplier);
         this.validateOperatorRewardPercentage(operatorRewardPercentage);
-        this.validateIncentivizationProposalVotersRewardPercentage(incentivizationProposalVotersRewardPercentage);
+        this.validateIncentivizationProposalVotersRewardPercentage(
+            incentivizationProposalVotersRewardPercentage,
+        );
     }
 
-    validateParanetRewardArguments(
-        UAL,
-        blockchain,
-    ) {
+    validateParanetRewardArguments(UAL, blockchain) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
     }
 
-    validateParanetRoleCheckArguments(
-        address,
-        UAL,
-        blockchain,
-    ) {
+    validateParanetRoleCheckArguments(address, UAL, blockchain) {
         this.validateAddress(address);
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
@@ -253,24 +256,16 @@ class ValidationService {
         this.validateParanetServiceAddresses(paranetServiceAddresses);
     }
 
-    validateParanetAddServicesArguments(
-        paranetUAL,
-        paranetServiceUALs,
-        blockchain,
-    ) {
+    validateParanetAddServicesArguments(paranetUAL, paranetServiceUALs, blockchain) {
         this.validateUAL(paranetUAL);
         this.validateBlockchain(blockchain);
 
-        for(const UAL of paranetServiceUALs){
+        for (const UAL of paranetServiceUALs) {
             this.validateUAL(UAL);
         }
     }
 
-    validateSubmitToParanet(
-        UAL,
-        paranetUAL,
-        blockchain,
-    ) {
+    validateSubmitToParanet(UAL, paranetUAL, blockchain) {
         this.validateUAL(UAL);
         this.validateUAL(paranetUAL);
         this.validateBlockchain(blockchain);
@@ -314,11 +309,12 @@ class ValidationService {
         this.validateRequiredParam('graphLocation', graphLocation);
         const validGraphLocations = Object.keys(GRAPH_LOCATIONS);
         if (!validGraphLocations.includes(graphLocation)) {
-            if(!this.validateUAL(graphLocation)) {
-                throw Error(`Invalid graph location: available locations are valid Paranet UAL or: ${validGraphLocations}`);
+            if (!this.validateUAL(graphLocation)) {
+                throw Error(
+                    `Invalid graph location: available locations are valid Paranet UAL or: ${validGraphLocations}`,
+                );
             }
         }
-
     }
 
     validateGraphState(graphState) {
@@ -519,23 +515,53 @@ class ValidationService {
         this.validateParamType('paranetDescription', paranetDescription, 'string');
     }
 
-    validateTracToNeuroEmissionMultiplier(tracToNeuroEmissionMultiplier){
+    validateNodesAccessPolicy(nodesAccessPolicy) {
+        this.validateRequiredParam('nodesAccessPolicy', nodesAccessPolicy);
+        this.validateParamType('nodesAccessPolicy', nodesAccessPolicy, 'number');
+        Object.values(PARANET_NODES_ACCESS_POLICY).includes(nodesAccessPolicy);
+    }
+
+    validateMinersAccessPolicy(minersAccessPolicy) {
+        this.validateRequiredParam('minersAccessPolicy', minersAccessPolicy);
+        this.validateParamType('minersAccessPolicy', minersAccessPolicy, 'number');
+        Object.values(PARANET_MINERS_ACCESS_POLICY).includes(minersAccessPolicy);
+    }
+
+    validateTracToNeuroEmissionMultiplier(tracToNeuroEmissionMultiplier) {
         this.validateRequiredParam('tracToNeuroEmissionMultiplier', tracToNeuroEmissionMultiplier);
-        this.validateParamType('tracToNeuroEmissionMultiplier', tracToNeuroEmissionMultiplier, 'number');
+        this.validateParamType(
+            'tracToNeuroEmissionMultiplier',
+            tracToNeuroEmissionMultiplier,
+            'number',
+        );
     }
 
-    validateIncentivizationProposalVotersRewardPercentage(incentivizationProposalVotersRewardPercentage){
-        this.validateRequiredParam('incentivizationProposalVotersRewardPercentage', incentivizationProposalVotersRewardPercentage);
-        this.validateParamType('incentivizationProposalVotersRewardPercentage', incentivizationProposalVotersRewardPercentage, 'number');
+    validateIncentivizationProposalVotersRewardPercentage(
+        incentivizationProposalVotersRewardPercentage,
+    ) {
+        this.validateRequiredParam(
+            'incentivizationProposalVotersRewardPercentage',
+            incentivizationProposalVotersRewardPercentage,
+        );
+        this.validateParamType(
+            'incentivizationProposalVotersRewardPercentage',
+            incentivizationProposalVotersRewardPercentage,
+            'number',
+        );
 
-        if (incentivizationProposalVotersRewardPercentage > 10000 || incentivizationProposalVotersRewardPercentage < 0) throw Error('Invalid percentage value for incentivization proposal voters reward.');
+        if (
+            incentivizationProposalVotersRewardPercentage > 10000 ||
+            incentivizationProposalVotersRewardPercentage < 0
+        )
+            throw Error('Invalid percentage value for incentivization proposal voters reward.');
     }
 
-    validateOperatorRewardPercentage(operatorRewardPercentage){
+    validateOperatorRewardPercentage(operatorRewardPercentage) {
         this.validateRequiredParam('operatorRewardPercentage', operatorRewardPercentage);
         this.validateParamType('operatorRewardPercentage', operatorRewardPercentage, 'number');
 
-        if (operatorRewardPercentage > 10000 || operatorRewardPercentage < 0) throw Error('Invalid percentage value for operator reward.');
+        if (operatorRewardPercentage > 10000 || operatorRewardPercentage < 0)
+            throw Error('Invalid percentage value for operator reward.');
     }
 
     validateParanetServiceName(paranetServiceName) {
@@ -549,8 +575,8 @@ class ValidationService {
     }
 
     validateParanetServiceAddresses(paranetServiceAddresses) {
-        if(paranetServiceAddresses.length !== 0) {
-            for(const address of paranetServiceAddresses) {
+        if (paranetServiceAddresses.length !== 0) {
+            for (const address of paranetServiceAddresses) {
                 this.validateAddress(address);
             }
         }

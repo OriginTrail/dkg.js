@@ -105,6 +105,42 @@ class HttpService {
         }
     }
 
+    async publishParanet(
+        endpoint,
+        port,
+        authToken,
+        assertions,
+        blockchain,
+        contract,
+        tokenId,
+        hashFunctionId,
+        paranetUAL,
+        sender,
+        txHash,
+    ) {
+        try {
+            const response = await axios({
+                method: 'post',
+                url: `${endpoint}:${port}/publish-paranet`,
+                data: {
+                    assertions,
+                    blockchain,
+                    contract,
+                    tokenId,
+                    hashFunctionId,
+                    paranetUAL,
+                    sender,
+                    txHash,
+                },
+                headers: this.prepareRequestConfig(authToken),
+            });
+
+            return response.data.operationId;
+        } catch (error) {
+            throw Error(`Unable to publish: ${error.message}`);
+        }
+    }
+
     async get(endpoint, port, authToken, UAL, state, hashFunctionId) {
         try {
             const response = await axios({

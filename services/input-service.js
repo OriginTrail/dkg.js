@@ -4,6 +4,9 @@ const {
     DEFAULT_PROXIMITY_SCORE_FUNCTIONS_PAIR_IDS,
     BLOCKCHAINS,
     LOW_BID_SUGGESTION,
+    PARANET_NODES_ACCESS_POLICY,
+    PARANET_MINERS_ACCESS_POLICY,
+    PARANET_KNOWLEDGE_ASSET_ACCESS_POLICY,
 } = require('../constants');
 
 class InputService {
@@ -87,7 +90,9 @@ class InputService {
             blockchain: this.getBlockchain(options),
             paranetName: this.getParanetName(options),
             paranetDescription: this.getParanetDescription(options),
-        }
+            nodesAccessPolicy: this.getParanetNodesPolicy(options),
+            minersAccessPolicy: this.getParanetMinersPolicy(options),
+        };
     }
 
     getParanetDeployIncentivesContractArguments(options) {
@@ -96,8 +101,9 @@ class InputService {
             incentiveType: this.getIncentiveType(options),
             tracToNeuroEmissionMultiplier: this.getTracToNeuroEmissionMultiplier(options),
             operatorRewardPercentage: this.getOperatorRewardPercentage(options),
-            incentivizationProposalVotersRewardPercentage: this.getIncentivizationProposalVotersRewardPercentage(options),
-        }
+            incentivizationProposalVotersRewardPercentage:
+                this.getIncentivizationProposalVotersRewardPercentage(options),
+        };
     }
 
     getParanetCreateServiceArguments(options) {
@@ -106,14 +112,14 @@ class InputService {
             paranetServiceName: this.getParanetServiceName(options),
             paranetServiceDescription: this.getParanetServiceDescription(options),
             paranetServiceAddresses: this.getParanetServiceAddresses(options),
-        }
+        };
     }
 
-    getParanetRoleCheckArguments(options){
+    getParanetRoleCheckArguments(options) {
         return {
             blockchain: this.getBlockchain(options),
             roleAddress: this.getRoleAddress(options),
-        }
+        };
     }
 
     getBlockchain(options) {
@@ -176,29 +182,37 @@ class InputService {
         };
 
         if (name && name.startsWith('otp')) {
-            blockchainConfig.waitNeurowebTxFinalization = options.blockchain?.waitNeurowebTxFinalization ??
+            blockchainConfig.waitNeurowebTxFinalization =
+                options.blockchain?.waitNeurowebTxFinalization ??
                 this.config.blockchain?.waitNeurowebTxFinalization ??
                 DEFAULT_NEUROWEB_FINALITY_PARAMETERS.WAIT_NEUROWEB_TX_FINALIZATION;
-            blockchainConfig.transactionFinalityPollingInterval = options.blockchain?.transactionFinalityPollingInterval ??
+            blockchainConfig.transactionFinalityPollingInterval =
+                options.blockchain?.transactionFinalityPollingInterval ??
                 this.config.blockchain?.transactionFinalityPollingInterval ??
                 DEFAULT_NEUROWEB_FINALITY_PARAMETERS.TX_FINALITY_POLLING_INTERVAL;
-            blockchainConfig.transactionFinalityMaxWaitTime = options.blockchain?.transactionFinalityMaxWaitTime ??
+            blockchainConfig.transactionFinalityMaxWaitTime =
+                options.blockchain?.transactionFinalityMaxWaitTime ??
                 this.config.blockchain?.transactionFinalityMaxWaitTime ??
                 DEFAULT_NEUROWEB_FINALITY_PARAMETERS.TX_FINALITY_MAX_WAIT_TIME;
-            blockchainConfig.transactionReminingPollingInterval = options.blockchain?.transactionReminingPollingInterval ??
+            blockchainConfig.transactionReminingPollingInterval =
+                options.blockchain?.transactionReminingPollingInterval ??
                 this.config.blockchain?.transactionReminingPollingInterval ??
                 DEFAULT_NEUROWEB_FINALITY_PARAMETERS.TX_REMINING_POLLING_INTERVAL;
-            blockchainConfig.transactionReminingMaxWaitTime = options.blockchain?.transactionReminingMaxWaitTime ??
+            blockchainConfig.transactionReminingMaxWaitTime =
+                options.blockchain?.transactionReminingMaxWaitTime ??
                 this.config.blockchain?.transactionReminingMaxWaitTime ??
                 DEFAULT_NEUROWEB_FINALITY_PARAMETERS.TX_REMINING_MAX_WAIT_TIME;
         }
 
-        return blockchainConfig
+        return blockchainConfig;
     }
 
     getGraphLocation(options) {
         return (
-            options.graphLocation ?? options.paranetUAL ?? this.config.graphLocation ?? DEFAULT_PARAMETERS.GRAPH_LOCATION
+            options.graphLocation ??
+            options.paranetUAL ??
+            this.config.graphLocation ??
+            DEFAULT_PARAMETERS.GRAPH_LOCATION
         );
     }
 
@@ -290,6 +304,14 @@ class InputService {
         return options.paranetDescription ?? null;
     }
 
+    getParanetNodesPolicy(options) {
+        return options.nodesAccessPolicy ?? PARANET_NODES_ACCESS_POLICY.OPEN;
+    }
+
+    getParanetMinersPolicy(options) {
+        return options.minersAccessPolicy ?? PARANET_MINERS_ACCESS_POLICY.OPEN;
+    }
+
     getTracToNeuroEmissionMultiplier(options) {
         return options.tracToNeuroEmissionMultiplier ?? null;
     }
@@ -321,7 +343,6 @@ class InputService {
     getRoleAddress(options) {
         return options.roleAddress ?? null;
     }
-
 }
 
 module.exports = InputService;
