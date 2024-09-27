@@ -81,6 +81,7 @@ class InputService {
             maxNumberOfRetries: this.getMaxNumberOfRetries(options),
             frequency: this.getFrequency(options),
             authToken: this.getAuthToken(options),
+            paranetUAL: this.getParanetUAL(options),
         };
     }
 
