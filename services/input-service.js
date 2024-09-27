@@ -6,7 +6,6 @@ const {
     LOW_BID_SUGGESTION,
     PARANET_NODES_ACCESS_POLICY,
     PARANET_MINERS_ACCESS_POLICY,
-    PARANET_KNOWLEDGE_ASSET_ACCESS_POLICY,
 } = require('../constants');
 
 class InputService {

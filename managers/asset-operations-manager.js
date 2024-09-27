@@ -1535,25 +1535,24 @@ class AssetOperationsManager {
                 hashFunctionId,
             ));
 
-        let tokenId;
-        let mintKnowledgeAssetReceipt;
         const { contract: paranetKaContract, tokenId: paranetTokenId } = resolveUAL(paranetUAL);
-        ({ tokenId, receipt: mintKnowledgeAssetReceipt } = await this.blockchainService.createAsset(
-            {
-                publicAssertionId,
-                assertionSize: publicAssertionSizeInBytes,
-                triplesNumber: assertionMetadata.getAssertionTriplesNumber(publicAssertion),
-                chunksNumber: assertionMetadata.getAssertionChunksNumber(publicAssertion),
-                epochsNum,
-                tokenAmount: tokenAmountInWei,
-                scoreFunctionId: scoreFunctionId ?? 1,
-                immutable_: immutable,
-            },
-            paranetKaContract,
-            paranetTokenId,
-            blockchain,
-            stepHooks,
-        ));
+        const { tokenId, receipt: mintKnowledgeAssetReceipt } =
+            await this.blockchainService.createAsset(
+                {
+                    publicAssertionId,
+                    assertionSize: publicAssertionSizeInBytes,
+                    triplesNumber: assertionMetadata.getAssertionTriplesNumber(publicAssertion),
+                    chunksNumber: assertionMetadata.getAssertionChunksNumber(publicAssertion),
+                    epochsNum,
+                    tokenAmount: tokenAmountInWei,
+                    scoreFunctionId: scoreFunctionId ?? 1,
+                    immutable_: immutable,
+                },
+                paranetKaContract,
+                paranetTokenId,
+                blockchain,
+                stepHooks,
+            );
 
         const resolvedUAL = {
             blockchain: blockchain.name,

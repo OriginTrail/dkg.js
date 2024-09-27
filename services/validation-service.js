@@ -10,7 +10,6 @@ const {
     BID_SUGGESTION_RANGE_ENUM,
     PARANET_NODES_ACCESS_POLICY,
     PARANET_MINERS_ACCESS_POLICY,
-    PARANET_KNOWLEDGE_ASSET_ACCESS_POLICY,
 } = require('../constants.js');
 const { nodeSupported } = require('./utilities.js');
 
@@ -205,7 +204,6 @@ class ValidationService {
         paranetDescription,
         nodesAccessPolicy,
         minersAccessPolicy,
-        knowledgeAssetsAccessPolicy,
     ) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
