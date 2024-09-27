@@ -1430,6 +1430,7 @@ class AssetOperationsManager {
      */
     async submitToParanet(UAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
+        const paranetUAL = this.inputService.getParanetUAL(options);
 
         this.validationService.validateSubmitToParanet(UAL, paranetUAL, blockchain);
 
