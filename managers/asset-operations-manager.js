@@ -501,6 +501,7 @@ class AssetOperationsManager {
             outputFormat,
             authToken,
             hashFunctionId,
+            paranetUAL,
         } = this.inputService.getAssetGetArguments(options);
 
         this.validationService.validateAssetGet(
@@ -582,6 +583,7 @@ class AssetOperationsManager {
             UAL,
             isEnumState ? state : publicAssertionId,
             hashFunctionId,
+            paranetUAL,
         );
 
         const getPublicOperationResult = await this.nodeApiService.getOperationResult(

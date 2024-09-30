@@ -55,6 +55,7 @@ class InputService {
             outputFormat: this.getOutputFormat(options),
             authToken: this.getAuthToken(options),
             hashFunctionId: this.getHashFunctionId(options),
+            paranetUAL: this.getParanetUAL(options),
         };
     }
 
