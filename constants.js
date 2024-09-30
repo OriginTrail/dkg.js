@@ -44,6 +44,12 @@ const BLOCKCHAINS = {
             rpc: 'https://sepolia.base.org',
         },
     },
+    stabledevnet: {
+        'base:84532': {
+            hubContract: '0xAB4A4794Fc1F415C24807B947280aCa8dC492238',
+            rpc: 'https://sepolia.base.org',
+        },
+    },
     testnet: {
         'otp:20430': {
             rpc: 'https://lofar-testnet.origin-trail.network',
