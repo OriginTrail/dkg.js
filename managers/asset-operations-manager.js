@@ -615,7 +615,8 @@ class AssetOperationsManager {
             };
         }
 
-        const publicAssertion = getPublicOperationResult.data.assertion;
+        const { assertion: publicAssertion, privateAssertion: privateAssertion } =
+            getPublicOperationResult.data;
 
         if (validate === true && calculateRoot(publicAssertion) !== publicAssertionId) {
             getPublicOperationResult.data = {
@@ -625,6 +626,24 @@ class AssetOperationsManager {
         }
 
         let result = { operation: {} };
+        if (paranetUAL) {
+            result.operation.publicGet = getOperationStatusObject(
+                getPublicOperationResult,
+                getPublicOperationId,
+            );
+            const formattedPrivateAssertion = await toJSONLD(privateAssertion.join('\n'));
+            const formattedPublicAssertion = await toJSONLD(publicAssertion.join('\n'));
+            result.public = {
+                assertion: formattedPublicAssertion,
+                assertionId: publicAssertionId,
+            };
+            result.private = {
+                assertion: formattedPrivateAssertion,
+                assertionId: getPublicOperationResult.data.privateAssertionId,
+            };
+
+            return result;
+        }
         if (contentType !== CONTENT_TYPES.PRIVATE) {
             let formattedPublicAssertion = publicAssertion;
             try {
