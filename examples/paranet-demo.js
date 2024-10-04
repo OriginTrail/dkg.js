@@ -184,29 +184,8 @@ function divider() {
     console.log(claimable);
     divider();
 
-    const updateAssetResult = await DkgClient.asset.update(createSecondAssetResult.UAL, {
-        public: {
-            '@context': ['https://schema.org'],
-            '@id': 'uuid:1',
-            company: 'TL',
-            user: {
-                '@id': 'uuid:user:2',
-            },
-            city: {
-                '@id': 'uuid:Madrid',
-            },
-        },
-    });
-    console.log('========================KNOWLEDGE ASSET UPDATED');
-    console.log(updateAssetResult);
-    divider();
-
     await DkgClient.asset.waitFinalization(createSecondAssetResult.UAL);
     console.log('======================== FINALIZATION COMPLETED');
-    divider();
-
-    await DkgClient.paranet.updateClaimableRewards(paranetAssetResult.UAL);
-    console.log('======================== CLAIMABLE REWARDS UPDATED');
     divider();
 
     const queryWhereMadrid = `PREFIX schema: <http://schema.org/>

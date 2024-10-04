@@ -129,35 +129,6 @@ function divider() {
 
     divider();
 
-    const updateAssetResult = await DkgClient.asset.update(createAssetResult.UAL, {
-        public: {
-            '@context': ['https://schema.org'],
-            '@id': 'uuid:1',
-            company: 'TL',
-            user: {
-                '@id': 'uuid:user:2',
-            },
-            city: {
-                '@id': 'uuid:Nis',
-            },
-        },
-        private: {
-            '@context': ['https://schema.org'],
-            '@graph': [
-                {
-                    '@id': 'uuid:user:1',
-                    name: 'Adam',
-                    lastname: 'Smith',
-                    identifier: `${Math.floor(Math.random() * 1e10)}`,
-                },
-            ],
-        },
-    });
-    console.log('======================== ASSET UPDATED');
-    console.log(updateAssetResult);
-
-    divider();
-
     const getLatestAssetResult = await DkgClient.asset.get(createAssetResult.UAL);
     console.log('======================== ASSET LATEST  RESOLVED');
     console.log(JSON.stringify(getLatestAssetResult, null, 2));

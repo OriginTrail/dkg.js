@@ -413,59 +413,6 @@ class BlockchainServiceBase {
         }
     }
 
-    async updateAsset(
-        tokenId,
-        publicAssertionId,
-        assertionSize,
-        triplesNumber,
-        chunksNumber,
-        tokenAmount,
-        blockchain,
-    ) {
-        const sender = await this.getPublicKey(blockchain);
-        let serviceAgreementV1Address;
-        let allowanceIncreased = false;
-        let allowanceGap = 0;
-
-        try {
-            serviceAgreementV1Address = await this.getContractAddress(
-                'ServiceAgreementV1',
-                blockchain,
-            );
-
-            ({ allowanceIncreased, allowanceGap } = await this.increaseServiceAgreementV1Allowance(
-                sender,
-                serviceAgreementV1Address,
-                tokenAmount,
-                blockchain
-            ));
-
-            return this.executeContractFunction(
-                'ContentAsset',
-                'updateAssetState',
-                [
-                    tokenId,
-                    publicAssertionId,
-                    assertionSize,
-                    triplesNumber,
-                    chunksNumber,
-                    tokenAmount,
-                ],
-                blockchain,
-            );
-        } catch (error) {
-            if (allowanceIncreased) {
-                await this.executeContractFunction(
-                    'Token',
-                    'decreaseAllowance',
-                    [serviceAgreementV1Address, allowanceGap],
-                    blockchain,
-                );
-            }
-            throw error;
-        }
-    }
-
     async hasPendingUpdate(tokenId, blockchain) {
         return this.callContractFunction(
             'UnfinalizedStateStorage',
