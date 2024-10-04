@@ -114,42 +114,6 @@ class ValidationService {
         this.validateAuthToken(authToken);
     }
 
-    validateAssetUpdate(
-        content,
-        blockchain,
-        endpoint,
-        port,
-        maxNumberOfRetries,
-        frequency,
-        hashFunctionId,
-        scoreFunctionId,
-        tokenAmount,
-        authToken,
-    ) {
-        this.validateContent(content);
-        this.validateBlockchain(blockchain, OPERATIONS.UPDATE);
-        this.validateEndpoint(endpoint);
-        this.validatePort(port);
-        this.validateMaxNumberOfRetries(maxNumberOfRetries);
-        this.validateFrequency(frequency);
-        this.validateHashFunctionId(hashFunctionId);
-        this.validateScoreFunctionId(scoreFunctionId);
-        this.validateTokenAmount(tokenAmount);
-        this.validateAuthToken(authToken);
-    }
-
-    validateWaitAssetUpdateFinalization(UAL, blockchain, frequency, maxNumberOfRetries) {
-        this.validateUAL(UAL);
-        this.validateBlockchain(blockchain);
-        this.validateFrequency(frequency);
-        this.validateMaxNumberOfRetries(maxNumberOfRetries);
-    }
-
-    validateAssetUpdateCancel(UAL, blockchain) {
-        this.validateUAL(UAL);
-        this.validateBlockchain(blockchain);
-    }
-
     validateAssetTransfer(UAL, newOwner, blockchain) {
         this.validateUAL(UAL);
         this.validateNewOwner(newOwner);

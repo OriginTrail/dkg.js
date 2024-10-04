@@ -75,7 +75,6 @@ const WEBSOCKET_PROVIDER_OPTIONS = {
 const OPERATIONS = {
     PUBLISH: 'publish',
     GET: 'get',
-    UPDATE: 'update',
     LOCAL_STORE: 'local-store',
     QUERY: 'query',
 };
