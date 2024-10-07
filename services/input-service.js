@@ -86,6 +86,13 @@ class InputService {
         }
     }
 
+    getParanetRemoveCuratedNodes(options) {
+        return {
+            blockchain: this.getBlockchain(options),
+            identityIds: this.getIdentityIds(options),
+        }
+    }
+
     getParanetDeployIncentivesContractArguments(options) {
         return {
             blockchain: this.getBlockchain(options),

@@ -188,6 +188,19 @@ class ValidationService {
         }
     }
 
+    validateParanetRemoveCuratedNodes(
+        UAL,
+        blockchain,
+        identityIds
+    ) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+
+        for(const identityId of identityIds){
+            this.validateIdentityId(identityId);
+        }
+    }
+
     validateDeployIncentivesContract(
         UAL,
         blockchain,
