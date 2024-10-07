@@ -73,6 +73,8 @@ class InputService {
             blockchain: this.getBlockchain(options),
             paranetName: this.getParanetName(options),
             paranetDescription: this.getParanetDescription(options),
+            paranetNodesAccessPolicy: this.getParanetNodesAccessPolicy(options),
+            paranetMinersAccessPolicy: this.getParanetMinersAccessPolicy(options),
         }
     }
 
@@ -274,6 +276,14 @@ class InputService {
 
     getParanetDescription(options) {
         return options.paranetDescription ?? null;
+    }
+
+    getParanetNodesAccessPolicy(options) {
+        return options.paranetNodesAccessPolicy ?? null;
+    }
+
+    getParanetMinersAccessPolicy(options) {
+        return options.paranetMinersAccessPolicy ?? null;
     }
 
     getTracToNeuroEmissionMultiplier(options) {

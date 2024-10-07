@@ -164,11 +164,15 @@ class ValidationService {
         blockchain,
         paranetName,
         paranetDescription,
+        paranetNodesAccessPolicy,
+        paranetMinersAccessPolicy
     ) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
         this.validateParanetName(paranetName);
         this.validateParanetDescription(paranetDescription);
+        this.validateParanetNodesAccessPolicy(paranetNodesAccessPolicy);
+        this.validateParanetMinersAccessPolicy(paranetMinersAccessPolicy);
     }
 
     validateDeployIncentivesContract(
@@ -481,6 +485,17 @@ class ValidationService {
     validateParanetDescription(paranetDescription) {
         this.validateRequiredParam('paranetDescription', paranetDescription);
         this.validateParamType('paranetDescription', paranetDescription, 'string');
+    }
+
+    validateParanetNodesAccessPolicy(paranetNodesAccessPolicy) {
+        this.validateRequiredParam('paranetNodesAccessPolicy', paranetNodesAccessPolicy);
+        this.validateParamType('paranetNodesAccessPolicy', paranetNodesAccessPolicy, 'number');
+    }
+
+    validateParanetMinersAccessPolicy(paranetMinersAccessPolicy) {
+        this.validateRequiredParam('paranetMinersAccessPolicy', paranetMinersAccessPolicy);
+        this.validateParamType('paranetMinersAccessPolicy', paranetMinersAccessPolicy, 'number');
+        if (paranetMinersAccessPolicy < 0 || paranetMinersAccessPolicy > 1) throw Error(`Invalid miners access policy: ${paranetMinersAccessPolicy}. Should be 0 for OPEN or 1 for CURATED`)
     }
 
     validateTracToNeuroEmissionMultiplier(tracToNeuroEmissionMultiplier){

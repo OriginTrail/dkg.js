@@ -31,6 +31,8 @@ class ParanetOperationsManager {
             blockchain,
             paranetName,
             paranetDescription,
+            paranetNodesAccessPolicy,
+            paranetMinersAccessPolicy
         } = this.inputService.getParanetCreateArguments(options);
 
         this.validationService.validateParanetCreate(
@@ -38,6 +40,8 @@ class ParanetOperationsManager {
             blockchain,
             paranetName,
             paranetDescription,
+            paranetNodesAccessPolicy,
+            paranetMinersAccessPolicy
         );
 
         const { contract, tokenId } = resolveUAL(UAL);
@@ -47,6 +51,8 @@ class ParanetOperationsManager {
                 tokenId,
                 paranetName,
                 paranetDescription,
+                paranetNodesAccessPolicy,
+                paranetMinersAccessPolicy
             },
             blockchain
         );
