@@ -1,3 +1,4 @@
+const { IdentityABI } = require('dkg-evm-module');
 const {
     DEFAULT_NEUROWEB_FINALITY_PARAMETERS,
     DEFAULT_PARAMETERS,
@@ -75,6 +76,13 @@ class InputService {
             paranetDescription: this.getParanetDescription(options),
             paranetNodesAccessPolicy: this.getParanetNodesAccessPolicy(options),
             paranetMinersAccessPolicy: this.getParanetMinersAccessPolicy(options),
+        }
+    }
+
+    getParanetAddCuratedNodes(options) {
+        return {
+            blockchain: this.getBlockchain(options),
+            identityIds: this.getIdentityIds(options),
         }
     }
 
@@ -316,6 +324,10 @@ class InputService {
 
     getRoleAddress(options) {
         return options.roleAddress ?? null;
+    }
+
+    getIdentityIds(options) {
+        return options.identityIds ?? null;
     }
 
 }

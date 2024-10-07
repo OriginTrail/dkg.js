@@ -64,6 +64,37 @@ class ParanetOperationsManager {
     }
 
     /**
+     * Adds curated nodes to paranet.
+     * @async
+     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+     * @param {Object} [options={}] - Additional options for adding curated nodes to a paranet.
+     * @param {Array<number>} identityIds - List of node Identity IDs. 
+     * @example
+     * await dkg.paranet.addCuratedNodes(UAL, {
+     *     identityIds: [1, 2],
+     * });
+     */
+    async addCuratedNodes(paranetUAL, options = {}) {
+        const { blockchain, identityIds } = this.inputService.getParanetAddCuratedNodes(options);
+
+        this.validationService.validateParanetAddCuratedNodes(
+            paranetUAL,
+            blockchain,
+            identityIds
+        );
+
+        const { contract, tokenId } = resolveUAL(paranetUAL);
+
+        await this.blockchainService.addParanetCuratedNodes({
+                contract,
+                tokenId,
+                identityIds
+            },
+            blockchain
+        );
+    }
+
+    /**
      * Deploys an incentives contract for a Paranet.
      * @async
      * @param {string} paranetUAL - Universal Asset Locator of the Paranet.

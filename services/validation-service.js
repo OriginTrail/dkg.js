@@ -175,6 +175,19 @@ class ValidationService {
         this.validateParanetMinersAccessPolicy(paranetMinersAccessPolicy);
     }
 
+    validateParanetAddCuratedNodes(
+        UAL,
+        blockchain,
+        identityIds
+    ) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+
+        for(const identityId of identityIds){
+            this.validateIdentityId(identityId);
+        }
+    }
+
     validateDeployIncentivesContract(
         UAL,
         blockchain,
@@ -490,12 +503,13 @@ class ValidationService {
     validateParanetNodesAccessPolicy(paranetNodesAccessPolicy) {
         this.validateRequiredParam('paranetNodesAccessPolicy', paranetNodesAccessPolicy);
         this.validateParamType('paranetNodesAccessPolicy', paranetNodesAccessPolicy, 'number');
+        if (paranetNodesAccessPolicy < 0 || paranetNodesAccessPolicy > 1) throw Error(`Invalid nodes access policy: ${paranetNodesAccessPolicy}. Should be 0 for OPEN or 1 for CURATED`);
     }
 
     validateParanetMinersAccessPolicy(paranetMinersAccessPolicy) {
         this.validateRequiredParam('paranetMinersAccessPolicy', paranetMinersAccessPolicy);
         this.validateParamType('paranetMinersAccessPolicy', paranetMinersAccessPolicy, 'number');
-        if (paranetMinersAccessPolicy < 0 || paranetMinersAccessPolicy > 1) throw Error(`Invalid miners access policy: ${paranetMinersAccessPolicy}. Should be 0 for OPEN or 1 for CURATED`)
+        if (paranetMinersAccessPolicy < 0 || paranetMinersAccessPolicy > 1) throw Error(`Invalid miners access policy: ${paranetMinersAccessPolicy}. Should be 0 for OPEN or 1 for CURATED`);
     }
 
     validateTracToNeuroEmissionMultiplier(tracToNeuroEmissionMultiplier){
@@ -538,6 +552,11 @@ class ValidationService {
     validateAddress(address) {
         this.validateRequiredParam('address', address);
         this.validateParamType('address', address, 'string');
+    }
+
+    validateIdentityId(identityId) {
+        this.validateRequiredParam('identityId', identityId);
+        this.validateParamType('identityId', identityId, 'number');
     }
 }
 module.exports = ValidationService;
