@@ -1,4 +1,3 @@
-const { IdentityABI } = require('dkg-evm-module');
 const {
     DEFAULT_NEUROWEB_FINALITY_PARAMETERS,
     DEFAULT_PARAMETERS,

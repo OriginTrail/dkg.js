@@ -10,7 +10,7 @@ const {
     BID_SUGGESTION_RANGE_ENUM,
 } = require('../constants.js');
 const { nodeSupported } = require('./utilities.js');
-const { ethers } = require('ethers');
+const { isAddress } = require('ethers');
 
 class ValidationService {
     validateNodeInfo(endpoint, port, authToken) {
@@ -649,7 +649,7 @@ class ValidationService {
         this.validateRequiredParam('address', address);
         this.validateParamType('address', address, 'string');
 
-        if (!ethers.utils.isAddress(address)) throw Error(`Wrong address format. Given address: ${address}`)
+        if (!isAddress(address)) throw Error(`Wrong address format. Given address: ${address}`);
     }
 
     validateIdentityId(identityId) {
