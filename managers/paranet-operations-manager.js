@@ -304,7 +304,7 @@ class ParanetOperationsManager {
      * @async
      * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
      * @param {Object} [options={}] - Additional options for adding curated miners to a paranet.
-     * @param {string} minerAddress - Identity ID of the miner which requested access.
+     * @param {string} minerAddress - Address of the miner which requested access.
      * @example
      * await dkg.paranet.approveCuratedMiner(UAL, {
      *     minerAddress: 1,
@@ -322,6 +322,37 @@ class ParanetOperationsManager {
         const { contract, tokenId } = resolveUAL(paranetUAL);
 
         await this.blockchainService.approveCuratedMiner({
+                contract,
+                tokenId,
+                minerAddress
+            },
+            blockchain
+        );
+    }
+
+    /**
+     * Reject a miner's access request to a curated paranet.
+     * @async
+     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+     * @param {Object} [options={}] - Additional options for adding curated miners to a paranet.
+     * @param {string} minerAddress - Address of the miner which requested access.
+     * @example
+     * await dkg.paranet.rejectCuratedMiner(UAL, {
+     *     minerAddress: 1,
+     * });
+     */
+    async rejectCuratedMiner(paranetUAL, options = {}) {
+        const { blockchain, minerAddress } = this.inputService.getRejectCuratedMiner(options);
+
+        this.validationService.validateRejectCuratedMiner(
+            paranetUAL,
+            blockchain,
+            minerAddress
+        );
+
+        const { contract, tokenId } = resolveUAL(paranetUAL);
+
+        await this.blockchainService.rejectCuratedMiner({
                 contract,
                 tokenId,
                 minerAddress

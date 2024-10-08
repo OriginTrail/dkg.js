@@ -140,6 +140,13 @@ class InputService {
         }
     }
 
+    getRejectCuratedMiner(options) {
+        return {
+            blockchain: this.getBlockchain(options),
+            minerAddress: this.getMinerAddress(options),
+        }
+    }
+
     getParanetDeployIncentivesContractArguments(options) {
         return {
             blockchain: this.getBlockchain(options),

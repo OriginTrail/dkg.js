@@ -274,6 +274,16 @@ class ValidationService {
         this.validateAddress(minerAddress);
     }
 
+    validateRejectCuratedMiner(
+        UAL,
+        blockchain,
+        minerAddress
+    ) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+        this.validateAddress(minerAddress);
+    }
+
     validateDeployIncentivesContract(
         UAL,
         blockchain,
