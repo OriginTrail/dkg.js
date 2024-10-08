@@ -106,6 +106,13 @@ class InputService {
         }
     }
 
+    getRejectCuratedNode(options) {
+        return {
+            blockchain: this.getBlockchain(options),
+            identityId: this.getIdentityId(options),
+        }
+    }
+
     getParanetDeployIncentivesContractArguments(options) {
         return {
             blockchain: this.getBlockchain(options),

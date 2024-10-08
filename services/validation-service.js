@@ -217,7 +217,17 @@ class ValidationService {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
         this.validateIdentityId(identityId);
-    }   
+    }
+
+    validateRejectCuratedNode(
+        UAL,
+        blockchain,
+        identityId
+    ) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+        this.validateIdentityId(identityId);
+    }
 
     validateDeployIncentivesContract(
         UAL,
