@@ -275,6 +275,31 @@ class ParanetOperationsManager {
     }
 
     /**
+     * Request to become a miner in a curated paranet.
+     * @async
+     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+     * @example
+     * await dkg.paranet.requestCuratedMinerAccess(UAL);
+     */
+    async requestCuratedMinerAccess(paranetUAL) {
+        const { blockchain } = this.inputService.getRequestParanetCuratedMinerAccess(options);
+
+        this.validationService.validateRequestParanetCuratedMinerAccess(
+            paranetUAL,
+            blockchain,
+        );
+
+        const { contract, tokenId } = resolveUAL(paranetUAL);
+
+        await this.blockchainService.requestParanetCuratedMinerAccess({
+                contract,
+                tokenId,
+            },
+            blockchain
+        );
+    }
+
+    /**
      * Deploys an incentives contract for a Paranet.
      * @async
      * @param {string} paranetUAL - Universal Asset Locator of the Paranet.

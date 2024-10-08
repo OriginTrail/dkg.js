@@ -256,6 +256,14 @@ class ValidationService {
         }
     }
 
+    validateRequestParanetCuratedMinerAccess(
+        UAL,
+        blockchain,
+    ) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+    }
+
     validateDeployIncentivesContract(
         UAL,
         blockchain,

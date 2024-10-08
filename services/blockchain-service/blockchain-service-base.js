@@ -700,6 +700,15 @@ class BlockchainServiceBase {
         );
     }
 
+    async requestParanetCuratedMinerAccess(requestData, blockchain) {
+        return this.executeContractFunction(
+            'Paranet',
+            'requestParanetCuratedMinerAccess',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
+
     async deployNeuroIncentivesPool(requestData, blockchain) {
         return this.executeContractFunction(
             'ParanetIncentivesPoolFactory',
