@@ -264,6 +264,16 @@ class ValidationService {
         this.validateBlockchain(blockchain);
     }
 
+    validateApproveCuratedMiner(
+        UAL,
+        blockchain,
+        minerAddress
+    ) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+        this.validateAddress(minerAddress);
+    }
+
     validateDeployIncentivesContract(
         UAL,
         blockchain,
