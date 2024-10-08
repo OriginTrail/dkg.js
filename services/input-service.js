@@ -120,6 +120,13 @@ class InputService {
         }
     }
 
+    getParanetRemoveCuratedMiners(options) {
+        return {
+            blockchain: this.getBlockchain(options),
+            minerAddresses: this.getMinerAddresses(options),
+        }
+    }
+
     getParanetDeployIncentivesContractArguments(options) {
         return {
             blockchain: this.getBlockchain(options),

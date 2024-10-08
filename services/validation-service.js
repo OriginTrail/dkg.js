@@ -10,6 +10,7 @@ const {
     BID_SUGGESTION_RANGE_ENUM,
 } = require('../constants.js');
 const { nodeSupported } = require('./utilities.js');
+const { ethers } = require('ethers');
 
 class ValidationService {
     validateNodeInfo(endpoint, port, authToken) {
@@ -230,6 +231,19 @@ class ValidationService {
     }
 
     validateParanetAddCuratedMiners(
+        UAL,
+        blockchain,
+        minerAddresses
+    ) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+
+        for(const minerAddress of minerAddresses){
+            this.validateAddress(minerAddress);
+        }
+    }
+
+    validateParanetRemoveCuratedMiners(
         UAL,
         blockchain,
         minerAddresses
@@ -606,7 +620,8 @@ class ValidationService {
     validateAddress(address) {
         this.validateRequiredParam('address', address);
         this.validateParamType('address', address, 'string');
-        if (!address.startsWith("0x")) throw Error(`Wrong address format. It should start with 0x. Given address: ${address}`)
+
+        if (!ethers.utils.isAddress(address)) throw Error(`Wrong address format. Given address: ${address}`)
     }
 
     validateIdentityId(identityId) {

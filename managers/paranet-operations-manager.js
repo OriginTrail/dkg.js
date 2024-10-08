@@ -244,6 +244,37 @@ class ParanetOperationsManager {
     }
 
     /**
+     * Removes miners from a curated paranet.
+     * @async
+     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+     * @param {Object} [options={}] - Additional options for adding curated miners to a paranet.
+     * @param {Array<string>} minerAddresses - List of miner addresses to be removed.
+     * @example
+     * await dkg.paranet.removeCuratedMiners(UAL, {
+     *     identityIds: [1, 2],
+     * });
+     */
+    async removeCuratedMiners(paranetUAL, options = {}) {
+        const { blockchain, minerAddresses } = this.inputService.getParanetRemoveCuratedMiners(options);
+
+        this.validationService.validateParanetRemoveCuratedMiners(
+            paranetUAL,
+            blockchain,
+            minerAddresses
+        );
+
+        const { contract, tokenId } = resolveUAL(paranetUAL);
+
+        await this.blockchainService.removeParanetCuratedMiners({
+                contract,
+                tokenId,
+                minerAddresses
+            },
+            blockchain
+        );
+    }
+
+    /**
      * Deploys an incentives contract for a Paranet.
      * @async
      * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
