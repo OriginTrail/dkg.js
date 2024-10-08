@@ -229,6 +229,19 @@ class ValidationService {
         this.validateIdentityId(identityId);
     }
 
+    validateParanetAddCuratedMiners(
+        UAL,
+        blockchain,
+        minerAddresses
+    ) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+
+        for(const minerAddress of minerAddresses){
+            this.validateAddress(minerAddress);
+        }
+    }
+
     validateDeployIncentivesContract(
         UAL,
         blockchain,
@@ -593,6 +606,7 @@ class ValidationService {
     validateAddress(address) {
         this.validateRequiredParam('address', address);
         this.validateParamType('address', address, 'string');
+        if (!address.startsWith("0x")) throw Error(`Wrong address format. It should start with 0x. Given address: ${address}`)
     }
 
     validateIdentityId(identityId) {

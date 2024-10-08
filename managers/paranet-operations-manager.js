@@ -64,7 +64,7 @@ class ParanetOperationsManager {
     }
 
     /**
-     * Adds curated nodes to paranet.
+     * Adds nodes to a curated paranet.
      * @async
      * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
      * @param {Object} [options={}] - Additional options for adding curated nodes to a paranet.
@@ -95,7 +95,7 @@ class ParanetOperationsManager {
     }
 
     /**
-     * Removes curated nodes to paranet.
+     * Removes nodes from a curated paranet.
      * @async
      * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
      * @param {Object} [options={}] - Additional options for adding curated nodes to a paranet.
@@ -126,7 +126,7 @@ class ParanetOperationsManager {
     }
 
     /**
-     * Request to become a curated node.
+     * Request to become a node in a curated paranet.
      * @async
      * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
      * @example
@@ -151,7 +151,7 @@ class ParanetOperationsManager {
     }
 
     /**
-     * Approve a curated node access request.
+     * Approve a node's access request to a curated paranet.
      * @async
      * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
      * @param {Object} [options={}] - Additional options for adding curated nodes to a paranet.
@@ -182,7 +182,7 @@ class ParanetOperationsManager {
     }
 
     /**
-     * Reject a curated node access request.
+     * Reject a node's access request to a curated paranet.
      * @async
      * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
      * @param {Object} [options={}] - Additional options for adding curated nodes to a paranet.
@@ -207,6 +207,37 @@ class ParanetOperationsManager {
                 contract,
                 tokenId,
                 identityId
+            },
+            blockchain
+        );
+    }
+
+    /**
+     * Adds miners to a curated paranet.
+     * @async
+     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+     * @param {Object} [options={}] - Additional options for adding curated nodes to a paranet.
+     * @param {Array<string>} minerAddresses - List of miner addresses to be added. 
+     * @example
+     * await dkg.paranet.addCuratedMiners(UAL, {
+     *     minerAddresses: [0xminerAddress1, 0xminerAddress2],
+     * });
+     */
+    async addCuratedMiners(paranetUAL, options = {}) {
+        const { blockchain, minerAddresses } = this.inputService.getParanetAddCuratedMiners(options);
+
+        this.validationService.validateParanetAddCuratedMiners(
+            paranetUAL,
+            blockchain,
+            minerAddresses
+        );
+
+        const { contract, tokenId } = resolveUAL(paranetUAL);
+
+        await this.blockchainService.addParanetCuratedMiners({
+                contract,
+                tokenId,
+                minerAddresses
             },
             blockchain
         );

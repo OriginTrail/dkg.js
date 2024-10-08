@@ -682,6 +682,15 @@ class BlockchainServiceBase {
         );
     }
 
+    async addParanetCuratedMiners(requestData, blockchain) {
+        return this.executeContractFunction(
+            'Paranet',
+            'addParanetCuratedMiners',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
+
     async deployNeuroIncentivesPool(requestData, blockchain) {
         return this.executeContractFunction(
             'ParanetIncentivesPoolFactory',
