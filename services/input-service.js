@@ -93,6 +93,12 @@ class InputService {
         }
     }
 
+    getRequestParanetCuratedNodeAccess(options) {
+        return {
+            blockchain: this.getBlockchain(options),
+        }
+    }
+
     getParanetDeployIncentivesContractArguments(options) {
         return {
             blockchain: this.getBlockchain(options),
