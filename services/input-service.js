@@ -99,6 +99,13 @@ class InputService {
         }
     }
 
+    getApproveCuratedNode(options) {
+        return {
+            blockchain: this.getBlockchain(options),
+            identityId: this.getIdentityId(options),
+        }
+    }
+
     getParanetDeployIncentivesContractArguments(options) {
         return {
             blockchain: this.getBlockchain(options),
@@ -341,6 +348,10 @@ class InputService {
 
     getIdentityIds(options) {
         return options.identityIds ?? null;
+    }
+
+    getIdentityId(options) {
+        return options.identityId ?? null;
     }
 
 }
