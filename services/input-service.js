@@ -112,6 +112,18 @@ class InputService {
         }
     }
 
+    getCuratedNodes(options) {
+        return {
+            blockchain: this.getBlockchain(options),
+        }
+    }
+
+    getParanetKnowledgeMiners(options) {
+        return {
+            blockchain: this.getBlockchain(options),
+        }
+    }
+
     getParanetAddCuratedMiners(options) {
         return {
             blockchain: this.getBlockchain(options),

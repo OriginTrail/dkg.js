@@ -230,6 +230,22 @@ class ValidationService {
         this.validateIdentityId(identityId);
     }
 
+    validateGetCuratedNodes(
+        UAL,
+        blockchain,
+    ) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+    }
+
+    validateGetParanetKnowledgeMiners(
+        UAL,
+        blockchain,
+    ) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+    }
+
     validateParanetAddCuratedMiners(
         UAL,
         blockchain,

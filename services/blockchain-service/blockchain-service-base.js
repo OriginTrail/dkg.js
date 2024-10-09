@@ -682,6 +682,24 @@ class BlockchainServiceBase {
         );
     }
 
+    async getCuratedNodes(requestData, blockchain) {
+        return this.callContractFunction(
+            'ParanetsRegistry',
+            'getCuratedNodes',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
+
+    async getKnowledgeMiners(requestData, blockchain) {
+        return this.callContractFunction(
+            'ParanetsRegistry',
+            'getKnowledgeMiners',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
+
     async addParanetCuratedMiners(requestData, blockchain) {
         return this.executeContractFunction(
             'Paranet',

@@ -132,7 +132,7 @@ class ParanetOperationsManager {
      * @example
      * await dkg.paranet.requestCuratedNodeAccess(UAL);
      */
-    async requestCuratedNodeAccess(paranetUAL) {
+    async requestCuratedNodeAccess(paranetUAL, options = {}) {
         const { blockchain } = this.inputService.getRequestParanetCuratedNodeAccess(options);
 
         this.validationService.validateRequestParanetCuratedNodeAccess(
@@ -213,6 +213,32 @@ class ParanetOperationsManager {
     }
 
     /**
+     * Get nodes of a curated paranet.
+     * @async
+     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+     * @returns {Array[number]} Array of nodes identity IDs.
+     * @example
+     * await dkg.paranet.getCuratedNodes(UAL);
+     */
+    async getCuratedNodes(paranetUAL, options = {}) {
+        const { blockchain } = this.inputService.getCuratedNodes(options);
+
+        this.validationService.validateGetCuratedNodes(
+            paranetUAL,
+            blockchain,
+        );
+
+        const { contract, tokenId } = resolveUAL(paranetUAL);
+        const paranetId = ethers.keccak256(
+            ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
+        );
+
+        const curatedNodes = await this.blockchainService.getCuratedNodes({ paranetId }, blockchain);
+
+        return curatedNodes;
+    }
+
+    /**
      * Adds miners to a curated paranet.
      * @async
      * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
@@ -281,7 +307,7 @@ class ParanetOperationsManager {
      * @example
      * await dkg.paranet.requestCuratedMinerAccess(UAL);
      */
-    async requestCuratedMinerAccess(paranetUAL) {
+    async requestCuratedMinerAccess(paranetUAL, options = {}) {
         const { blockchain } = this.inputService.getRequestParanetCuratedMinerAccess(options);
 
         this.validationService.validateRequestParanetCuratedMinerAccess(
@@ -359,6 +385,32 @@ class ParanetOperationsManager {
             },
             blockchain
         );
+    }
+
+    /**
+     * Get miners of a paranet.
+     * @async
+     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+     * @returns {Array[string]} Array of knowledge miners addresses.
+     * @example
+     * await dkg.paranet.getKnowledgeMiners(UAL);
+     */
+    async getKnowledgeMiners(paranetUAL, options = {}) {
+        const { blockchain } = this.inputService.getParanetKnowledgeMiners(options);
+
+        this.validationService.validateGetParanetKnowledgeMiners(
+            paranetUAL,
+            blockchain,
+        );
+
+        const { contract, tokenId } = resolveUAL(paranetUAL);
+        const paranetId = ethers.keccak256(
+            ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
+        );
+
+        const knowledgeMiners = await this.blockchainService.getKnowledgeMiners({ paranetId }, blockchain);
+
+        return knowledgeMiners;
     }
 
     /**
