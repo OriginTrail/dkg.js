@@ -149,11 +149,6 @@ function divider() {
     console.log(paranetRegistered);
     divider();
 
-    const paranetDeployed = await DkgClient.paranet.deployIncentivesContract(paranetAssetResult.UAL, 'Neuroweb', paranetOptions);
-    console.log('======================== PARANET INCENTIVES POOL DEPLOYED');
-    console.log(paranetDeployed);
-    divider();
-
     const addCuratedNodesOptions = { identityIds: [1, 2, 3] }
     await DkgClient.paranet.addCuratedNodes(paranetAssetResult.UAL, addCuratedNodesOptions);
     console.log('======================== ADDED NODES TO A CURATED PARANET');
