@@ -10,6 +10,7 @@ const {
     BID_SUGGESTION_RANGE_ENUM,
 } = require('../constants.js');
 const { nodeSupported } = require('./utilities.js');
+const { isAddress } = require('ethers');
 
 class ValidationService {
     validateNodeInfo(endpoint, port, authToken) {
@@ -164,11 +165,139 @@ class ValidationService {
         blockchain,
         paranetName,
         paranetDescription,
+        paranetNodesAccessPolicy,
+        paranetMinersAccessPolicy
     ) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
         this.validateParanetName(paranetName);
         this.validateParanetDescription(paranetDescription);
+        this.validateParanetNodesAccessPolicy(paranetNodesAccessPolicy);
+        this.validateParanetMinersAccessPolicy(paranetMinersAccessPolicy);
+    }
+
+    validateParanetAddCuratedNodes(
+        UAL,
+        blockchain,
+        identityIds
+    ) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+
+        for(const identityId of identityIds){
+            this.validateIdentityId(identityId);
+        }
+    }
+
+    validateParanetRemoveCuratedNodes(
+        UAL,
+        blockchain,
+        identityIds
+    ) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+
+        for(const identityId of identityIds){
+            this.validateIdentityId(identityId);
+        }
+    }
+
+    validateRequestParanetCuratedNodeAccess(
+        UAL,
+        blockchain,
+    ) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+    }
+
+    validateApproveCuratedNode(
+        UAL,
+        blockchain,
+        identityId
+    ) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+        this.validateIdentityId(identityId);
+    }
+
+    validateRejectCuratedNode(
+        UAL,
+        blockchain,
+        identityId
+    ) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+        this.validateIdentityId(identityId);
+    }
+
+    validateGetCuratedNodes(
+        UAL,
+        blockchain,
+    ) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+    }
+
+    validateGetParanetKnowledgeMiners(
+        UAL,
+        blockchain,
+    ) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+    }
+
+    validateParanetAddCuratedMiners(
+        UAL,
+        blockchain,
+        minerAddresses
+    ) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+
+        for(const minerAddress of minerAddresses){
+            this.validateAddress(minerAddress);
+        }
+    }
+
+    validateParanetRemoveCuratedMiners(
+        UAL,
+        blockchain,
+        minerAddresses
+    ) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+
+        for(const minerAddress of minerAddresses){
+            this.validateAddress(minerAddress);
+        }
+    }
+
+    validateRequestParanetCuratedMinerAccess(
+        UAL,
+        blockchain,
+    ) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+    }
+
+    validateApproveCuratedMiner(
+        UAL,
+        blockchain,
+        minerAddress
+    ) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+        this.validateAddress(minerAddress);
+    }
+
+    validateRejectCuratedMiner(
+        UAL,
+        blockchain,
+        minerAddress
+    ) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+        this.validateAddress(minerAddress);
     }
 
     validateDeployIncentivesContract(
@@ -483,6 +612,18 @@ class ValidationService {
         this.validateParamType('paranetDescription', paranetDescription, 'string');
     }
 
+    validateParanetNodesAccessPolicy(paranetNodesAccessPolicy) {
+        this.validateRequiredParam('paranetNodesAccessPolicy', paranetNodesAccessPolicy);
+        this.validateParamType('paranetNodesAccessPolicy', paranetNodesAccessPolicy, 'number');
+        if (paranetNodesAccessPolicy < 0 || paranetNodesAccessPolicy > 1) throw Error(`Invalid nodes access policy: ${paranetNodesAccessPolicy}. Should be 0 for OPEN or 1 for CURATED`);
+    }
+
+    validateParanetMinersAccessPolicy(paranetMinersAccessPolicy) {
+        this.validateRequiredParam('paranetMinersAccessPolicy', paranetMinersAccessPolicy);
+        this.validateParamType('paranetMinersAccessPolicy', paranetMinersAccessPolicy, 'number');
+        if (paranetMinersAccessPolicy < 0 || paranetMinersAccessPolicy > 1) throw Error(`Invalid miners access policy: ${paranetMinersAccessPolicy}. Should be 0 for OPEN or 1 for CURATED`);
+    }
+
     validateTracToNeuroEmissionMultiplier(tracToNeuroEmissionMultiplier){
         this.validateRequiredParam('tracToNeuroEmissionMultiplier', tracToNeuroEmissionMultiplier);
         this.validateParamType('tracToNeuroEmissionMultiplier', tracToNeuroEmissionMultiplier, 'number');
@@ -523,6 +664,13 @@ class ValidationService {
     validateAddress(address) {
         this.validateRequiredParam('address', address);
         this.validateParamType('address', address, 'string');
+
+        if (!isAddress(address)) throw Error(`Wrong address format. Given address: ${address}`);
+    }
+
+    validateIdentityId(identityId) {
+        this.validateRequiredParam('identityId', identityId);
+        this.validateParamType('identityId', identityId, 'number');
     }
 }
 module.exports = ValidationService;
