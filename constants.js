@@ -60,8 +60,9 @@ const BLOCKCHAINS = {
             hubContract: '0xC06210312C9217A0EdF67453618F5eB96668679A',
             gasPriceOracleLink: 'https://blockscout.chiadochain.net/api/v1/gas-price-oracle',
         },
+        // This is V8 TESTNET HUB don't use this for V6
         'base:84532': {
-            hubContract: '0x144eDa5cbf8926327cb2cceef168A121F0E4A299',
+            hubContract: '0xCca0eA14540588A09c85cD6A6Fc53eA3A7010692',
             rpc: 'https://sepolia.base.org',
         },
     },
