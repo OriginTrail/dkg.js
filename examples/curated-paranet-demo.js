@@ -248,7 +248,7 @@ function divider() {
     try {
         await dkgClient5.asset.submitToParanet(createSecondAssetResult.UAL, paranetAssetResult.UAL);
     } catch (error) {
-        notApprovedSubmitResult = error;
+        notApprovedSubmitResult = error.message;
     }
     console.log('======================== CREATE A KA AND SUBMIT IT TO A CURATED PARANET - KNOWLEDGE MINER IS NOT APPROVED');
     console.log({
