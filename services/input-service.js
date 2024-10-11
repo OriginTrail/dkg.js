@@ -86,80 +86,80 @@ class InputService {
         return {
             blockchain: this.getBlockchain(options),
             identityIds: this.getIdentityIds(options),
-        }
+        };
     }
 
     getParanetRemoveCuratedNodes(options) {
         return {
             blockchain: this.getBlockchain(options),
             identityIds: this.getIdentityIds(options),
-        }
+        };
     }
 
     getRequestParanetCuratedNodeAccess(options) {
         return {
             blockchain: this.getBlockchain(options),
-        }
+        };
     }
 
     getApproveCuratedNode(options) {
         return {
             blockchain: this.getBlockchain(options),
             identityId: this.getIdentityId(options),
-        }
+        };
     }
 
     getRejectCuratedNode(options) {
         return {
             blockchain: this.getBlockchain(options),
             identityId: this.getIdentityId(options),
-        }
+        };
     }
 
     getCuratedNodes(options) {
         return {
             blockchain: this.getBlockchain(options),
-        }
+        };
     }
 
     getParanetKnowledgeMiners(options) {
         return {
             blockchain: this.getBlockchain(options),
-        }
+        };
     }
 
     getParanetAddCuratedMiners(options) {
         return {
             blockchain: this.getBlockchain(options),
             minerAddresses: this.getMinerAddresses(options),
-        }
+        };
     }
 
     getParanetRemoveCuratedMiners(options) {
         return {
             blockchain: this.getBlockchain(options),
             minerAddresses: this.getMinerAddresses(options),
-        }
+        };
     }
 
     getRequestParanetCuratedMinerAccess(options) {
         return {
             blockchain: this.getBlockchain(options),
-        }
+        };
     }
 
     getApproveCuratedMiner(options) {
         return {
             blockchain: this.getBlockchain(options),
             minerAddress: this.getMinerAddress(options),
-        }
+        };
     }
 
     getRejectCuratedMiner(options) {
         return {
             blockchain: this.getBlockchain(options),
             minerAddress: this.getMinerAddress(options),
-        }
+        };
     }
 
     getParanetDeployIncentivesContractArguments(options) {
@@ -377,6 +377,7 @@ class InputService {
 
     getParanetMinersPolicy(options) {
         return options.minersAccessPolicy ?? PARANET_MINERS_ACCESS_POLICY.OPEN;
+    }
 
     getParanetNodesAccessPolicy(options) {
         return options.paranetNodesAccessPolicy ?? PARANET_NODES_ACCESS_POLICY.OPEN;
