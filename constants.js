@@ -47,7 +47,7 @@ const BLOCKCHAINS = {
     mainnet: {},
 };
 
-const PARANET_NODES_ACCESS_POLICY = { 
+const PARANET_NODES_ACCESS_POLICY = {
     OPEN: 0,
     CURATED: 1,
 };
@@ -94,6 +94,7 @@ const OPERATIONS = {
     GET: 'get',
     LOCAL_STORE: 'local-store',
     QUERY: 'query',
+    PUBLISH_PARANET: 'publishParanet',
 };
 
 const OPERATION_STATUSES = {
@@ -220,16 +221,6 @@ const BID_SUGGESTION_RANGE_ENUM = [
     ALL_BID_SUGGESTION,
 ];
 
-const PARANET_NODES_ACCESS_POLICY = {
-    OPEN: 0,
-    CURATED: 1,
-};
-
-const PARANET_MINERS_ACCESS_POLICY = {
-    OPEN: 0,
-    CURATED: 1,
-};
-
 const PARANET_KNOWLEDGE_ASSET_ACCESS_POLICY = {
     OPEN: 0,
 };
@@ -268,6 +259,6 @@ module.exports = {
     ALL_BID_SUGGESTION,
     BID_SUGGESTION_RANGE_ENUM,
     PARANET_NODES_ACCESS_POLICY,
-    PARANET_MINERS_ACCESS_POLICY, 
+    PARANET_MINERS_ACCESS_POLICY,
     PARANET_KNOWLEDGE_ASSET_ACCESS_POLICY,
 };
