@@ -131,9 +131,6 @@ function divider() {
 
     divider();
 
-    const paranetNodesAccessPolicy = PARANET_NODES_ACCESS_POLICY.CURATED;
-    const paranetMinersAccessPolicy = PARANET_MINERS_ACCESS_POLICY.CURATED;
-
     const paranetOptions = {
         paranetName: 'FirstParanet',
         paranetDescription: 'First ever paranet on DKG!',
