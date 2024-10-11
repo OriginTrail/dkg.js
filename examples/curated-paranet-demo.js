@@ -134,9 +134,6 @@ function divider() {
     const paranetOptions = {
         paranetName: 'FirstParanet',
         paranetDescription: 'First ever paranet on DKG!',
-        tracToNeuroEmissionMultiplier: 5,
-        incentivizationProposalVotersRewardPercentage: 12.00,
-        operatorRewardPercentage: 10.00,
         paranetNodesAccessPolicy: PARANET_NODES_ACCESS_POLICY.CURATED,
         paranetMinersAccessPolicy: PARANET_MINERS_ACCESS_POLICY.CURATED,
     };
