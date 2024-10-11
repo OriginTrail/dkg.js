@@ -40,6 +40,16 @@ const BLOCKCHAINS = {
     mainnet: {},
 };
 
+const PARANET_NODES_ACCESS_POLICY = { 
+    OPEN: 0,
+    CURATED: 1,
+};
+
+const PARANET_MINERS_ACCESS_POLICY = {
+    OPEN: 0,
+    CURATED: 1,
+};
+
 const INCENTIVE_TYPE = {
     NEUROWEB: 'Neuroweb',
 };
@@ -236,4 +246,6 @@ module.exports = {
     HIGH_BID_SUGGESTION,
     ALL_BID_SUGGESTION,
     BID_SUGGESTION_RANGE_ENUM,
+    PARANET_NODES_ACCESS_POLICY,
+    PARANET_MINERS_ACCESS_POLICY,
 };

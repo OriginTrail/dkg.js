@@ -8,6 +8,8 @@ const {
     GET_OUTPUT_FORMATS,
     QUERY_TYPES,
     BID_SUGGESTION_RANGE_ENUM,
+    PARANET_NODES_ACCESS_POLICY,
+    PARANET_MINERS_ACCESS_POLICY
 } = require('../constants.js');
 const { nodeSupported } = require('./utilities.js');
 const { isAddress } = require('ethers');
@@ -615,13 +617,13 @@ class ValidationService {
     validateParanetNodesAccessPolicy(paranetNodesAccessPolicy) {
         this.validateRequiredParam('paranetNodesAccessPolicy', paranetNodesAccessPolicy);
         this.validateParamType('paranetNodesAccessPolicy', paranetNodesAccessPolicy, 'number');
-        if (paranetNodesAccessPolicy < 0 || paranetNodesAccessPolicy > 1) throw Error(`Invalid nodes access policy: ${paranetNodesAccessPolicy}. Should be 0 for OPEN or 1 for CURATED`);
+        if (!Object.values(PARANET_NODES_ACCESS_POLICY).includes(paranetNodesAccessPolicy)) throw Error(`Invalid nodes access policy: ${paranetNodesAccessPolicy}. Should be 0 for OPEN or 1 for CURATED`);
     }
 
     validateParanetMinersAccessPolicy(paranetMinersAccessPolicy) {
         this.validateRequiredParam('paranetMinersAccessPolicy', paranetMinersAccessPolicy);
         this.validateParamType('paranetMinersAccessPolicy', paranetMinersAccessPolicy, 'number');
-        if (paranetMinersAccessPolicy < 0 || paranetMinersAccessPolicy > 1) throw Error(`Invalid miners access policy: ${paranetMinersAccessPolicy}. Should be 0 for OPEN or 1 for CURATED`);
+        if (!Object.values(PARANET_MINERS_ACCESS_POLICY).includes(paranetMinersAccessPolicy)) throw Error(`Invalid miners access policy: ${paranetMinersAccessPolicy}. Should be 0 for OPEN or 1 for CURATED`);
     }
 
     validateTracToNeuroEmissionMultiplier(tracToNeuroEmissionMultiplier){

@@ -6,14 +6,10 @@ const OT_NODE_HOSTNAME = 'http://localhost';
 const OT_NODE_PORT = '8900';
 const PUBLIC_KEY = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
 const PRIVATE_KEY = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
-const NODES_ACCESS_POLICY = {
-    OPEN: 0,
-    CURATED: 1
-}
-const MINERS_ACCESS_POLICY = {
-    OPEN: 0,
-    CURATED: 1
-}
+const {
+    PARANET_NODES_ACCESS_POLICY,
+    PARANET_MINERS_ACCESS_POLICY,
+} = require('../constants.js');
 
 const DkgClient = new DKG({
     environment: ENVIRONMENT,
@@ -141,8 +137,8 @@ function divider() {
         tracToNeuroEmissionMultiplier: 5,
         incentivizationProposalVotersRewardPercentage: 12.00,
         operatorRewardPercentage: 10.00,
-        paranetNodesAccessPolicy: NODES_ACCESS_POLICY.CURATED,
-        paranetMinersAccessPolicy: MINERS_ACCESS_POLICY.CURATED,
+        paranetNodesAccessPolicy: PARANET_NODES_ACCESS_POLICY.CURATED,
+        paranetMinersAccessPolicy: PARANET_MINERS_ACCESS_POLICY.CURATED,
     };
     const paranetRegistered = await DkgClient.paranet.create(paranetAssetResult.UAL, paranetOptions);
     console.log('======================== A CURATED PARANET REGISTERED');
