@@ -17,11 +17,15 @@ class ParanetOperationsManager {
      * @param {Object} [options={}] - Additional options for creating the Paranet.
      * @param {string} options.paranetName - Name of the Paranet.
      * @param {string} options.paranetDescription - Description of the Paranet.
+     * @param {number} paranetNodesAccessPolicy - Paranet's policy towards including nodes.
+     * @param {number} paranetMinersAccessPolicy - Paranet's policy towards including knowledge miners.
      * @returns {Object} Object containing the Paranet UAL.
      * @example
      * await dkg.paranet.create(UAL, {
      *     paranetName: 'MyParanet',
      *     paranetDescription: 'A paranet for demonstration purposes.',
+     *     paranetNodesAccessPolicy: 0,
+     *     paranetMinersAccessPolicy: 0
      * });
      */
     async create(UAL, options = {}) {
@@ -66,15 +70,13 @@ class ParanetOperationsManager {
      * Adds nodes to a curated paranet.
      * @async
      * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
-     * @param {Object} [options={}] - Additional options for adding curated nodes to a paranet.
      * @param {Array<number>} identityIds - List of node Identity IDs. 
+     * @param {Object} [options={}] - Additional options for adding curated nodes to a paranet.
      * @example
-     * await dkg.paranet.addCuratedNodes(UAL, {
-     *     identityIds: [1, 2],
-     * });
+     * await dkg.paranet.addCuratedNodes(UAL, identityIds: [1, 2]);
      */
-    async addCuratedNodes(paranetUAL, options = {}) {
-        const { blockchain, identityIds } = this.inputService.getParanetAddCuratedNodes(options);
+    async addCuratedNodes(paranetUAL, identityIds, options = {}) {
+        const { blockchain } = this.inputService.getParanetAddCuratedNodes(options);
 
         this.validationService.validateParanetAddCuratedNodes(
             paranetUAL,
@@ -97,15 +99,13 @@ class ParanetOperationsManager {
      * Removes nodes from a curated paranet.
      * @async
      * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
-     * @param {Object} [options={}] - Additional options for adding curated nodes to a paranet.
      * @param {Array<number>} identityIds - List of node Identity IDs to be removed. 
+     * @param {Object} [options={}] - Additional options for adding curated nodes to a paranet.
      * @example
-     * await dkg.paranet.removeCuratedNodes(UAL, {
-     *     identityIds: [1, 2],
-     * });
+     * await dkg.paranet.removeCuratedNodes(UAL, identityIds: [1, 2]);
      */
-    async removeCuratedNodes(paranetUAL, options = {}) {
-        const { blockchain, identityIds } = this.inputService.getParanetRemoveCuratedNodes(options);
+    async removeCuratedNodes(paranetUAL, identityIds, options = {}) {
+        const { blockchain } = this.inputService.getParanetRemoveCuratedNodes(options);
 
         this.validationService.validateParanetRemoveCuratedNodes(
             paranetUAL,
@@ -153,15 +153,13 @@ class ParanetOperationsManager {
      * Approve a node's access request to a curated paranet.
      * @async
      * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
-     * @param {Object} [options={}] - Additional options for adding curated nodes to a paranet.
      * @param {number} identityId - Identity ID of the node which requested access.
+     * @param {Object} [options={}] - Additional options for adding curated nodes to a paranet.
      * @example
-     * await dkg.paranet.approveCuratedNode(UAL, {
-     *     identityId: 1,
-     * });
+     * await dkg.paranet.approveCuratedNode(UAL, identityId: 1);
      */
-    async approveCuratedNode(paranetUAL, options = {}) {
-        const { blockchain, identityId } = this.inputService.getApproveCuratedNode(options);
+    async approveCuratedNode(paranetUAL, identityId, options = {}) {
+        const { blockchain } = this.inputService.getApproveCuratedNode(options);
 
         this.validationService.validateApproveCuratedNode(
             paranetUAL,
@@ -184,15 +182,13 @@ class ParanetOperationsManager {
      * Reject a node's access request to a curated paranet.
      * @async
      * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
-     * @param {Object} [options={}] - Additional options for adding curated nodes to a paranet.
      * @param {number} identityId - Identity ID of the node which requested access.
+     * @param {Object} [options={}] - Additional options for adding curated nodes to a paranet.
      * @example
-     * await dkg.paranet.rejectCuratedNode(UAL, {
-     *     identityId: 1,
-     * });
+     * await dkg.paranet.rejectCuratedNode(UAL, identityId: 1);
      */
-    async rejectCuratedNode(paranetUAL, options = {}) {
-        const { blockchain, identityId } = this.inputService.getRejectCuratedNode(options);
+    async rejectCuratedNode(paranetUAL, identityId, options = {}) {
+        const { blockchain } = this.inputService.getRejectCuratedNode(options);
 
         this.validationService.validateRejectCuratedNode(
             paranetUAL,
@@ -241,15 +237,13 @@ class ParanetOperationsManager {
      * Adds miners to a curated paranet.
      * @async
      * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
-     * @param {Object} [options={}] - Additional options for adding curated nodes to a paranet.
      * @param {Array<string>} minerAddresses - List of miner addresses to be added. 
+     * @param {Object} [options={}] - Additional options for adding curated nodes to a paranet.
      * @example
-     * await dkg.paranet.addCuratedMiners(UAL, {
-     *     minerAddresses: [0xminerAddress1, 0xminerAddress2],
-     * });
+     * await dkg.paranet.addCuratedMiners(UAL, minerAddresses: [0xminerAddress1, 0xminerAddress2]);
      */
-    async addCuratedMiners(paranetUAL, options = {}) {
-        const { blockchain, minerAddresses } = this.inputService.getParanetAddCuratedMiners(options);
+    async addCuratedMiners(paranetUAL, minerAddresses, options = {}) {
+        const { blockchain } = this.inputService.getParanetAddCuratedMiners(options);
 
         this.validationService.validateParanetAddCuratedMiners(
             paranetUAL,
@@ -272,15 +266,13 @@ class ParanetOperationsManager {
      * Removes miners from a curated paranet.
      * @async
      * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
-     * @param {Object} [options={}] - Additional options for adding curated miners to a paranet.
      * @param {Array<string>} minerAddresses - List of miner addresses to be removed.
+     * @param {Object} [options={}] - Additional options for adding curated miners to a paranet.
      * @example
-     * await dkg.paranet.removeCuratedMiners(UAL, {
-     *     identityIds: [1, 2],
-     * });
+     * await dkg.paranet.removeCuratedMiners(UAL, identityIds: [1, 2]);
      */
-    async removeCuratedMiners(paranetUAL, options = {}) {
-        const { blockchain, minerAddresses } = this.inputService.getParanetRemoveCuratedMiners(options);
+    async removeCuratedMiners(paranetUAL, minerAddresses, options = {}) {
+        const { blockchain } = this.inputService.getParanetRemoveCuratedMiners(options);
 
         this.validationService.validateParanetRemoveCuratedMiners(
             paranetUAL,
@@ -328,15 +320,13 @@ class ParanetOperationsManager {
      * Approve a miner's access request to a curated paranet.
      * @async
      * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
-     * @param {Object} [options={}] - Additional options for adding curated miners to a paranet.
      * @param {string} minerAddress - Address of the miner which requested access.
+     * @param {Object} [options={}] - Additional options for adding curated miners to a paranet.
      * @example
-     * await dkg.paranet.approveCuratedMiner(UAL, {
-     *     minerAddress: 1,
-     * });
+     * await dkg.paranet.approveCuratedMiner(UAL, minerAddress: 1);
      */
-    async approveCuratedMiner(paranetUAL, options = {}) {
-        const { blockchain, minerAddress } = this.inputService.getApproveCuratedMiner(options);
+    async approveCuratedMiner(paranetUAL, minerAddress, options = {}) {
+        const { blockchain } = this.inputService.getApproveCuratedMiner(options);
 
         this.validationService.validateApproveCuratedMiner(
             paranetUAL,
@@ -359,15 +349,13 @@ class ParanetOperationsManager {
      * Reject a miner's access request to a curated paranet.
      * @async
      * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
-     * @param {Object} [options={}] - Additional options for adding curated miners to a paranet.
      * @param {string} minerAddress - Address of the miner which requested access.
+     * @param {Object} [options={}] - Additional options for adding curated miners to a paranet.
      * @example
-     * await dkg.paranet.rejectCuratedMiner(UAL, {
-     *     minerAddress: 1,
-     * });
+     * await dkg.paranet.rejectCuratedMiner(UAL, minerAddress: 1);
      */
-    async rejectCuratedMiner(paranetUAL, options = {}) {
-        const { blockchain, minerAddress } = this.inputService.getRejectCuratedMiner(options);
+    async rejectCuratedMiner(paranetUAL, minerAddress, options = {}) {
+        const { blockchain } = this.inputService.getRejectCuratedMiner(options);
 
         this.validationService.validateRejectCuratedMiner(
             paranetUAL,

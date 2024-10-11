@@ -131,6 +131,9 @@ function divider() {
 
     divider();
 
+    const paranetNodesAccessPolicy = PARANET_NODES_ACCESS_POLICY.CURATED;
+    const paranetMinersAccessPolicy = PARANET_MINERS_ACCESS_POLICY.CURATED;
+
     const paranetOptions = {
         paranetName: 'FirstParanet',
         paranetDescription: 'First ever paranet on DKG!',
@@ -142,8 +145,8 @@ function divider() {
     console.log(paranetRegistered);
     divider();
 
-    const addCuratedNodesOptions = { identityIds: [1, 2, 3] }
-    await DkgClient.paranet.addCuratedNodes(paranetAssetResult.UAL, addCuratedNodesOptions);
+    let identityIds = [1, 2, 3];
+    await DkgClient.paranet.addCuratedNodes(paranetAssetResult.UAL, identityIds);
     console.log('======================== ADDED NODES TO A CURATED PARANET');
     let nodes = await DkgClient.paranet.getCuratedNodes(paranetAssetResult.UAL);
     console.log({
@@ -152,8 +155,8 @@ function divider() {
     });
     divider();
 
-    const removeCuratedNodesOptions = { identityIds: [2, 3] }
-    await DkgClient.paranet.removeCuratedNodes(paranetAssetResult.UAL, removeCuratedNodesOptions);
+    identityIds = [2, 3];
+    await DkgClient.paranet.removeCuratedNodes(paranetAssetResult.UAL, identityIds);
     console.log('======================== REMOVED NODES FROM A CURATED PARANET');
     nodes = await DkgClient.paranet.getCuratedNodes(paranetAssetResult.UAL);
     console.log({
@@ -162,9 +165,9 @@ function divider() {
     });
     divider();
 
-    const rejectCuratedNodesOptions = { identityId: 2 }
+    const identityId = 2;
     await dkgClient2.paranet.requestCuratedNodeAccess(paranetAssetResult.UAL);
-    await DkgClient.paranet.rejectCuratedNode(paranetAssetResult.UAL, rejectCuratedNodesOptions);
+    await DkgClient.paranet.rejectCuratedNode(paranetAssetResult.UAL, identityId);
     console.log("======================== REJECT A NODE'S ACCESS REQUEST TO A CURATED PARANET");
     nodes = await DkgClient.paranet.getCuratedNodes(paranetAssetResult.UAL);
     console.log({
@@ -173,9 +176,8 @@ function divider() {
     });
     divider();
 
-    const approveCuratedNodesOptions = { identityId: 2 }
     await dkgClient2.paranet.requestCuratedNodeAccess(paranetAssetResult.UAL);
-    await DkgClient.paranet.approveCuratedNode(paranetAssetResult.UAL, approveCuratedNodesOptions);
+    await DkgClient.paranet.approveCuratedNode(paranetAssetResult.UAL, identityId);
     console.log("======================== APPROVE A NODE'S ACCESS REQUEST TO A CURATED PARANET");
     nodes = await DkgClient.paranet.getCuratedNodes(paranetAssetResult.UAL);
     console.log({
@@ -184,8 +186,8 @@ function divider() {
     });
     divider();
 
-    const addCuratedMinersOptions = { minerAddresses: [PUBLIC_KEY3, PUBLIC_KEY4, PUBLIC_KEY5] }
-    await DkgClient.paranet.addCuratedMiners(paranetAssetResult.UAL, addCuratedMinersOptions);
+    let minerAddresses = [PUBLIC_KEY3, PUBLIC_KEY4, PUBLIC_KEY5];
+    await DkgClient.paranet.addCuratedMiners(paranetAssetResult.UAL, minerAddresses);
     console.log('======================== ADDED KNOWLEDGE MINERS TO A CURATED PARANET');
     let miners = await DkgClient.paranet.getKnowledgeMiners(paranetAssetResult.UAL);
     console.log({
@@ -194,8 +196,8 @@ function divider() {
     });
     divider();
 
-    const removeCuratedMinersOptions = { minerAddresses: [PUBLIC_KEY4, PUBLIC_KEY5] }
-    await DkgClient.paranet.removeCuratedMiners(paranetAssetResult.UAL, removeCuratedMinersOptions);
+    minerAddresses = [PUBLIC_KEY4, PUBLIC_KEY5];
+    await DkgClient.paranet.removeCuratedMiners(paranetAssetResult.UAL, minerAddresses);
     console.log('======================== REMOVED KNOWLEDGE MINERS FROM A CURATED PARANET');
     miners = await DkgClient.paranet.getKnowledgeMiners(paranetAssetResult.UAL);
     console.log({
@@ -204,9 +206,9 @@ function divider() {
     });
     divider();
 
-    const rejectCuratedMinersOptions = { minerAddress: PUBLIC_KEY4 }
+    let minerAddress = PUBLIC_KEY4;
     await dkgClient4.paranet.requestCuratedMinerAccess(paranetAssetResult.UAL);
-    await DkgClient.paranet.rejectCuratedMiner(paranetAssetResult.UAL, rejectCuratedMinersOptions);
+    await DkgClient.paranet.rejectCuratedMiner(paranetAssetResult.UAL, minerAddress);
     console.log("======================== REJECT A KNOWLEDGE MINER'S ACCESS REQUEST TO A CURATED PARANET");
     miners = await DkgClient.paranet.getKnowledgeMiners(paranetAssetResult.UAL);
     console.log({
@@ -215,9 +217,8 @@ function divider() {
     });
     divider();
 
-    const approveCuratedMinersOptions = { minerAddress: PUBLIC_KEY4 }
     await dkgClient4.paranet.requestCuratedMinerAccess(paranetAssetResult.UAL);
-    await DkgClient.paranet.approveCuratedMiner(paranetAssetResult.UAL, approveCuratedMinersOptions);
+    await DkgClient.paranet.approveCuratedMiner(paranetAssetResult.UAL, minerAddress);
     console.log("======================== APPROVE A KNOWLEDGE MINER'S ACCESS REQUEST TO A CURATED PARANET");
     miners = await DkgClient.paranet.getKnowledgeMiners(paranetAssetResult.UAL);
     console.log({
@@ -227,7 +228,7 @@ function divider() {
     divider();
 
     const createFirstAssetResult = await dkgClient3.asset.create(content, { epochsNum: 2 });
-    const approvedSubmitResult = await dkgClient3.asset.submitToParanet(createFirstAssetResult.UAL, paranetAssetResult.UAL);
+    const approvedSubmitResult = await dkgClient3.asset.submitToParanet(createFirstAssetResult.UAL, { paranetUAL: paranetAssetResult.UAL } );
     console.log('======================== CREATE A KA AND SUBMIT IT TO A CURATED PARANET - KNOWLEDGE MINER IS APPROVED');
     console.log({
         paranetUAL: paranetAssetResult.UAL,
@@ -239,14 +240,14 @@ function divider() {
     const createSecondAssetResult = await dkgClient5.asset.create(content, { epochsNum: 2 });
     let notApprovedSubmitResult;
     try {
-        await dkgClient5.asset.submitToParanet(createSecondAssetResult.UAL, paranetAssetResult.UAL);
+        await dkgClient5.asset.submitToParanet(createSecondAssetResult.UAL, { paranetUAL: paranetAssetResult.UAL });
     } catch (error) {
         notApprovedSubmitResult = error.message;
     }
     console.log('======================== CREATE A KA AND SUBMIT IT TO A CURATED PARANET - KNOWLEDGE MINER IS NOT APPROVED');
     console.log({
         paranetUAL: paranetAssetResult.UAL,
-        assetUAL: createFirstAssetResult.UAL,
+        assetUAL: createSecondAssetResult.UAL,
         submitResult: notApprovedSubmitResult
     });
     divider();
