@@ -27,11 +27,18 @@ const BLOCKCHAINS = {
     },
     devnet: {
         'base:84532': {
-            hubContract: '0x6C861Cb69300C34DfeF674F7C00E734e840C29C0',
+            hubContract: '0xaA849CAC4FA86f6b7484503f3c7a314772AED6d4',
+            rpc: 'https://sepolia.base.org',
+        },
+    },
+    stabledevnet: {
+        'base:84532': {
+            hubContract: '0xAB4A4794Fc1F415C24807B947280aCa8dC492238',
             rpc: 'https://sepolia.base.org',
         },
     },
     testnet: {
+        // This is V8 TESTNET HUB don't use this for V6
         'base:84532': {
             hubContract: '0xCca0eA14540588A09c85cD6A6Fc53eA3A7010692',
             rpc: 'https://sepolia.base.org',
@@ -203,6 +210,20 @@ const BID_SUGGESTION_RANGE_ENUM = [
     ALL_BID_SUGGESTION,
 ];
 
+const PARANET_NODES_ACCESS_POLICY = {
+    OPEN: 0,
+    CURATED: 1,
+};
+
+const PARANET_MINERS_ACCESS_POLICY = {
+    OPEN: 0,
+    CURATED: 1,
+};
+
+const PARANET_KNOWLEDGE_ASSET_ACCESS_POLICY = {
+    OPEN: 0,
+};
+
 module.exports = {
     MAX_FILE_SIZE,
     DID_PREFIX,
@@ -236,4 +257,7 @@ module.exports = {
     HIGH_BID_SUGGESTION,
     ALL_BID_SUGGESTION,
     BID_SUGGESTION_RANGE_ENUM,
+    PARANET_NODES_ACCESS_POLICY,
+    PARANET_MINERS_ACCESS_POLICY,
+    PARANET_KNOWLEDGE_ASSET_ACCESS_POLICY,
 };

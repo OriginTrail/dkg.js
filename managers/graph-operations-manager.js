@@ -25,6 +25,7 @@ class GraphOperationsManager {
             maxNumberOfRetries,
             frequency,
             authToken,
+            paranetUAL,
         } = this.inputService.getQueryArguments(options);
 
         this.validationService.validateGraphQuery(
@@ -39,7 +40,7 @@ class GraphOperationsManager {
             authToken,
         );
 
-        const repository = deriveRepository(graphLocation, graphState);
+        const repository = paranetUAL ?? deriveRepository(graphLocation, graphState);
 
         const operationId = await this.nodeApiService.query(
             endpoint,
