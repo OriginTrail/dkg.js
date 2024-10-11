@@ -1298,7 +1298,8 @@ class AssetOperationsManager {
             endpoint,
             port,
             authToken,
-            OPERATIONS.PUBLISH,
+            OPERATIONS.PUBLISH_PARANET,
+
             maxNumberOfRetries,
             frequency,
             publishOperationId,
