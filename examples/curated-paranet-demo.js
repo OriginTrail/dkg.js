@@ -225,7 +225,7 @@ function divider() {
     divider();
 
     const createFirstAssetResult = await dkgClient3.asset.create(content, { epochsNum: 2 });
-    const approvedSubmitResult = await dkgClient3.asset.submitToParanet(createFirstAssetResult.UAL, { paranetUAL: paranetAssetResult.UAL } );
+    const approvedSubmitResult = await dkgClient3.asset.submitToParanet(createFirstAssetResult.UAL, paranetAssetResult.UAL);
     console.log('======================== CREATE A KA AND SUBMIT IT TO A CURATED PARANET - KNOWLEDGE MINER IS APPROVED');
     console.log({
         paranetUAL: paranetAssetResult.UAL,
@@ -237,7 +237,7 @@ function divider() {
     const createSecondAssetResult = await dkgClient5.asset.create(content, { epochsNum: 2 });
     let notApprovedSubmitResult;
     try {
-        await dkgClient5.asset.submitToParanet(createSecondAssetResult.UAL, { paranetUAL: paranetAssetResult.UAL });
+        await dkgClient5.asset.submitToParanet(createSecondAssetResult.UAL, paranetAssetResult.UAL);
     } catch (error) {
         notApprovedSubmitResult = error.message;
     }
