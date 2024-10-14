@@ -76,7 +76,7 @@ class ParanetOperationsManager {
      * await dkg.paranet.addCuratedNodes(UAL, identityIds: [1, 2]);
      */
     async addCuratedNodes(paranetUAL, identityIds, options = {}) {
-        const { blockchain } = this.inputService.getParanetAddCuratedNodes(options);
+        const blockchain = this.inputService.getBlockchain(options);
 
         this.validationService.validateParanetAddCuratedNodes(
             paranetUAL,
@@ -105,7 +105,7 @@ class ParanetOperationsManager {
      * await dkg.paranet.removeCuratedNodes(UAL, identityIds: [1, 2]);
      */
     async removeCuratedNodes(paranetUAL, identityIds, options = {}) {
-        const { blockchain } = this.inputService.getParanetRemoveCuratedNodes(options);
+        const blockchain = this.inputService.getBlockchain(options);
 
         this.validationService.validateParanetRemoveCuratedNodes(
             paranetUAL,
@@ -132,7 +132,7 @@ class ParanetOperationsManager {
      * await dkg.paranet.requestCuratedNodeAccess(UAL);
      */
     async requestCuratedNodeAccess(paranetUAL, options = {}) {
-        const { blockchain } = this.inputService.getRequestParanetCuratedNodeAccess(options);
+        const blockchain = this.inputService.getBlockchain(options);
 
         this.validationService.validateRequestParanetCuratedNodeAccess(
             paranetUAL,
@@ -159,7 +159,7 @@ class ParanetOperationsManager {
      * await dkg.paranet.approveCuratedNode(UAL, identityId: 1);
      */
     async approveCuratedNode(paranetUAL, identityId, options = {}) {
-        const { blockchain } = this.inputService.getApproveCuratedNode(options);
+        const blockchain = this.inputService.getBlockchain(options);
 
         this.validationService.validateApproveCuratedNode(
             paranetUAL,
@@ -188,7 +188,7 @@ class ParanetOperationsManager {
      * await dkg.paranet.rejectCuratedNode(UAL, identityId: 1);
      */
     async rejectCuratedNode(paranetUAL, identityId, options = {}) {
-        const { blockchain } = this.inputService.getRejectCuratedNode(options);
+        const blockchain = this.inputService.getBlockchain(options);
 
         this.validationService.validateRejectCuratedNode(
             paranetUAL,
@@ -216,7 +216,7 @@ class ParanetOperationsManager {
      * await dkg.paranet.getCuratedNodes(UAL);
      */
     async getCuratedNodes(paranetUAL, options = {}) {
-        const { blockchain } = this.inputService.getCuratedNodes(options);
+        const blockchain = this.inputService.getBlockchain(options);
 
         this.validationService.validateGetCuratedNodes(
             paranetUAL,
@@ -243,7 +243,7 @@ class ParanetOperationsManager {
      * await dkg.paranet.addCuratedMiners(UAL, minerAddresses: [0xminerAddress1, 0xminerAddress2]);
      */
     async addCuratedMiners(paranetUAL, minerAddresses, options = {}) {
-        const { blockchain } = this.inputService.getParanetAddCuratedMiners(options);
+        const blockchain = this.inputService.getBlockchain(options);
 
         this.validationService.validateParanetAddCuratedMiners(
             paranetUAL,
@@ -272,7 +272,7 @@ class ParanetOperationsManager {
      * await dkg.paranet.removeCuratedMiners(UAL, identityIds: [1, 2]);
      */
     async removeCuratedMiners(paranetUAL, minerAddresses, options = {}) {
-        const { blockchain } = this.inputService.getParanetRemoveCuratedMiners(options);
+        const blockchain = this.inputService.getBlockchain(options);
 
         this.validationService.validateParanetRemoveCuratedMiners(
             paranetUAL,
@@ -299,7 +299,7 @@ class ParanetOperationsManager {
      * await dkg.paranet.requestCuratedMinerAccess(UAL);
      */
     async requestCuratedMinerAccess(paranetUAL, options = {}) {
-        const { blockchain } = this.inputService.getRequestParanetCuratedMinerAccess(options);
+        const blockchain = this.inputService.getBlockchain(options);
 
         this.validationService.validateRequestParanetCuratedMinerAccess(
             paranetUAL,
@@ -326,7 +326,7 @@ class ParanetOperationsManager {
      * await dkg.paranet.approveCuratedMiner(UAL, minerAddress: 1);
      */
     async approveCuratedMiner(paranetUAL, minerAddress, options = {}) {
-        const { blockchain } = this.inputService.getApproveCuratedMiner(options);
+        const blockchain = this.inputService.getBlockchain(options);
 
         this.validationService.validateApproveCuratedMiner(
             paranetUAL,
@@ -355,7 +355,7 @@ class ParanetOperationsManager {
      * await dkg.paranet.rejectCuratedMiner(UAL, minerAddress: 1);
      */
     async rejectCuratedMiner(paranetUAL, minerAddress, options = {}) {
-        const { blockchain } = this.inputService.getRejectCuratedMiner(options);
+        const blockchain = this.inputService.getBlockchain(options);
 
         this.validationService.validateRejectCuratedMiner(
             paranetUAL,
@@ -383,7 +383,7 @@ class ParanetOperationsManager {
      * await dkg.paranet.getKnowledgeMiners(UAL);
      */
     async getKnowledgeMiners(paranetUAL, options = {}) {
-        const { blockchain } = this.inputService.getParanetKnowledgeMiners(options);
+        const blockchain = this.inputService.getBlockchain(options);
 
         this.validationService.validateGetParanetKnowledgeMiners(
             paranetUAL,
