@@ -162,6 +162,11 @@ class ValidationService {
         this.validateBlockchain(blockchain);
     }
 
+    validateGetIdentityId(operational, blockchain) {
+        this.validateAddress(operational);
+        this.validateBlockchain(blockchain);
+    }
+
     validateParanetCreate(
         UAL,
         blockchain,

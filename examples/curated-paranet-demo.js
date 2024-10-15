@@ -25,6 +25,11 @@ const DkgClient = new DKG({
     contentType: 'all',
 });
 
+const NODE1_KEYS = {
+    publicKey: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+    privateKey: '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d'
+}
+
 const NODE2_KEYS = {
     publicKey: '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC',
     privateKey: '0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a'
@@ -94,7 +99,10 @@ function divider() {
     console.log(paranetRegistered);
     divider();
 
-    let identityIds = [1, 2, 3];
+    const node1IdentityId = await DkgClient.identity.getIdentityId(NODE1_KEYS.publicKey);
+    const node2IdentityId = await DkgClient.identity.getIdentityId(NODE2_KEYS.publicKey);
+    const node3IdentityId = await DkgClient.identity.getIdentityId(NODE3_KEYS.publicKey);
+    let identityIds = [node1IdentityId, node2IdentityId, node3IdentityId];
     await DkgClient.paranet.addCuratedNodes(paranetAssetResult.UAL, identityIds);
     console.log('======================== ADDED NODES TO A CURATED PARANET');
     let nodes = await DkgClient.paranet.getCuratedNodes(paranetAssetResult.UAL);
@@ -104,7 +112,7 @@ function divider() {
     });
     divider();
 
-    identityIds = [2, 3];
+    identityIds = [node2IdentityId, node3IdentityId];
     await DkgClient.paranet.removeCuratedNodes(paranetAssetResult.UAL, identityIds);
     console.log('======================== REMOVED NODES FROM A CURATED PARANET');
     nodes = await DkgClient.paranet.getCuratedNodes(paranetAssetResult.UAL);
@@ -114,9 +122,8 @@ function divider() {
     });
     divider();
 
-    const identityId = 2;
     await DkgClient.paranet.requestCuratedNodeAccess(paranetAssetResult.UAL, { blockchain: NODE2_KEYS });
-    await DkgClient.paranet.rejectCuratedNode(paranetAssetResult.UAL, identityId);
+    await DkgClient.paranet.rejectCuratedNode(paranetAssetResult.UAL, node2IdentityId);
     console.log("======================== REJECT A NODE'S ACCESS REQUEST TO A CURATED PARANET");
     nodes = await DkgClient.paranet.getCuratedNodes(paranetAssetResult.UAL);
     console.log({
@@ -126,7 +133,7 @@ function divider() {
     divider();
 
     await DkgClient.paranet.requestCuratedNodeAccess(paranetAssetResult.UAL, { blockchain: NODE2_KEYS });
-    await DkgClient.paranet.approveCuratedNode(paranetAssetResult.UAL, identityId);
+    await DkgClient.paranet.approveCuratedNode(paranetAssetResult.UAL, node2IdentityId);
     console.log("======================== APPROVE A NODE'S ACCESS REQUEST TO A CURATED PARANET");
     nodes = await DkgClient.paranet.getCuratedNodes(paranetAssetResult.UAL);
     console.log({

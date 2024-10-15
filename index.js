@@ -6,6 +6,7 @@ const GraphOperationsManager = require('./managers/graph-operations-manager.js')
 const NetworkOperationsManager = require('./managers/network-operations-manager.js');
 const NodeOperationsManager = require('./managers/node-operations-manager.js');
 const ParanetOperationsManager = require('./managers/paranet-operations-manager.js');
+const IdentityOperationsManager = require('./managers/identity-operations-manager.js');
 
 const BaseServiceManager = require('./services/base-service-manager.js');
 
@@ -21,6 +22,7 @@ class DkgClient {
         this.graph = new GraphOperationsManager(services);
         this.network = new NetworkOperationsManager(services);
         this.paranet = new ParanetOperationsManager(services);
+        this.identity = new IdentityOperationsManager(services);
     }
 }
 module.exports = DkgClient;
