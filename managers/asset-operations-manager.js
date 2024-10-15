@@ -1129,9 +1129,8 @@ class AssetOperationsManager {
      * @param {Object} [options={}] - Additional options for adding tokens.
      * @returns {Object} An object containing the UAL and operation status.
      */
-    async submitToParanet(UAL, options = {}) {
+    async submitToParanet(UAL, paranetUAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
-        const paranetUAL = this.inputService.getParanetUAL(options);
 
         this.validationService.validateSubmitToParanet(UAL, paranetUAL, blockchain);
 
@@ -1299,6 +1298,7 @@ class AssetOperationsManager {
             port,
             authToken,
             OPERATIONS.PUBLISH_PARANET,
+
             maxNumberOfRetries,
             frequency,
             publishOperationId,

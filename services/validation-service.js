@@ -1,3 +1,4 @@
+const { isAddress } = require('ethers');
 const {
     ASSET_STATES,
     CONTENT_TYPES,
@@ -12,7 +13,6 @@ const {
     PARANET_MINERS_ACCESS_POLICY,
 } = require('../constants.js');
 const { nodeSupported } = require('./utilities.js');
-const { isAddress } = require('ethers');
 
 class ValidationService {
     validateNodeInfo(endpoint, port, authToken) {
@@ -159,6 +159,11 @@ class ValidationService {
     validateAddTokens(UAL, tokenAmount, blockchain) {
         this.validateUAL(UAL);
         this.validateTokenAmount(tokenAmount);
+        this.validateBlockchain(blockchain);
+    }
+
+    validateGetIdentityId(operational, blockchain) {
+        this.validateAddress(operational);
         this.validateBlockchain(blockchain);
     }
 

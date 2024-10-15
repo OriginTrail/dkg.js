@@ -15,6 +15,7 @@ const ParanetsRegistryAbi = require('dkg-evm-module/abi/ParanetsRegistry.json');
 const ParanetIncentivesPoolFactoryAbi = require('dkg-evm-module/abi/ParanetIncentivesPoolFactory.json');
 const ParanetNeuroIncentivesPoolAbi = require('dkg-evm-module/abi/ParanetNeuroIncentivesPool.json');
 const ParanetKnowledgeMinersRegistryAbi = require('dkg-evm-module/abi/ParanetKnowledgeMinersRegistry.json');
+const IdentityStorageAbi = require('dkg-evm-module/abi/IdentityStorage.json');
 const { OPERATIONS_STEP_STATUS, DEFAULT_GAS_PRICE } = require('../../constants');
 const emptyHooks = require('../../util/empty-hooks.js');
 const { sleepForMilliseconds } = require('../utilities.js');
@@ -37,6 +38,7 @@ class BlockchainServiceBase {
         this.abis.ParanetIncentivesPoolFactory = ParanetIncentivesPoolFactoryAbi;
         this.abis.ParanetNeuroIncentivesPool = ParanetNeuroIncentivesPoolAbi;
         this.abis.ParanetKnowledgeMinersRegistry = ParanetKnowledgeMinersRegistryAbi;
+        this.abis.IdentityStorage = IdentityStorageAbi;
 
         this.abis.ContentAsset.filter((obj) => obj.type === 'event').forEach((event) => {
             const concatInputs = event.inputs.map((input) => input.internalType);
@@ -972,6 +974,16 @@ class BlockchainServiceBase {
             'ParanetNeuroIncentivesPool',
             'isProposalVoter',
             [address],
+            blockchain,
+        );
+    }
+
+    // Identity operations
+    async getIdentityId(operationalWallet, blockchain) {
+        return this.callContractFunction(
+            'IdentityStorage',
+            'getIdentityId',
+            operationalWallet,
             blockchain,
         );
     }
