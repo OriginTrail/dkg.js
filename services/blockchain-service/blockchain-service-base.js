@@ -983,7 +983,7 @@ class BlockchainServiceBase {
         return this.callContractFunction(
             'IdentityStorage',
             'getIdentityId',
-            operationalWallet,
+            [operationalWallet],
             blockchain,
         );
     }

@@ -614,8 +614,8 @@ class AssetOperationsManager {
             };
         }
 
-        const { assertion: publicAssertion, privateAssertion: privateAssertion } =
-            getPublicOperationResult.data;
+        const { assertion: publicAssertion } = getPublicOperationResult.data;
+        let { privateAssertion } = getPublicOperationResult.data;
 
         if (validate === true && calculateRoot(publicAssertion) !== publicAssertionId) {
             getPublicOperationResult.data = {
@@ -688,7 +688,6 @@ class AssetOperationsManager {
             let queryPrivateOperationResult = {};
             if (privateAssertionLinkTriple) {
                 const privateAssertionId = privateAssertionLinkTriple.match(/"(.*?)"/)[1];
-                let privateAssertion;
                 if (getPublicOperationResult?.data?.privateAssertion?.length)
                     privateAssertion = getPublicOperationResult.data.privateAssertion;
                 else {
