@@ -979,11 +979,11 @@ class BlockchainServiceBase {
     }
 
     // Identity operations
-    async getIdentityId(requestData, blockchain) {
+    async getIdentityId(operationalWallet, blockchain) {
         return this.callContractFunction(
             'IdentityStorage',
             'getIdentityId',
-            Object.values(requestData),
+            operationalWallet,
             blockchain,
         );
     }
