@@ -99,9 +99,9 @@ function divider() {
     console.log(paranetRegistered);
     divider();
 
-    const node1IdentityId = await DkgClient.identity.getIdentityId(NODE1_KEYS.publicKey);
-    const node2IdentityId = await DkgClient.identity.getIdentityId(NODE2_KEYS.publicKey);
-    const node3IdentityId = await DkgClient.identity.getIdentityId(NODE3_KEYS.publicKey);
+    const node1IdentityId = await DkgClient.node.getIdentityId(NODE1_KEYS.publicKey);
+    const node2IdentityId = await DkgClient.node.getIdentityId(NODE2_KEYS.publicKey);
+    const node3IdentityId = await DkgClient.node.getIdentityId(NODE3_KEYS.publicKey);
     let identityIds = [node1IdentityId, node2IdentityId, node3IdentityId];
     await DkgClient.paranet.addCuratedNodes(paranetAssetResult.UAL, identityIds);
     console.log('======================== ADDED NODES TO A CURATED PARANET');
