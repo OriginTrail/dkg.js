@@ -12,7 +12,7 @@ const DkgClient = new DKG({
     endpoint: OT_NODE_HOSTNAME,
     port: OT_NODE_PORT,
     blockchain: {
-        name: 'hardhat1',
+        name: 'hardhat2',
         publicKey: PUBLIC_KEY,
         privateKey: PRIVATE_KEY,
     },
@@ -143,11 +143,6 @@ function divider() {
 
     divider();
 
-    await DkgClient.asset.waitFinalization(createAssetResult.UAL);
-    console.log('======================== FINALIZATION COMPLETED');
-
-    divider();
-
     getLatestFinalizedAssetResult = await DkgClient.asset.get(createAssetResult.UAL, {
         state: 'LATEST_FINALIZED',
     });
@@ -164,14 +159,6 @@ function divider() {
 
     divider();
 
-    const getSecondStateByIndex = await DkgClient.asset.get(createAssetResult.UAL, {
-        state: 1,
-    });
-    console.log('======================== ASSET SECOND STATE (GET BY STATE INDEX) RESOLVED');
-    console.log(JSON.stringify(getSecondStateByIndex, null, 2));
-
-    divider();
-
     const getFirstStateByHash = await DkgClient.asset.get(createAssetResult.UAL, {
         state: createAssetResult.publicAssertionId,
     });
@@ -179,12 +166,6 @@ function divider() {
     console.log(JSON.stringify(getFirstStateByHash, null, 2));
 
     divider();
-
-    const getSecondStateByHash = await DkgClient.asset.get(createAssetResult.UAL, {
-        state: updateAssetResult.publicAssertionId,
-    });
-    console.log('======================== ASSET SECOND STATE (GET BY STATE HASH) RESOLVED');
-    console.log(JSON.stringify(getSecondStateByHash, null, 2));
 
     let queryResult = await DkgClient.graph.query(
         'construct { ?s ?p ?o } where { ?s ?p ?o . <uuid:1> ?p ?o }',

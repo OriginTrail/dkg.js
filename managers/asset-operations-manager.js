@@ -554,22 +554,6 @@ class AssetOperationsManager {
                 publicAssertionId = state;
 
                 if (state === assertionIds[assertionIds.length - 1]) stateFinalized = true;
-            } else if (/^0x[a-fA-F0-9]{64}$/.test(state)) {
-                const unfinalizedState = await this.blockchainService.getUnfinalizedState(
-                    tokenId,
-                    blockchain,
-                );
-
-                if (
-                    unfinalizedState != null &&
-                    unfinalizedState !== ZeroHash &&
-                    state === unfinalizedState
-                ) {
-                    publicAssertionId = unfinalizedState;
-                    stateFinalized = false;
-                } else {
-                    throw new Error("Given state hash isn't a part of the Knowledge Asset.");
-                }
             } else {
                 throw new Error('Incorrect state option.');
             }
