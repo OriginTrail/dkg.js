@@ -25,15 +25,16 @@ const BLOCKCHAINS = {
             hubContract: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
         },
     },
-    devnet: {
+    devnet: {},
+    stabledevnet_staging: {
         'base:84532': {
-            hubContract: '0xaA849CAC4FA86f6b7484503f3c7a314772AED6d4',
+            hubContract: '0xAB4A4794Fc1F415C24807B947280aCa8dC492238',
             rpc: 'https://sepolia.base.org',
         },
     },
-    stabledevnet: {
+    stabledevnet_prod: {
         'base:84532': {
-            hubContract: '0xAB4A4794Fc1F415C24807B947280aCa8dC492238',
+            hubContract: '0xaA849CAC4FA86f6b7484503f3c7a314772AED6d4',
             rpc: 'https://sepolia.base.org',
         },
     },
@@ -165,6 +166,12 @@ const DEFAULT_PROXIMITY_SCORE_FUNCTIONS_PAIR_IDS = {
     devnet: {
         'otp:2160': 2,
         'gnosis:10200': 2,
+        'base:84532': 2,
+    },
+    stabledevnet_staging: {
+        'base:84532': 2,
+    },
+    stabledevnet_prod: {
         'base:84532': 2,
     },
     testnet: {
