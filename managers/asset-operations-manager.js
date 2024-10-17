@@ -614,17 +614,18 @@ class AssetOperationsManager {
                 getPublicOperationResult,
                 getPublicOperationId,
             );
-            const formattedPrivateAssertion = await toJSONLD(privateAssertion.join('\n'));
             const formattedPublicAssertion = await toJSONLD(publicAssertion.join('\n'));
             result.public = {
                 assertion: formattedPublicAssertion,
                 assertionId: publicAssertionId,
             };
-            result.private = {
-                assertion: formattedPrivateAssertion,
-                assertionId: getPublicOperationResult.data.privateAssertionId,
-            };
-
+            if (privateAssertion) {
+                const formattedPrivateAssertion = await toJSONLD(privateAssertion.join('\n'));
+                result.private = {
+                    assertion: formattedPrivateAssertion,
+                    assertionId: getPublicOperationResult.data.privateAssertionId,
+                };
+            }
             return result;
         }
         if (contentType !== CONTENT_TYPES.PRIVATE) {
