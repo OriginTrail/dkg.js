@@ -2,6 +2,8 @@ class NodeOperationsManager {
     constructor(services) {
         this.nodeApiService = services.nodeApiService;
         this.inputService = services.inputService;
+        this.validationService = services.validationService;
+        this.blockchainService = services.blockchainService;
     }
 
     /**
@@ -21,6 +23,23 @@ class NodeOperationsManager {
         const response = await this.nodeApiService.info(endpoint, port, authToken);
 
         return response.data;
+    }
+
+    /**
+     * Retrieve node's identity ID
+     * @async
+     * @param {string} operational - Address of the node's operational wallet.
+     * @param {Object} [options={}] - Optional parameters for blockchain service.
+     * @returns {number} - Node's identity ID
+     */
+    async getIdentityId(operational, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+
+        this.validationService.validateGetIdentityId(operational, blockchain);
+
+        const identityId = await this.blockchainService.getIdentityId(operational, blockchain);
+
+        return identityId;
     }
 }
 module.exports = NodeOperationsManager;

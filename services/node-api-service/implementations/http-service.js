@@ -105,7 +105,43 @@ class HttpService {
         }
     }
 
-    async get(endpoint, port, authToken, UAL, state, hashFunctionId) {
+    async publishParanet(
+        endpoint,
+        port,
+        authToken,
+        assertions,
+        blockchain,
+        contract,
+        tokenId,
+        hashFunctionId,
+        paranetUAL,
+        sender,
+        txHash,
+    ) {
+        try {
+            const response = await axios({
+                method: 'post',
+                url: `${endpoint}:${port}/publish-paranet`,
+                data: {
+                    assertions,
+                    blockchain,
+                    contract,
+                    tokenId,
+                    hashFunctionId,
+                    paranetUAL,
+                    sender,
+                    txHash,
+                },
+                headers: this.prepareRequestConfig(authToken),
+            });
+
+            return response.data.operationId;
+        } catch (error) {
+            throw Error(`Unable to publish: ${error.message}`);
+        }
+    }
+
+    async get(endpoint, port, authToken, UAL, state, hashFunctionId, paranetUAL) {
         try {
             const response = await axios({
                 method: 'post',
@@ -114,6 +150,7 @@ class HttpService {
                     id: UAL,
                     state,
                     hashFunctionId,
+                    paranetUAL,
                 },
                 headers: this.prepareRequestConfig(authToken),
             });
@@ -121,38 +158,6 @@ class HttpService {
             return response.data.operationId;
         } catch (error) {
             throw Error(`Unable to get assertion: ${error.message}`);
-        }
-    }
-
-    async update(
-        endpoint,
-        port,
-        authToken,
-        assertionId,
-        assertion,
-        blockchain,
-        contract,
-        tokenId,
-        hashFunctionId,
-    ) {
-        try {
-            const response = await axios({
-                method: 'post',
-                url: `${endpoint}:${port}/update`,
-                data: {
-                    assertionId,
-                    assertion,
-                    blockchain,
-                    contract,
-                    tokenId,
-                    hashFunctionId,
-                },
-                headers: this.prepareRequestConfig(authToken),
-            });
-
-            return response.data.operationId;
-        } catch (error) {
-            throw Error(`Unable to update: ${error.message}`);
         }
     }
 

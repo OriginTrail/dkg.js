@@ -6,6 +6,10 @@ const OT_NODE_HOSTNAME = 'http://localhost';
 const OT_NODE_PORT = '8900';
 const PUBLIC_KEY = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
 const PRIVATE_KEY = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
+const {
+    PARANET_NODES_ACCESS_POLICY,
+    PARANET_MINERS_ACCESS_POLICY,
+} = require('../constants.js');
 
 const DkgClient = new DKG({
     environment: ENVIRONMENT,
@@ -65,6 +69,8 @@ function divider() {
         tracToNeuroEmissionMultiplier: 5,
         incentivizationProposalVotersRewardPercentage: 12.00,
         operatorRewardPercentage: 10.00,
+        paranetNodesAccessPolicy: PARANET_NODES_ACCESS_POLICY.OPEN,
+        paranetMinersAccessPolicy: PARANET_MINERS_ACCESS_POLICY.OPEN,
     };
     const paranetRegistered = await DkgClient.paranet.create(paranetAssetResult.UAL, paranetOptions);
     console.log('======================== PARANET REGISTERED');
@@ -184,29 +190,8 @@ function divider() {
     console.log(claimable);
     divider();
 
-    const updateAssetResult = await DkgClient.asset.update(createSecondAssetResult.UAL, {
-        public: {
-            '@context': ['https://schema.org'],
-            '@id': 'uuid:1',
-            company: 'TL',
-            user: {
-                '@id': 'uuid:user:2',
-            },
-            city: {
-                '@id': 'uuid:Madrid',
-            },
-        },
-    });
-    console.log('========================KNOWLEDGE ASSET UPDATED');
-    console.log(updateAssetResult);
-    divider();
-
     await DkgClient.asset.waitFinalization(createSecondAssetResult.UAL);
     console.log('======================== FINALIZATION COMPLETED');
-    divider();
-
-    await DkgClient.paranet.updateClaimableRewards(paranetAssetResult.UAL);
-    console.log('======================== CLAIMABLE REWARDS UPDATED');
     divider();
 
     const queryWhereMadrid = `PREFIX schema: <http://schema.org/>
