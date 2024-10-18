@@ -1147,14 +1147,6 @@ class AssetOperationsManager {
      */
     async createParanet(content, options = {}, stepHooks = emptyHooks) {
         this.validationService.validateObjectType(content);
-        let jsonContent = {};
-
-        // for backwards compatibility
-        if (!content.public && !content.private) {
-            jsonContent.public = content;
-        } else {
-            jsonContent = content;
-        }
 
         const {
             blockchain,
@@ -1172,7 +1164,7 @@ class AssetOperationsManager {
         } = this.inputService.getAssetCreateArguments(options);
 
         this.validationService.validateAssetCreate(
-            jsonContent,
+            content,
             blockchain,
             endpoint,
             port,
@@ -1188,7 +1180,7 @@ class AssetOperationsManager {
         );
 
         const { public: publicAssertion, private: privateAssertion } = await formatGraph(
-            jsonContent,
+            content,
         );
         const publicAssertionSizeInBytes =
             assertionMetadata.getAssertionSizeInBytes(publicAssertion);
@@ -1220,7 +1212,6 @@ class AssetOperationsManager {
                 hashFunctionId,
             ));
 
-        const { contract: paranetKaContract, tokenId: paranetTokenId } = resolveUAL(paranetUAL);
         const { tokenId, receipt: mintKnowledgeAssetReceipt } =
             await this.blockchainService.createAsset(
                 {
@@ -1233,8 +1224,8 @@ class AssetOperationsManager {
                     scoreFunctionId: scoreFunctionId ?? 1,
                     immutable_: immutable,
                 },
-                paranetKaContract,
-                paranetTokenId,
+                null,
+                null,
                 blockchain,
                 stepHooks,
             );
@@ -1249,7 +1240,8 @@ class AssetOperationsManager {
                 ...resolvedUAL,
                 assertionId: publicAssertionId,
                 assertion: publicAssertion,
-                storeType: STORE_TYPES.TRIPLE,
+                storeType: STORE_TYPES.TRIPLE_PARANET,
+                paranetUAL,
             },
         ];
         if (privateAssertion?.length) {
@@ -1257,54 +1249,60 @@ class AssetOperationsManager {
                 ...resolvedUAL,
                 assertionId: calculateRoot(privateAssertion),
                 assertion: privateAssertion,
-                storeType: STORE_TYPES.TRIPLE,
+                storeType: STORE_TYPES.TRIPLE_PARANET,
+                paranetUAL,
             });
         }
 
         const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, tokenId);
 
-        const publishOperationId = await this.nodeApiService.publishParanet(
+        const localStoreOperationId = await this.nodeApiService.localStore(
             endpoint,
             port,
             authToken,
             assertions,
-            blockchain.name,
-            contentAssetStorageAddress,
-            tokenId,
-            hashFunctionId,
-            paranetUAL,
-            mintKnowledgeAssetReceipt.from,
-            mintKnowledgeAssetReceipt.transactionHash,
         );
 
-        const publishOperationResult = await this.nodeApiService.getOperationResult(
+        const localStoreOperationResult = await this.nodeApiService.getOperationResult(
             endpoint,
             port,
             authToken,
-            OPERATIONS.PUBLISH_PARANET,
-
+            OPERATIONS.LOCAL_STORE,
             maxNumberOfRetries,
-            frequency,
-            publishOperationId,
+            DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY,
+            localStoreOperationId,
         );
 
-        if (publishOperationResult.status === OPERATION_STATUSES.FAILED) {
+        if (localStoreOperationResult.status === OPERATION_STATUSES.FAILED) {
             return {
                 UAL,
                 assertionId: publicAssertionId,
                 operation: {
                     mintKnowledgeAsset: mintKnowledgeAssetReceipt,
-                    publish: getOperationStatusObject(publishOperationResult, publishOperationId),
+                    localStore: getOperationStatusObject(localStoreOperationResult, localStoreOperationId),
                 },
             };
         }
+
+        const { contract: paranetContract, tokenId: paranetTokenId } = resolveUAL(paranetUAL);
+
+        const submitToParanetReceipt = await this.blockchainService.submitToParanet(
+            {
+                paranetContract,
+                paranetTokenId,
+                contentAssetStorageAddress,
+                tokenId,
+            },
+            blockchain,
+        );
 
         return {
             UAL,
             publicAssertionId,
             operation: {
                 mintKnowledgeAsset: mintKnowledgeAssetReceipt,
-                publish: getOperationStatusObject(publishOperationResult, publishOperationId),
+                localStore: getOperationStatusObject(localStoreOperationResult, localStoreOperationId),
+                submitToParanet: submitToParanetReceipt,
             },
         };
     }
