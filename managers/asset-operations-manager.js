@@ -1138,14 +1138,14 @@ class AssetOperationsManager {
     }
 
     /**
-     * Creates a new asset.
+     * Creates a new asset and stores it locally on the node.
      * @async
      * @param {Object} content - The content of the asset to be created, contains public, private or both keys.
      * @param {Object} [options={}] - Additional options for asset creation.
      * @param {Object} [stepHooks=emptyHooks] - Hooks to execute during asset creation.
      * @returns {Object} Object containing UAL, publicAssertionId and operation status.
      */
-    async createParanet(content, options = {}, stepHooks = emptyHooks) {
+    async localStore(content, options = {}, stepHooks = emptyHooks) {
         this.validationService.validateObjectType(content);
 
         const {
