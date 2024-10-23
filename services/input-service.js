@@ -133,6 +133,10 @@ class InputService {
             options.blockchain?.gasLimitMultiplier ??
             this.config.blockchain?.gasLimitMultiplier ??
             DEFAULT_PARAMETERS.GAS_LIMIT_MULTIPLIER;
+        const gasPriceMultiplier =
+            options.blockchain?.gasPriceMultiplier ??
+            this.config.blockchain?.gasPriceMultiplier ??
+            DEFAULT_PARAMETERS.GAS_PRICE_MULTIPLIER;
         const gasPrice =
             options.blockchain?.gasPrice ?? this.config.blockchain?.gasPrice ?? undefined;
         const transactionPollingTimeout =
@@ -166,6 +170,7 @@ class InputService {
             simulateTxs,
             forceReplaceTxs,
             gasPriceOracleLink,
+            gasPriceMultiplier,
         };
 
         if (name && name.startsWith('otp')) {
