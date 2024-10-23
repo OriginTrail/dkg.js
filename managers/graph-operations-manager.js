@@ -1,5 +1,6 @@
 const { OPERATIONS } = require('../constants');
 const { deriveRepository } = require('../services/utilities.js');
+const jsonld = require('jsonld');
 
 class GraphOperationsManager {
     constructor(services) {
@@ -41,6 +42,9 @@ class GraphOperationsManager {
         );
 
         const repository = paranetUAL ?? deriveRepository(graphLocation, graphState);
+        console.log(graphLocation)
+        console.log(graphState)
+        console.log(repository)
 
         const operationId = await this.nodeApiService.query(
             endpoint,
@@ -60,6 +64,11 @@ class GraphOperationsManager {
             frequency,
             operationId,
         );
+    }
+
+    async insert(jsonldData, options = {}) {
+        const nquads = await jsonld.toRDF(jsonldData, { format: 'application/n-quads' });
+        return nquads;
     }
 }
 module.exports = GraphOperationsManager;

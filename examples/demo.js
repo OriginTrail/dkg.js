@@ -1,8 +1,8 @@
 const jsonld = require('jsonld');
 const DKG = require('../index.js');
 
-const ENVIRONMENT = 'development';
-const OT_NODE_HOSTNAME = 'http://localhost';
+const ENVIRONMENT = 'testnet';
+const OT_NODE_HOSTNAME = 'https://galatea.origin-trail.network';
 const OT_NODE_PORT = '8900';
 const PUBLIC_KEY = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
 const PRIVATE_KEY = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
@@ -12,7 +12,7 @@ const DkgClient = new DKG({
     endpoint: OT_NODE_HOSTNAME,
     port: OT_NODE_PORT,
     blockchain: {
-        name: 'hardhat2',
+        name: 'base:84532',
         publicKey: PUBLIC_KEY,
         privateKey: PRIVATE_KEY,
     },
@@ -115,111 +115,186 @@ function divider() {
     console.log('======================== ASSET CREATED');
     console.log(createAssetResult);
 
-    divider();
+    // divider();
 
-    const ownerResult = await DkgClient.asset.getOwner(createAssetResult.UAL);
-    console.log('======================== GET ASSET OWNER');
-    console.log(ownerResult);
+    // const ownerResult = await DkgClient.asset.getOwner(createAssetResult.UAL);
+    // console.log('======================== GET ASSET OWNER');
+    // console.log(ownerResult);
 
-    divider();
+    // divider();
 
-    const getAssetResult = await DkgClient.asset.get(createAssetResult.UAL);
-    console.log('======================== ASSET RESOLVED');
-    console.log(JSON.stringify(getAssetResult, null, 2));
+    // const getAssetResult = await DkgClient.asset.get(createAssetResult.UAL);
+    // console.log('======================== ASSET RESOLVED');
+    // console.log(JSON.stringify(getAssetResult, null, 2));
 
-    divider();
+    // divider();
 
-    const getLatestAssetResult = await DkgClient.asset.get(createAssetResult.UAL);
-    console.log('======================== ASSET LATEST  RESOLVED');
-    console.log(JSON.stringify(getLatestAssetResult, null, 2));
+    // const getLatestAssetResult = await DkgClient.asset.get(createAssetResult.UAL);
+    // console.log('======================== ASSET LATEST  RESOLVED');
+    // console.log(JSON.stringify(getLatestAssetResult, null, 2));
 
-    divider();
+    // divider();
 
-    let getLatestFinalizedAssetResult = await DkgClient.asset.get(createAssetResult.UAL, {
-        state: 'LATEST_FINALIZED',
-    });
-    console.log('======================== ASSET LATEST FINALIZED RESOLVED');
-    console.log(JSON.stringify(getLatestFinalizedAssetResult, null, 2));
+    // let getLatestFinalizedAssetResult = await DkgClient.asset.get(createAssetResult.UAL, {
+    //     state: 'LATEST_FINALIZED',
+    // });
+    // console.log('======================== ASSET LATEST FINALIZED RESOLVED');
+    // console.log(JSON.stringify(getLatestFinalizedAssetResult, null, 2));
 
-    divider();
+    // divider();
 
-    getLatestFinalizedAssetResult = await DkgClient.asset.get(createAssetResult.UAL, {
-        state: 'LATEST_FINALIZED',
-    });
-    console.log('======================== ASSET LATEST FINALIZED RESOLVED');
-    console.log(JSON.stringify(getLatestFinalizedAssetResult, null, 2));
+    // getLatestFinalizedAssetResult = await DkgClient.asset.get(createAssetResult.UAL, {
+    //     state: 'LATEST_FINALIZED',
+    // });
+    // console.log('======================== ASSET LATEST FINALIZED RESOLVED');
+    // console.log(JSON.stringify(getLatestFinalizedAssetResult, null, 2));
 
-    divider();
+    // divider();
 
-    const getFirstStateByIndex = await DkgClient.asset.get(createAssetResult.UAL, {
-        state: 0,
-    });
-    console.log('======================== ASSET FIRST STATE (GET BY STATE INDEX) RESOLVED');
-    console.log(JSON.stringify(getFirstStateByIndex, null, 2));
+    // const getFirstStateByIndex = await DkgClient.asset.get(createAssetResult.UAL, {
+    //     state: 0,
+    // });
+    // console.log('======================== ASSET FIRST STATE (GET BY STATE INDEX) RESOLVED');
+    // console.log(JSON.stringify(getFirstStateByIndex, null, 2));
 
-    divider();
+    // divider();
 
-    const getFirstStateByHash = await DkgClient.asset.get(createAssetResult.UAL, {
-        state: createAssetResult.publicAssertionId,
-    });
-    console.log('======================== ASSET FIRST STATE (GET BY STATE HASH) RESOLVED');
-    console.log(JSON.stringify(getFirstStateByHash, null, 2));
+    // const getFirstStateByHash = await DkgClient.asset.get(createAssetResult.UAL, {
+    //     state: createAssetResult.publicAssertionId,
+    // });
+    // console.log('======================== ASSET FIRST STATE (GET BY STATE HASH) RESOLVED');
+    // console.log(JSON.stringify(getFirstStateByHash, null, 2));
+
+    // divider();
+
+    // let queryResult = await DkgClient.graph.query(
+    //     'construct { ?s ?p ?o } where { ?s ?p ?o .}',
+    //     'CONSTRUCT',
+    // );
+    // console.log('======================== QUERY LOCAL CURRENT RESULT');
+    // console.log(queryResult);
+    // divider();
+    // console.log(
+    //     JSON.stringify(
+    //         await jsonld.fromRDF(queryResult.data, {
+    //             algorithm: 'URDNA2015',
+    //             format: 'application/n-quads',
+    //         }),
+    //         null,
+    //         2,
+    //     ),
+    // );
+
+    // divider();
+
+    
+
+    // let queryResult = await DkgClient.graph.query(
+    //     'SELECT * WHERE {?s ?p ?o} LIMIT 10',
+    //     'SELECT',
+    // );
+    // console.log('======================== QUERY LOCAL CURRENT RESULT');
+    // console.log(queryResult);
+
+    // divider();
+
+    const jsonldData = {
+        "@context": [
+          "https://ekgf.github.io/dprod/dprod.jsonld",
+          {
+            "title": "dct:title",
+            "description": "dct:description",
+            "dataProductOwner": {
+              "@id": "dprod:dataProductOwner",
+              "@type": "@id"
+            },
+            "lifecycleStatus": {
+              "@id": "dprod:lifecycleStatus",
+              "@type": "@id"
+            },
+            "outputPort": "dprod:outputPort",
+            "endpointURL": "dcat:endpointURL",
+            "isAccessServiceOf": "dprod:isAccessServiceOf",
+            "format": "dct:format",
+            "isDistributionOf": "dprod:isDistributionOf",
+            "conformsTo": {
+              "@id": "dct:conformsTo",
+              "@type": "@id"
+            }
+          }
+        ],
+        "@id": "https://y.com/products/uk-bonds",
+        "@type": "dprod:DataProduct",
+        "title": "UK Bonds",
+        "description": "UK Bonds is your one-stop-shop for all your bonds!",
+        "dataProductOwner": "https://www.linkedin.com/in/tonyseale/",
+        "lifecycleStatus": "https://ekgf.github.io/dprod/data/lifecycle-status/Consume",
+        "outputPort": {
+          "@type": "dcat:DataService",
+          "endpointURL": "https://y.com/uk-10-year-bonds",
+          "isAccessServiceOf": {
+            "@type": "dcat:Distribution",
+            "format": "https://www.iana.org/assignments/media-types/application/json",
+            "isDistributionOf": {
+              "@type": "dcat:Dataset",
+              "@id": "https://y.com/products/uk-bonds/datasets/10-year",
+              "conformsTo": "https://spec.edmcouncil.org/fibo/ontology/SEC/Debt/Bonds/CallableBond"
+            }
+          }
+        }
+      }
+      
+
+    const insertResult = await DkgClient.graph.insert(jsonldData);
+    console.log('======================== NQUADS');
+    console.log(insertResult);
 
     divider();
 
     let queryResult = await DkgClient.graph.query(
-        'construct { ?s ?p ?o } where { ?s ?p ?o . <uuid:1> ?p ?o }',
-        'CONSTRUCT',
+        'SELECT ?p ?o WHERE {?s <https://ekgf.github.io/dprod/title> "UK Bonds" . ?s ?p ?o . }',
+        'SELECT',
     );
     console.log('======================== QUERY LOCAL CURRENT RESULT');
-    console.log(
-        JSON.stringify(
-            await jsonld.fromRDF(queryResult.data, {
-                algorithm: 'URDNA2015',
-                format: 'application/n-quads',
-            }),
-            null,
-            2,
-        ),
-    );
+    console.log(queryResult);
 
     divider();
 
-    queryResult = await DkgClient.graph.query(
-        'construct { ?s ?p ?o } where { ?s ?p ?o . <uuid:user:1> ?p ?o }',
-        'CONSTRUCT',
-        { graphState: 'HISTORICAL', graphLocation: 'LOCAL_KG' },
-    );
-    console.log('======================== QUERY LOCAL HISTORY RESULT');
-    console.log(
-        JSON.stringify(
-            await jsonld.fromRDF(queryResult.data, {
-                algorithm: 'URDNA2015',
-                format: 'application/n-quads',
-            }),
-            null,
-            2,
-        ),
-    );
+    // queryResult = await DkgClient.graph.query(
+    //     'construct { ?s ?p ?o } where { ?s ?p ?o . <uuid:user:1> ?p ?o }',
+    //     'CONSTRUCT',
+    //     { graphState: 'HISTORICAL', graphLocation: 'LOCAL_KG' },
+    // );
+    // console.log('======================== QUERY LOCAL HISTORY RESULT');
+    // console.log(
+    //     JSON.stringify(
+    //         await jsonld.fromRDF(queryResult.data, {
+    //             algorithm: 'URDNA2015',
+    //             format: 'application/n-quads',
+    //         }),
+    //         null,
+    //         2,
+    //     ),
+    // );
 
-    divider();
+    // divider();
 
-    const extendStoringResult = await DkgClient.asset.extendStoringPeriod(createAssetResult.UAL, 2);
-    console.log(`======================== ASSET STORING PERIOD EXTENDED`);
-    console.log(extendStoringResult);
+    // const extendStoringResult = await DkgClient.asset.extendStoringPeriod(createAssetResult.UAL, 2);
+    // console.log(`======================== ASSET STORING PERIOD EXTENDED`);
+    // console.log(extendStoringResult);
 
-    divider();
+    // divider();
 
-    const addTokensResult = await DkgClient.asset.addTokens(createAssetResult.UAL, {tokenAmount: 1000});
-    console.log(`======================== ADD TOKENS FOR AN ASSET`);
-    console.log(addTokensResult);
+    // const addTokensResult = await DkgClient.asset.addTokens(createAssetResult.UAL, {tokenAmount: 1000});
+    // console.log(`======================== ADD TOKENS FOR AN ASSET`);
+    // console.log(addTokensResult);
 
-    divider();
+    // divider();
 
-    const newOwner = '0x2ACa90078563133db78085F66e6B8Cf5531623Ad';
-    const transferResult = await DkgClient.asset.transfer(createAssetResult.UAL, newOwner);
-    console.log(`======================== ASSET TRANSFERRED TO ${newOwner}`);
-    console.log(transferResult);
+    // const newOwner = '0x2ACa90078563133db78085F66e6B8Cf5531623Ad';
+    // const transferResult = await DkgClient.asset.transfer(createAssetResult.UAL, newOwner);
+    // console.log(`======================== ASSET TRANSFERRED TO ${newOwner}`);
+    // console.log(transferResult);
 
-    divider();
+    // divider();
 })();
