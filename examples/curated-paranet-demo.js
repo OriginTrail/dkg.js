@@ -183,28 +183,18 @@ function divider() {
     });
     divider();
 
-    const createFirstAssetResult = await DkgClient.asset.create(content, { epochsNum: 2, blockchain: NODE3_KEYS });
-    const approvedSubmitResult = await DkgClient.asset.submitToParanet(createFirstAssetResult.UAL, paranetAssetResult.UAL, { blockchain: NODE3_KEYS });
-    console.log('======================== CREATE A KA AND SUBMIT IT TO A CURATED PARANET - KNOWLEDGE MINER IS APPROVED');
-    console.log({
-        paranetUAL: paranetAssetResult.UAL,
-        assetUAL: createFirstAssetResult.UAL,
-        submitResult: approvedSubmitResult
-    });
+    const localStoreFirstAssetResult = await DkgClient.asset.localStore(content, { epochsNum: 2, paranetUAL: paranetAssetResult.UAL,  blockchain: NODE3_KEYS });
+    console.log('======================== MINT A KA, LOCAL STORE AND SUBMIT IT TO A CURATED PARANET - KNOWLEDGE MINER IS APPROVED');
+    console.log(localStoreFirstAssetResult);
     divider();
 
-    const createSecondAssetResult = await DkgClient.asset.create(content, { epochsNum: 2, blockchain: NODE5_KEYS });
-    let notApprovedSubmitResult;
+    let localStoreSecondAssetResult
     try {
-        await DkgClient.asset.submitToParanet(createSecondAssetResult.UAL, paranetAssetResult.UAL, { blockchain: NODE5_KEYS });
+        await DkgClient.asset.localStore(content, { epochsNum: 2, paranetUAL: paranetAssetResult.UAL, blockchain: NODE5_KEYS });
     } catch (error) {
-        notApprovedSubmitResult = error.message;
+        localStoreSecondAssetResult = error.message;
     }
-    console.log('======================== CREATE A KA AND SUBMIT IT TO A CURATED PARANET - KNOWLEDGE MINER IS NOT APPROVED');
-    console.log({
-        paranetUAL: paranetAssetResult.UAL,
-        assetUAL: createSecondAssetResult.UAL,
-        submitResult: notApprovedSubmitResult
-    });
+    console.log('======================== MINT A KA, LOCAL STORE AND SUBMIT IT TO A CURATED PARANET - KNOWLEDGE MINER IS NOT APPROVED');
+    console.log(localStoreSecondAssetResult);
     divider();
 })();
