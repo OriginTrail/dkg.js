@@ -16,6 +16,7 @@ const DkgClient = new DKG({
         name: 'base:84532',
         publicKey: PUBLIC_KEY,
         privateKey: PRIVATE_KEY,
+        gasPriceMultiplier: 1.3,
     },
     maxNumberOfRetries: 30,
     frequency: 2,
@@ -75,49 +76,6 @@ function divider() {
     console.log(paranetRegistered);
     divider();
 
-    const paranetDeployed = await DkgClient.paranet.deployIncentivesContract(
-        paranetAssetResult.UAL,
-        'Neuroweb',
-        paranetOptions,
-    );
-    console.log('======================== PARANET INCENTIVES POOL DEPLOYED');
-    console.log(paranetDeployed);
-    divider();
-
-    content = {
-        public: {
-            '@context': ['https://schema.org'],
-            '@id': 'uuid:6',
-            company: 'ServiceExample',
-            user: {
-                '@id': 'uuid:user:6',
-            },
-            city: {
-                '@id': 'uuid:Ljubljana',
-            },
-        },
-    };
-    const createServiceKAResult = await DkgClient.asset.create(content, { epochsNum: 2 });
-    console.log('======================== SERVICE KA CREATED');
-    console.log(createServiceKAResult);
-    divider();
-
-    const paranetServiceUAL = await DkgClient.paranet.createService(createServiceKAResult.UAL, {
-        paranetServiceName: 'FKPS',
-        paranetServiceDescription: 'Fast Knowledge Processing Service',
-        paranetServiceAddresses: [],
-    });
-    console.log('======================== SERVICE KA CREATED');
-    console.log(paranetServiceUAL);
-    divider();
-
-    const addServiceToParanet = await DkgClient.paranet.addServices(paranetAssetResult.UAL, [
-        createServiceKAResult.UAL,
-    ]);
-    console.log('======================== SERVICE ADDED TO PARANET');
-    console.log(addServiceToParanet);
-    divider();
-
     content = {
         public: {
             '@context': ['https://schema.org'],
@@ -161,6 +119,7 @@ function divider() {
         createSecondAssetResult.UAL,
         paranetAssetResult.UAL,
     );
+    return;
     console.log('======================== SECOND KA ADDED TO PARANET');
     console.log(submitResult);
     divider();
