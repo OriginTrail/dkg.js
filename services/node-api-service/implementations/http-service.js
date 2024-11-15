@@ -3,15 +3,16 @@ const { OPERATION_STATUSES } = require('../../../constants.js');
 const { sleepForMilliseconds } = require('../../utilities.js');
 
 class HttpService {
-    constructor(config = {}) {
+    constructor(config = {}, apiVersion = 'v0') {
         this.config = config;
+        this.apiVersion = apiVersion;
     }
 
     async info(endpoint, port, authToken) {
         try {
             const response = await axios({
                 method: 'get',
-                url: `${endpoint}:${port}/info`,
+                url: `${this.getBaseUrl(endpoint, port)}/info`,
                 headers: this.prepareRequestConfig(authToken),
             });
 
@@ -47,7 +48,7 @@ class HttpService {
             }
             const response = await axios({
                 method: 'get',
-                url: `${endpoint}:${port}/bid-suggestion`,
+                url: `${this.getBaseUrl(endpoint, port)}/bid-suggestion`,
                 params,
                 headers: this.prepareRequestConfig(authToken),
             });
@@ -62,7 +63,7 @@ class HttpService {
         try {
             const response = await axios({
                 method: 'post',
-                url: `${endpoint}:${port}/local-store`,
+                url: `${this.getBaseUrl(endpoint, port)}/local-store`,
                 data: assertions,
                 headers: this.prepareRequestConfig(authToken),
             });
@@ -87,7 +88,7 @@ class HttpService {
         try {
             const response = await axios({
                 method: 'post',
-                url: `${endpoint}:${port}/publish`,
+                url: `${this.getBaseUrl(endpoint, port)}/publish`,
                 data: {
                     assertionId,
                     assertion,
@@ -109,7 +110,7 @@ class HttpService {
         try {
             const response = await axios({
                 method: 'post',
-                url: `${endpoint}:${port}/get`,
+                url: `${this.getBaseUrl(endpoint, port)}/get`,
                 data: {
                     id: UAL,
                     state,
@@ -138,7 +139,7 @@ class HttpService {
         try {
             const response = await axios({
                 method: 'post',
-                url: `${endpoint}:${port}/update`,
+                url: `${this.getBaseUrl(endpoint, port)}/update`,
                 data: {
                     assertionId,
                     assertion,
@@ -160,7 +161,7 @@ class HttpService {
         try {
             const response = await axios({
                 method: 'post',
-                url: `${endpoint}:${port}/query`,
+                url: `${this.getBaseUrl(endpoint, port)}/query`,
                 data: { query, type, repository },
                 headers: this.prepareRequestConfig(authToken),
             });
@@ -187,7 +188,7 @@ class HttpService {
 
         const axios_config = {
             method: 'get',
-            url: `${endpoint}:${port}/${operation}/${operationId}`,
+            url: `${this.getBaseUrl(endpoint, port)}/${operation}/${operationId}`,
             headers: this.prepareRequestConfig(authToken),
         };
         do {
@@ -219,6 +220,10 @@ class HttpService {
         }
 
         return {};
+    }
+
+    getBaseUrl(endpoint, port) {
+        return `${endpoint}:${port}/${this.apiVersion}`;
     }
 }
 module.exports = HttpService;
