@@ -78,6 +78,12 @@ const BLOCKCHAINS = {
 
 const INCENTIVE_TYPE = {
     NEUROWEB: 'Neuroweb',
+    ERC20: 'NeurowebERC20',
+};
+
+const INCENTIVE_MULTIPLIER = {
+    Neuroweb: 10n ** 12n,
+    NeurowebERC20: 10n ** 18n,
 };
 
 const BLOCKCHAINS_RENAME_PAIRS = {
@@ -240,6 +246,8 @@ const BID_SUGGESTION_RANGE_ENUM = [
     ALL_BID_SUGGESTION,
 ];
 
+const NEUROWEB_BLOCKCHAIN_PREFIX = 'otp';
+
 module.exports = {
     MAX_FILE_SIZE,
     DID_PREFIX,
@@ -256,6 +264,7 @@ module.exports = {
     CONTENT_TYPES,
     GET_OUTPUT_FORMATS,
     INCENTIVE_TYPE,
+    INCENTIVE_MULTIPLIER,
     ASSET_STATES,
     STORE_TYPES,
     GRAPH_LOCATIONS,
@@ -273,4 +282,5 @@ module.exports = {
     HIGH_BID_SUGGESTION,
     ALL_BID_SUGGESTION,
     BID_SUGGESTION_RANGE_ENUM,
+    NEUROWEB_BLOCKCHAIN_PREFIX,
 };
