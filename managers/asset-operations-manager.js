@@ -1,5 +1,5 @@
 const path = require('path');
-const { mkdir, writeFile } = require('fs/promises');
+const { mkdir, writeFile, unlink } = require('fs/promises');
 const { assertionMetadata, calculateRoot, formatGraph } = require('assertion-tools');
 const { ethers, ZeroHash } = require('ethers');
 const {
@@ -1312,6 +1312,17 @@ class AssetOperationsManager {
             },
             blockchain,
         );
+
+        if (assertionCachedLocally) {
+            const absolutePath = path.resolve('.');
+            const directory = 'local-store-cache';
+            fullPathToCachedAssertion = path.join(
+                absolutePath,
+                directory,
+                assertions[0].assertionId,
+            );
+            await unlink(fullPathToCachedAssertion);
+        }
 
         return {
             UAL,
