@@ -320,7 +320,7 @@ class AssetOperationsManager {
                     ? 0
                     : assertionMetadata.getAssertionSizeInBytes(privateAssertion)),
         );
-        const publicAssertionId = calculateRoot(publicAssertion);
+        const publicAssertionId = await calculateRoot(publicAssertion);
 
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
             'ContentAssetStorage',
@@ -610,7 +610,7 @@ class AssetOperationsManager {
         const { assertion: publicAssertion } = getPublicOperationResult.data;
         let { privateAssertion } = getPublicOperationResult.data;
 
-        if (validate === true && calculateRoot(publicAssertion) !== publicAssertionId) {
+        if (validate === true && (await calculateRoot(publicAssertion)) !== publicAssertionId) {
             getPublicOperationResult.data = {
                 errorType: 'DKG_CLIENT_ERROR',
                 errorMessage: "Calculated root hashes don't match!",
@@ -729,7 +729,7 @@ class AssetOperationsManager {
                 if (
                     privateAssertion.length &&
                     validate === true &&
-                    calculateRoot(privateAssertion) !== privateAssertionId
+                    (await calculateRoot(privateAssertion)) !== privateAssertionId
                 ) {
                     queryPrivateOperationResult.data = {
                         errorType: 'DKG_CLIENT_ERROR',
@@ -1199,7 +1199,7 @@ class AssetOperationsManager {
                     ? 0
                     : assertionMetadata.getAssertionSizeInBytes(privateAssertion)),
         );
-        const publicAssertionId = calculateRoot(publicAssertion);
+        const publicAssertionId = await calculateRoot(publicAssertion);
 
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
             'ContentAssetStorage',
@@ -1253,9 +1253,16 @@ class AssetOperationsManager {
             },
         ];
         if (privateAssertion?.length) {
+            let privateAssertionId = null;
+            for (const quad of publicAssertion) {
+                if (quad.includes(PRIVATE_ASSERTION_PREDICATE)) {                    
+                    [, privateAssertionId] = quad.match(/"(.*?)"/);
+                    break;
+                }
+            }
             assertions.push({
                 ...resolvedUAL,
-                assertionId: calculateRoot(privateAssertion),
+                assertionId: privateAssertionId,
                 assertion: privateAssertion,
                 storeType: STORE_TYPES.TRIPLE_PARANET,
                 paranetUAL,
