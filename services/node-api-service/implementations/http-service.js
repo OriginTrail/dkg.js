@@ -215,6 +215,7 @@ class HttpService {
             try {
                 response = await axios(axios_config);
             } catch (e) {
+                response.data = response.data || {};
                 response.data.status = 'NETWORK ERROR';
             }
         } while (
