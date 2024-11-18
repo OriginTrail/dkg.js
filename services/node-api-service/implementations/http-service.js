@@ -212,7 +212,11 @@ class HttpService {
             // eslint-disable-next-line no-await-in-loop
             await sleepForMilliseconds(frequency * 1000);
             // eslint-disable-next-line no-await-in-loop
-            response = await axios(axios_config);
+            try {
+                response = await axios(axios_config);
+            } catch (e) {
+                response.data.status = 'NETWORK ERROR';
+            }
         } while (
             response.data.status !== OPERATION_STATUSES.COMPLETED &&
             response.data.status !== OPERATION_STATUSES.FAILED
