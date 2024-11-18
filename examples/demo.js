@@ -57,59 +57,59 @@ function divider() {
         },
     };
 
-    divider();
+    // divider();
 
-    const nodeInfo = await DkgClient.node.info();
-    console.log('======================== NODE INFO RECEIVED');
-    console.log(nodeInfo);
+    // const nodeInfo = await DkgClient.node.info();
+    // console.log('======================== NODE INFO RECEIVED');
+    // console.log(nodeInfo);
 
-    divider();
+    // divider();
 
-    const assertions = await DkgClient.assertion.formatGraph(content);
-    console.log('======================== ASSERTIONS FORMATTED');
-    console.log(JSON.stringify(assertions));
+    // const assertions = await DkgClient.assertion.formatGraph(content);
+    // console.log('======================== ASSERTIONS FORMATTED');
+    // console.log(JSON.stringify(assertions));
 
-    divider();
+    // divider();
 
-    const publicAssertionId = await DkgClient.assertion.getPublicAssertionId(content);
-    console.log('======================== PUBLIC ASSERTION ID (MERKLE ROOT) CALCULATED');
-    console.log(publicAssertionId);
+    // const publicAssertionId = await DkgClient.assertion.getPublicAssertionId(content);
+    // console.log('======================== PUBLIC ASSERTION ID (MERKLE ROOT) CALCULATED');
+    // console.log(publicAssertionId);
 
-    divider();
+    // divider();
 
-    const publicAssertionSize = await DkgClient.assertion.getSizeInBytes(content);
-    console.log('======================== PUBLIC ASSERTION SIZE CALCULATED');
-    console.log(publicAssertionSize);
+    // const publicAssertionSize = await DkgClient.assertion.getSizeInBytes(content);
+    // console.log('======================== PUBLIC ASSERTION SIZE CALCULATED');
+    // console.log(publicAssertionSize);
 
-    divider();
+    // divider();
 
-    const bidSuggestion = await DkgClient.network.getBidSuggestion(
-        publicAssertionId,
-        publicAssertionSize,
-        { epochsNum: 2 },
-    );
-    console.log('======================== BID SUGGESTION CALCULATED');
-    console.log(bidSuggestion);
+    // const bidSuggestion = await DkgClient.network.getBidSuggestion(
+    //     publicAssertionId,
+    //     publicAssertionSize,
+    //     { epochsNum: 2 },
+    // );
+    // console.log('======================== BID SUGGESTION CALCULATED');
+    // console.log(bidSuggestion);
 
-    divider();
+    // divider();
 
-    const increaseAllowanceResult = await DkgClient.asset.increaseAllowance(bidSuggestion);
-    console.log('======================== ALLOWANCE INCREASED');
-    console.log(increaseAllowanceResult);
+    // const increaseAllowanceResult = await DkgClient.asset.increaseAllowance(bidSuggestion);
+    // console.log('======================== ALLOWANCE INCREASED');
+    // console.log(increaseAllowanceResult);
 
-    divider();
+    // divider();
 
-    const decreaseAllowanceResult = await DkgClient.asset.decreaseAllowance(bidSuggestion);
-    console.log('======================== ALLOWANCE DECREASED');
-    console.log(decreaseAllowanceResult);
+    // const decreaseAllowanceResult = await DkgClient.asset.decreaseAllowance(bidSuggestion);
+    // console.log('======================== ALLOWANCE DECREASED');
+    // console.log(decreaseAllowanceResult);
 
-    divider();
+    // divider();
 
-    const setAllowanceResult = await DkgClient.asset.setAllowance(bidSuggestion);
-    console.log('======================== ALLOWANCE SET');
-    console.log(setAllowanceResult);
+    // const setAllowanceResult = await DkgClient.asset.setAllowance(bidSuggestion);
+    // console.log('======================== ALLOWANCE SET');
+    // console.log(setAllowanceResult);
 
-    divider();
+    // divider();
 
     const createAssetResult = await DkgClient.asset.create(content, { epochsNum: 2 });
     console.log('======================== ASSET CREATED');
