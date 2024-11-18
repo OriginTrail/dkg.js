@@ -58,12 +58,14 @@ class HttpService {
         }
     }
 
-    async localStore(endpoint, port, authToken, assertions) {
+    async localStore(endpoint, port, authToken, assertions, fullPathToCachedAssertion) {
         try {
             const response = await axios({
                 method: 'post',
                 url: `${endpoint}:${port}/local-store`,
-                data: assertions,
+                data: fullPathToCachedAssertion
+                    ? { filePath: fullPathToCachedAssertion }
+                    : assertions,
                 headers: this.prepareRequestConfig(authToken),
             });
 

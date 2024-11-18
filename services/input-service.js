@@ -42,6 +42,24 @@ class InputService {
         };
     }
 
+    getAssetLocalStoreArguments(options) {
+        return {
+            blockchain: this.getBlockchain(options),
+            endpoint: this.getEndpoint(options),
+            port: this.getPort(options),
+            maxNumberOfRetries: this.getMaxNumberOfRetries(options),
+            frequency: this.getFrequency(options),
+            epochsNum: this.getEpochsNum(options),
+            hashFunctionId: this.getHashFunctionId(options),
+            scoreFunctionId: this.getScoreFunctionId(options),
+            immutable: this.getImmutable(options),
+            tokenAmount: this.getTokenAmount(options),
+            authToken: this.getAuthToken(options),
+            paranetUAL: this.getParanetUAL(options),
+            assertionCachedLocally: this.getAssertionCachedLocally(options),
+        };
+    }
+
     getAssetGetArguments(options) {
         return {
             blockchain: this.getBlockchain(options),
@@ -337,6 +355,10 @@ class InputService {
 
     getRoleAddress(options) {
         return options.roleAddress ?? null;
+    }
+
+    getAssertionCachedLocally(options) {
+        return options.assertionCachedLocally ?? false;
     }
 }
 

@@ -1,3 +1,5 @@
+const path = require('path');
+const { mkdir, writeFile } = require('fs/promises');
 const { assertionMetadata, calculateRoot, formatGraph } = require('assertion-tools');
 const { ethers, ZeroHash } = require('ethers');
 const {
@@ -1161,7 +1163,8 @@ class AssetOperationsManager {
             tokenAmount,
             authToken,
             paranetUAL,
-        } = this.inputService.getAssetCreateArguments(options);
+            assertionCachedLocally,
+        } = this.inputService.getAssetLocalStoreArguments(options);
 
         this.validationService.validateAssetCreate(
             content,
@@ -1179,9 +1182,7 @@ class AssetOperationsManager {
             paranetUAL,
         );
 
-        const { public: publicAssertion, private: privateAssertion } = await formatGraph(
-            content,
-        );
+        const { public: publicAssertion, private: privateAssertion } = await formatGraph(content);
         const publicAssertionSizeInBytes =
             assertionMetadata.getAssertionSizeInBytes(publicAssertion);
 
@@ -1255,12 +1256,25 @@ class AssetOperationsManager {
         }
 
         const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, tokenId);
+        let fullPathToCachedAssertion = null;
+        if (assertionCachedLocally) {
+            const absolutePath = path.resolve('.');
+            const directory = 'local-store-cache';
+            await mkdir(directory, { recursive: true });
+            fullPathToCachedAssertion = path.join(
+                absolutePath,
+                directory,
+                assertions[0].assertionId,
+            );
+            await writeFile(fullPathToCachedAssertion, JSON.stringify(assertions));
+        }
 
         const localStoreOperationId = await this.nodeApiService.localStore(
             endpoint,
             port,
             authToken,
             assertions,
+            fullPathToCachedAssertion,
         );
 
         const localStoreOperationResult = await this.nodeApiService.getOperationResult(
@@ -1279,7 +1293,10 @@ class AssetOperationsManager {
                 assertionId: publicAssertionId,
                 operation: {
                     mintKnowledgeAsset: mintKnowledgeAssetReceipt,
-                    localStore: getOperationStatusObject(localStoreOperationResult, localStoreOperationId),
+                    localStore: getOperationStatusObject(
+                        localStoreOperationResult,
+                        localStoreOperationId,
+                    ),
                 },
             };
         }
@@ -1301,7 +1318,10 @@ class AssetOperationsManager {
             publicAssertionId,
             operation: {
                 mintKnowledgeAsset: mintKnowledgeAssetReceipt,
-                localStore: getOperationStatusObject(localStoreOperationResult, localStoreOperationId),
+                localStore: getOperationStatusObject(
+                    localStoreOperationResult,
+                    localStoreOperationId,
+                ),
                 submitToParanet: submitToParanetReceipt,
             },
         };
