@@ -396,9 +396,16 @@ class AssetOperationsManager {
             },
         ];
         if (privateAssertion?.length) {
+            let privateAssertionId = null;
+            for (const quad of publicAssertion) {
+                if (quad.includes(PRIVATE_ASSERTION_PREDICATE)) {                    
+                    [, privateAssertionId] = quad.match(/"(.*?)"/);
+                    break;
+                }
+            }
             assertions.push({
                 ...resolvedUAL,
-                assertionId: calculateRoot(privateAssertion),
+                assertionId: privateAssertionId,
                 assertion: privateAssertion,
                 storeType: STORE_TYPES.TRIPLE,
             });
