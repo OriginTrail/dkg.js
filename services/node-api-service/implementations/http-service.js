@@ -3,9 +3,9 @@ const { OPERATION_STATUSES } = require('../../../constants.js');
 const { sleepForMilliseconds } = require('../../utilities.js');
 
 class HttpService {
-    constructor(config = {}, apiVersion = 'v0') {
+    constructor(config = {}) {
         this.config = config;
-        this.apiVersion = apiVersion;
+        this.apiVersion = config.nodeApiVersion ?? 'v0';
     }
 
     async info(endpoint, port, authToken) {
