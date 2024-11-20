@@ -85,7 +85,7 @@ class ParanetOperationsManager {
             operatorRewardPercentage,
             incentivizationProposalVotersRewardPercentage,
         );
-        if ([INCENTIVE_TYPE.NEUROWEB, INCENTIVE_TYPE.ERC20].includes(incentiveType)) {
+        if ([INCENTIVE_TYPE.NEUROWEB, INCENTIVE_TYPE.NEUROWEB_ERC20].includes(incentiveType)) {
             const { contract, tokenId } = resolveUAL(paranetUAL);
 
             const isNativeReward = incentiveType === INCENTIVE_TYPE.NEUROWEB;

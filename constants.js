@@ -78,7 +78,7 @@ const BLOCKCHAINS = {
 
 const INCENTIVE_TYPE = {
     NEUROWEB: 'Neuroweb',
-    ERC20: 'NeurowebERC20',
+    NEUROWEB_ERC20: 'NeurowebERC20',
 };
 
 const INCENTIVE_MULTIPLIER = {
