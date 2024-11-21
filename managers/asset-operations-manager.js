@@ -1301,17 +1301,18 @@ class AssetOperationsManager {
             localStoreOperationId,
         );
 
+        if (assertionCachedLocally) {
+            const absolutePath = path.resolve('.');
+            const directory = 'local-store-cache';
+            fullPathToCachedAssertion = path.join(
+                absolutePath,
+                directory,
+                assertions[0].assertionId,
+            );
+            await unlink(fullPathToCachedAssertion);
+        }
+
         if (localStoreOperationResult.status !== OPERATION_STATUSES.COMPLETED) {
-            if (assertionCachedLocally) {
-                const absolutePath = path.resolve('.');
-                const directory = 'local-store-cache';
-                fullPathToCachedAssertion = path.join(
-                    absolutePath,
-                    directory,
-                    assertions[0].assertionId,
-                );
-                await unlink(fullPathToCachedAssertion);
-            }
             return {
                 UAL,
                 assertionId: publicAssertionId,
@@ -1326,26 +1327,19 @@ class AssetOperationsManager {
         }
 
         const { contract: paranetContract, tokenId: paranetTokenId } = resolveUAL(paranetUAL);
-
-        const submitToParanetReceipt = await this.blockchainService.submitToParanet(
-            {
-                paranetContract,
-                paranetTokenId,
-                contentAssetStorageAddress,
-                tokenId,
-            },
-            blockchain,
-        );
-
-        if (assertionCachedLocally) {
-            const absolutePath = path.resolve('.');
-            const directory = 'local-store-cache';
-            fullPathToCachedAssertion = path.join(
-                absolutePath,
-                directory,
-                assertions[0].assertionId,
+        let submitToParanetReceipt;
+        try {
+            submitToParanetReceipt = await this.blockchainService.submitToParanet(
+                {
+                    paranetContract,
+                    paranetTokenId,
+                    contentAssetStorageAddress,
+                    tokenId,
+                },
+                blockchain,
             );
-            await unlink(fullPathToCachedAssertion);
+        } catch (error) {
+            // don't break flow
         }
 
         return {
