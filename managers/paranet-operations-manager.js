@@ -1,8 +1,6 @@
 const { ethers } = require('ethers');
 const { resolveUAL } = require('../services/utilities.js');
-const {
-    INCENTIVE_TYPE,
-} = require('../constants.js');
+const { INCENTIVE_TYPE } = require('../constants.js');
 
 class ParanetOperationsManager {
     constructor(services) {
@@ -19,11 +17,15 @@ class ParanetOperationsManager {
      * @param {Object} [options={}] - Additional options for creating the Paranet.
      * @param {string} options.paranetName - Name of the Paranet.
      * @param {string} options.paranetDescription - Description of the Paranet.
+     * @param {number} paranetNodesAccessPolicy - Paranet's policy towards including nodes.
+     * @param {number} paranetMinersAccessPolicy - Paranet's policy towards including knowledge miners.
      * @returns {Object} Object containing the Paranet UAL.
      * @example
      * await dkg.paranet.create(UAL, {
      *     paranetName: 'MyParanet',
      *     paranetDescription: 'A paranet for demonstration purposes.',
+     *     paranetNodesAccessPolicy: 0,
+     *     paranetMinersAccessPolicy: 0
      * });
      */
     async create(UAL, options = {}) {
@@ -31,6 +33,8 @@ class ParanetOperationsManager {
             blockchain,
             paranetName,
             paranetDescription,
+            paranetNodesAccessPolicy,
+            paranetMinersAccessPolicy
         } = this.inputService.getParanetCreateArguments(options);
 
         this.validationService.validateParanetCreate(
@@ -38,23 +42,362 @@ class ParanetOperationsManager {
             blockchain,
             paranetName,
             paranetDescription,
+            paranetNodesAccessPolicy,
+            paranetMinersAccessPolicy
         );
 
         const { contract, tokenId } = resolveUAL(UAL);
 
-       const receipt = await this.blockchainService.registerParanet({
+        const receipt = await this.blockchainService.registerParanet(
+            {
                 contract,
                 tokenId,
                 paranetName,
                 paranetDescription,
+                paranetNodesAccessPolicy,
+                paranetMinersAccessPolicy
             },
-            blockchain
+            blockchain,
         );
 
         return {
             paranetUAL: UAL,
-            operation: receipt
+            operation: receipt,
         };
+    }
+
+    /**
+     * Adds nodes to a curated paranet.
+     * @async
+     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+     * @param {Array<number>} identityIds - List of node Identity IDs. 
+     * @param {Object} [options={}] - Additional options for adding curated nodes to a paranet.
+     * @example
+     * await dkg.paranet.addCuratedNodes(UAL, identityIds: [1, 2]);
+     */
+    async addCuratedNodes(paranetUAL, identityIds, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+
+        this.validationService.validateParanetAddCuratedNodes(
+            paranetUAL,
+            blockchain,
+            identityIds
+        );
+
+        const { contract, tokenId } = resolveUAL(paranetUAL);
+
+        await this.blockchainService.addParanetCuratedNodes({
+                contract,
+                tokenId,
+                identityIds
+            },
+            blockchain
+        );
+    }
+
+    /**
+     * Removes nodes from a curated paranet.
+     * @async
+     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+     * @param {Array<number>} identityIds - List of node Identity IDs to be removed. 
+     * @param {Object} [options={}] - Additional options for adding curated nodes to a paranet.
+     * @example
+     * await dkg.paranet.removeCuratedNodes(UAL, identityIds: [1, 2]);
+     */
+    async removeCuratedNodes(paranetUAL, identityIds, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+
+        this.validationService.validateParanetRemoveCuratedNodes(
+            paranetUAL,
+            blockchain,
+            identityIds
+        );
+
+        const { contract, tokenId } = resolveUAL(paranetUAL);
+
+        await this.blockchainService.removeParanetCuratedNodes({
+                contract,
+                tokenId,
+                identityIds
+            },
+            blockchain
+        );
+    }
+
+    /**
+     * Request to become a node in a curated paranet.
+     * @async
+     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+     * @example
+     * await dkg.paranet.requestCuratedNodeAccess(UAL);
+     */
+    async requestCuratedNodeAccess(paranetUAL, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+
+        this.validationService.validateRequestParanetCuratedNodeAccess(
+            paranetUAL,
+            blockchain,
+        );
+
+        const { contract, tokenId } = resolveUAL(paranetUAL);
+
+        await this.blockchainService.requestParanetCuratedNodeAccess({
+                contract,
+                tokenId,
+            },
+            blockchain
+        );
+    }
+
+    /**
+     * Approve a node's access request to a curated paranet.
+     * @async
+     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+     * @param {number} identityId - Identity ID of the node which requested access.
+     * @param {Object} [options={}] - Additional options for adding curated nodes to a paranet.
+     * @example
+     * await dkg.paranet.approveCuratedNode(UAL, identityId: 1);
+     */
+    async approveCuratedNode(paranetUAL, identityId, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+
+        this.validationService.validateApproveCuratedNode(
+            paranetUAL,
+            blockchain,
+            identityId
+        );
+
+        const { contract, tokenId } = resolveUAL(paranetUAL);
+
+        await this.blockchainService.approveCuratedNode({
+                contract,
+                tokenId,
+                identityId
+            },
+            blockchain
+        );
+    }
+
+    /**
+     * Reject a node's access request to a curated paranet.
+     * @async
+     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+     * @param {number} identityId - Identity ID of the node which requested access.
+     * @param {Object} [options={}] - Additional options for adding curated nodes to a paranet.
+     * @example
+     * await dkg.paranet.rejectCuratedNode(UAL, identityId: 1);
+     */
+    async rejectCuratedNode(paranetUAL, identityId, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+
+        this.validationService.validateRejectCuratedNode(
+            paranetUAL,
+            blockchain,
+            identityId
+        );
+
+        const { contract, tokenId } = resolveUAL(paranetUAL);
+
+        await this.blockchainService.rejectCuratedNode({
+                contract,
+                tokenId,
+                identityId
+            },
+            blockchain
+        );
+    }
+
+    /**
+     * Get nodes of a curated paranet.
+     * @async
+     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+     * @returns {Array[number]} Array of nodes identity IDs.
+     * @example
+     * await dkg.paranet.getCuratedNodes(UAL);
+     */
+    async getCuratedNodes(paranetUAL, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+
+        this.validationService.validateGetCuratedNodes(
+            paranetUAL,
+            blockchain,
+        );
+
+        const { contract, tokenId } = resolveUAL(paranetUAL);
+        const paranetId = ethers.keccak256(
+            ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
+        );
+
+        const curatedNodes = await this.blockchainService.getCuratedNodes({ paranetId }, blockchain);
+
+        return curatedNodes;
+    }
+
+    /**
+     * Adds miners to a curated paranet.
+     * @async
+     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+     * @param {Array<string>} minerAddresses - List of miner addresses to be added. 
+     * @param {Object} [options={}] - Additional options for adding curated nodes to a paranet.
+     * @example
+     * await dkg.paranet.addCuratedMiners(UAL, minerAddresses: [0xminerAddress1, 0xminerAddress2]);
+     */
+    async addCuratedMiners(paranetUAL, minerAddresses, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+
+        this.validationService.validateParanetAddCuratedMiners(
+            paranetUAL,
+            blockchain,
+            minerAddresses
+        );
+
+        const { contract, tokenId } = resolveUAL(paranetUAL);
+
+        await this.blockchainService.addParanetCuratedMiners({
+                contract,
+                tokenId,
+                minerAddresses
+            },
+            blockchain
+        );
+    }
+
+    /**
+     * Removes miners from a curated paranet.
+     * @async
+     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+     * @param {Array<string>} minerAddresses - List of miner addresses to be removed.
+     * @param {Object} [options={}] - Additional options for adding curated miners to a paranet.
+     * @example
+     * await dkg.paranet.removeCuratedMiners(UAL, identityIds: [1, 2]);
+     */
+    async removeCuratedMiners(paranetUAL, minerAddresses, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+
+        this.validationService.validateParanetRemoveCuratedMiners(
+            paranetUAL,
+            blockchain,
+            minerAddresses
+        );
+
+        const { contract, tokenId } = resolveUAL(paranetUAL);
+
+        await this.blockchainService.removeParanetCuratedMiners({
+                contract,
+                tokenId,
+                minerAddresses
+            },
+            blockchain
+        );
+    }
+
+    /**
+     * Request to become a miner in a curated paranet.
+     * @async
+     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+     * @example
+     * await dkg.paranet.requestCuratedMinerAccess(UAL);
+     */
+    async requestCuratedMinerAccess(paranetUAL, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+
+        this.validationService.validateRequestParanetCuratedMinerAccess(
+            paranetUAL,
+            blockchain,
+        );
+
+        const { contract, tokenId } = resolveUAL(paranetUAL);
+
+        await this.blockchainService.requestParanetCuratedMinerAccess({
+                contract,
+                tokenId,
+            },
+            blockchain
+        );
+    }
+
+    /**
+     * Approve a miner's access request to a curated paranet.
+     * @async
+     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+     * @param {string} minerAddress - Address of the miner which requested access.
+     * @param {Object} [options={}] - Additional options for adding curated miners to a paranet.
+     * @example
+     * await dkg.paranet.approveCuratedMiner(UAL, minerAddress: 1);
+     */
+    async approveCuratedMiner(paranetUAL, minerAddress, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+
+        this.validationService.validateApproveCuratedMiner(
+            paranetUAL,
+            blockchain,
+            minerAddress
+        );
+
+        const { contract, tokenId } = resolveUAL(paranetUAL);
+
+        await this.blockchainService.approveCuratedMiner({
+                contract,
+                tokenId,
+                minerAddress
+            },
+            blockchain
+        );
+    }
+
+    /**
+     * Reject a miner's access request to a curated paranet.
+     * @async
+     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+     * @param {string} minerAddress - Address of the miner which requested access.
+     * @param {Object} [options={}] - Additional options for adding curated miners to a paranet.
+     * @example
+     * await dkg.paranet.rejectCuratedMiner(UAL, minerAddress: 1);
+     */
+    async rejectCuratedMiner(paranetUAL, minerAddress, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+
+        this.validationService.validateRejectCuratedMiner(
+            paranetUAL,
+            blockchain,
+            minerAddress
+        );
+
+        const { contract, tokenId } = resolveUAL(paranetUAL);
+
+        await this.blockchainService.rejectCuratedMiner({
+                contract,
+                tokenId,
+                minerAddress
+            },
+            blockchain
+        );
+    }
+
+    /**
+     * Get miners of a paranet.
+     * @async
+     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+     * @returns {Array[string]} Array of knowledge miners addresses.
+     * @example
+     * await dkg.paranet.getKnowledgeMiners(UAL);
+     */
+    async getKnowledgeMiners(paranetUAL, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+
+        this.validationService.validateGetParanetKnowledgeMiners(
+            paranetUAL,
+            blockchain,
+        );
+
+        const { contract, tokenId } = resolveUAL(paranetUAL);
+        const paranetId = ethers.keccak256(
+            ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
+        );
+
+        const knowledgeMiners = await this.blockchainService.getKnowledgeMiners({ paranetId }, blockchain);
+
+        return knowledgeMiners;
     }
 
     /**
@@ -89,29 +432,31 @@ class ParanetOperationsManager {
             operatorRewardPercentage,
             incentivizationProposalVotersRewardPercentage,
         );
-        if(incentiveType === INCENTIVE_TYPE.NEUROWEB) {
-            const {contract, tokenId} = resolveUAL(paranetUAL);
+        if (incentiveType === INCENTIVE_TYPE.NEUROWEB) {
+            const { contract, tokenId } = resolveUAL(paranetUAL);
 
-            const receipt = await this.blockchainService.deployNeuroIncentivesPool({
+            const receipt = await this.blockchainService.deployNeuroIncentivesPool(
+                {
                     contract,
                     tokenId,
                     tracToNeuroEmissionMultiplier,
                     operatorRewardPercentage,
                     incentivizationProposalVotersRewardPercentage,
                 },
-                blockchain
+                blockchain,
             );
 
             const paranetId = ethers.keccak256(
                 ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
             );
 
-            const neuroIncentivesPoolAddress = await this.blockchainService.getNeuroIncentivesPoolAddress(paranetId, blockchain);
+            const neuroIncentivesPoolAddress =
+                await this.blockchainService.getNeuroIncentivesPoolAddress(paranetId, blockchain);
 
             return {
                 paranetUAL,
                 incentivesPoolContractAddress: neuroIncentivesPoolAddress,
-                operation: receipt
+                operation: receipt,
             };
         }
 
@@ -148,19 +493,20 @@ class ParanetOperationsManager {
 
         const { contract, tokenId } = resolveUAL(UAL);
 
-        const receipt = await this.blockchainService.registerParanetService({
+        const receipt = await this.blockchainService.registerParanetService(
+            {
                 contract,
                 tokenId,
                 paranetServiceName,
                 paranetServiceDescription,
                 paranetServiceAddresses,
             },
-            blockchain
+            blockchain,
         );
 
         return {
             serviceUAL: UAL,
-            operation: receipt
+            operation: receipt,
         };
     }
 
@@ -184,23 +530,24 @@ class ParanetOperationsManager {
         const { contract, tokenId } = resolveUAL(paranetUAL);
 
         const processedServicesArray = [];
-        for(const serviceUAL of paranetServiceUALs) {
-            const { contract: serviceContract, tokenId: serviceTokenId } = resolveUAL(serviceUAL)
-            processedServicesArray.push([ serviceContract, serviceTokenId ]);
+        for (const serviceUAL of paranetServiceUALs) {
+            const { contract: serviceContract, tokenId: serviceTokenId } = resolveUAL(serviceUAL);
+            processedServicesArray.push([serviceContract, serviceTokenId]);
         }
 
-        const receipt = await this.blockchainService.addParanetServices({
+        const receipt = await this.blockchainService.addParanetServices(
+            {
                 contract,
                 tokenId,
-                processedServicesArray
+                processedServicesArray,
             },
-            blockchain
+            blockchain,
         );
 
         return {
             paranetUAL,
             paranetServiceUALs,
-            operation: receipt
+            operation: receipt,
         };
     }
 
@@ -215,17 +562,17 @@ class ParanetOperationsManager {
      */
     async claimMinerReward(paranetUAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
-        this.validationService.validateParanetRewardArguments(
-            paranetUAL,
-            blockchain,
-        );
+        this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
         const { contract, tokenId } = resolveUAL(paranetUAL);
         const paranetId = ethers.keccak256(
             ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
         );
 
-        const receipt = await this.blockchainService.claimKnowledgeMinerReward(paranetId, blockchain);
+        const receipt = await this.blockchainService.claimKnowledgeMinerReward(
+            paranetId,
+            blockchain,
+        );
 
         return {
             operation: receipt,
@@ -245,10 +592,7 @@ class ParanetOperationsManager {
      */
     async claimVoterReward(paranetUAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
-        this.validationService.validateParanetRewardArguments(
-            paranetUAL,
-            blockchain,
-        );
+        this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
         const { contract, tokenId } = resolveUAL(paranetUAL);
         const paranetId = ethers.keccak256(
@@ -275,10 +619,7 @@ class ParanetOperationsManager {
      */
     async claimOperatorReward(paranetUAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
-        this.validationService.validateParanetRewardArguments(
-            paranetUAL,
-            blockchain,
-        );
+        this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
         const { contract, tokenId } = resolveUAL(paranetUAL);
         const paranetId = ethers.keccak256(
@@ -304,17 +645,17 @@ class ParanetOperationsManager {
      */
     async getClaimableMinerReward(paranetUAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
-        this.validationService.validateParanetRewardArguments(
-            paranetUAL,
-            blockchain,
-        );
+        this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
         const { contract, tokenId } = resolveUAL(paranetUAL);
         const paranetId = ethers.keccak256(
             ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
         );
 
-        const claimableValue = await this.blockchainService.getClaimableKnowledgeMinerReward(paranetId, blockchain);
+        const claimableValue = await this.blockchainService.getClaimableKnowledgeMinerReward(
+            paranetId,
+            blockchain,
+        );
 
         return claimableValue;
     }
@@ -330,17 +671,17 @@ class ParanetOperationsManager {
      */
     async getClaimableAllMinersReward(paranetUAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
-        this.validationService.validateParanetRewardArguments(
-            paranetUAL,
-            blockchain,
-        );
+        this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
         const { contract, tokenId } = resolveUAL(paranetUAL);
         const paranetId = ethers.keccak256(
             ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
         );
 
-        const claimableValue = await this.blockchainService.getClaimableAllKnowledgeMinersReward(paranetId, blockchain);
+        const claimableValue = await this.blockchainService.getClaimableAllKnowledgeMinersReward(
+            paranetId,
+            blockchain,
+        );
 
         return claimableValue;
     }
@@ -356,17 +697,17 @@ class ParanetOperationsManager {
      */
     async getClaimableVoterReward(paranetUAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
-        this.validationService.validateParanetRewardArguments(
-            paranetUAL,
-            blockchain,
-        );
+        this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
-        const {contract, tokenId} = resolveUAL(paranetUAL);
+        const { contract, tokenId } = resolveUAL(paranetUAL);
         const paranetId = ethers.keccak256(
             ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
         );
 
-        const claimableValue = await this.blockchainService.getClaimableVoterReward(paranetId, blockchain);
+        const claimableValue = await this.blockchainService.getClaimableVoterReward(
+            paranetId,
+            blockchain,
+        );
 
         return claimableValue;
     }
@@ -382,17 +723,17 @@ class ParanetOperationsManager {
      */
     async getClaimableAllVotersReward(paranetUAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
-        this.validationService.validateParanetRewardArguments(
-            paranetUAL,
-            blockchain,
-        );
+        this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
-        const {contract, tokenId} = resolveUAL(paranetUAL);
+        const { contract, tokenId } = resolveUAL(paranetUAL);
         const paranetId = ethers.keccak256(
             ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
         );
 
-        const claimableValue = await this.blockchainService.getClaimableAllVotersReward(paranetId, blockchain);
+        const claimableValue = await this.blockchainService.getClaimableAllVotersReward(
+            paranetId,
+            blockchain,
+        );
 
         return claimableValue;
     }
@@ -408,17 +749,17 @@ class ParanetOperationsManager {
      */
     async getClaimableOperatorReward(paranetUAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
-        this.validationService.validateParanetRewardArguments(
-            paranetUAL,
-            blockchain,
-        );
+        this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
-        const {contract, tokenId} = resolveUAL(paranetUAL);
+        const { contract, tokenId } = resolveUAL(paranetUAL);
         const paranetId = ethers.keccak256(
             ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
         );
 
-        const claimableValue = await this.blockchainService.getClaimableOperatorReward(paranetId, blockchain);
+        const claimableValue = await this.blockchainService.getClaimableOperatorReward(
+            paranetId,
+            blockchain,
+        );
 
         return claimableValue;
     }
@@ -434,24 +775,28 @@ class ParanetOperationsManager {
      */
     async updateClaimableRewards(paranetUAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
-        this.validationService.validateParanetRewardArguments(
-            paranetUAL,
-            blockchain,
-        );
+        this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
         const { contract, tokenId } = resolveUAL(paranetUAL);
         const paranetId = ethers.keccak256(
             ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
         );
 
-        const updatingKnowledgeAssetStates = await this.blockchainService.getUpdatingKnowledgeAssetStates({ miner: blockchain.publicKey, paranetId }, blockchain);
-        if(updatingKnowledgeAssetStates.length > 0) {
-            const receipt = await this.blockchainService.updateClaimableRewards({
-                contract,
-                tokenId,
-                start: 0,
-                end: updatingKnowledgeAssetStates.length
-            }, blockchain);
+        const updatingKnowledgeAssetStates =
+            await this.blockchainService.getUpdatingKnowledgeAssetStates(
+                { miner: blockchain.publicKey, paranetId },
+                blockchain,
+            );
+        if (updatingKnowledgeAssetStates.length > 0) {
+            const receipt = await this.blockchainService.updateClaimableRewards(
+                {
+                    contract,
+                    tokenId,
+                    start: 0,
+                    end: updatingKnowledgeAssetStates.length,
+                },
+                blockchain,
+            );
 
             return {
                 operation: receipt,
@@ -461,7 +806,7 @@ class ParanetOperationsManager {
         }
 
         return {
-            status: 'No updated knowledge assets.'
+            status: 'No updated knowledge assets.',
         };
     }
 
@@ -476,7 +821,7 @@ class ParanetOperationsManager {
      */
     async isKnowledgeMiner(paranetUAL, options = {}) {
         // eslint-disable-next-line prefer-const
-        let { blockchain, roleAddress }  = this.inputService.getParanetRoleCheckArguments(options);
+        let { blockchain, roleAddress } = this.inputService.getParanetRoleCheckArguments(options);
         if (roleAddress == null) {
             roleAddress = blockchain.publicKey;
         }
@@ -486,12 +831,16 @@ class ParanetOperationsManager {
             blockchain,
         );
 
-        const {contract, tokenId} = resolveUAL(paranetUAL);
+        const { contract, tokenId } = resolveUAL(paranetUAL);
         const paranetId = ethers.keccak256(
             ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
         );
 
-        const isParanetKnowledgeMiner = await this.blockchainService.isParanetKnowledgeMiner(roleAddress ,paranetId, blockchain);
+        const isParanetKnowledgeMiner = await this.blockchainService.isParanetKnowledgeMiner(
+            roleAddress,
+            paranetId,
+            blockchain,
+        );
 
         return isParanetKnowledgeMiner;
     }
@@ -507,7 +856,7 @@ class ParanetOperationsManager {
      */
     async isParanetOperator(paranetUAL, options = {}) {
         // eslint-disable-next-line prefer-const
-        let { blockchain, roleAddress }  = this.inputService.getParanetRoleCheckArguments(options);
+        let { blockchain, roleAddress } = this.inputService.getParanetRoleCheckArguments(options);
         if (roleAddress == null) {
             roleAddress = blockchain.publicKey;
         }
@@ -517,12 +866,16 @@ class ParanetOperationsManager {
             blockchain,
         );
 
-        const {contract, tokenId} = resolveUAL(paranetUAL);
+        const { contract, tokenId } = resolveUAL(paranetUAL);
         const paranetId = ethers.keccak256(
             ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
         );
 
-        const isParanetOperator = await this.blockchainService.isParanetOperator(roleAddress ,paranetId, blockchain);
+        const isParanetOperator = await this.blockchainService.isParanetOperator(
+            roleAddress,
+            paranetId,
+            blockchain,
+        );
 
         return isParanetOperator;
     }
@@ -538,7 +891,7 @@ class ParanetOperationsManager {
      */
     async isProposalVoter(paranetUAL, options = {}) {
         // eslint-disable-next-line prefer-const
-        let { blockchain, roleAddress }  = this.inputService.getParanetRoleCheckArguments(options);
+        let { blockchain, roleAddress } = this.inputService.getParanetRoleCheckArguments(options);
         if (roleAddress == null) {
             roleAddress = blockchain.publicKey;
         }
@@ -548,15 +901,18 @@ class ParanetOperationsManager {
             blockchain,
         );
 
-        const {contract, tokenId} = resolveUAL(paranetUAL);
+        const { contract, tokenId } = resolveUAL(paranetUAL);
         const paranetId = ethers.keccak256(
             ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
         );
 
-        const isProposalVoter = await this.blockchainService.isParanetProposalVoter(roleAddress ,paranetId, blockchain);
+        const isProposalVoter = await this.blockchainService.isParanetProposalVoter(
+            roleAddress,
+            paranetId,
+            blockchain,
+        );
 
         return isProposalVoter;
     }
-
 }
 module.exports = ParanetOperationsManager;
