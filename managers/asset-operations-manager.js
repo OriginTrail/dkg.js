@@ -398,7 +398,7 @@ class AssetOperationsManager {
         if (privateAssertion?.length) {
             let privateAssertionId = null;
             for (const quad of publicAssertion) {
-                if (quad.includes(PRIVATE_ASSERTION_PREDICATE)) {                    
+                if (quad.includes(PRIVATE_ASSERTION_PREDICATE)) {
                     [, privateAssertionId] = quad.match(/"(.*?)"/);
                     break;
                 }
@@ -1255,7 +1255,7 @@ class AssetOperationsManager {
         if (privateAssertion?.length) {
             let privateAssertionId = null;
             for (const quad of publicAssertion) {
-                if (quad.includes(PRIVATE_ASSERTION_PREDICATE)) {                    
+                if (quad.includes(PRIVATE_ASSERTION_PREDICATE)) {
                     [, privateAssertionId] = quad.match(/"(.*?)"/);
                     break;
                 }
@@ -1301,7 +1301,7 @@ class AssetOperationsManager {
             localStoreOperationId,
         );
 
-        if (localStoreOperationResult.status === OPERATION_STATUSES.FAILED) {
+        if (localStoreOperationResult.status !== OPERATION_STATUSES.COMPLETED) {
             if (assertionCachedLocally) {
                 const absolutePath = path.resolve('.');
                 const directory = 'local-store-cache';
