@@ -1,6 +1,13 @@
 const path = require('path');
 const { mkdir, writeFile, unlink } = require('fs/promises');
-const { assertionMetadata, calculateRoot, formatGraph } = require('assertion-tools');
+const {
+    assertionMetadata,
+    calculateRoot,
+    formatGraph,
+    calculateNumberOfChunks,
+    formatDataset,
+    flattenDataset,
+} = require('assertion-tools');
 const { ethers, ZeroHash } = require('ethers');
 const {
     deriveUAL,
@@ -13,7 +20,6 @@ const {
     ASSET_STATES,
     CONTENT_TYPES,
     OPERATIONS,
-    OPERATIONS_STEP_STATUS,
     GET_OUTPUT_FORMATS,
     OPERATION_STATUSES,
     DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY,
@@ -22,6 +28,7 @@ const {
     QUERY_TYPES,
     OT_NODE_TRIPLE_STORE_REPOSITORIES,
     ZERO_ADDRESS,
+    CHUNK_BYTE_SIZE,
 } = require('../constants.js');
 const emptyHooks = require('../util/empty-hooks');
 
@@ -259,23 +266,15 @@ class AssetOperationsManager {
     }
 
     /**
-     * Creates a new asset.
+     * Creates a new knowledge collection.
      * @async
-     * @param {Object} content - The content of the asset to be created, contains public, private or both keys.
-     * @param {Object} [options={}] - Additional options for asset creation.
-     * @param {Object} [stepHooks=emptyHooks] - Hooks to execute during asset creation.
+     * @param {Object} content - The content of the knowledge collection to be created, contains public, private or both keys.
+     * @param {Object} [options={}] - Additional options for knowledge collection creation.
+     * @param {Object} [stepHooks=emptyHooks] - Hooks to execute during knowledge collection creation.
      * @returns {Object} Object containing UAL, publicAssertionId and operation status.
      */
     async create(content, options = {}, stepHooks = emptyHooks) {
-        this.validationService.validateObjectType(content);
-        let jsonContent = {};
-
-        // for backwards compatibility
-        if (!content.public && !content.private) {
-            jsonContent.public = content;
-        } else {
-            jsonContent = content;
-        }
+        this.validationService.validateJsonldOrNquads(content);
 
         const {
             blockchain,
@@ -290,10 +289,11 @@ class AssetOperationsManager {
             tokenAmount,
             authToken,
             paranetUAL,
+            payer,
         } = this.inputService.getAssetCreateArguments(options);
 
         this.validationService.validateAssetCreate(
-            jsonContent,
+            content,
             blockchain,
             endpoint,
             port,
@@ -306,122 +306,39 @@ class AssetOperationsManager {
             tokenAmount,
             authToken,
             paranetUAL,
+            payer,
         );
 
-        const { public: publicAssertion, private: privateAssertion } = await formatGraph(
-            jsonContent,
-        );
-        const publicAssertionSizeInBytes =
-            assertionMetadata.getAssertionSizeInBytes(publicAssertion);
+        let dataset;
 
-        this.validationService.validateAssertionSizeInBytes(
-            publicAssertionSizeInBytes +
-                (privateAssertion === undefined
-                    ? 0
-                    : assertionMetadata.getAssertionSizeInBytes(privateAssertion)),
-        );
-        const publicAssertionId = await calculateRoot(publicAssertion);
+        if (typeof content === 'string') {
+            dataset = content.split('\n').filter((line) => line.trim() !== '');
+        } else {
+            const flattenedDataset = await flattenDataset(content);
+            dataset = await formatDataset(flattenedDataset);
+        }
+
+        const numberOfChunks = calculateNumberOfChunks(dataset, CHUNK_BYTE_SIZE);
+
+        const datasetSize = numberOfChunks * CHUNK_BYTE_SIZE;
+
+        this.validationService.validateAssertionSizeInBytes(datasetSize);
+        const datasetRoot = await calculateRoot(dataset);
 
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
             'ContentAssetStorage',
             blockchain,
         );
 
-        const tokenAmountInWei =
-            tokenAmount ??
-            (await this.nodeApiService.getBidSuggestion(
-                endpoint,
-                port,
-                authToken,
-                blockchain.name,
-                epochsNum,
-                publicAssertionSizeInBytes,
-                contentAssetStorageAddress,
-                publicAssertionId,
-                hashFunctionId,
-            ));
-
-        let tokenId;
-        let mintKnowledgeAssetReceipt;
-        if (paranetUAL == null) {
-            ({ tokenId, receipt: mintKnowledgeAssetReceipt } =
-                await this.blockchainService.createAsset(
-                    {
-                        publicAssertionId,
-                        assertionSize: publicAssertionSizeInBytes,
-                        triplesNumber: assertionMetadata.getAssertionTriplesNumber(publicAssertion),
-                        chunksNumber: assertionMetadata.getAssertionChunksNumber(publicAssertion),
-                        epochsNum,
-                        tokenAmount: tokenAmountInWei,
-                        scoreFunctionId: scoreFunctionId ?? 1,
-                        immutable_: immutable,
-                    },
-                    null,
-                    null,
-                    blockchain,
-                    stepHooks,
-                ));
-        } else {
-            const { contract: paranetKaContract, tokenId: paranetTokenId } = resolveUAL(paranetUAL);
-            ({ tokenId, receipt: mintKnowledgeAssetReceipt } =
-                await this.blockchainService.createAsset(
-                    {
-                        publicAssertionId,
-                        assertionSize: publicAssertionSizeInBytes,
-                        triplesNumber: assertionMetadata.getAssertionTriplesNumber(publicAssertion),
-                        chunksNumber: assertionMetadata.getAssertionChunksNumber(publicAssertion),
-                        epochsNum,
-                        tokenAmount: tokenAmountInWei,
-                        scoreFunctionId: scoreFunctionId ?? 1,
-                        immutable_: immutable,
-                    },
-                    paranetKaContract,
-                    paranetTokenId,
-                    blockchain,
-                    stepHooks,
-                ));
-        }
-
-        const resolvedUAL = {
-            blockchain: blockchain.name,
-            contract: contentAssetStorageAddress,
-            tokenId,
-        };
-        const assertions = [
-            {
-                ...resolvedUAL,
-                assertionId: publicAssertionId,
-                assertion: publicAssertion,
-                storeType: STORE_TYPES.TRIPLE,
-            },
-        ];
-        if (privateAssertion?.length) {
-            let privateAssertionId = null;
-            for (const quad of publicAssertion) {
-                if (quad.includes(PRIVATE_ASSERTION_PREDICATE)) {                    
-                    [, privateAssertionId] = quad.match(/"(.*?)"/);
-                    break;
-                }
-            }
-            assertions.push({
-                ...resolvedUAL,
-                assertionId: privateAssertionId,
-                assertion: privateAssertion,
-                storeType: STORE_TYPES.TRIPLE,
-            });
-        }
-
-        const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, tokenId);
-
         const publishOperationId = await this.nodeApiService.publish(
             endpoint,
             port,
             authToken,
-            publicAssertionId,
-            publicAssertion,
+            datasetRoot,
+            dataset,
             blockchain.name,
             contentAssetStorageAddress,
-            tokenId,
+            null, // token id doesn't exist here
             hashFunctionId,
         );
 
@@ -437,50 +354,81 @@ class AssetOperationsManager {
 
         if (publishOperationResult.status === OPERATION_STATUSES.FAILED) {
             return {
-                UAL,
-                assertionId: publicAssertionId,
+                datasetRoot: datasetRoot,
                 operation: {
-                    mintKnowledgeAsset: mintKnowledgeAssetReceipt,
                     publish: getOperationStatusObject(publishOperationResult, publishOperationId),
                 },
             };
         }
 
-        const localStoreOperationId = await this.nodeApiService.localStore(
-            endpoint,
-            port,
-            authToken,
-            assertions,
-        );
+        const estimatedPublishingCost =
+            tokenAmount ??
+            (await this.nodeApiService.getBidSuggestion(
+                endpoint,
+                port,
+                authToken,
+                blockchain.name,
+                epochsNum,
+                datasetSize,
+                contentAssetStorageAddress,
+                datasetRoot,
+                hashFunctionId,
+            ));
 
-        const localStoreOperationResult = await this.nodeApiService.getOperationResult(
-            endpoint,
-            port,
-            authToken,
-            OPERATIONS.LOCAL_STORE,
-            maxNumberOfRetries,
-            DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY,
-            localStoreOperationId,
-        );
+        let tokenId;
+        let mintKnowledgeAssetReceipt;
 
-        stepHooks.afterHook({
-            status: OPERATIONS_STEP_STATUS.CREATE_ASSET_COMPLETED,
-            data: {
-                localStoreOperationId,
-                localStoreOperationResult,
-            },
-        });
+        if (paranetUAL == null) {
+            ({ tokenId, receipt: mintKnowledgeAssetReceipt } =
+                await this.blockchainService.createAsset(
+                    {
+                        datasetRoot,
+                        assertionSize: datasetSize,
+                        triplesNumber: assertionMetadata.getAssertionTriplesNumber(dataset), // todo
+                        chunksNumber: numberOfChunks,
+                        epochsNum,
+                        tokenAmount: estimatedPublishingCost,
+                        scoreFunctionId: scoreFunctionId ?? 1,
+                        immutable_: immutable,
+                        // payer: payer,
+                    },
+                    null,
+                    null,
+                    blockchain,
+                    stepHooks,
+                ));
+        } else {
+            const { contract: paranetKaContract, tokenId: paranetTokenId } = resolveUAL(paranetUAL);
+            ({ tokenId, receipt: mintKnowledgeAssetReceipt } =
+                await this.blockchainService.createAsset(
+                    {
+                        datasetRoot,
+                        assertionSize: datasetSize,
+                        triplesNumber: assertionMetadata.getAssertionTriplesNumber(dataset), // todo
+                        chunksNumber: calculateNumberOfChunks(dataset),
+                        epochsNum,
+                        tokenAmount: estimatedPublishingCost,
+                        scoreFunctionId: scoreFunctionId ?? 1,
+                        immutable_: immutable,
+                        // payer: payer,
+                    },
+                    paranetKaContract,
+                    paranetTokenId,
+                    blockchain,
+                    stepHooks,
+                ));
+        }
+
+        const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, tokenId);
+
+        // node finality api check for UAL
 
         return {
             UAL,
-            publicAssertionId,
+            datasetRoot,
             operation: {
                 mintKnowledgeAsset: mintKnowledgeAssetReceipt,
                 publish: getOperationStatusObject(publishOperationResult, publishOperationId),
-                localStore: getOperationStatusObject(
-                    localStoreOperationResult,
-                    localStoreOperationId,
-                ),
             },
         };
     }
@@ -1067,18 +1015,18 @@ class AssetOperationsManager {
         endpoint,
         port,
         authToken,
-        assertionId,
+        datasetRoot,
         size,
         hashFunctionId,
     ) {
         const { contract, tokenId } = resolveUAL(UAL);
-        const firstAssertionId = await this.blockchainService.getAssertionIdByIndex(
+        const firstDatasetRoot = await this.blockchainService.getAssertionIdByIndex(
             tokenId,
             0,
             blockchain,
         );
 
-        const keyword = ethers.solidityPacked(['address', 'bytes32'], [contract, firstAssertionId]);
+        const keyword = ethers.solidityPacked(['address', 'bytes32'], [contract, firstDatasetRoot]);
 
         const agreementId = ethers.sha256(
             ethers.solidityPacked(['address', 'uint256', 'bytes'], [contract, tokenId, keyword]),
@@ -1092,7 +1040,7 @@ class AssetOperationsManager {
         const currentEpoch = Math.floor(
             (now - agreementData.startTime) / agreementData.epochLength,
         );
-
+        console.log(agreementData.epochsNumber, currentEpoch);
         const epochsLeft = agreementData.epochsNumber - currentEpoch;
 
         const bidSuggestion = await this.nodeApiService.getBidSuggestion(
@@ -1103,7 +1051,7 @@ class AssetOperationsManager {
             epochsLeft,
             size,
             contract,
-            assertionId,
+            datasetRoot,
             hashFunctionId,
         );
 
@@ -1147,15 +1095,15 @@ class AssetOperationsManager {
     }
 
     /**
-     * Creates a new asset and stores it locally on the node.
+     * Updates an existing asset.
      * @async
-     * @param {Object} content - The content of the asset to be created, contains public, private or both keys.
-     * @param {Object} [options={}] - Additional options for asset creation.
-     * @param {Object} [stepHooks=emptyHooks] - Hooks to execute during asset creation.
+     * @param {string} UAL - The Universal Asset Locator
+     * @param {Object} content - The content of the asset to be updated.
+     * @param {Object} [options={}] - Additional options for asset update.
      * @returns {Object} Object containing UAL, publicAssertionId and operation status.
      */
-    async localStore(content, options = {}, stepHooks = emptyHooks) {
-        this.validationService.validateObjectType(content);
+    async update(UAL, content, options = {}) {
+        this.validationService.validateJsonldOrNquads(content);
 
         const {
             blockchain,
@@ -1163,201 +1111,123 @@ class AssetOperationsManager {
             port,
             maxNumberOfRetries,
             frequency,
-            epochsNum,
             hashFunctionId,
             scoreFunctionId,
-            immutable,
             tokenAmount,
             authToken,
-            paranetUAL,
-            assertionCachedLocally,
-        } = this.inputService.getAssetLocalStoreArguments(options);
+            payer,
+        } = this.inputService.getAssetUpdateArguments(options);
 
-        this.validationService.validateAssetCreate(
+        this.validationService.validateAssetUpdate(
             content,
             blockchain,
             endpoint,
             port,
             maxNumberOfRetries,
             frequency,
-            epochsNum,
             hashFunctionId,
             scoreFunctionId,
-            immutable,
             tokenAmount,
             authToken,
-            paranetUAL,
+            payer,
         );
 
-        const { public: publicAssertion, private: privateAssertion } = await formatGraph(content);
-        const publicAssertionSizeInBytes =
-            assertionMetadata.getAssertionSizeInBytes(publicAssertion);
+        const { tokenId } = resolveUAL(UAL);
 
-        this.validationService.validateAssertionSizeInBytes(
-            publicAssertionSizeInBytes +
-                (privateAssertion === undefined
-                    ? 0
-                    : assertionMetadata.getAssertionSizeInBytes(privateAssertion)),
-        );
-        const publicAssertionId = await calculateRoot(publicAssertion);
+        let dataset;
+
+        if (typeof content === 'string') {
+            dataset = content.split('\n').filter((line) => line.trim() !== '');
+        } else {
+            const flattenedDataset = await flattenDataset(content);
+            dataset = await formatDataset(flattenedDataset);
+        }
+
+        const numberOfChunks = calculateNumberOfChunks(dataset, CHUNK_BYTE_SIZE);
+
+        const datasetSize = numberOfChunks * CHUNK_BYTE_SIZE;
+
+        this.validationService.validateAssertionSizeInBytes(datasetSize);
+        const datasetRoot = await calculateRoot(dataset);
 
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
             'ContentAssetStorage',
             blockchain,
         );
 
-        const tokenAmountInWei =
-            tokenAmount ??
-            (await this.nodeApiService.getBidSuggestion(
-                endpoint,
-                port,
-                authToken,
-                blockchain.name,
-                epochsNum,
-                publicAssertionSizeInBytes,
-                contentAssetStorageAddress,
-                publicAssertionId,
-                hashFunctionId,
-            ));
-
-        const { tokenId, receipt: mintKnowledgeAssetReceipt } =
-            await this.blockchainService.createAsset(
-                {
-                    publicAssertionId,
-                    assertionSize: publicAssertionSizeInBytes,
-                    triplesNumber: assertionMetadata.getAssertionTriplesNumber(publicAssertion),
-                    chunksNumber: assertionMetadata.getAssertionChunksNumber(publicAssertion),
-                    epochsNum,
-                    tokenAmount: tokenAmountInWei,
-                    scoreFunctionId: scoreFunctionId ?? 1,
-                    immutable_: immutable,
-                },
-                null,
-                null,
-                blockchain,
-                stepHooks,
-            );
-
-        const resolvedUAL = {
-            blockchain: blockchain.name,
-            contract: contentAssetStorageAddress,
+        const updateOperationId = await this.nodeApiService.update(
+            endpoint,
+            port,
+            authToken,
+            datasetRoot,
+            dataset,
+            blockchain.name,
+            contentAssetStorageAddress,
             tokenId,
-        };
-        const assertions = [
-            {
-                ...resolvedUAL,
-                assertionId: publicAssertionId,
-                assertion: publicAssertion,
-                storeType: STORE_TYPES.TRIPLE_PARANET,
-                paranetUAL,
-            },
-        ];
-        if (privateAssertion?.length) {
-            let privateAssertionId = null;
-            for (const quad of publicAssertion) {
-                if (quad.includes(PRIVATE_ASSERTION_PREDICATE)) {                    
-                    [, privateAssertionId] = quad.match(/"(.*?)"/);
-                    break;
-                }
-            }
-            assertions.push({
-                ...resolvedUAL,
-                assertionId: privateAssertionId,
-                assertion: privateAssertion,
-                storeType: STORE_TYPES.TRIPLE_PARANET,
-                paranetUAL,
-            });
-        }
-
-        const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, tokenId);
-        let fullPathToCachedAssertion = null;
-        if (assertionCachedLocally) {
-            const absolutePath = path.resolve('.');
-            const directory = 'local-store-cache';
-            await mkdir(directory, { recursive: true });
-            fullPathToCachedAssertion = path.join(
-                absolutePath,
-                directory,
-                assertions[0].assertionId,
-            );
-            await writeFile(fullPathToCachedAssertion, JSON.stringify(assertions));
-        }
-
-        const localStoreOperationId = await this.nodeApiService.localStore(
-            endpoint,
-            port,
-            authToken,
-            assertions,
-            fullPathToCachedAssertion,
+            hashFunctionId,
         );
-
-        const localStoreOperationResult = await this.nodeApiService.getOperationResult(
+        const updateOperationResult = await this.nodeApiService.getOperationResult(
             endpoint,
             port,
             authToken,
-            OPERATIONS.LOCAL_STORE,
+            OPERATIONS.UPDATE,
             maxNumberOfRetries,
-            DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY,
-            localStoreOperationId,
+            frequency,
+            updateOperationId,
         );
 
-        if (localStoreOperationResult.status === OPERATION_STATUSES.FAILED) {
-            if (assertionCachedLocally) {
-                const absolutePath = path.resolve('.');
-                const directory = 'local-store-cache';
-                fullPathToCachedAssertion = path.join(
-                    absolutePath,
-                    directory,
-                    assertions[0].assertionId,
-                );
-                await unlink(fullPathToCachedAssertion);
-            }
+        if (updateOperationResult.status === OPERATION_STATUSES.FAILED) {
             return {
-                UAL,
-                assertionId: publicAssertionId,
+                datasetRoot: datasetRoot,
                 operation: {
-                    mintKnowledgeAsset: mintKnowledgeAssetReceipt,
-                    localStore: getOperationStatusObject(
-                        localStoreOperationResult,
-                        localStoreOperationId,
-                    ),
+                    publish: getOperationStatusObject(updateOperationResult, updateOperationId),
                 },
             };
         }
 
-        const { contract: paranetContract, tokenId: paranetTokenId } = resolveUAL(paranetUAL);
+        let tokenAmountInWei;
 
-        const submitToParanetReceipt = await this.blockchainService.submitToParanet(
-            {
-                paranetContract,
-                paranetTokenId,
-                contentAssetStorageAddress,
-                tokenId,
-            },
+        if (tokenAmount != null) {
+            tokenAmountInWei = tokenAmount;
+        } else {
+            console.log({
+                UAL,
+                blockchain,
+                endpoint,
+                port,
+                authToken,
+                datasetRoot,
+                datasetSize,
+                hashFunctionId,
+            });
+            tokenAmountInWei = await this._getUpdateBidSuggestion(
+                UAL,
+                blockchain,
+                endpoint,
+                port,
+                authToken,
+                datasetRoot,
+                datasetSize,
+                hashFunctionId,
+            );
+        }
+
+        const updateKnowledgeAssetReceipt = await this.blockchainService.updateAsset(
+            tokenId,
+            datasetRoot,
+            datasetSize,
+            assertionMetadata.getAssertionTriplesNumber(dataset),
+            assertionMetadata.getAssertionChunksNumber(dataset),
+            tokenAmountInWei,
             blockchain,
         );
 
-        if (assertionCachedLocally) {
-            const absolutePath = path.resolve('.');
-            const directory = 'local-store-cache';
-            fullPathToCachedAssertion = path.join(
-                absolutePath,
-                directory,
-                assertions[0].assertionId,
-            );
-            await unlink(fullPathToCachedAssertion);
-        }
-
         return {
             UAL,
-            publicAssertionId,
+            datasetRoot,
             operation: {
-                mintKnowledgeAsset: mintKnowledgeAssetReceipt,
-                localStore: getOperationStatusObject(
-                    localStoreOperationResult,
-                    localStoreOperationId,
-                ),
-                submitToParanet: submitToParanetReceipt,
+                updateKnowledgeAsset: updateKnowledgeAssetReceipt,
+                update: getOperationStatusObject(updateOperationResult, updateOperationId),
             },
         };
     }

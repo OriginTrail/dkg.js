@@ -76,8 +76,9 @@ class BlockchainServiceBase {
 
             const web3Instance = await this.getWeb3Instance(blockchain);
             this[blockchain.name].contracts[blockchain.hubContract].Hub =
-                    new web3Instance.eth.Contract(this.abis.Hub, blockchain.hubContract, { from: blockchain.publicKey });
-    
+                new web3Instance.eth.Contract(this.abis.Hub, blockchain.hubContract, {
+                    from: blockchain.publicKey,
+                });
         }
     }
 
@@ -169,7 +170,7 @@ class BlockchainServiceBase {
         let gasLimit = Number(
             await contractInstance.methods[functionName](...args).estimateGas({
                 from: publicKey,
-            })
+            }),
         );
         gasLimit = Math.round(gasLimit * blockchain.gasLimitMultiplier);
 
@@ -190,7 +191,9 @@ class BlockchainServiceBase {
 
                 // Search for pending tx in the pending block
                 const pendingTx = Object.values(pendingBlock.transactions).find(
-                    tx => tx.from.toLowerCase() === publicKey.toLowerCase() && tx.nonce === confirmedNonce
+                    (tx) =>
+                        tx.from.toLowerCase() === publicKey.toLowerCase() &&
+                        tx.nonce === confirmedNonce,
                 );
 
                 if (pendingTx) {
@@ -199,7 +202,9 @@ class BlockchainServiceBase {
                 } else {
                     // If not found, use default/network gas price increased by 20%
                     // Theoretically this should never happen
-                    gasPrice = Math.round((blockchain.gasPrice || (await this.getNetworkGasPrice(blockchain))) * 1.2);
+                    gasPrice = Math.round(
+                        (blockchain.gasPrice || (await this.getNetworkGasPrice(blockchain))) * 1.2,
+                    );
                 }
             }
         } else {
@@ -233,31 +238,50 @@ class BlockchainServiceBase {
         let reminingTime = 0;
         let receipt = initialReceipt;
         let finalized = false;
-      
+
         try {
-            while (!finalized && (Date.now() - startTime + reminingTime) < blockchain.transactionFinalityMaxWaitTime) {
+            while (
+                !finalized &&
+                Date.now() - startTime + reminingTime < blockchain.transactionFinalityMaxWaitTime
+            ) {
                 try {
                     // Check if the block containing the transaction is finalized
-                    const finalizedBlockNumber = (await web3Instance.eth.getBlock('finalized')).number;
+                    const finalizedBlockNumber = (await web3Instance.eth.getBlock('finalized'))
+                        .number;
                     if (finalizedBlockNumber >= receipt.blockNumber) {
                         finalized = true;
                         break;
                     } else {
-                        let currentReceipt = await web3Instance.eth.getTransactionReceipt(receipt.transactionHash);
+                        let currentReceipt = await web3Instance.eth.getTransactionReceipt(
+                            receipt.transactionHash,
+                        );
                         if (currentReceipt && currentReceipt.blockNumber === receipt.blockNumber) {
                             // Transaction is still in the same block, wait and check again
-                        } else if (currentReceipt && currentReceipt.blockNumber !== receipt.blockNumber) {
+                        } else if (
+                            currentReceipt &&
+                            currentReceipt.blockNumber !== receipt.blockNumber
+                        ) {
                             // Transaction has been re-included in a different block
                             receipt = currentReceipt; // Update the receipt with the new block information
                         } else {
                             // Transaction is no longer mined, wait for it to be mined again
                             const reminingStartTime = Date.now();
-                            while (!currentReceipt && (Date.now() - reminingStartTime) < blockchain.transactionReminingMaxWaitTime) {
-                                await sleepForMilliseconds(blockchain.transactionReminingPollingInterval);
-                                currentReceipt = await web3Instance.eth.getTransactionReceipt(receipt.transactionHash);
+                            while (
+                                !currentReceipt &&
+                                Date.now() - reminingStartTime <
+                                    blockchain.transactionReminingMaxWaitTime
+                            ) {
+                                await sleepForMilliseconds(
+                                    blockchain.transactionReminingPollingInterval,
+                                );
+                                currentReceipt = await web3Instance.eth.getTransactionReceipt(
+                                    receipt.transactionHash,
+                                );
                             }
                             if (!currentReceipt) {
-                                throw new Error('Transaction was not re-mined within the expected time frame.');
+                                throw new Error(
+                                    'Transaction was not re-mined within the expected time frame.',
+                                );
                             }
                             reminingTime = Date.now() - reminingStartTime;
                             receipt = currentReceipt; // Update the receipt
@@ -269,11 +293,11 @@ class BlockchainServiceBase {
                     throw new Error(`Error during finality polling: ${error.message}`);
                 }
             }
-      
+
             if (!finalized) {
                 throw new Error('Transaction was not finalized within the expected time frame.');
             }
-      
+
             return receipt;
         } catch (error) {
             throw new Error(`Failed to wait for transaction finalization: ${error.message}`);
@@ -320,7 +344,12 @@ class BlockchainServiceBase {
         return this[blockchain.name].contracts[blockchain.hubContract][contractName];
     }
 
-    async increaseServiceAgreementV1Allowance(sender, serviceAgreementV1Address, tokenAmount, blockchain) {
+    async increaseServiceAgreementV1Allowance(
+        sender,
+        serviceAgreementV1Address,
+        tokenAmount,
+        blockchain,
+    ) {
         const allowance = await this.callContractFunction(
             'Token',
             'allowance',
@@ -347,12 +376,18 @@ class BlockchainServiceBase {
         return {
             allowanceIncreased: false,
             allowanceGap,
-        }
+        };
     }
 
     // Knowledge assets operations
 
-    async createAsset(requestData, paranetKaContract, paranetTokenId, blockchain, stepHooks = emptyHooks) {
+    async createAsset(
+        requestData,
+        paranetKaContract,
+        paranetTokenId,
+        blockchain,
+        stepHooks = emptyHooks,
+    ) {
         const sender = await this.getPublicKey(blockchain);
         let serviceAgreementV1Address;
         let allowanceIncreased = false;
@@ -364,19 +399,26 @@ class BlockchainServiceBase {
                 blockchain,
             );
 
-            ({ allowanceIncreased, allowanceGap } = await this.increaseServiceAgreementV1Allowance(
-                sender,
-                serviceAgreementV1Address,
-                requestData.tokenAmount,
-                blockchain
-            ));
+            let allowanceIncreased, allowanceGap;
+
+            if (requestData?.payer) {
+                // Handle the case when payer is passed
+            } else {
+                ({ allowanceIncreased, allowanceGap } =
+                    await this.increaseServiceAgreementV1Allowance(
+                        sender,
+                        serviceAgreementV1Address,
+                        requestData.tokenAmount,
+                        blockchain,
+                    ));
+            }
 
             stepHooks.afterHook({
                 status: OPERATIONS_STEP_STATUS.INCREASE_ALLOWANCE_COMPLETED,
             });
 
             let receipt;
-            if(paranetKaContract == null && paranetTokenId == null) {
+            if (paranetKaContract == null && paranetTokenId == null) {
                 receipt = await this.executeContractFunction(
                     'ContentAsset',
                     'createAsset',
@@ -475,7 +517,7 @@ class BlockchainServiceBase {
                 sender,
                 serviceAgreementV1Address,
                 tokenAmount,
-                blockchain
+                blockchain,
             ));
 
             return this.executeContractFunction(
@@ -513,7 +555,7 @@ class BlockchainServiceBase {
                 sender,
                 serviceAgreementV1Address,
                 tokenAmount,
-                blockchain
+                blockchain,
             ));
 
             return this.executeContractFunction(
@@ -551,7 +593,7 @@ class BlockchainServiceBase {
                 sender,
                 serviceAgreementV1Address,
                 tokenAmount,
-                blockchain
+                blockchain,
             ));
 
             return this.executeContractFunction(
@@ -810,33 +852,44 @@ class BlockchainServiceBase {
         );
     }
 
-    async getNeuroIncentivesPoolAddress(paranetId,blockchain) {
+    async getNeuroIncentivesPoolAddress(paranetId, blockchain) {
         return this.getIncentivesPoolAddress(
             {
                 paranetId,
                 incentivesPoolType: 'Neuroweb',
             },
-            blockchain
-        )
+            blockchain,
+        );
     }
 
-    async setIncentivesPool(contractAddress, blockchain){
+    async setIncentivesPool(contractAddress, blockchain) {
         await this.ensureBlockchainInfo(blockchain);
 
-        if (this[blockchain.name].contractAddresses[blockchain.hubContract]['ParanetNeuroIncentivesPool'] !== contractAddress) {
-            this[blockchain.name].contractAddresses[blockchain.hubContract]['ParanetNeuroIncentivesPool'] = contractAddress;
+        if (
+            this[blockchain.name].contractAddresses[blockchain.hubContract][
+                'ParanetNeuroIncentivesPool'
+            ] !== contractAddress
+        ) {
+            this[blockchain.name].contractAddresses[blockchain.hubContract][
+                'ParanetNeuroIncentivesPool'
+            ] = contractAddress;
             const web3Instance = await this.getWeb3Instance(blockchain);
             this[blockchain.name].contracts[blockchain.hubContract]['ParanetNeuroIncentivesPool'] =
                 await new web3Instance.eth.Contract(
                     this.abis['ParanetNeuroIncentivesPool'],
-                    this[blockchain.name].contractAddresses[blockchain.hubContract]['ParanetNeuroIncentivesPool'],
+                    this[blockchain.name].contractAddresses[blockchain.hubContract][
+                        'ParanetNeuroIncentivesPool'
+                    ],
                     { from: blockchain.publicKey },
                 );
         }
     }
 
     async claimKnowledgeMinerReward(paranetId, blockchain) {
-        const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(paranetId, blockchain);
+        const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(
+            paranetId,
+            blockchain,
+        );
 
         await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
 
@@ -849,7 +902,10 @@ class BlockchainServiceBase {
     }
 
     async claimVoterReward(paranetId, blockchain) {
-        const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(paranetId, blockchain);
+        const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(
+            paranetId,
+            blockchain,
+        );
 
         await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
 
@@ -862,7 +918,10 @@ class BlockchainServiceBase {
     }
 
     async claimOperatorReward(paranetId, blockchain) {
-        const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(paranetId, blockchain);
+        const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(
+            paranetId,
+            blockchain,
+        );
 
         await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
 
@@ -875,7 +934,10 @@ class BlockchainServiceBase {
     }
 
     async getClaimableKnowledgeMinerReward(paranetId, blockchain) {
-        const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(paranetId, blockchain);
+        const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(
+            paranetId,
+            blockchain,
+        );
 
         await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
 
@@ -888,7 +950,10 @@ class BlockchainServiceBase {
     }
 
     async getClaimableAllKnowledgeMinersReward(paranetId, blockchain) {
-        const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(paranetId, blockchain);
+        const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(
+            paranetId,
+            blockchain,
+        );
 
         await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
 
@@ -901,7 +966,10 @@ class BlockchainServiceBase {
     }
 
     async getClaimableVoterReward(paranetId, blockchain) {
-        const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(paranetId, blockchain);
+        const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(
+            paranetId,
+            blockchain,
+        );
 
         await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
 
@@ -914,7 +982,10 @@ class BlockchainServiceBase {
     }
 
     async getClaimableAllVotersReward(paranetId, blockchain) {
-        const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(paranetId, blockchain);
+        const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(
+            paranetId,
+            blockchain,
+        );
 
         await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
 
@@ -927,7 +998,10 @@ class BlockchainServiceBase {
     }
 
     async getClaimableOperatorReward(paranetId, blockchain) {
-        const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(paranetId, blockchain);
+        const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(
+            paranetId,
+            blockchain,
+        );
 
         await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
 
@@ -939,8 +1013,11 @@ class BlockchainServiceBase {
         );
     }
 
-    async isParanetKnowledgeMiner(address ,paranetId, blockchain) {
-        const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(paranetId, blockchain);
+    async isParanetKnowledgeMiner(address, paranetId, blockchain) {
+        const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(
+            paranetId,
+            blockchain,
+        );
 
         await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
 
@@ -952,8 +1029,11 @@ class BlockchainServiceBase {
         );
     }
 
-    async isParanetOperator(address ,paranetId, blockchain) {
-        const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(paranetId, blockchain);
+    async isParanetOperator(address, paranetId, blockchain) {
+        const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(
+            paranetId,
+            blockchain,
+        );
 
         await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
 
@@ -965,8 +1045,11 @@ class BlockchainServiceBase {
         );
     }
 
-    async isParanetProposalVoter(address ,paranetId, blockchain) {
-        const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(paranetId, blockchain);
+    async isParanetProposalVoter(address, paranetId, blockchain) {
+        const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(
+            paranetId,
+            blockchain,
+        );
 
         await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
 

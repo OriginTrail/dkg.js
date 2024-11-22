@@ -73,6 +73,7 @@ class ValidationService {
         tokenAmount,
         authToken,
         paranetUAL,
+        payer,
     ) {
         this.validateContent(content);
         this.validateBlockchain(blockchain, OPERATIONS.PUBLISH);
@@ -87,6 +88,7 @@ class ValidationService {
         this.validateTokenAmount(tokenAmount);
         this.validateAuthToken(authToken);
         this.validateParanetUAL(paranetUAL);
+        this.validatePayer(payer);
     }
 
     validateAssetGet(
@@ -115,6 +117,32 @@ class ValidationService {
         this.validateValidate(validate);
         this.validateOutputFormat(outputFormat);
         this.validateAuthToken(authToken);
+    }
+
+    validateAssetUpdate(
+        content,
+        blockchain,
+        endpoint,
+        port,
+        maxNumberOfRetries,
+        frequency,
+        hashFunctionId,
+        scoreFunctionId,
+        tokenAmount,
+        authToken,
+        payer,
+    ) {
+        this.validateContent(content);
+        this.validateBlockchain(blockchain, OPERATIONS.UPDATE);
+        this.validateEndpoint(endpoint);
+        this.validatePort(port);
+        this.validateMaxNumberOfRetries(maxNumberOfRetries);
+        this.validateFrequency(frequency);
+        this.validateHashFunctionId(hashFunctionId);
+        this.validateScoreFunctionId(scoreFunctionId);
+        this.validateTokenAmount(tokenAmount);
+        this.validateAuthToken(authToken);
+        this.validatePayer(payer);
     }
 
     validateAssetTransfer(UAL, newOwner, blockchain) {
@@ -173,7 +201,7 @@ class ValidationService {
         paranetName,
         paranetDescription,
         paranetNodesAccessPolicy,
-        paranetMinersAccessPolicy
+        paranetMinersAccessPolicy,
     ) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
@@ -183,125 +211,81 @@ class ValidationService {
         this.validateParanetMinersAccessPolicy(paranetMinersAccessPolicy);
     }
 
-    validateParanetAddCuratedNodes(
-        UAL,
-        blockchain,
-        identityIds
-    ) {
+    validateParanetAddCuratedNodes(UAL, blockchain, identityIds) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
 
-        for(const identityId of identityIds){
+        for (const identityId of identityIds) {
             this.validateIdentityId(identityId);
         }
     }
 
-    validateParanetRemoveCuratedNodes(
-        UAL,
-        blockchain,
-        identityIds
-    ) {
+    validateParanetRemoveCuratedNodes(UAL, blockchain, identityIds) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
 
-        for(const identityId of identityIds){
+        for (const identityId of identityIds) {
             this.validateIdentityId(identityId);
         }
     }
 
-    validateRequestParanetCuratedNodeAccess(
-        UAL,
-        blockchain,
-    ) {
+    validateRequestParanetCuratedNodeAccess(UAL, blockchain) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
     }
 
-    validateApproveCuratedNode(
-        UAL,
-        blockchain,
-        identityId
-    ) {
+    validateApproveCuratedNode(UAL, blockchain, identityId) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
         this.validateIdentityId(identityId);
     }
 
-    validateRejectCuratedNode(
-        UAL,
-        blockchain,
-        identityId
-    ) {
+    validateRejectCuratedNode(UAL, blockchain, identityId) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
         this.validateIdentityId(identityId);
     }
 
-    validateGetCuratedNodes(
-        UAL,
-        blockchain,
-    ) {
+    validateGetCuratedNodes(UAL, blockchain) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
     }
 
-    validateGetParanetKnowledgeMiners(
-        UAL,
-        blockchain,
-    ) {
+    validateGetParanetKnowledgeMiners(UAL, blockchain) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
     }
 
-    validateParanetAddCuratedMiners(
-        UAL,
-        blockchain,
-        minerAddresses
-    ) {
+    validateParanetAddCuratedMiners(UAL, blockchain, minerAddresses) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
 
-        for(const minerAddress of minerAddresses){
+        for (const minerAddress of minerAddresses) {
             this.validateAddress(minerAddress);
         }
     }
 
-    validateParanetRemoveCuratedMiners(
-        UAL,
-        blockchain,
-        minerAddresses
-    ) {
+    validateParanetRemoveCuratedMiners(UAL, blockchain, minerAddresses) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
 
-        for(const minerAddress of minerAddresses){
+        for (const minerAddress of minerAddresses) {
             this.validateAddress(minerAddress);
         }
     }
 
-    validateRequestParanetCuratedMinerAccess(
-        UAL,
-        blockchain,
-    ) {
+    validateRequestParanetCuratedMinerAccess(UAL, blockchain) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
     }
 
-    validateApproveCuratedMiner(
-        UAL,
-        blockchain,
-        minerAddress
-    ) {
+    validateApproveCuratedMiner(UAL, blockchain, minerAddress) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
         this.validateAddress(minerAddress);
     }
 
-    validateRejectCuratedMiner(
-        UAL,
-        blockchain,
-        minerAddress
-    ) {
+    validateRejectCuratedMiner(UAL, blockchain, minerAddress) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
         this.validateAddress(minerAddress);
@@ -438,20 +422,24 @@ class ValidationService {
         if (!(!!obj && typeof obj === 'object')) throw Error('Content must be an object');
     }
 
+    validateJsonldOrNquads(input) {
+        if (typeof input === 'object' && input !== null && !Array.isArray(input)) {
+            return;
+        }
+
+        if (typeof input === 'string' && input.trim().startsWith('<')) {
+            const lines = input.trim().split('\n');
+            if (lines.every((line) => line.match(/^\s*<.+>\s<.+>\s.+\s(?:<.+>\s)?\.\s*$/))) {
+                return;
+            }
+        }
+
+        throw new Error(
+            'Content must be either a valid JSON-LD object or a N-Quads/N-Triples string.',
+        );
+    }
     validateContent(content) {
         this.validateRequiredParam('content', content);
-
-        const keys = Object.keys(content);
-
-        if (
-            !(keys.length === 1 && (keys.includes('public') || keys.includes('private'))) &&
-            !(keys.length === 2 && (keys.includes('public') || keys.includes('private')))
-        )
-            throw Error('content keys can only be "public", "private" or both.');
-
-        if (!content.public && !content.private) {
-            throw Error('Public or private content must be defined');
-        }
     }
 
     validateAssertionSizeInBytes(assertionSizeInBytes) {
@@ -552,6 +540,12 @@ class ValidationService {
         this.validateUAL(paranetUAL);
     }
 
+    validatePayer(payer) {
+        if (payer == null) return;
+
+        this.validateAddress(payer);
+    }
+
     validateValidate(validate) {
         this.validateRequiredParam('validate', validate);
         this.validateParamType('validate', validate, 'boolean');
@@ -610,16 +604,22 @@ class ValidationService {
     validateParanetNodesAccessPolicy(paranetNodesAccessPolicy) {
         this.validateRequiredParam('paranetNodesAccessPolicy', paranetNodesAccessPolicy);
         this.validateParamType('paranetNodesAccessPolicy', paranetNodesAccessPolicy, 'number');
-        if (!Object.values(PARANET_NODES_ACCESS_POLICY).includes(paranetNodesAccessPolicy)) throw Error(`Invalid nodes access policy: ${paranetNodesAccessPolicy}. Should be 0 for OPEN or 1 for CURATED`);
+        if (!Object.values(PARANET_NODES_ACCESS_POLICY).includes(paranetNodesAccessPolicy))
+            throw Error(
+                `Invalid nodes access policy: ${paranetNodesAccessPolicy}. Should be 0 for OPEN or 1 for CURATED`,
+            );
     }
 
     validateParanetMinersAccessPolicy(paranetMinersAccessPolicy) {
         this.validateRequiredParam('paranetMinersAccessPolicy', paranetMinersAccessPolicy);
         this.validateParamType('paranetMinersAccessPolicy', paranetMinersAccessPolicy, 'number');
-        if (!Object.values(PARANET_MINERS_ACCESS_POLICY).includes(paranetMinersAccessPolicy)) throw Error(`Invalid miners access policy: ${paranetMinersAccessPolicy}. Should be 0 for OPEN or 1 for CURATED`);
+        if (!Object.values(PARANET_MINERS_ACCESS_POLICY).includes(paranetMinersAccessPolicy))
+            throw Error(
+                `Invalid miners access policy: ${paranetMinersAccessPolicy}. Should be 0 for OPEN or 1 for CURATED`,
+            );
     }
 
-    validateTracToNeuroEmissionMultiplier(tracToNeuroEmissionMultiplier){
+    validateTracToNeuroEmissionMultiplier(tracToNeuroEmissionMultiplier) {
         this.validateRequiredParam('tracToNeuroEmissionMultiplier', tracToNeuroEmissionMultiplier);
         this.validateParamType(
             'tracToNeuroEmissionMultiplier',
