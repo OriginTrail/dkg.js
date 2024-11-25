@@ -428,7 +428,10 @@ class ValidationService {
         }
 
         if (typeof input === 'string' && input.trim().startsWith('<')) {
-            const lines = input.trim().split('\n');
+            const lines = input
+                .trim()
+                .split('\n')
+                .map((line) => line.trimStart());
             if (lines.every((line) => line.match(/^\s*<.+>\s<.+>\s.+\s(?:<.+>\s)?\.\s*$/))) {
                 return;
             }

@@ -75,14 +75,14 @@ class HttpService {
         }
     }
 
-    async publish(endpoint, port, authToken, assertionId, assertion, blockchain, hashFunctionId) {
+    async publish(endpoint, port, authToken, datasetRoot, dataset, blockchain, hashFunctionId) {
         try {
             const response = await axios({
                 method: 'post',
                 url: `${endpoint}:${port}/publish`,
                 data: {
-                    assertionId,
-                    assertion,
+                    datasetRoot,
+                    dataset,
                     blockchain,
                     hashFunctionId,
                 },
