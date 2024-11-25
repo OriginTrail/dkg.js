@@ -231,8 +231,8 @@ class HttpService {
             retries += 1;
             // eslint-disable-next-line no-await-in-loop
             await sleepForMilliseconds(frequency * 1000);
-            // eslint-disable-next-line no-await-in-loop
             try {
+                // eslint-disable-next-line no-await-in-loop
                 response = await axios(axios_config);
             } catch (e) {
                 response = { data: { status: 'NETWORK ERROR' } };
