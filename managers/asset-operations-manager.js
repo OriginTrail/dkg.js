@@ -338,7 +338,6 @@ class AssetOperationsManager {
             dataset,
             blockchain.name,
             contentAssetStorageAddress,
-            null, // token id doesn't exist here
             hashFunctionId,
         );
 
@@ -383,7 +382,7 @@ class AssetOperationsManager {
                 await this.blockchainService.createAsset(
                     {
                         datasetRoot,
-                        assertionSize: datasetSize,
+                        datasetSize: datasetSize,
                         triplesNumber: assertionMetadata.getAssertionTriplesNumber(dataset), // todo
                         chunksNumber: numberOfChunks,
                         epochsNum,
@@ -403,7 +402,7 @@ class AssetOperationsManager {
                 await this.blockchainService.createAsset(
                     {
                         datasetRoot,
-                        assertionSize: datasetSize,
+                        datasetSize: datasetSize,
                         triplesNumber: assertionMetadata.getAssertionTriplesNumber(dataset), // todo
                         chunksNumber: calculateNumberOfChunks(dataset),
                         epochsNum,
@@ -1040,7 +1039,7 @@ class AssetOperationsManager {
         const currentEpoch = Math.floor(
             (now - agreementData.startTime) / agreementData.epochLength,
         );
-        console.log(agreementData.epochsNumber, currentEpoch);
+
         const epochsLeft = agreementData.epochsNumber - currentEpoch;
 
         const bidSuggestion = await this.nodeApiService.getBidSuggestion(

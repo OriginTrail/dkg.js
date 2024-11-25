@@ -149,7 +149,6 @@ class GraphOperationsManager {
             dataset,
             blockchain.name,
             contentAssetStorageAddress,
-            null, // token id doesn't exist here atm (change when node api is changed)
             hashFunctionId,
         );
 

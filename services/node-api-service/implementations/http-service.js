@@ -83,7 +83,6 @@ class HttpService {
         assertion,
         blockchain,
         contract,
-        tokenId,
         hashFunctionId,
     ) {
         try {
@@ -95,7 +94,6 @@ class HttpService {
                     assertion,
                     blockchain,
                     contract,
-                    tokenId,
                     hashFunctionId,
                 },
                 headers: this.prepareRequestConfig(authToken),
