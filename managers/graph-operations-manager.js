@@ -148,7 +148,6 @@ class GraphOperationsManager {
             datasetRoot,
             dataset,
             blockchain.name,
-            contentAssetStorageAddress,
             hashFunctionId,
         );
 

@@ -75,16 +75,7 @@ class HttpService {
         }
     }
 
-    async publish(
-        endpoint,
-        port,
-        authToken,
-        assertionId,
-        assertion,
-        blockchain,
-        contract,
-        hashFunctionId,
-    ) {
+    async publish(endpoint, port, authToken, assertionId, assertion, blockchain, hashFunctionId) {
         try {
             const response = await axios({
                 method: 'post',
@@ -93,7 +84,6 @@ class HttpService {
                     assertionId,
                     assertion,
                     blockchain,
-                    contract,
                     hashFunctionId,
                 },
                 headers: this.prepareRequestConfig(authToken),

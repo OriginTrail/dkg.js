@@ -337,7 +337,6 @@ class AssetOperationsManager {
             datasetRoot,
             dataset,
             blockchain.name,
-            contentAssetStorageAddress,
             hashFunctionId,
         );
 
