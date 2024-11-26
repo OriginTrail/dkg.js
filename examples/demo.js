@@ -28,34 +28,10 @@ function divider() {
 }
 
 (async () => {
-    const content = {
-        public: {
-            '@context': ['https://schema.org'],
-            '@id': 'uuid:1',
-            company: 'OT',
-            user: {
-                '@id': 'uuid:user:1',
-            },
-            city: {
-                '@id': 'uuid:belgrade',
-            },
-        },
-        private: {
-            '@context': ['https://schema.org'],
-            '@graph': [
-                {
-                    '@id': 'uuid:user:1',
-                    name: 'Adam',
-                    lastname: 'Smith',
-                },
-                {
-                    '@id': 'uuid:belgrade',
-                    title: 'Belgrade',
-                    postCode: '11000',
-                },
-            ],
-        },
-    };
+    const content = `<uuid:1> <http://schema.org/city> <uuid:belgrade> .
+    <uuid:1> <http://schema.org/company> "OT" .
+    <uuid:1> <http://schema.org/user> <uuid:user:1> .
+    `;
 
     divider();
 
@@ -210,7 +186,9 @@ function divider() {
 
     divider();
 
-    const addTokensResult = await DkgClient.asset.addTokens(createAssetResult.UAL, {tokenAmount: 1000});
+    const addTokensResult = await DkgClient.asset.addTokens(createAssetResult.UAL, {
+        tokenAmount: 1000,
+    });
     console.log(`======================== ADD TOKENS FOR AN ASSET`);
     console.log(addTokensResult);
 
