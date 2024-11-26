@@ -350,7 +350,7 @@ class AssetOperationsManager {
             publishOperationId,
         );
 
-        if (publishOperationResult.status === OPERATION_STATUSES.FAILED) {
+        if (publishOperationResult.status !== OPERATION_STATUSES.COMPLETED) {
             return {
                 datasetRoot: datasetRoot,
                 operation: {
@@ -1174,7 +1174,7 @@ class AssetOperationsManager {
             updateOperationId,
         );
 
-        if (updateOperationResult.status === OPERATION_STATUSES.FAILED) {
+        if (updateOperationResult.status !== OPERATION_STATUSES.COMPLETED) {
             return {
                 datasetRoot: datasetRoot,
                 operation: {
