@@ -5,7 +5,7 @@ const {
     flattenDataset,
     assertionMetadata,
 } = require('assertion-tools');
-const { OPERATIONS, CHUNK_BYTE_SIZE } = require('../constants');
+const { OPERATIONS, CHUNK_BYTE_SIZE, OPERATION_STATUSES } = require('../constants');
 const {
     deriveRepository,
     getOperationStatusObject,
