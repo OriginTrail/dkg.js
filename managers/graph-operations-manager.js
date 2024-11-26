@@ -123,7 +123,10 @@ class GraphOperationsManager {
         let dataset;
 
         if (typeof content === 'string') {
-            dataset = content.split('\n').filter((line) => line.trim() !== '');
+            dataset = content
+                .split('\n')
+                .map((line) => line.trimStart().trimEnd())
+                .filter((line) => line.trim() !== '');
         } else {
             const flattenedDataset = await flattenDataset(content);
             dataset = await formatDataset(flattenedDataset);
@@ -288,7 +291,12 @@ class GraphOperationsManager {
         let dataset;
 
         if (typeof content === 'string') {
-            dataset = content.split('\n').filter((line) => line.trim() !== '');
+            dataset = content
+                .split('\n')
+                .map((line) => line.trimStart().trimEnd())
+                .filter((line) => line.trim() !== '');
+
+            console.log(dataset);
         } else {
             const flattenedDataset = await flattenDataset(content);
             dataset = await formatDataset(flattenedDataset);
