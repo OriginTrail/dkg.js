@@ -123,47 +123,23 @@ function divider() {
 
     divider();
 
-    const getAssetResult = await DkgClient.asset.get(createAssetResult.UAL);
+    const getAssetResult = await DkgClient.graph.get(createAssetResult.UAL);
     console.log('======================== ASSET RESOLVED');
     console.log(JSON.stringify(getAssetResult, null, 2));
 
     divider();
 
-    const getLatestAssetResult = await DkgClient.asset.get(createAssetResult.UAL);
+    const getLatestAssetResult = await DkgClient.graph.get(createAssetResult.UAL);
     console.log('======================== ASSET LATEST  RESOLVED');
     console.log(JSON.stringify(getLatestAssetResult, null, 2));
 
     divider();
 
-    let getLatestFinalizedAssetResult = await DkgClient.asset.get(createAssetResult.UAL, {
-        state: 'LATEST_FINALIZED',
-    });
-    console.log('======================== ASSET LATEST FINALIZED RESOLVED');
-    console.log(JSON.stringify(getLatestFinalizedAssetResult, null, 2));
-
-    divider();
-
-    getLatestFinalizedAssetResult = await DkgClient.asset.get(createAssetResult.UAL, {
-        state: 'LATEST_FINALIZED',
-    });
-    console.log('======================== ASSET LATEST FINALIZED RESOLVED');
-    console.log(JSON.stringify(getLatestFinalizedAssetResult, null, 2));
-
-    divider();
-
-    const getFirstStateByIndex = await DkgClient.asset.get(createAssetResult.UAL, {
+    const getFirstStateByIndex = await DkgClient.graph.get(createAssetResult.UAL, {
         state: 0,
     });
     console.log('======================== ASSET FIRST STATE (GET BY STATE INDEX) RESOLVED');
     console.log(JSON.stringify(getFirstStateByIndex, null, 2));
-
-    divider();
-
-    const getFirstStateByHash = await DkgClient.asset.get(createAssetResult.UAL, {
-        state: createAssetResult.publicAssertionId,
-    });
-    console.log('======================== ASSET FIRST STATE (GET BY STATE HASH) RESOLVED');
-    console.log(JSON.stringify(getFirstStateByHash, null, 2));
 
     divider();
 
