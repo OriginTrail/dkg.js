@@ -1,6 +1,5 @@
 const { isAddress } = require('ethers');
 const {
-    ASSET_STATES,
     CONTENT_TYPES,
     GRAPH_LOCATIONS,
     GRAPH_STATES,
@@ -483,15 +482,7 @@ class ValidationService {
 
     validateState(state) {
         this.validateRequiredParam('state', state);
-        this.validateParamType('state', state, ['number', 'string']);
-        const validStatesEnum = Object.values(ASSET_STATES);
-        if (
-            typeof state === 'string' &&
-            !validStatesEnum.includes(state.toUpperCase()) &&
-            typeof state !== 'number' &&
-            !/^0x[a-fA-F0-9]{64}$/.test(state)
-        )
-            throw Error(`Invalid state, available states: ${validStatesEnum},numerical or hash.`);
+        this.validateParamType('state', state, 'number');
     }
 
     validateContentType(contentType) {
