@@ -163,12 +163,12 @@ class HttpService {
         }
     }
 
-    async query(endpoint, port, authToken, query, type, repository) {
+    async query(endpoint, port, authToken, query, type, graphState, graphLocation, paranetUAL) {
         try {
             const response = await axios({
                 method: 'post',
                 url: `${endpoint}:${port}/query`,
-                data: { query, type, repository },
+                data: { query, type, graphState, graphLocation, paranetUAL },
                 headers: this.prepareRequestConfig(authToken),
             });
             return response.data.operationId;

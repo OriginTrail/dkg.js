@@ -191,7 +191,7 @@ class ValidationService {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
 
-        for(const identityId of identityIds){
+        for (const identityId of identityIds) {
             this.validateIdentityId(identityId);
         }
     }
@@ -204,7 +204,7 @@ class ValidationService {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
 
-        for(const identityId of identityIds){
+        for (const identityId of identityIds) {
             this.validateIdentityId(identityId);
         }
     }
@@ -261,7 +261,7 @@ class ValidationService {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
 
-        for(const minerAddress of minerAddresses){
+        for (const minerAddress of minerAddresses) {
             this.validateAddress(minerAddress);
         }
     }
@@ -274,7 +274,7 @@ class ValidationService {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
 
-        for(const minerAddress of minerAddresses){
+        for (const minerAddress of minerAddresses) {
             this.validateAddress(minerAddress);
         }
     }
@@ -401,11 +401,9 @@ class ValidationService {
         this.validateRequiredParam('graphLocation', graphLocation);
         const validGraphLocations = Object.keys(GRAPH_LOCATIONS);
         if (!validGraphLocations.includes(graphLocation)) {
-            if (!this.validateUAL(graphLocation)) {
-                throw Error(
-                    `Invalid graph location: available locations are valid Paranet UAL or: ${validGraphLocations}`,
-                );
-            }
+            throw Error(
+                `Invalid graph location: available locations are: ${validGraphLocations}`,
+            );
         }
     }
 
@@ -619,7 +617,7 @@ class ValidationService {
         if (!Object.values(PARANET_MINERS_ACCESS_POLICY).includes(paranetMinersAccessPolicy)) throw Error(`Invalid miners access policy: ${paranetMinersAccessPolicy}. Should be 0 for OPEN or 1 for CURATED`);
     }
 
-    validateTracToNeuroEmissionMultiplier(tracToNeuroEmissionMultiplier){
+    validateTracToNeuroEmissionMultiplier(tracToNeuroEmissionMultiplier) {
         this.validateRequiredParam('tracToNeuroEmissionMultiplier', tracToNeuroEmissionMultiplier);
         this.validateParamType(
             'tracToNeuroEmissionMultiplier',
