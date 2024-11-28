@@ -22,6 +22,7 @@ class GraphOperationsManager {
      * @param {string} UAL - The Universal Asset Locator, representing asset or collection.
      * @param {Object} [options={}] - Optional parameters for the asset get operation.
      * @param {number} [options.state] - The state index of the asset. If omitted, the latest state will be used.
+     * @param {boolean} [options.includeMetadata] - If metadata should be included. Default is false.
      * @param {string} [options.contentType] - The type of content to retrieve, either "public" or "all" (default)
      * @param {boolean} [options.validate] - Whether to validate the retrieved assertion.
      * @param {string} [options.outputFormat] - The format of the retrieved assertion output, either "n-quads" or "json-ld".
@@ -35,6 +36,7 @@ class GraphOperationsManager {
             maxNumberOfRetries,
             frequency,
             state,
+            includeMetadata,
             contentType,
             validate,
             outputFormat,
@@ -51,6 +53,7 @@ class GraphOperationsManager {
             maxNumberOfRetries,
             frequency,
             state,
+            includeMetadata,
             contentType,
             hashFunctionId,
             validate,
@@ -64,6 +67,7 @@ class GraphOperationsManager {
             authToken,
             UAL,
             state,
+            includeMetadata,
             contentType,
             hashFunctionId,
             paranetUAL,

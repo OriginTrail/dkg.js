@@ -68,6 +68,7 @@ class InputService {
             maxNumberOfRetries: this.getMaxNumberOfRetries(options),
             frequency: this.getFrequency(options),
             state: this.getState(options),
+            includeMetadata: this.getIncludeMetadata(options),
             contentType: this.getContentType(options),
             validate: this.getValidate(options),
             outputFormat: this.getOutputFormat(options),
@@ -267,6 +268,10 @@ class InputService {
 
     getState(options) {
         return options.state ?? this.config.state ?? DEFAULT_PARAMETERS.STATE;
+    }
+
+    getIncludeMetadata(options) {
+        return options.includeMetadata ?? this.config.includeMetadata ?? DEFAULT_PARAMETERS.INCLUDE_METADATA;
     }
 
     getContentType(options) {

@@ -96,6 +96,7 @@ class ValidationService {
         maxNumberOfRetries,
         frequency,
         state,
+        includeMetadata,
         contentType,
         hashFunctionId,
         validate,
@@ -109,6 +110,7 @@ class ValidationService {
         this.validateMaxNumberOfRetries(maxNumberOfRetries);
         this.validateFrequency(frequency);
         this.validateState(state);
+        this.validateIncludeMetadata(includeMetadata);
         this.validateContentType(contentType);
         this.validateHashFunctionId(hashFunctionId);
         this.validateValidate(validate);
@@ -483,6 +485,11 @@ class ValidationService {
     validateState(state) {
         this.validateRequiredParam('state', state);
         this.validateParamType('state', state, 'number');
+    }
+
+    validateIncludeMetadata(includeMetadata) {
+        this.validateRequiredParam('includeMetadata', includeMetadata);
+        this.validateParamType('includeMetadata', includeMetadata, 'boolean');
     }
 
     validateContentType(contentType) {
