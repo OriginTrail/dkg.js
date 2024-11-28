@@ -1,9 +1,4 @@
 const jsonld = require('jsonld');
-const {
-    GRAPH_LOCATIONS,
-    GRAPH_STATES,
-    OT_NODE_TRIPLE_STORE_REPOSITORIES,
-} = require('../constants.js');
 
 function isEmptyObject(obj) {
     return Object.keys(obj).length === 0 && obj.constructor === Object;
