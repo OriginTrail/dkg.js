@@ -149,7 +149,7 @@ class HttpService {
                 method: 'post',
                 url: `${endpoint}:${port}/get`,
                 data: {
-                    id: `${UAL}:${state}`,
+                    id: state ? `${UAL}:${state}` : UAL,
                     contentType,
                     hashFunctionId,
                     paranetUAL,
