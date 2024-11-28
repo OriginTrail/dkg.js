@@ -194,6 +194,7 @@ class GraphOperationsManager {
             ({ tokenId, receipt: mintKnowledgeAssetReceipt } =
                 await this.blockchainService.createAsset(
                     {
+                        publishOperationId,
                         datasetRoot,
                         assertionSize: datasetSize,
                         triplesNumber: assertionMetadata.getAssertionTriplesNumber(dataset), // todo
@@ -214,6 +215,7 @@ class GraphOperationsManager {
             ({ tokenId, receipt: mintKnowledgeAssetReceipt } =
                 await this.blockchainService.createAsset(
                     {
+                        publishOperationId,
                         datasetRoot,
                         assertionSize: datasetSize,
                         triplesNumber: assertionMetadata.getAssertionTriplesNumber(dataset), // todo
@@ -295,8 +297,6 @@ class GraphOperationsManager {
                 .split('\n')
                 .map((line) => line.trimStart().trimEnd())
                 .filter((line) => line.trim() !== '');
-
-            console.log(dataset);
         } else {
             const flattenedDataset = await flattenDataset(content);
             dataset = await formatDataset(flattenedDataset);
@@ -361,6 +361,7 @@ class GraphOperationsManager {
         const { tokenId, receipt: mintKnowledgeAssetReceipt } =
             await this.blockchainService.createAsset(
                 {
+                    localStoreOperationId,
                     datasetRoot,
                     assertionSize: datasetSize,
                     triplesNumber: assertionMetadata.getAssertionTriplesNumber(dataset), // todo

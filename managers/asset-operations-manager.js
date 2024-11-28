@@ -383,6 +383,7 @@ class AssetOperationsManager {
             ({ tokenId, receipt: mintKnowledgeAssetReceipt } =
                 await this.blockchainService.createAsset(
                     {
+                        publishOperationId,
                         datasetRoot,
                         datasetSize: datasetSize,
                         triplesNumber: assertionMetadata.getAssertionTriplesNumber(dataset), // todo
@@ -403,6 +404,7 @@ class AssetOperationsManager {
             ({ tokenId, receipt: mintKnowledgeAssetReceipt } =
                 await this.blockchainService.createAsset(
                     {
+                        publishOperationId,
                         datasetRoot,
                         datasetSize: datasetSize,
                         triplesNumber: assertionMetadata.getAssertionTriplesNumber(dataset), // todo
@@ -427,6 +429,7 @@ class AssetOperationsManager {
         return {
             UAL,
             datasetRoot,
+            signatures: publishOperationResult.data,
             operation: {
                 mintKnowledgeAsset: mintKnowledgeAssetReceipt,
                 publish: getOperationStatusObject(publishOperationResult, publishOperationId),
@@ -1194,16 +1197,6 @@ class AssetOperationsManager {
         if (tokenAmount != null) {
             tokenAmountInWei = tokenAmount;
         } else {
-            console.log({
-                UAL,
-                blockchain,
-                endpoint,
-                port,
-                authToken,
-                datasetRoot,
-                datasetSize,
-                hashFunctionId,
-            });
             tokenAmountInWei = await this._getUpdateBidSuggestion(
                 UAL,
                 blockchain,

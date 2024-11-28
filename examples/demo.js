@@ -41,13 +41,13 @@ function divider() {
 
     divider();
 
-    const createAssetResult = await DkgClient.asset.create(content, { epochsNum: 2 });
+    const createAssetResult = await DkgClient.asset.create(content, { epochsNum: 2, tokenAmount: '100' });
     console.log('======================== ASSET CREATED');
     console.log(createAssetResult);
 
     divider();
 
-    const createCollectionResult = await DkgClient.graph.create(content, { epochsNum: 2 });
+    const createCollectionResult = await DkgClient.graph.create(content, { epochsNum: 2, tokenAmount: '100' });
     console.log('======================== ASSET CREATED');
     console.log(createCollectionResult);
 
