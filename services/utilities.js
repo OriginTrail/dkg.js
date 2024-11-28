@@ -35,20 +35,6 @@ module.exports = {
             tokenId: parseInt(args[2], 10),
         };
     },
-    deriveRepository(graphLocation, graphState) {
-        switch (graphLocation + graphState) {
-            case GRAPH_LOCATIONS.PUBLIC_KG + GRAPH_STATES.CURRENT:
-                return OT_NODE_TRIPLE_STORE_REPOSITORIES.PUBLIC_CURRENT;
-            case GRAPH_LOCATIONS.PUBLIC_KG + GRAPH_STATES.HISTORICAL:
-                return OT_NODE_TRIPLE_STORE_REPOSITORIES.PUBLIC_HISTORY;
-            case GRAPH_LOCATIONS.LOCAL_KG + GRAPH_STATES.CURRENT:
-                return OT_NODE_TRIPLE_STORE_REPOSITORIES.PRIVATE_CURRENT;
-            case GRAPH_LOCATIONS.LOCAL_KG + GRAPH_STATES.HISTORICAL:
-                return OT_NODE_TRIPLE_STORE_REPOSITORIES.PRIVATE_HISTORY;
-            default:
-                return graphLocation;
-        }
-    },
     async sleepForMilliseconds(milliseconds) {
         // eslint-disable-next-line no-promise-executor-return
         await new Promise((r) => setTimeout(r, milliseconds));
