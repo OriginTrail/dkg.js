@@ -39,6 +39,7 @@ class InputService {
             tokenAmount: this.getTokenAmount(options),
             authToken: this.getAuthToken(options),
             paranetUAL: this.getParanetUAL(options),
+            payer: this.getPayer(options),
         };
     }
 
@@ -75,6 +76,21 @@ class InputService {
             authToken: this.getAuthToken(options),
             hashFunctionId: this.getHashFunctionId(options),
             paranetUAL: this.getParanetUAL(options),
+        };
+    }
+
+    getAssetUpdateArguments(options) {
+        return {
+            blockchain: this.getBlockchain(options),
+            endpoint: this.getEndpoint(options),
+            port: this.getPort(options),
+            maxNumberOfRetries: this.getMaxNumberOfRetries(options),
+            frequency: this.getFrequency(options),
+            hashFunctionId: this.getHashFunctionId(options),
+            scoreFunctionId: this.getScoreFunctionId(options),
+            tokenAmount: this.getTokenAmount(options),
+            authToken: this.getAuthToken(options),
+            payer: this.getPayer(options),
         };
     }
 
@@ -304,6 +320,10 @@ class InputService {
 
     getParanetUAL(options) {
         return options.paranetUAL ?? this.config.paranetUAL ?? null;
+    }
+
+    getPayer(options) {
+        return options.payer ?? this.config.payer ?? null;
     }
 
     getParanetName(options) {

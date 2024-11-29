@@ -75,27 +75,15 @@ class HttpService {
         }
     }
 
-    async publish(
-        endpoint,
-        port,
-        authToken,
-        assertionId,
-        assertion,
-        blockchain,
-        contract,
-        tokenId,
-        hashFunctionId,
-    ) {
+    async publish(endpoint, port, authToken, datasetRoot, dataset, blockchain, hashFunctionId) {
         try {
             const response = await axios({
                 method: 'post',
                 url: `${endpoint}:${port}/publish`,
                 data: {
-                    assertionId,
-                    assertion,
+                    datasetRoot,
+                    dataset,
                     blockchain,
-                    contract,
-                    tokenId,
                     hashFunctionId,
                 },
                 headers: this.prepareRequestConfig(authToken),
@@ -161,6 +149,38 @@ class HttpService {
             return response.data.operationId;
         } catch (error) {
             throw Error(`Unable to get assertion: ${error.message}`);
+        }
+    }
+
+    async update(
+        endpoint,
+        port,
+        authToken,
+        assertionId,
+        assertion,
+        blockchain,
+        contract,
+        tokenId,
+        hashFunctionId,
+    ) {
+        try {
+            const response = await axios({
+                method: 'post',
+                url: `${endpoint}:${port}/update`,
+                data: {
+                    assertionId,
+                    assertion,
+                    blockchain,
+                    contract,
+                    tokenId,
+                    hashFunctionId,
+                },
+                headers: this.prepareRequestConfig(authToken),
+            });
+
+            return response.data.operationId;
+        } catch (error) {
+            throw Error(`Unable to update: ${error.message}`);
         }
     }
 
