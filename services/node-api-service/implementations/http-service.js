@@ -131,14 +131,15 @@ class HttpService {
         }
     }
 
-    async get(endpoint, port, authToken, UAL, state, hashFunctionId, paranetUAL) {
+    async get(endpoint, port, authToken, UAL, state, includeMetadata, contentType, hashFunctionId, paranetUAL) {
         try {
             const response = await axios({
                 method: 'post',
                 url: `${endpoint}:${port}/get`,
                 data: {
-                    id: UAL,
-                    state,
+                    id: state ? `${UAL}:${state}` : UAL,
+                    contentType,
+                    includeMetadata,
                     hashFunctionId,
                     paranetUAL,
                 },
