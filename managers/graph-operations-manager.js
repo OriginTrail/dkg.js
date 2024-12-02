@@ -1,13 +1,10 @@
 const {
     OPERATIONS,
     GET_OUTPUT_FORMATS,
-    CHUNK_BYTE_SIZE, 
-    OPERATION_STATUSES
+    CHUNK_BYTE_SIZE,
+    OPERATION_STATUSES,
 } = require('../constants.js');
 const {
-    getOperationStatusObject,
-    toNQuads,
-    toJSONLD,
     formatDataset,
     calculateNumberOfChunks,
     calculateRoot,
@@ -15,6 +12,8 @@ const {
     assertionMetadata,
 } = require('assertion-tools');
 const {
+    toNQuads,
+    toJSONLD,
     deriveRepository,
     getOperationStatusObject,
     resolveUAL,
@@ -97,7 +96,7 @@ class GraphOperationsManager {
             getOperationId,
         );
 
-        const assertion = getOperationResult.data.assertion;
+        const assertion = getOperationResult.data;
 
         if (!assertion) {
             if (getOperationResult.status !== 'FAILED') {
@@ -110,10 +109,7 @@ class GraphOperationsManager {
 
             return {
                 operation: {
-                    get: getOperationStatusObject(
-                        getOperationResult,
-                        getOperationId,
-                    ),
+                    get: getOperationStatusObject(getOperationResult, getOperationId),
                 },
             };
         }
@@ -139,10 +135,7 @@ class GraphOperationsManager {
         return {
             assertion: formattedAssertion,
             operation: {
-                get: getOperationStatusObject(
-                    getOperationResult,
-                    getOperationId,
-                ),
+                get: getOperationStatusObject(getOperationResult, getOperationId),
             },
         };
     }
