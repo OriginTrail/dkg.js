@@ -26,7 +26,7 @@ class AssertionOperationsManager {
      */
     async getPublicAssertionId(content) {
         const assertions = await formatGraph(content);
-        return calculateRoot(assertions.public);
+        return await calculateRoot(assertions.public);
     }
 
     /**
