@@ -110,20 +110,17 @@ class AssertionOperationsManager {
 
             conditions.forEach((condition) => {
                 if (condition.condition === true) {
-                    const labelTriple = `<<${subject}> <${predicate}> ${object}> <http://example.org/label> <${condition.label}> .`;
+                    const labelTriple = `<<<${subject}> <${predicate}> ${object}>> <http://example.org/label> <${condition.label}> .`;
                     resultAssertions.push(labelTriple);
                 } else {
                     if (condition.condition({ subject, predicate, object })) {
-                        const labelTriple = `<<${subject}> <${predicate}> ${object}> <http://example.org/label> <${condition.label}> .`;
+                        const labelTriple = `<<<${subject}> <${predicate}> ${object}>> <http://example.org/label> <${condition.label}> .`;
                         resultAssertions.push(labelTriple);
                     }
                 }
             });
         });
-
-        //Return the N-Quads formatted string
-        const nquads_return = resultAssertions.join('\n');
-        return nquads_return;
+        return resultAssertions;
     }
 }
 module.exports = AssertionOperationsManager;
