@@ -474,8 +474,8 @@ class ValidationService {
     }
 
     validateState(state) {
-        this.validateRequiredParam('state', state);
-        this.validateParamType('state', state, 'number');
+        if (state !== null)
+            this.validateParamType('state', state, 'number');
     }
 
     validateIncludeMetadata(includeMetadata) {
