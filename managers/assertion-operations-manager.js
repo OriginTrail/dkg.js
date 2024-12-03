@@ -4,7 +4,7 @@ const {
     formatGraph,
     formatAssertion,
 } = require('assertion-tools');
-
+const { LABEL_PREFIX } = require('../constants.js');
 class AssertionOperationsManager {
     constructor(services) {
         this.nodeApiService = services.nodeApiService;
@@ -110,11 +110,11 @@ class AssertionOperationsManager {
 
             conditions.forEach((condition) => {
                 if (condition.condition === true) {
-                    const labelTriple = `<<<${subject}> <${predicate}> ${object}>> <http://example.org/label> <${condition.label}> .`;
+                    const labelTriple = `<<<${subject}> <${predicate}> ${object}>> ${LABEL_PREFIX} <${condition.label}> .`;
                     resultAssertions.push(labelTriple);
                 } else {
                     if (condition.condition({ subject, predicate, object })) {
-                        const labelTriple = `<<<${subject}> <${predicate}> ${object}>> <http://example.org/label> <${condition.label}> .`;
+                        const labelTriple = `<<<${subject}> <${predicate}> ${object}>> ${LABEL_PREFIX} <${condition.label}> .`;
                         resultAssertions.push(labelTriple);
                     }
                 }
