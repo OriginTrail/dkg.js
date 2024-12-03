@@ -1,13 +1,10 @@
 const {
     OPERATIONS,
     GET_OUTPUT_FORMATS,
-    CHUNK_BYTE_SIZE, 
-    OPERATION_STATUSES
+    CHUNK_BYTE_SIZE,
+    OPERATION_STATUSES,
 } = require('../constants.js');
 const {
-    getOperationStatusObject,
-    toNQuads,
-    toJSONLD,
     formatDataset,
     calculateNumberOfChunks,
     calculateRoot,
@@ -15,6 +12,8 @@ const {
     assertionMetadata,
 } = require('assertion-tools');
 const {
+    toNQuads,
+    toJSONLD,
     deriveRepository,
     getOperationStatusObject,
     resolveUAL,
@@ -97,7 +96,7 @@ class GraphOperationsManager {
             getOperationId,
         );
 
-        const assertion = getOperationResult.data.assertion;
+        const { assertion, metadata } = getOperationResult.data;
 
         if (!assertion) {
             if (getOperationResult.status !== 'FAILED') {
@@ -110,10 +109,7 @@ class GraphOperationsManager {
 
             return {
                 operation: {
-                    get: getOperationStatusObject(
-                        getOperationResult,
-                        getOperationId,
-                    ),
+                    get: getOperationStatusObject(getOperationResult, getOperationId),
                 },
             };
         }
@@ -129,20 +125,25 @@ class GraphOperationsManager {
         }
 
         let formattedAssertion;
+        let formattedMetadata;
         if (outputFormat === GET_OUTPUT_FORMATS.JSON_LD) {
             formattedAssertion = await toJSONLD(assertion.join('\n'));
+            if (includeMetadata) {
+                formattedMetadata = await toJSONLD(metadata.join('\n'));
+            }
         }
         if (outputFormat === GET_OUTPUT_FORMATS.N_QUADS) {
             formattedAssertion = await toNQuads(assertion, 'application/n-quads');
+            if (includeMetadata) {
+                formattedMetadata = await toNQuads(metadata, 'application/n-quads');
+            }
         }
 
         return {
             assertion: formattedAssertion,
+            ...(includeMetadata && metadata && { metadata: formattedMetadata }),
             operation: {
-                get: getOperationStatusObject(
-                    getOperationResult,
-                    getOperationId,
-                ),
+                get: getOperationStatusObject(getOperationResult, getOperationId),
             },
         };
     }

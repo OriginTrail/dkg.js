@@ -76,6 +76,7 @@ class InputService {
             authToken: this.getAuthToken(options),
             hashFunctionId: this.getHashFunctionId(options),
             paranetUAL: this.getParanetUAL(options),
+            metadata: this.getIncludeMetadata,
         };
     }
 
@@ -287,7 +288,11 @@ class InputService {
     }
 
     getIncludeMetadata(options) {
-        return options.includeMetadata ?? this.config.includeMetadata ?? DEFAULT_PARAMETERS.INCLUDE_METADATA;
+        return (
+            options.includeMetadata ??
+            this.config.includeMetadata ??
+            DEFAULT_PARAMETERS.INCLUDE_METADATA
+        );
     }
 
     getContentType(options) {
