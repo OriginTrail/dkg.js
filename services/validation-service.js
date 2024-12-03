@@ -408,7 +408,7 @@ class ValidationService {
         const segments = ual.split(':');
         const argsString = segments.length === 3 ? segments[2] : `${segments[2]}:${segments[3]}`;
         const args = argsString.split('/');
-        if (!(args?.length === 3)) throw Error('Invalid UAL.');
+        if (!(args?.length === 3 || args?.length === 4)) throw Error('Invalid UAL.');
         return true;
     }
 
