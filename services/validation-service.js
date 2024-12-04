@@ -700,5 +700,40 @@ class ValidationService {
         this.validateRequiredParam('identityId', identityId);
         this.validateParamType('identityId', identityId, 'number');
     }
+
+    validateConditions(conditions) {
+        this.validateRequiredParam('conditions', conditions);
+
+        if (!Array.isArray(conditions)) {
+            throw new Error('Conditions must be an array.');
+        }
+
+        conditions.forEach((condition, index) => {
+            if (typeof condition !== 'object' || condition === null) {
+                throw new Error(`Condition at index ${index} must be an object.`);
+            }
+
+            if (typeof condition.condition === 'function') {
+                const testTriple = {
+                    subject: 'uuid:1',
+                    predicate: 'http://schema.org/city',
+                    object: 'uuid:belgrade',
+                };
+                try {
+                    condition.condition(testTriple);
+                } catch (e) {
+                    throw new Error(
+                        `Condition function at index ${index} must be callable with a 'triple' argument.`,
+                    );
+                }
+            } else if (condition.condition !== true) {
+                throw new Error(`Condition at index ${index} must either be a function or 'true'.`);
+            }
+
+            if (typeof condition.label !== 'string') {
+                throw new Error(`Label at index ${index} must be a string.`);
+            }
+        });
+    }
 }
 module.exports = ValidationService;

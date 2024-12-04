@@ -14,6 +14,8 @@ const PRIVATE_ASSERTION_PREDICATE = 'https://ontology.origintrail.io/dkg/1.0#pri
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
+const LABEL_PREFIX = '<http://example.org/label>';
+
 const BLOCKCHAINS = {
     development: {
         'hardhat1:31337': {
