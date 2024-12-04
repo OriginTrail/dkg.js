@@ -7,8 +7,6 @@ const {
     OPERATION_ATTEMPTS,
 } = require('../constants.js');
 const {
-    toNQuads,
-    toJSONLD,
     formatDataset,
     calculateNumberOfChunks,
     calculateRoot,
@@ -16,13 +14,13 @@ const {
     assertionMetadata,
 } = require('assertion-tools');
 const {
-    toNQuads,
-    toJSONLD,
     deriveRepository,
     getOperationStatusObject,
     resolveUAL,
     deriveUAL,
     sleepForMilliseconds,
+    toNQuads,
+    toJSONLD,
 } = require('../services/utilities.js');
 const emptyHooks = require('../util/empty-hooks.js');
 
@@ -368,39 +366,36 @@ class GraphOperationsManager {
 
         const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, tokenId);
 
-        const delayBetweenAttempts = OPERATION_DELAYS.FINALITY;
+        const finalitySleepDelay = OPERATION_DELAYS.FINALITY;
+
+        await sleepForMilliseconds(finalitySleepDelay);
+
+        const finalityOperationId = await this.nodeApiService.finality(
+            endpoint,
+            port,
+            authToken,
+            blockchain.name,
+            UAL,
+            minimumNumberOfNodeReplications,
+        );
+
         let finalityOperationResult = null;
 
-        for (let attempt = 0; attempt < OPERATION_ATTEMPTS.FINALITY; attempt++) {
-            try {
-                const finalityOperationId = await this.nodeApiService.finality(
-                    endpoint,
-                    port,
-                    authToken,
-                    blockchain.name,
-                    UAL,
-                    minimumNumberOfNodeReplications,
-                );
-
-                finalityOperationResult = await this.nodeApiService.getOperationResult(
-                    endpoint,
-                    port,
-                    authToken,
-                    OPERATIONS.FINALITY,
-                    maxNumberOfRetries,
-                    frequency,
-                    finalityOperationId,
-                );
-
-                if (finalityOperationResult.status === 'COMPLETED') break;
-            } catch (error) {
-                console.error(`Attempt ${attempt + 1} failed:`, error.message);
-            }
-
-            if (attempt < OPERATION_ATTEMPTS.FINALITY - 1) {
-                await sleepForMilliseconds(delayBetweenAttempts);
-            }
+        // TO DO: ADD OPTIONAL WAITING FOR FINALITY
+        try {
+            finalityOperationResult = await this.nodeApiService.getOperationResult(
+                endpoint,
+                port,
+                authToken,
+                OPERATIONS.FINALITY,
+                maxNumberOfRetries,
+                frequency,
+                finalityOperationId,
+            );
+        } catch (error) {
+            console.error(`Attempt ${attempt + 1} failed:`, error.message);
         }
+
         return {
             UAL,
             datasetRoot,
