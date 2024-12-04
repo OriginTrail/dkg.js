@@ -3,6 +3,8 @@ const {
     GET_OUTPUT_FORMATS,
     CHUNK_BYTE_SIZE,
     OPERATION_STATUSES,
+    OPERATION_DELAYS,
+    OPERATION_ATTEMPTS,
 } = require('../constants.js');
 const {
     formatDataset,
@@ -12,12 +14,13 @@ const {
     assertionMetadata,
 } = require('assertion-tools');
 const {
-    toNQuads,
-    toJSONLD,
     deriveRepository,
     getOperationStatusObject,
     resolveUAL,
     deriveUAL,
+    sleepForMilliseconds,
+    toNQuads,
+    toJSONLD,
 } = require('../services/utilities.js');
 const emptyHooks = require('../util/empty-hooks.js');
 
@@ -227,6 +230,7 @@ class GraphOperationsManager {
             authToken,
             paranetUAL,
             payer,
+            minimumNumberOfNodeReplications,
         } = this.inputService.getAssetCreateArguments(options);
 
         this.validationService.validateAssetCreate(
@@ -244,6 +248,7 @@ class GraphOperationsManager {
             authToken,
             paranetUAL,
             payer,
+            minimumNumberOfNodeReplications,
         );
 
         let dataset;
@@ -361,7 +366,35 @@ class GraphOperationsManager {
 
         const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, tokenId);
 
-        // node finality api check for UAL
+        const finalitySleepDelay = OPERATION_DELAYS.FINALITY;
+
+        await sleepForMilliseconds(finalitySleepDelay);
+
+        const finalityOperationId = await this.nodeApiService.finality(
+            endpoint,
+            port,
+            authToken,
+            blockchain.name,
+            UAL,
+            minimumNumberOfNodeReplications,
+        );
+
+        let finalityOperationResult = null;
+
+        // TO DO: ADD OPTIONAL WAITING FOR FINALITY
+        try {
+            finalityOperationResult = await this.nodeApiService.getOperationResult(
+                endpoint,
+                port,
+                authToken,
+                OPERATIONS.FINALITY,
+                maxNumberOfRetries,
+                frequency,
+                finalityOperationId,
+            );
+        } catch (error) {
+            console.error(`Attempt ${attempt + 1} failed:`, error.message);
+        }
 
         return {
             UAL,
@@ -369,6 +402,7 @@ class GraphOperationsManager {
             operation: {
                 mintKnowledgeAsset: mintKnowledgeAssetReceipt,
                 publish: getOperationStatusObject(publishOperationResult, publishOperationId),
+                finality: finalityOperationResult,
             },
         };
     }

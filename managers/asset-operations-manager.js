@@ -13,6 +13,7 @@ const {
     deriveUAL,
     getOperationStatusObject,
     resolveUAL,
+    sleepForMilliseconds,
 } = require('../services/utilities.js');
 const {
     OPERATIONS,
@@ -24,6 +25,7 @@ const {
     STORE_TYPES,
     ZERO_ADDRESS,
     CHUNK_BYTE_SIZE,
+    OPERATION_DELAYS,
 } = require('../constants.js');
 const emptyHooks = require('../util/empty-hooks');
 
@@ -72,7 +74,8 @@ class AssetOperationsManager {
 
         if (prefixes[2] !== blockchain.name.split(':')[0]) {
             throw new Error(
-                `Invalid blockchain name in the UAL prefix. Expected: '${blockchain.name.split(':')[0]
+                `Invalid blockchain name in the UAL prefix. Expected: '${
+                    blockchain.name.split(':')[0]
                 }'. Received: '${prefixes[2]}'.`,
             );
         }
@@ -269,7 +272,6 @@ class AssetOperationsManager {
      */
     async create(content, options = {}, stepHooks = emptyHooks) {
         this.validationService.validateJsonldOrNquads(content);
-
         const {
             blockchain,
             endpoint,
@@ -284,6 +286,7 @@ class AssetOperationsManager {
             authToken,
             paranetUAL,
             payer,
+            minimumNumberOfNodeReplications,
         } = this.inputService.getAssetCreateArguments(options);
 
         this.validationService.validateAssetCreate(
@@ -301,8 +304,9 @@ class AssetOperationsManager {
             authToken,
             paranetUAL,
             payer,
+            minimumNumberOfNodeReplications,
         );
-      
+
         let dataset;
 
         if (typeof content === 'string') {
@@ -418,7 +422,35 @@ class AssetOperationsManager {
 
         const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, tokenId);
 
-        // node finality api check for UAL
+        const finalitySleepDelay = OPERATION_DELAYS.FINALITY;
+
+        await sleepForMilliseconds(finalitySleepDelay);
+
+        const finalityOperationId = await this.nodeApiService.finality(
+            endpoint,
+            port,
+            authToken,
+            blockchain.name,
+            UAL,
+            minimumNumberOfNodeReplications,
+        );
+
+        let finalityOperationResult = null;
+
+        // TO DO: ADD OPTIONAL WAITING FOR FINALITY
+        try {
+            finalityOperationResult = await this.nodeApiService.getOperationResult(
+                endpoint,
+                port,
+                authToken,
+                OPERATIONS.FINALITY,
+                maxNumberOfRetries,
+                frequency,
+                finalityOperationId,
+            );
+        } catch (error) {
+            console.error(`Attempt ${attempt + 1} failed:`, error.message);
+        }
 
         return {
             UAL,
@@ -427,6 +459,7 @@ class AssetOperationsManager {
             operation: {
                 mintKnowledgeAsset: mintKnowledgeAssetReceipt,
                 publish: getOperationStatusObject(publishOperationResult, publishOperationId),
+                finality: finalityOperationResult,
             },
         };
     }

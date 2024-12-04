@@ -73,6 +73,7 @@ class ValidationService {
         authToken,
         paranetUAL,
         payer,
+        minimumNumberOfNodeReplications,
     ) {
         this.validateContent(content);
         this.validateBlockchain(blockchain, OPERATIONS.PUBLISH);
@@ -88,6 +89,7 @@ class ValidationService {
         this.validateAuthToken(authToken);
         this.validateParanetUAL(paranetUAL);
         this.validatePayer(payer);
+        this.validateMinimumNumberOfNodeReplications(minimumNumberOfNodeReplications);
     }
 
     validateAssetGet(
@@ -545,6 +547,18 @@ class ValidationService {
         if (payer == null) return;
 
         this.validateAddress(payer);
+    }
+
+    validateMinimumNumberOfNodeReplications(minimumNumberOfNodeReplications) {
+        this.validateRequiredParam(
+            'minimumNumberOfNodeReplications',
+            minimumNumberOfNodeReplications,
+        );
+        this.validateParamType(
+            'minimumNumberOfNodeReplications',
+            minimumNumberOfNodeReplications,
+            'number',
+        );
     }
 
     validateValidate(validate) {
