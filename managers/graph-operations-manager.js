@@ -1,5 +1,4 @@
 const { OPERATIONS } = require('../constants');
-const { deriveRepository } = require('../services/utilities.js');
 
 class GraphOperationsManager {
     constructor(services) {
@@ -40,15 +39,15 @@ class GraphOperationsManager {
             authToken,
         );
 
-        const repository = paranetUAL ?? deriveRepository(graphLocation, graphState);
-
         const operationId = await this.nodeApiService.query(
             endpoint,
             port,
             authToken,
             queryString,
             queryType,
-            repository,
+            graphState,
+            graphLocation,
+            paranetUAL,
         );
 
         return this.nodeApiService.getOperationResult(
