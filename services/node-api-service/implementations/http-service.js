@@ -75,27 +75,15 @@ class HttpService {
         }
     }
 
-    async publish(
-        endpoint,
-        port,
-        authToken,
-        assertionId,
-        assertion,
-        blockchain,
-        contract,
-        tokenId,
-        hashFunctionId,
-    ) {
+    async publish(endpoint, port, authToken, datasetRoot, dataset, blockchain, hashFunctionId) {
         try {
             const response = await axios({
                 method: 'post',
                 url: `${endpoint}:${port}/publish`,
                 data: {
-                    assertionId,
-                    assertion,
+                    datasetRoot,
+                    dataset,
                     blockchain,
-                    contract,
-                    tokenId,
                     hashFunctionId,
                 },
                 headers: this.prepareRequestConfig(authToken),
@@ -143,14 +131,25 @@ class HttpService {
         }
     }
 
-    async get(endpoint, port, authToken, UAL, state, hashFunctionId, paranetUAL) {
+    async get(
+        endpoint,
+        port,
+        authToken,
+        UAL,
+        state,
+        includeMetadata,
+        contentType,
+        hashFunctionId,
+        paranetUAL,
+    ) {
         try {
             const response = await axios({
                 method: 'post',
                 url: `${endpoint}:${port}/get`,
                 data: {
-                    id: UAL,
-                    state,
+                    id: state ? `${UAL}:${state}` : UAL,
+                    contentType,
+                    includeMetadata,
                     hashFunctionId,
                     paranetUAL,
                 },
@@ -163,12 +162,58 @@ class HttpService {
         }
     }
 
+    async update(
+        endpoint,
+        port,
+        authToken,
+        assertionId,
+        assertion,
+        blockchain,
+        contract,
+        tokenId,
+        hashFunctionId,
+    ) {
+        try {
+            const response = await axios({
+                method: 'post',
+                url: `${endpoint}:${port}/update`,
+                data: {
+                    assertionId,
+                    assertion,
+                    blockchain,
+                    contract,
+                    tokenId,
+                    hashFunctionId,
+                },
+                headers: this.prepareRequestConfig(authToken),
+            });
+
+            return response.data.operationId;
+        } catch (error) {
+            throw Error(`Unable to update: ${error.message}`);
+        }
+    }
+
     async query(endpoint, port, authToken, query, type, /*graphState, graphLocation,*/ paranetUAL) {
         try {
             const response = await axios({
                 method: 'post',
                 url: `${endpoint}:${port}/query`,
                 data: { query, type, /*graphState, graphLocation,*/ paranetUAL },
+                headers: this.prepareRequestConfig(authToken),
+            });
+            return response.data.operationId;
+        } catch (error) {
+            throw Error(`Unable to query: ${error.message}`);
+        }
+    }
+
+    async finality(endpoint, port, authToken, blockchain, ual, minimumNumberOfNodeReplications) {
+        try {
+            const response = await axios({
+                method: 'post',
+                url: `${endpoint}:${port}/finality`,
+                data: { ual, blockchain, minimumNumberOfNodeReplications },
                 headers: this.prepareRequestConfig(authToken),
             });
             return response.data.operationId;

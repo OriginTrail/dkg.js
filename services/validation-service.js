@@ -1,6 +1,5 @@
 const { isAddress } = require('ethers');
 const {
-    ASSET_STATES,
     CONTENT_TYPES,
     GRAPH_LOCATIONS,
     GRAPH_STATES,
@@ -73,6 +72,8 @@ class ValidationService {
         tokenAmount,
         authToken,
         paranetUAL,
+        payer,
+        minimumNumberOfNodeReplications,
     ) {
         this.validateContent(content);
         this.validateBlockchain(blockchain, OPERATIONS.PUBLISH);
@@ -87,6 +88,8 @@ class ValidationService {
         this.validateTokenAmount(tokenAmount);
         this.validateAuthToken(authToken);
         this.validateParanetUAL(paranetUAL);
+        this.validatePayer(payer);
+        this.validateMinimumNumberOfNodeReplications(minimumNumberOfNodeReplications);
     }
 
     validateAssetGet(
@@ -97,6 +100,7 @@ class ValidationService {
         maxNumberOfRetries,
         frequency,
         state,
+        includeMetadata,
         contentType,
         hashFunctionId,
         validate,
@@ -110,11 +114,38 @@ class ValidationService {
         this.validateMaxNumberOfRetries(maxNumberOfRetries);
         this.validateFrequency(frequency);
         this.validateState(state);
+        this.validateIncludeMetadata(includeMetadata);
         this.validateContentType(contentType);
         this.validateHashFunctionId(hashFunctionId);
         this.validateValidate(validate);
         this.validateOutputFormat(outputFormat);
         this.validateAuthToken(authToken);
+    }
+
+    validateAssetUpdate(
+        content,
+        blockchain,
+        endpoint,
+        port,
+        maxNumberOfRetries,
+        frequency,
+        hashFunctionId,
+        scoreFunctionId,
+        tokenAmount,
+        authToken,
+        payer,
+    ) {
+        this.validateContent(content);
+        this.validateBlockchain(blockchain, OPERATIONS.UPDATE);
+        this.validateEndpoint(endpoint);
+        this.validatePort(port);
+        this.validateMaxNumberOfRetries(maxNumberOfRetries);
+        this.validateFrequency(frequency);
+        this.validateHashFunctionId(hashFunctionId);
+        this.validateScoreFunctionId(scoreFunctionId);
+        this.validateTokenAmount(tokenAmount);
+        this.validateAuthToken(authToken);
+        this.validatePayer(payer);
     }
 
     validateAssetTransfer(UAL, newOwner, blockchain) {
@@ -173,7 +204,7 @@ class ValidationService {
         paranetName,
         paranetDescription,
         paranetNodesAccessPolicy,
-        paranetMinersAccessPolicy
+        paranetMinersAccessPolicy,
     ) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
@@ -183,11 +214,7 @@ class ValidationService {
         this.validateParanetMinersAccessPolicy(paranetMinersAccessPolicy);
     }
 
-    validateParanetAddCuratedNodes(
-        UAL,
-        blockchain,
-        identityIds
-    ) {
+    validateParanetAddCuratedNodes(UAL, blockchain, identityIds) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
 
@@ -196,11 +223,7 @@ class ValidationService {
         }
     }
 
-    validateParanetRemoveCuratedNodes(
-        UAL,
-        blockchain,
-        identityIds
-    ) {
+    validateParanetRemoveCuratedNodes(UAL, blockchain, identityIds) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
 
@@ -209,55 +232,34 @@ class ValidationService {
         }
     }
 
-    validateRequestParanetCuratedNodeAccess(
-        UAL,
-        blockchain,
-    ) {
+    validateRequestParanetCuratedNodeAccess(UAL, blockchain) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
     }
 
-    validateApproveCuratedNode(
-        UAL,
-        blockchain,
-        identityId
-    ) {
+    validateApproveCuratedNode(UAL, blockchain, identityId) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
         this.validateIdentityId(identityId);
     }
 
-    validateRejectCuratedNode(
-        UAL,
-        blockchain,
-        identityId
-    ) {
+    validateRejectCuratedNode(UAL, blockchain, identityId) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
         this.validateIdentityId(identityId);
     }
 
-    validateGetCuratedNodes(
-        UAL,
-        blockchain,
-    ) {
+    validateGetCuratedNodes(UAL, blockchain) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
     }
 
-    validateGetParanetKnowledgeMiners(
-        UAL,
-        blockchain,
-    ) {
+    validateGetParanetKnowledgeMiners(UAL, blockchain) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
     }
 
-    validateParanetAddCuratedMiners(
-        UAL,
-        blockchain,
-        minerAddresses
-    ) {
+    validateParanetAddCuratedMiners(UAL, blockchain, minerAddresses) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
 
@@ -266,11 +268,7 @@ class ValidationService {
         }
     }
 
-    validateParanetRemoveCuratedMiners(
-        UAL,
-        blockchain,
-        minerAddresses
-    ) {
+    validateParanetRemoveCuratedMiners(UAL, blockchain, minerAddresses) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
 
@@ -279,29 +277,18 @@ class ValidationService {
         }
     }
 
-    validateRequestParanetCuratedMinerAccess(
-        UAL,
-        blockchain,
-    ) {
+    validateRequestParanetCuratedMinerAccess(UAL, blockchain) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
     }
 
-    validateApproveCuratedMiner(
-        UAL,
-        blockchain,
-        minerAddress
-    ) {
+    validateApproveCuratedMiner(UAL, blockchain, minerAddress) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
         this.validateAddress(minerAddress);
     }
 
-    validateRejectCuratedMiner(
-        UAL,
-        blockchain,
-        minerAddress
-    ) {
+    validateRejectCuratedMiner(UAL, blockchain, minerAddress) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
         this.validateAddress(minerAddress);
@@ -421,7 +408,7 @@ class ValidationService {
         const segments = ual.split(':');
         const argsString = segments.length === 3 ? segments[2] : `${segments[2]}:${segments[3]}`;
         const args = argsString.split('/');
-        if (!(args?.length === 3)) throw Error('Invalid UAL.');
+        if (!(args?.length === 3 || args?.length === 4)) throw Error('Invalid UAL.');
         return true;
     }
 
@@ -436,20 +423,27 @@ class ValidationService {
         if (!(!!obj && typeof obj === 'object')) throw Error('Content must be an object');
     }
 
+    validateJsonldOrNquads(input) {
+        if (typeof input === 'object' && input !== null && !Array.isArray(input)) {
+            return;
+        }
+
+        if (typeof input === 'string' && input.trim().startsWith('<')) {
+            const lines = input
+                .trim()
+                .split('\n')
+                .map((line) => line.trimStart());
+            if (lines.every((line) => line.match(/^\s*<.+>\s<.+>\s.+\s(?:<.+>\s)?\.\s*$/))) {
+                return;
+            }
+        }
+
+        throw new Error(
+            'Content must be either a valid JSON-LD object or a N-Quads/N-Triples string.',
+        );
+    }
     validateContent(content) {
         this.validateRequiredParam('content', content);
-
-        const keys = Object.keys(content);
-
-        if (
-            !(keys.length === 1 && (keys.includes('public') || keys.includes('private'))) &&
-            !(keys.length === 2 && (keys.includes('public') || keys.includes('private')))
-        )
-            throw Error('content keys can only be "public", "private" or both.');
-
-        if (!content.public && !content.private) {
-            throw Error('Public or private content must be defined');
-        }
     }
 
     validateAssertionSizeInBytes(assertionSizeInBytes) {
@@ -480,16 +474,13 @@ class ValidationService {
     }
 
     validateState(state) {
-        this.validateRequiredParam('state', state);
-        this.validateParamType('state', state, ['number', 'string']);
-        const validStatesEnum = Object.values(ASSET_STATES);
-        if (
-            typeof state === 'string' &&
-            !validStatesEnum.includes(state.toUpperCase()) &&
-            typeof state !== 'number' &&
-            !/^0x[a-fA-F0-9]{64}$/.test(state)
-        )
-            throw Error(`Invalid state, available states: ${validStatesEnum},numerical or hash.`);
+        if (state !== null)
+            this.validateParamType('state', state, 'number');
+    }
+
+    validateIncludeMetadata(includeMetadata) {
+        this.validateRequiredParam('includeMetadata', includeMetadata);
+        this.validateParamType('includeMetadata', includeMetadata, 'boolean');
     }
 
     validateContentType(contentType) {
@@ -550,6 +541,24 @@ class ValidationService {
         this.validateUAL(paranetUAL);
     }
 
+    validatePayer(payer) {
+        if (payer == null) return;
+
+        this.validateAddress(payer);
+    }
+
+    validateMinimumNumberOfNodeReplications(minimumNumberOfNodeReplications) {
+        this.validateRequiredParam(
+            'minimumNumberOfNodeReplications',
+            minimumNumberOfNodeReplications,
+        );
+        this.validateParamType(
+            'minimumNumberOfNodeReplications',
+            minimumNumberOfNodeReplications,
+            'number',
+        );
+    }
+
     validateValidate(validate) {
         this.validateRequiredParam('validate', validate);
         this.validateParamType('validate', validate, 'boolean');
@@ -608,13 +617,19 @@ class ValidationService {
     validateParanetNodesAccessPolicy(paranetNodesAccessPolicy) {
         this.validateRequiredParam('paranetNodesAccessPolicy', paranetNodesAccessPolicy);
         this.validateParamType('paranetNodesAccessPolicy', paranetNodesAccessPolicy, 'number');
-        if (!Object.values(PARANET_NODES_ACCESS_POLICY).includes(paranetNodesAccessPolicy)) throw Error(`Invalid nodes access policy: ${paranetNodesAccessPolicy}. Should be 0 for OPEN or 1 for CURATED`);
+        if (!Object.values(PARANET_NODES_ACCESS_POLICY).includes(paranetNodesAccessPolicy))
+            throw Error(
+                `Invalid nodes access policy: ${paranetNodesAccessPolicy}. Should be 0 for OPEN or 1 for CURATED`,
+            );
     }
 
     validateParanetMinersAccessPolicy(paranetMinersAccessPolicy) {
         this.validateRequiredParam('paranetMinersAccessPolicy', paranetMinersAccessPolicy);
         this.validateParamType('paranetMinersAccessPolicy', paranetMinersAccessPolicy, 'number');
-        if (!Object.values(PARANET_MINERS_ACCESS_POLICY).includes(paranetMinersAccessPolicy)) throw Error(`Invalid miners access policy: ${paranetMinersAccessPolicy}. Should be 0 for OPEN or 1 for CURATED`);
+        if (!Object.values(PARANET_MINERS_ACCESS_POLICY).includes(paranetMinersAccessPolicy))
+            throw Error(
+                `Invalid miners access policy: ${paranetMinersAccessPolicy}. Should be 0 for OPEN or 1 for CURATED`,
+            );
     }
 
     validateTracToNeuroEmissionMultiplier(tracToNeuroEmissionMultiplier) {
@@ -682,6 +697,41 @@ class ValidationService {
     validateIdentityId(identityId) {
         this.validateRequiredParam('identityId', identityId);
         this.validateParamType('identityId', identityId, 'number');
+    }
+
+    validateConditions(conditions) {
+        this.validateRequiredParam('conditions', conditions);
+
+        if (!Array.isArray(conditions)) {
+            throw new Error('Conditions must be an array.');
+        }
+
+        conditions.forEach((condition, index) => {
+            if (typeof condition !== 'object' || condition === null) {
+                throw new Error(`Condition at index ${index} must be an object.`);
+            }
+
+            if (typeof condition.condition === 'function') {
+                const testTriple = {
+                    subject: 'uuid:1',
+                    predicate: 'http://schema.org/city',
+                    object: 'uuid:belgrade',
+                };
+                try {
+                    condition.condition(testTriple);
+                } catch (e) {
+                    throw new Error(
+                        `Condition function at index ${index} must be callable with a 'triple' argument.`,
+                    );
+                }
+            } else if (condition.condition !== true) {
+                throw new Error(`Condition at index ${index} must either be a function or 'true'.`);
+            }
+
+            if (typeof condition.label !== 'string') {
+                throw new Error(`Label at index ${index} must be a string.`);
+            }
+        });
     }
 }
 module.exports = ValidationService;

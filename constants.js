@@ -14,6 +14,8 @@ const PRIVATE_ASSERTION_PREDICATE = 'https://ontology.origintrail.io/dkg/1.0#pri
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
+const LABEL_PREFIX = '<http://example.org/label>';
+
 const BLOCKCHAINS = {
     development: {
         'hardhat1:31337': {
@@ -96,12 +98,17 @@ const OPERATIONS = {
     LOCAL_STORE: 'local-store',
     QUERY: 'query',
     PUBLISH_PARANET: 'publishParanet',
+    FINALITY: 'finality',
 };
 
 const OPERATION_STATUSES = {
     PENDING: 'PENDING',
     COMPLETED: 'COMPLETED',
     FAILED: 'FAILED',
+};
+
+const OPERATION_DELAYS = {
+    FINALITY: 5000,
 };
 
 const ASSERTION_STATES = {
@@ -111,18 +118,12 @@ const ASSERTION_STATES = {
 
 const CONTENT_TYPES = {
     PUBLIC: 'public',
-    PRIVATE: 'private',
     ALL: 'all',
 };
 
 const GET_OUTPUT_FORMATS = {
     N_QUADS: 'n-quads',
     JSON_LD: 'json-ld',
-};
-
-const ASSET_STATES = {
-    LATEST: 'LATEST',
-    FINALIZED: 'LATEST_FINALIZED',
 };
 
 const STORE_TYPES = {
@@ -203,7 +204,8 @@ const DEFAULT_PARAMETERS = {
     IMMUTABLE: false,
     VALIDATE: true,
     OUTPUT_FORMAT: GET_OUTPUT_FORMATS.JSON_LD,
-    STATE: ASSET_STATES.LATEST,
+    STATE: null,
+    INCLUDE_METADATA: false,
     CONTENT_TYPE: CONTENT_TYPES.PUBLIC,
     GRAPH_LOCATION: GRAPH_LOCATIONS.LOCAL_KG,
     GRAPH_STATE: GRAPH_STATES.CURRENT,
@@ -233,6 +235,8 @@ const PARANET_KNOWLEDGE_ASSET_ACCESS_POLICY = {
     OPEN: 0,
 };
 
+const CHUNK_BYTE_SIZE = 32;
+
 module.exports = {
     MAX_FILE_SIZE,
     DID_PREFIX,
@@ -245,11 +249,11 @@ module.exports = {
     WEBSOCKET_PROVIDER_OPTIONS,
     OPERATIONS,
     OPERATION_STATUSES,
+    OPERATION_DELAYS,
     ASSERTION_STATES,
     CONTENT_TYPES,
     GET_OUTPUT_FORMATS,
     INCENTIVE_TYPE,
-    ASSET_STATES,
     STORE_TYPES,
     GRAPH_LOCATIONS,
     GRAPH_STATES,
@@ -269,4 +273,5 @@ module.exports = {
     PARANET_NODES_ACCESS_POLICY,
     PARANET_MINERS_ACCESS_POLICY,
     PARANET_KNOWLEDGE_ASSET_ACCESS_POLICY,
+    CHUNK_BYTE_SIZE,
 };

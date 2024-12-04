@@ -21,6 +21,9 @@ class DkgClient {
         this.graph = new GraphOperationsManager(services);
         this.network = new NetworkOperationsManager(services);
         this.paranet = new ParanetOperationsManager(services);
+
+        // Backwards compatibility
+        this.asset.get = this.graph.get;
     }
 }
 module.exports = DkgClient;

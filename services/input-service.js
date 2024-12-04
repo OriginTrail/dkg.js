@@ -39,6 +39,8 @@ class InputService {
             tokenAmount: this.getTokenAmount(options),
             authToken: this.getAuthToken(options),
             paranetUAL: this.getParanetUAL(options),
+            payer: this.getPayer(options),
+            minimumNumberOfNodeReplications: this.getMinimumNumberOfNodeReplications(options) ?? 5,
         };
     }
 
@@ -68,12 +70,29 @@ class InputService {
             maxNumberOfRetries: this.getMaxNumberOfRetries(options),
             frequency: this.getFrequency(options),
             state: this.getState(options),
+            includeMetadata: this.getIncludeMetadata(options),
             contentType: this.getContentType(options),
             validate: this.getValidate(options),
             outputFormat: this.getOutputFormat(options),
             authToken: this.getAuthToken(options),
             hashFunctionId: this.getHashFunctionId(options),
             paranetUAL: this.getParanetUAL(options),
+            metadata: this.getIncludeMetadata,
+        };
+    }
+
+    getAssetUpdateArguments(options) {
+        return {
+            blockchain: this.getBlockchain(options),
+            endpoint: this.getEndpoint(options),
+            port: this.getPort(options),
+            maxNumberOfRetries: this.getMaxNumberOfRetries(options),
+            frequency: this.getFrequency(options),
+            hashFunctionId: this.getHashFunctionId(options),
+            scoreFunctionId: this.getScoreFunctionId(options),
+            tokenAmount: this.getTokenAmount(options),
+            authToken: this.getAuthToken(options),
+            payer: this.getPayer(options),
         };
     }
 
@@ -269,6 +288,14 @@ class InputService {
         return options.state ?? this.config.state ?? DEFAULT_PARAMETERS.STATE;
     }
 
+    getIncludeMetadata(options) {
+        return (
+            options.includeMetadata ??
+            this.config.includeMetadata ??
+            DEFAULT_PARAMETERS.INCLUDE_METADATA
+        );
+    }
+
     getContentType(options) {
         return options.contentType ?? this.config.contentType ?? DEFAULT_PARAMETERS.CONTENT_TYPE;
     }
@@ -299,6 +326,18 @@ class InputService {
 
     getParanetUAL(options) {
         return options.paranetUAL ?? this.config.paranetUAL ?? null;
+    }
+
+    getPayer(options) {
+        return options.payer ?? this.config.payer ?? null;
+    }
+
+    getMinimumNumberOfNodeReplications(options) {
+        return (
+            options.minimumNumberOfNodeReplications ??
+            this.config.minimumNumberOfNodeReplications ??
+            null
+        );
     }
 
     getParanetName(options) {
