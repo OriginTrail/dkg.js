@@ -77,6 +77,7 @@ class InputService {
             authToken: this.getAuthToken(options),
             hashFunctionId: this.getHashFunctionId(options),
             paranetUAL: this.getParanetUAL(options),
+            metadata: this.getIncludeMetadata,
         };
     }
 
