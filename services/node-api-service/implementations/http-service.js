@@ -1,8 +1,8 @@
-const axios = require('axios');
-const { OPERATION_STATUSES } = require('../../../constants.js');
-const { sleepForMilliseconds } = require('../../utilities.js');
+import axios from 'axios';
+import { OPERATION_STATUSES  } from '../../../constants.js';
+import { sleepForMilliseconds  } from '../../utilities.js';
 
-class HttpService {
+export default class HttpService {
     constructor(config = {}) {
         this.config = config;
     }
@@ -277,4 +277,3 @@ class HttpService {
         return {};
     }
 }
-module.exports = HttpService;

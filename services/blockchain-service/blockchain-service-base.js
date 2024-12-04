@@ -1,7 +1,14 @@
 /* eslint-disable dot-notation */
 /* eslint-disable no-await-in-loop */
-const Web3 = require('web3');
-const axios = require('axios');
+import Web3 from 'web3';
+import axios from 'axios';
+import { createRequire } from 'module';
+import { OPERATIONS_STEP_STATUS, DEFAULT_GAS_PRICE  } from '../../constants.js';
+import emptyHooks from '../../util/empty-hooks.js';
+import { sleepForMilliseconds  } from '../utilities.js';
+
+const require = createRequire(import.meta.url);
+
 const AssertionStorageAbi = require('dkg-evm-module/abi/AssertionStorage.json');
 const HubAbi = require('dkg-evm-module/abi/Hub.json');
 const ServiceAgreementV1Abi = require('dkg-evm-module/abi/ServiceAgreementV1.json');
@@ -16,11 +23,8 @@ const ParanetIncentivesPoolFactoryAbi = require('dkg-evm-module/abi/ParanetIncen
 const ParanetNeuroIncentivesPoolAbi = require('dkg-evm-module/abi/ParanetNeuroIncentivesPool.json');
 const ParanetKnowledgeMinersRegistryAbi = require('dkg-evm-module/abi/ParanetKnowledgeMinersRegistry.json');
 const IdentityStorageAbi = require('dkg-evm-module/abi/IdentityStorage.json');
-const { OPERATIONS_STEP_STATUS, DEFAULT_GAS_PRICE } = require('../../constants');
-const emptyHooks = require('../../util/empty-hooks.js');
-const { sleepForMilliseconds } = require('../utilities.js');
 
-class BlockchainServiceBase {
+export default class BlockchainServiceBase {
     constructor(config = {}) {
         this.config = config;
         this.events = {};
@@ -1155,4 +1159,3 @@ class BlockchainServiceBase {
         return Web3.utils.toWei(ether.toString(), 'ether');
     }
 }
-module.exports = BlockchainServiceBase;

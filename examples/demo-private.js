@@ -1,4 +1,4 @@
-const DKG = require('../index.js');
+import DKG from '../index.js';
 
 const ENVIRONMENT = 'development';
 const OT_NODE_HOSTNAME = 'http://localhost';

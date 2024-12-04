@@ -1,35 +1,21 @@
-const path = require('path');
-const { mkdir, writeFile, unlink } = require('fs/promises');
-const {
-    assertionMetadata,
-    calculateRoot,
-    formatGraph,
-    calculateNumberOfChunks,
-    formatDataset,
-    flattenDataset,
-} = require('assertion-tools');
-const { ethers, ZeroHash } = require('ethers');
-const {
+import { kaTools, kcTools  } from 'assertion-tools';
+import { ethers  } from 'ethers';
+import {
     deriveUAL,
     getOperationStatusObject,
     resolveUAL,
     sleepForMilliseconds,
-} = require('../services/utilities.js');
-const {
+} from '../services/utilities.js';
+import {
     OPERATIONS,
-    OPERATIONS_STEP_STATUS,
-    GET_OUTPUT_FORMATS,
     OPERATION_STATUSES,
-    DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY,
-    PRIVATE_ASSERTION_PREDICATE,
-    STORE_TYPES,
     ZERO_ADDRESS,
     CHUNK_BYTE_SIZE,
     OPERATION_DELAYS,
-} = require('../constants.js');
-const emptyHooks = require('../util/empty-hooks');
+} from '../constants.js';
+import emptyHooks from '../util/empty-hooks.js';
 
-class AssetOperationsManager {
+export default class AssetOperationsManager {
     constructor(services) {
         this.nodeApiService = services.nodeApiService;
         this.validationService = services.validationService;
@@ -315,16 +301,15 @@ class AssetOperationsManager {
                 .map((line) => line.trimStart().trimEnd())
                 .filter((line) => line.trim() !== '');
         } else {
-            const flattenedDataset = await flattenDataset(content);
-            dataset = await formatDataset(flattenedDataset);
+            dataset = await kcTools.formatDataset(content);
         }
 
-        const numberOfChunks = calculateNumberOfChunks(dataset, CHUNK_BYTE_SIZE);
+        const numberOfChunks = kcTools.calculateNumberOfChunks(dataset, CHUNK_BYTE_SIZE);
 
         const datasetSize = numberOfChunks * CHUNK_BYTE_SIZE;
 
         this.validationService.validateAssertionSizeInBytes(datasetSize);
-        const datasetRoot = await calculateRoot(dataset);
+        const datasetRoot = kcTools.calculateMerkleRoot(dataset);
 
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
             'ContentAssetStorage',
@@ -353,7 +338,7 @@ class AssetOperationsManager {
 
         if (publishOperationResult.status !== OPERATION_STATUSES.COMPLETED) {
             return {
-                datasetRoot: datasetRoot,
+                datasetRoot,
                 operation: {
                     publish: getOperationStatusObject(publishOperationResult, publishOperationId),
                 },
@@ -383,8 +368,8 @@ class AssetOperationsManager {
                     {
                         publishOperationId,
                         datasetRoot,
-                        datasetSize: datasetSize,
-                        triplesNumber: assertionMetadata.getAssertionTriplesNumber(dataset), // todo
+                        datasetSize,
+                        triplesNumber: kaTools.getAssertionTriplesNumber(dataset), // todo
                         chunksNumber: numberOfChunks,
                         epochsNum,
                         tokenAmount: estimatedPublishingCost,
@@ -404,9 +389,9 @@ class AssetOperationsManager {
                     {
                         publishOperationId,
                         datasetRoot,
-                        datasetSize: datasetSize,
-                        triplesNumber: assertionMetadata.getAssertionTriplesNumber(dataset), // todo
-                        chunksNumber: calculateNumberOfChunks(dataset),
+                        datasetSize,
+                        triplesNumber: kaTools.getAssertionTriplesNumber(dataset), // todo
+                        chunksNumber: kcTools.calculateNumberOfChunks(dataset),
                         epochsNum,
                         tokenAmount: estimatedPublishingCost,
                         scoreFunctionId: scoreFunctionId ?? 1,
@@ -449,7 +434,7 @@ class AssetOperationsManager {
                 finalityOperationId,
             );
         } catch (error) {
-            console.error(`Attempt ${attempt + 1} failed:`, error.message);
+            console.error(`Attempt failed:`, error.message);
         }
 
         return {
@@ -884,16 +869,15 @@ class AssetOperationsManager {
                 .map((line) => line.trimStart().trimEnd())
                 .filter((line) => line.trim() !== '');
         } else {
-            const flattenedDataset = await flattenDataset(content);
-            dataset = await formatDataset(flattenedDataset);
+            dataset = await kcTools.formatDataset(content);
         }
 
-        const numberOfChunks = calculateNumberOfChunks(dataset, CHUNK_BYTE_SIZE);
+        const numberOfChunks = kcTools.calculateNumberOfChunks(dataset, CHUNK_BYTE_SIZE);
 
         const datasetSize = numberOfChunks * CHUNK_BYTE_SIZE;
 
         this.validationService.validateAssertionSizeInBytes(datasetSize);
-        const datasetRoot = await calculateRoot(dataset);
+        const datasetRoot = kcTools.calculateMerkleRoot(dataset);
 
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
             'ContentAssetStorage',
@@ -923,7 +907,7 @@ class AssetOperationsManager {
 
         if (updateOperationResult.status !== OPERATION_STATUSES.COMPLETED) {
             return {
-                datasetRoot: datasetRoot,
+                datasetRoot,
                 operation: {
                     publish: getOperationStatusObject(updateOperationResult, updateOperationId),
                 },
@@ -951,8 +935,8 @@ class AssetOperationsManager {
             tokenId,
             datasetRoot,
             datasetSize,
-            assertionMetadata.getAssertionTriplesNumber(dataset),
-            assertionMetadata.getAssertionChunksNumber(dataset),
+            kaTools.getAssertionTriplesNumber(dataset),
+            kcTools.calculateNumberOfChunks(dataset),
             tokenAmountInWei,
             blockchain,
         );
@@ -967,5 +951,3 @@ class AssetOperationsManager {
         };
     }
 }
-
-module.exports = AssetOperationsManager;

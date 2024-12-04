@@ -1,5 +1,5 @@
-const { isAddress } = require('ethers');
-const {
+import { isAddress  } from 'ethers';
+import {
     CONTENT_TYPES,
     GRAPH_LOCATIONS,
     GRAPH_STATES,
@@ -10,10 +10,10 @@ const {
     BID_SUGGESTION_RANGE_ENUM,
     PARANET_NODES_ACCESS_POLICY,
     PARANET_MINERS_ACCESS_POLICY,
-} = require('../constants.js');
-const { nodeSupported } = require('./utilities.js');
+} from '../constants.js';
+import { nodeSupported  } from './utilities.js';
 
-class ValidationService {
+export default class ValidationService {
     validateNodeInfo(endpoint, port, authToken) {
         this.validateEndpoint(endpoint);
         this.validatePort(port);
@@ -734,4 +734,3 @@ class ValidationService {
         });
     }
 }
-module.exports = ValidationService;

@@ -1,5 +1,5 @@
-const jsonld = require('jsonld');
-const DKG = require('../index.js');
+import jsonld from 'jsonld';
+import DKG from '../index.js';
 
 const ENVIRONMENT = 'development';
 const OT_NODE_HOSTNAME = 'http://localhost';

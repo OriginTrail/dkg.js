@@ -1,4 +1,4 @@
-class NodeOperationsManager {
+export default class NodeOperationsManager {
     constructor(services) {
         this.nodeApiService = services.nodeApiService;
         this.inputService = services.inputService;
@@ -42,4 +42,3 @@ class NodeOperationsManager {
         return identityId;
     }
 }
-module.exports = NodeOperationsManager;

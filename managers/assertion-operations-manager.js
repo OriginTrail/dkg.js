@@ -1,11 +1,7 @@
-const {
-    assertionMetadata,
-    calculateRoot,
-    formatGraph,
-    formatAssertion,
-} = require('assertion-tools');
-const { LABEL_PREFIX } = require('../constants.js');
-class AssertionOperationsManager {
+import { kaTools, kcTools } from 'assertion-tools';
+import { LABEL_PREFIX } from '../constants.js';
+
+export default class AssertionOperationsManager {
     constructor(services) {
         this.nodeApiService = services.nodeApiService;
         this.inputService = services.inputService;
@@ -20,10 +16,7 @@ class AssertionOperationsManager {
      * formatted public assertion and, if available, the private assertion.
      */
     async formatGraph(content) {
-        return formatGraph(content);
-    }
-    async createAssertions(content) {
-        return createAssertions(content);
+        return kaTools.formatGraph(content);
     }
 
     /**
@@ -34,8 +27,8 @@ class AssertionOperationsManager {
      * Merkle root of the formatted public assertion.
      */
     async getPublicAssertionId(content) {
-        const assertions = await formatGraph(content);
-        return calculateRoot(assertions.public);
+        const assertions = await kaTools.formatGraph(content);
+        return kcTools.calculateMerkleRoot(assertions.public);
     }
 
     /**
@@ -46,8 +39,8 @@ class AssertionOperationsManager {
      * size in bytes of the formatted public assertion.
      */
     async getSizeInBytes(content) {
-        const assertions = await formatGraph(content);
-        return assertionMetadata.getAssertionSizeInBytes(assertions.public);
+        const assertions = await kaTools.formatGraph(content);
+        return kcTools.getSizeInBytes(assertions.public);
     }
 
     /**
@@ -58,8 +51,8 @@ class AssertionOperationsManager {
      * number of triples of the formatted public assertion.
      */
     async getTriplesNumber(content) {
-        const assertions = await formatGraph(content);
-        return assertionMetadata.getAssertionTriplesNumber(assertions.public);
+        const assertions = await kaTools.formatGraph(content);
+        return kaTools.getTriplesNumber(assertions.public);
     }
 
     /**
@@ -70,8 +63,8 @@ class AssertionOperationsManager {
      * number of chunks of the formatted public assertion.
      */
     async getChunksNumber(content) {
-        const assertions = await formatGraph(content);
-        return assertionMetadata.getAssertionChunksNumber(assertions.public);
+        const assertions = await kaTools.formatGraph(content);
+        return kcTools.calculateNumberOfChunks(assertions.public);
     }
 
     /**
@@ -86,7 +79,7 @@ class AssertionOperationsManager {
         this.validationService.validateJsonldOrNquads(content);
         this.validationService.validateConditions(conditions);
 
-        const assertions = await formatAssertion(content);
+        const assertions = await kcTools.formatDataset(content);
 
         const resultAssertions = [];
 
@@ -112,15 +105,12 @@ class AssertionOperationsManager {
                 if (condition.condition === true) {
                     const labelTriple = `<<<${subject}> <${predicate}> ${object}>> ${LABEL_PREFIX} <${condition.label}> .`;
                     resultAssertions.push(labelTriple);
-                } else {
-                    if (condition.condition({ subject, predicate, object })) {
+                } else if (condition.condition({ subject, predicate, object })) {
                         const labelTriple = `<<<${subject}> <${predicate}> ${object}>> ${LABEL_PREFIX} <${condition.label}> .`;
                         resultAssertions.push(labelTriple);
                     }
-                }
             });
         });
         return resultAssertions;
     }
 }
-module.exports = AssertionOperationsManager;

@@ -1,4 +1,4 @@
-const {
+import {
     DEFAULT_NEUROWEB_FINALITY_PARAMETERS,
     DEFAULT_PARAMETERS,
     DEFAULT_PROXIMITY_SCORE_FUNCTIONS_PAIR_IDS,
@@ -6,9 +6,9 @@ const {
     LOW_BID_SUGGESTION,
     PARANET_NODES_ACCESS_POLICY,
     PARANET_MINERS_ACCESS_POLICY,
-} = require('../constants');
+} from '../constants.js';
 
-class InputService {
+export default class InputService {
     constructor(config = {}) {
         this.config = config;
     }
@@ -400,5 +400,3 @@ class InputService {
         return options.assertionCachedLocally ?? false;
     }
 }
-
-module.exports = InputService;

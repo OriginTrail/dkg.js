@@ -1,9 +1,9 @@
 /* eslint-disable no-await-in-loop */
-const Web3 = require('web3');
-const BlockchainServiceBase = require('../blockchain-service-base.js');
-const { WEBSOCKET_PROVIDER_OPTIONS } = require('../../../constants.js');
+import Web3 from 'web3';
+import BlockchainServiceBase from '../blockchain-service-base.js';
+import { WEBSOCKET_PROVIDER_OPTIONS  } from '../../../constants.js';
 
-class BrowserBlockchainService extends BlockchainServiceBase {
+export default class BrowserBlockchainService extends BlockchainServiceBase {
     constructor(config = {}) {
         super(config);
         this.config = config;
@@ -128,4 +128,3 @@ class BrowserBlockchainService extends BlockchainServiceBase {
         );
     }
 }
-module.exports = BrowserBlockchainService;

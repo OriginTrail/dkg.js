@@ -1,19 +1,12 @@
-const {
+import { kaTools, kcTools  } from 'assertion-tools';
+import {
     OPERATIONS,
     GET_OUTPUT_FORMATS,
     CHUNK_BYTE_SIZE,
     OPERATION_STATUSES,
     OPERATION_DELAYS,
-    OPERATION_ATTEMPTS,
-} = require('../constants.js');
-const {
-    formatDataset,
-    calculateNumberOfChunks,
-    calculateRoot,
-    flattenDataset,
-    assertionMetadata,
-} = require('assertion-tools');
-const {
+} from '../constants.js';
+import {
     deriveRepository,
     getOperationStatusObject,
     resolveUAL,
@@ -21,10 +14,10 @@ const {
     sleepForMilliseconds,
     toNQuads,
     toJSONLD,
-} = require('../services/utilities.js');
-const emptyHooks = require('../util/empty-hooks.js');
+} from '../services/utilities.js';
+import emptyHooks from '../util/empty-hooks.js';
 
-class GraphOperationsManager {
+export default class GraphOperationsManager {
     constructor(services) {
         this.nodeApiService = services.nodeApiService;
         this.validationService = services.validationService;
@@ -259,16 +252,15 @@ class GraphOperationsManager {
                 .map((line) => line.trimStart().trimEnd())
                 .filter((line) => line.trim() !== '');
         } else {
-            const flattenedDataset = await flattenDataset(content);
-            dataset = await formatDataset(flattenedDataset);
+            dataset = await kcTools.formatDataset(content);
         }
 
-        const numberOfChunks = calculateNumberOfChunks(dataset, CHUNK_BYTE_SIZE);
+        const numberOfChunks = kcTools.calculateNumberOfChunks(dataset, CHUNK_BYTE_SIZE);
 
         const datasetSize = numberOfChunks * CHUNK_BYTE_SIZE;
 
         this.validationService.validateAssertionSizeInBytes(datasetSize);
-        const datasetRoot = await calculateRoot(dataset);
+        const datasetRoot = kcTools.calculateMerkleRoot(dataset);
 
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
             'ContentAssetStorage',
@@ -297,7 +289,7 @@ class GraphOperationsManager {
 
         if (publishOperationResult.status !== OPERATION_STATUSES.COMPLETED) {
             return {
-                datasetRoot: datasetRoot,
+                datasetRoot,
                 operation: {
                     publish: getOperationStatusObject(publishOperationResult, publishOperationId),
                 },
@@ -328,7 +320,7 @@ class GraphOperationsManager {
                         publishOperationId,
                         datasetRoot,
                         assertionSize: datasetSize,
-                        triplesNumber: assertionMetadata.getAssertionTriplesNumber(dataset), // todo
+                        triplesNumber: kaTools.getAssertionTriplesNumber(dataset), // todo
                         chunksNumber: numberOfChunks,
                         epochsNum,
                         tokenAmount: estimatedPublishingCost,
@@ -349,8 +341,8 @@ class GraphOperationsManager {
                         publishOperationId,
                         datasetRoot,
                         assertionSize: datasetSize,
-                        triplesNumber: assertionMetadata.getAssertionTriplesNumber(dataset), // todo
-                        chunksNumber: calculateNumberOfChunks(dataset),
+                        triplesNumber: kaTools.getAssertionTriplesNumber(dataset), // todo
+                        chunksNumber: kcTools.calculateNumberOfChunks(dataset),
                         epochsNum,
                         tokenAmount: estimatedPublishingCost,
                         scoreFunctionId: scoreFunctionId ?? 1,
@@ -393,7 +385,7 @@ class GraphOperationsManager {
                 finalityOperationId,
             );
         } catch (error) {
-            console.error(`Attempt ${attempt + 1} failed:`, error.message);
+            console.error(`Attempt failed:`, error.message);
         }
 
         return {
@@ -431,7 +423,6 @@ class GraphOperationsManager {
             tokenAmount,
             authToken,
             paranetUAL,
-            assertionCachedLocally,
         } = this.inputService.getAssetLocalStoreArguments(options);
 
         this.validationService.validateAssetCreate(
@@ -458,16 +449,15 @@ class GraphOperationsManager {
                 .map((line) => line.trimStart().trimEnd())
                 .filter((line) => line.trim() !== '');
         } else {
-            const flattenedDataset = await flattenDataset(content);
-            dataset = await formatDataset(flattenedDataset);
+            dataset = await kcTools.formatDataset(content);
         }
 
-        const numberOfChunks = calculateNumberOfChunks(dataset, CHUNK_BYTE_SIZE);
+        const numberOfChunks = kcTools.calculateNumberOfChunks(dataset, CHUNK_BYTE_SIZE);
 
         const datasetSize = numberOfChunks * CHUNK_BYTE_SIZE;
 
         this.validationService.validateAssertionSizeInBytes(datasetSize);
-        const datasetRoot = await calculateRoot(dataset);
+        const datasetRoot = kcTools.calculateMerkleRoot(dataset);
 
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
             'ContentAssetStorage',
@@ -494,7 +484,7 @@ class GraphOperationsManager {
 
         if (localStoreOperationResult.status !== OPERATION_STATUSES.COMPLETED) {
             return {
-                datasetRoot: datasetRoot,
+                datasetRoot,
                 operation: {
                     publish: getOperationStatusObject(
                         localStoreOperationResult,
@@ -524,7 +514,7 @@ class GraphOperationsManager {
                     localStoreOperationId,
                     datasetRoot,
                     assertionSize: datasetSize,
-                    triplesNumber: assertionMetadata.getAssertionTriplesNumber(dataset), // todo
+                    triplesNumber: kaTools.getAssertionTriplesNumber(dataset), // todo
                     chunksNumber: numberOfChunks,
                     epochsNum,
                     tokenAmount: estimatedPublishingCost,
@@ -554,7 +544,7 @@ class GraphOperationsManager {
 
         return {
             UAL,
-            datasetRoot: datasetRoot,
+            datasetRoot,
             operation: {
                 mintKnowledgeAsset: mintKnowledgeAssetReceipt,
                 localStore: getOperationStatusObject(
@@ -565,4 +555,3 @@ class GraphOperationsManager {
         };
     }
 }
-module.exports = GraphOperationsManager;
