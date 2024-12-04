@@ -96,12 +96,21 @@ const OPERATIONS = {
     LOCAL_STORE: 'local-store',
     QUERY: 'query',
     PUBLISH_PARANET: 'publishParanet',
+    FINALITY: 'finality',
 };
 
 const OPERATION_STATUSES = {
     PENDING: 'PENDING',
     COMPLETED: 'COMPLETED',
     FAILED: 'FAILED',
+};
+
+const OPERATION_DELAYS = {
+    FINALITY: 2000,
+};
+
+const OPERATION_ATTEMPTS = {
+    FINALITY: 5,
 };
 
 const ASSERTION_STATES = {
@@ -242,6 +251,8 @@ module.exports = {
     WEBSOCKET_PROVIDER_OPTIONS,
     OPERATIONS,
     OPERATION_STATUSES,
+    OPERATION_DELAYS,
+    OPERATION_ATTEMPTS,
     ASSERTION_STATES,
     CONTENT_TYPES,
     GET_OUTPUT_FORMATS,

@@ -131,7 +131,17 @@ class HttpService {
         }
     }
 
-    async get(endpoint, port, authToken, UAL, state, includeMetadata, contentType, hashFunctionId, paranetUAL) {
+    async get(
+        endpoint,
+        port,
+        authToken,
+        UAL,
+        state,
+        includeMetadata,
+        contentType,
+        hashFunctionId,
+        paranetUAL,
+    ) {
         try {
             const response = await axios({
                 method: 'post',
@@ -190,6 +200,20 @@ class HttpService {
                 method: 'post',
                 url: `${endpoint}:${port}/query`,
                 data: { query, type, repository },
+                headers: this.prepareRequestConfig(authToken),
+            });
+            return response.data.operationId;
+        } catch (error) {
+            throw Error(`Unable to query: ${error.message}`);
+        }
+    }
+
+    async finality(endpoint, port, authToken, blockchain, ual, minimumNumberOfNodeReplications) {
+        try {
+            const response = await axios({
+                method: 'post',
+                url: `${endpoint}:${port}/finality`,
+                data: { ual, blockchain, minimumNumberOfNodeReplications },
                 headers: this.prepareRequestConfig(authToken),
             });
             return response.data.operationId;

@@ -1,11 +1,12 @@
 const {
     OPERATIONS,
     GET_OUTPUT_FORMATS,
-    CHUNK_BYTE_SIZE, 
-    OPERATION_STATUSES
+    CHUNK_BYTE_SIZE,
+    OPERATION_STATUSES,
+    OPERATION_DELAYS,
+    OPERATION_ATTEMPTS,
 } = require('../constants.js');
 const {
-    getOperationStatusObject,
     toNQuads,
     toJSONLD,
     formatDataset,
@@ -19,6 +20,7 @@ const {
     getOperationStatusObject,
     resolveUAL,
     deriveUAL,
+    sleepForMilliseconds,
 } = require('../services/utilities.js');
 const emptyHooks = require('../util/empty-hooks.js');
 
@@ -110,10 +112,7 @@ class GraphOperationsManager {
 
             return {
                 operation: {
-                    get: getOperationStatusObject(
-                        getOperationResult,
-                        getOperationId,
-                    ),
+                    get: getOperationStatusObject(getOperationResult, getOperationId),
                 },
             };
         }
@@ -139,10 +138,7 @@ class GraphOperationsManager {
         return {
             assertion: formattedAssertion,
             operation: {
-                get: getOperationStatusObject(
-                    getOperationResult,
-                    getOperationId,
-                ),
+                get: getOperationStatusObject(getOperationResult, getOperationId),
             },
         };
     }
@@ -226,6 +222,7 @@ class GraphOperationsManager {
             authToken,
             paranetUAL,
             payer,
+            minimumNumberOfNodeReplications,
         } = this.inputService.getAssetCreateArguments(options);
 
         this.validationService.validateAssetCreate(
@@ -243,6 +240,7 @@ class GraphOperationsManager {
             authToken,
             paranetUAL,
             payer,
+            minimumNumberOfNodeReplications,
         );
 
         let dataset;
@@ -360,14 +358,46 @@ class GraphOperationsManager {
 
         const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, tokenId);
 
-        // node finality api check for UAL
+        const delayBetweenAttempts = OPERATION_DELAYS.FINALITY;
+        let finalityOperationResult = null;
 
+        for (let attempt = 0; attempt < OPERATION_ATTEMPTS.FINALITY; attempt++) {
+            try {
+                const finalityOperationId = await this.nodeApiService.finality(
+                    endpoint,
+                    port,
+                    authToken,
+                    blockchain.name,
+                    UAL,
+                    minimumNumberOfNodeReplications,
+                );
+
+                finalityOperationResult = await this.nodeApiService.getOperationResult(
+                    endpoint,
+                    port,
+                    authToken,
+                    OPERATIONS.FINALITY,
+                    maxNumberOfRetries,
+                    frequency,
+                    finalityOperationId,
+                );
+
+                if (finalityOperationResult.status === 'COMPLETED') break;
+            } catch (error) {
+                console.error(`Attempt ${attempt + 1} failed:`, error.message);
+            }
+
+            if (attempt < OPERATION_ATTEMPTS.FINALITY - 1) {
+                await sleepForMilliseconds(delayBetweenAttempts);
+            }
+        }
         return {
             UAL,
             datasetRoot,
             operation: {
                 mintKnowledgeAsset: mintKnowledgeAssetReceipt,
                 publish: getOperationStatusObject(publishOperationResult, publishOperationId),
+                finality: finalityOperationResult,
             },
         };
     }

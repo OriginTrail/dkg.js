@@ -40,6 +40,7 @@ class InputService {
             authToken: this.getAuthToken(options),
             paranetUAL: this.getParanetUAL(options),
             payer: this.getPayer(options),
+            minimumNumberOfNodeReplications: this.getMinimumNumberOfNodeReplications(options) ?? 5,
         };
     }
 
@@ -287,7 +288,11 @@ class InputService {
     }
 
     getIncludeMetadata(options) {
-        return options.includeMetadata ?? this.config.includeMetadata ?? DEFAULT_PARAMETERS.INCLUDE_METADATA;
+        return (
+            options.includeMetadata ??
+            this.config.includeMetadata ??
+            DEFAULT_PARAMETERS.INCLUDE_METADATA
+        );
     }
 
     getContentType(options) {
@@ -324,6 +329,14 @@ class InputService {
 
     getPayer(options) {
         return options.payer ?? this.config.payer ?? null;
+    }
+
+    getMinimumNumberOfNodeReplications(options) {
+        return (
+            options.minimumNumberOfNodeReplications ??
+            this.config.minimumNumberOfNodeReplications ??
+            null
+        );
     }
 
     getParanetName(options) {
