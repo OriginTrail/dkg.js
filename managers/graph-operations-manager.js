@@ -161,8 +161,8 @@ class GraphOperationsManager {
      */
     async query(queryString, queryType, options = {}) {
         const {
-            graphLocation,
-            graphState,
+            // graphLocation,
+            // graphState,
             endpoint,
             port,
             maxNumberOfRetries,
@@ -174,8 +174,8 @@ class GraphOperationsManager {
         this.validationService.validateGraphQuery(
             queryString,
             queryType,
-            graphLocation,
-            graphState,
+            // graphLocation,
+            // graphState,
             endpoint,
             port,
             maxNumberOfRetries,
@@ -183,15 +183,15 @@ class GraphOperationsManager {
             authToken,
         );
 
-        const repository = paranetUAL ?? deriveRepository(graphLocation, graphState);
-
         const operationId = await this.nodeApiService.query(
             endpoint,
             port,
             authToken,
             queryString,
             queryType,
-            repository,
+            // graphState,
+            // graphLocation,
+            paranetUAL,
         );
 
         return this.nodeApiService.getOperationResult(

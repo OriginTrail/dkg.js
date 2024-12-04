@@ -23,8 +23,8 @@ class ValidationService {
     validateGraphQuery(
         queryString,
         queryType,
-        graphLocation,
-        graphState,
+        // graphLocation,
+        // graphState,
         endpoint,
         port,
         maxNumberOfRetries,
@@ -33,8 +33,8 @@ class ValidationService {
     ) {
         this.validateQueryString(queryString);
         this.validateQueryType(queryType);
-        this.validateGraphLocation(graphLocation);
-        this.validateGraphState(graphState);
+        // this.validateGraphLocation(graphLocation);
+        // this.validateGraphState(graphState);
         this.validateEndpoint(endpoint);
         this.validatePort(port);
         this.validateMaxNumberOfRetries(maxNumberOfRetries);
@@ -388,11 +388,9 @@ class ValidationService {
         this.validateRequiredParam('graphLocation', graphLocation);
         const validGraphLocations = Object.keys(GRAPH_LOCATIONS);
         if (!validGraphLocations.includes(graphLocation)) {
-            if (!this.validateUAL(graphLocation)) {
-                throw Error(
-                    `Invalid graph location: available locations are valid Paranet UAL or: ${validGraphLocations}`,
-                );
-            }
+            throw Error(
+                `Invalid graph location: available locations are: ${validGraphLocations}`,
+            );
         }
     }
 
