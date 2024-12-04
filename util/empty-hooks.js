@@ -4,6 +4,7 @@
  * @type {{emptyHooks: exports.emptyHooks}}
  */
 // TODO: Either to be deprecated or added to all operations
-module.exports = {
+
+export default {
     afterHook: () => {},
 };

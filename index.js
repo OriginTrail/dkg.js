@@ -1,15 +1,15 @@
 // managers
-const AssertionOperationsManager = require('./managers/assertion-operations-manager.js');
-const AssetOperationsManager = require('./managers/asset-operations-manager.js');
-const BlockchainOperationsManager = require('./managers/blockchain-operations-manager');
-const GraphOperationsManager = require('./managers/graph-operations-manager.js');
-const NetworkOperationsManager = require('./managers/network-operations-manager.js');
-const NodeOperationsManager = require('./managers/node-operations-manager.js');
-const ParanetOperationsManager = require('./managers/paranet-operations-manager.js');
+import AssertionOperationsManager from './managers/assertion-operations-manager.js';
+import AssetOperationsManager from './managers/asset-operations-manager.js';
+import BlockchainOperationsManager from './managers/blockchain-operations-manager.js';
+import GraphOperationsManager from './managers/graph-operations-manager.js';
+import NetworkOperationsManager from './managers/network-operations-manager.js';
+import NodeOperationsManager from './managers/node-operations-manager.js';
+import ParanetOperationsManager from './managers/paranet-operations-manager.js';
 
-const BaseServiceManager = require('./services/base-service-manager.js');
+import BaseServiceManager from './services/base-service-manager.js';
 
-class DkgClient {
+export default class DkgClient {
     constructor(config) {
         const baseServiceManager = new BaseServiceManager(config);
         const services = baseServiceManager.getServices();
@@ -21,6 +21,8 @@ class DkgClient {
         this.graph = new GraphOperationsManager(services);
         this.network = new NetworkOperationsManager(services);
         this.paranet = new ParanetOperationsManager(services);
+
+        // Backwards compatibility
+        this.asset.get = this.graph.get;
     }
 }
-module.exports = DkgClient;
