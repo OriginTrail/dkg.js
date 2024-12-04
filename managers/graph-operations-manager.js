@@ -30,8 +30,8 @@ class GraphOperationsManager {
         this.validationService.validateGraphQuery(
             queryString,
             queryType,
-            graphLocation,
-            graphState,
+            // graphLocation,
+            // graphState,
             endpoint,
             port,
             maxNumberOfRetries,
@@ -45,8 +45,8 @@ class GraphOperationsManager {
             authToken,
             queryString,
             queryType,
-            graphState,
-            graphLocation,
+            // graphState,
+            // graphLocation,
             paranetUAL,
         );
 

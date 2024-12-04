@@ -24,8 +24,8 @@ class ValidationService {
     validateGraphQuery(
         queryString,
         queryType,
-        graphLocation,
-        graphState,
+        // graphLocation,
+        // graphState,
         endpoint,
         port,
         maxNumberOfRetries,
@@ -34,8 +34,8 @@ class ValidationService {
     ) {
         this.validateQueryString(queryString);
         this.validateQueryType(queryType);
-        this.validateGraphLocation(graphLocation);
-        this.validateGraphState(graphState);
+        // this.validateGraphLocation(graphLocation);
+        // this.validateGraphState(graphState);
         this.validateEndpoint(endpoint);
         this.validatePort(port);
         this.validateMaxNumberOfRetries(maxNumberOfRetries);
