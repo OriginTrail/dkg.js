@@ -17,8 +17,8 @@ class GraphOperationsManager {
      */
     async query(queryString, queryType, options = {}) {
         const {
-            graphLocation,
-            graphState,
+            // graphLocation,
+            // graphState,
             endpoint,
             port,
             maxNumberOfRetries,
