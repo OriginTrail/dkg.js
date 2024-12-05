@@ -5,7 +5,18 @@ const { sleepForMilliseconds } = require('../../utilities.js');
 class HttpService {
     constructor(config = {}) {
         this.config = config;
-        this.apiVersion = config.nodeApiVersion ?? 'v0';
+
+        if (
+            !(
+                config.nodeApiVersion === '/' ||
+                config.nodeApiVersion === '/latest' ||
+                /^\/v\d+$/.test(config.nodeApiVersion)
+            )
+        ) {
+            throw Error(`Version must be '/latest', '/' or in '/v{digits}' format.`);
+        }
+
+        this.apiVersion = config.nodeApiVersion ?? '/v0';
     }
 
     async info(endpoint, port, authToken) {
@@ -223,7 +234,7 @@ class HttpService {
     }
 
     getBaseUrl(endpoint, port) {
-        return `${endpoint}:${port}/${this.apiVersion}`;
+        return `${endpoint}:${port}${this.apiVersion}`;
     }
 }
 module.exports = HttpService;
