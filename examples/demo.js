@@ -28,10 +28,12 @@ function divider() {
 }
 
 (async () => {
-    const content = `<uuid:1> <http://schema.org/city> <uuid:belgrade> .
-    <uuid:1> <http://schema.org/company> "OT" .
-    <uuid:1> <http://schema.org/user> <uuid:user:1> .
-    `;
+    const content = {
+        private: `<uuid:2> <http://schema.org/city> <uuid:belgrade> .
+    <uuid:2> <http://schema.org/company> "OT" .
+    <uuid:2> <http://schema.org/user> <uuid:user:1> .
+    `,
+    };
 
     divider();
 
@@ -41,15 +43,18 @@ function divider() {
 
     divider();
 
-    const createAssetResult = await DkgClient.asset.create(content, { epochsNum: 2, tokenAmount: '100' });
+    const createAssetResult = await DkgClient.asset.create(content, {
+        epochsNum: 2,
+        tokenAmount: '100',
+    });
     console.log('======================== ASSET CREATED');
     console.log(createAssetResult);
 
     divider();
 
-    const createCollectionResult = await DkgClient.graph.create(content, { epochsNum: 2, tokenAmount: '100' });
-    console.log('======================== ASSET CREATED');
-    console.log(createCollectionResult);
+    // const createCollectionResult = await DkgClient.graph.create(content, { epochsNum: 2, tokenAmount: '100' });
+    // console.log('======================== ASSET CREATED');
+    // console.log(createCollectionResult);
 
     divider();
 })();

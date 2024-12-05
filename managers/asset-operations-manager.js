@@ -1,5 +1,5 @@
-import { kaTools, kcTools  } from 'assertion-tools';
-import { ethers  } from 'ethers';
+import { kaTools, kcTools } from 'assertion-tools';
+import { ethers } from 'ethers';
 import {
     deriveUAL,
     getOperationStatusObject,
@@ -12,6 +12,7 @@ import {
     ZERO_ADDRESS,
     CHUNK_BYTE_SIZE,
     OPERATION_DELAYS,
+    PRIVATE_ASSERTION_PREDICATE,
 } from '../constants.js';
 import emptyHooks from '../util/empty-hooks.js';
 
@@ -249,6 +250,18 @@ export default class AssetOperationsManager {
     }
 
     /**
+     * Helper function to process content by splitting, trimming, and filtering lines.
+     * @param {string} str - The content string to process.
+     * @returns {string[]} - Processed array of strings.
+     */
+    processContent(str) {
+        return str
+            .split('\n')
+            .map((line) => line.trim())
+            .filter((line) => line !== '');
+    }
+
+    /**
      * Creates a new knowledge collection.
      * @async
      * @param {Object} content - The content of the knowledge collection to be created, contains public, private or both keys.
@@ -293,23 +306,41 @@ export default class AssetOperationsManager {
             minimumNumberOfNodeReplications,
         );
 
-        let dataset;
+        let dataset = {};
 
         if (typeof content === 'string') {
-            dataset = content
-                .split('\n')
-                .map((line) => line.trimStart().trimEnd())
-                .filter((line) => line.trim() !== '');
+            dataset.public = this.processContent(content);
+        } else if (
+            typeof content.public === 'string' ||
+            (!content.public && content.private && typeof content.private === 'string')
+        ) {
+            if (content.public) {
+                dataset.public = this.processContent(content.public);
+            }
+
+            if (content.private && typeof content.private === 'string') {
+                dataset.private = this.processContent(content.private);
+
+                const privateMerkleRootTriplet = `_:c14n0 <${PRIVATE_ASSERTION_PREDICATE}> "${kcTools.calculateMerkleRoot(
+                    dataset.private,
+                )}" .`;
+
+                if (dataset.public) {
+                    dataset.public.push(privateMerkleRootTriplet);
+                } else {
+                    dataset.public = [privateMerkleRootTriplet];
+                }
+            }
         } else {
             dataset = await kcTools.formatDataset(content);
         }
 
-        const numberOfChunks = kcTools.calculateNumberOfChunks(dataset, CHUNK_BYTE_SIZE);
+        const numberOfChunks = kcTools.calculateNumberOfChunks(dataset.public, CHUNK_BYTE_SIZE);
 
         const datasetSize = numberOfChunks * CHUNK_BYTE_SIZE;
 
         this.validationService.validateAssertionSizeInBytes(datasetSize);
-        const datasetRoot = kcTools.calculateMerkleRoot(dataset);
+        const datasetRoot = kcTools.calculateMerkleRoot(dataset.public);
 
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
             'ContentAssetStorage',
@@ -369,7 +400,7 @@ export default class AssetOperationsManager {
                         publishOperationId,
                         datasetRoot,
                         datasetSize,
-                        triplesNumber: kaTools.getAssertionTriplesNumber(dataset), // todo
+                        triplesNumber: kaTools.getAssertionTriplesNumber(dataset.public), // todo
                         chunksNumber: numberOfChunks,
                         epochsNum,
                         tokenAmount: estimatedPublishingCost,
