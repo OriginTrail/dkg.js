@@ -319,7 +319,7 @@ class AssetOperationsManager {
                     ? 0
                     : assertionMetadata.getAssertionSizeInBytes(privateAssertion)),
         );
-        const publicAssertionId = calculateRoot(publicAssertion);
+        const publicAssertionId = await calculateRoot(publicAssertion);
 
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
             'ContentAssetStorage',
@@ -395,7 +395,7 @@ class AssetOperationsManager {
         if (privateAssertion?.length) {
             assertions.push({
                 ...resolvedUAL,
-                assertionId: calculateRoot(privateAssertion),
+                assertionId: await calculateRoot(privateAssertion),
                 assertion: privateAssertion,
                 storeType: STORE_TYPES.TRIPLE,
             });
@@ -613,7 +613,7 @@ class AssetOperationsManager {
 
         const publicAssertion = getPublicOperationResult.data.assertion;
 
-        if (validate === true && calculateRoot(publicAssertion) !== publicAssertionId) {
+        if (validate === true && (await calculateRoot(publicAssertion)) !== publicAssertionId) {
             getPublicOperationResult.data = {
                 errorType: 'DKG_CLIENT_ERROR',
                 errorMessage: "Calculated root hashes don't match!",
@@ -713,7 +713,7 @@ class AssetOperationsManager {
                 if (
                     privateAssertion.length &&
                     validate === true &&
-                    calculateRoot(privateAssertion) !== privateAssertionId
+                    (await calculateRoot(privateAssertion)) !== privateAssertionId
                 ) {
                     queryPrivateOperationResult.data = {
                         errorType: 'DKG_CLIENT_ERROR',
@@ -809,7 +809,7 @@ class AssetOperationsManager {
                     ? 0
                     : assertionMetadata.getAssertionSizeInBytes(privateAssertion)),
         );
-        const publicAssertionId = calculateRoot(publicAssertion);
+        const publicAssertionId = await calculateRoot(publicAssertion);
 
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
             'ContentAssetStorage',
@@ -861,7 +861,7 @@ class AssetOperationsManager {
         if (privateAssertion?.length) {
             assertions.push({
                 ...resolvedUAL,
-                assertionId: calculateRoot(privateAssertion),
+                assertionId: await calculateRoot(privateAssertion),
                 assertion: privateAssertion,
                 storeType: STORE_TYPES.PENDING,
             });
