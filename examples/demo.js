@@ -81,23 +81,21 @@ function divider() {
 
     divider();
 
-    // const createAssetResult = await DkgClient.asset.create(content, {
-    //     epochsNum: 2,
-    //     tokenAmount: '100',
-    // });
-    // console.log('======================== ASSET CREATED');
-    // console.log(createAssetResult);
+    const createAssetResult = await DkgClient.asset.create(content, {
+        epochsNum: 2,
+        tokenAmount: '100',
+    });
+    console.log('======================== ASSET CREATED');
+    console.log(createAssetResult);
 
-    // divider();
+    divider();
 
-    const getResult = await DkgClient.graph.get(
-        'did:dkg:hardhat2:31337/0x8aafc28174bb6c3bdc7be92f18c2f134e876c05e/1',
-    );
-    console.log(getResult);
-
-    // const createCollectionResult = await DkgClient.graph.create(content, { epochsNum: 2, tokenAmount: '100' });
-    // console.log('======================== ASSET CREATED');
-    // console.log(createCollectionResult);
+    const createCollectionResult = await DkgClient.graph.create(content, {
+        epochsNum: 2,
+        tokenAmount: '100',
+    });
+    console.log('======================== ASSET CREATED');
+    console.log(createCollectionResult);
 
     divider();
 })();
