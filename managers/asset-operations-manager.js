@@ -328,10 +328,16 @@ export default class AssetOperationsManager {
             dataset.private = kcTools.generateMissingIdsForBlankNodes(dataset.private);
         }
 
-        let privateTripletsSortedAndGrouped;
+        // Ensure we have a list for private triplets even if not provided
         const publicTripletsSortedAndGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
-        if (dataset.private) {
-            privateTripletsSortedAndGrouped = kcTools.groupNquadsBySubject(dataset.private, true);
+        const privateTripletsSortedAndGrouped = dataset.private
+            ? kcTools.groupNquadsBySubject(dataset.private, true)
+            : [];
+
+        // A helper function to generate the private merkle root triplet
+        function createPrivateMerkleRootTriplet(subject, triplets) {
+            const merkleRoot = kcTools.calculateMerkleRoot(triplets);
+            return `${subject} <${PRIVATE_ASSERTION_PREDICATE}> "${merkleRoot}" .`;
         }
 
         let publicIndex = 0;
@@ -341,39 +347,46 @@ export default class AssetOperationsManager {
             publicIndex < publicTripletsSortedAndGrouped.length ||
             privateIndex < privateTripletsSortedAndGrouped.length
         ) {
+            // If we've exhausted all private triplets, we're done.
+            if (privateIndex === privateTripletsSortedAndGrouped.length) {
+                break;
+            }
+
+            // If we've exhausted all public triplets, just append all remaining private triplets.
             if (publicIndex === publicTripletsSortedAndGrouped.length) {
                 const [privateSubject] =
                     privateTripletsSortedAndGrouped[privateIndex][0].split(' ');
-                const privateMerkleRootTriplet = `${privateSubject} <${PRIVATE_ASSERTION_PREDICATE}> "${kcTools.calculateMerkleRoot(
+                const privateMerkleRootTriplet = createPrivateMerkleRootTriplet(
+                    privateSubject,
                     privateTripletsSortedAndGrouped[privateIndex],
-                )}" .`;
+                );
                 publicTripletsSortedAndGrouped.push([privateMerkleRootTriplet]);
                 privateIndex += 1;
                 continue;
             }
-            if (privateIndex === privateTripletsSortedAndGrouped.length) {
-                // Only public left no need to do anything
-                break;
-            }
+
             const [publicSubject] = publicTripletsSortedAndGrouped[publicIndex][0].split(' ');
             const [privateSubject] = privateTripletsSortedAndGrouped[privateIndex][0].split(' ');
-            let compare = publicSubject.localeCompare(privateSubject);
-            if (compare === -1) {
-                // Public comes next
+            const compare = publicSubject.localeCompare(privateSubject);
+
+            if (compare < 0) {
+                // The public subject comes before the private one, move forward in public
                 publicIndex += 1;
-            } else if (compare === 1) {
-                // Private comes next
-                const privateMerkleRootTriplet = `${privateSubject} <${PRIVATE_ASSERTION_PREDICATE}> "${kcTools.calculateMerkleRoot(
+            } else if (compare > 0) {
+                // The private subject comes before the public one, insert new triplets array in public
+                const privateMerkleRootTriplet = createPrivateMerkleRootTriplet(
+                    privateSubject,
                     privateTripletsSortedAndGrouped[privateIndex],
-                )}" .`;
+                );
                 publicTripletsSortedAndGrouped.splice(publicIndex, 0, [privateMerkleRootTriplet]);
                 publicIndex += 1;
                 privateIndex += 1;
             } else {
-                // Private  and public match
-                const privateMerkleRootTriplet = `${privateSubject} <${PRIVATE_ASSERTION_PREDICATE}> "${kcTools.calculateMerkleRoot(
+                // Subjects match, append private merkle root to the existing public triplet array
+                const privateMerkleRootTriplet = createPrivateMerkleRootTriplet(
+                    privateSubject,
                     privateTripletsSortedAndGrouped[privateIndex],
-                )}" .`;
+                );
                 publicTripletsSortedAndGrouped[publicIndex].push(privateMerkleRootTriplet);
                 publicIndex += 1;
                 privateIndex += 1;
