@@ -328,15 +328,15 @@ export default class AssetOperationsManager {
             dataset.private = kcTools.generateMissingIdsForBlankNodes(dataset.private);
         }
 
-        // Ensure we have a list for private triplets even if not provided
-        const publicTripletsSortedAndGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
-        const privateTripletsSortedAndGrouped = dataset.private
+        // Ensure we have a list for private Tripless even if not provided
+        const publicTriplesSortedAndGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
+        const privateTriplesSortedAndGrouped = dataset.private
             ? kcTools.groupNquadsBySubject(dataset.private, true)
             : [];
 
-        // A helper function to generate the private merkle root triplet
-        function createPrivateMerkleRootTriplet(subject, triplets) {
-            const merkleRoot = kcTools.calculateMerkleRoot(triplets);
+        // A helper function to generate the private merkle root Triples
+        function createPrivateMerkleRootTriple(subject, Tripless) {
+            const merkleRoot = kcTools.calculateMerkleRoot(Tripless);
             return `${subject} <${PRIVATE_ASSERTION_PREDICATE}> "${merkleRoot}" .`;
         }
 
@@ -344,58 +344,57 @@ export default class AssetOperationsManager {
         let privateIndex = 0;
 
         while (
-            publicIndex < publicTripletsSortedAndGrouped.length ||
-            privateIndex < privateTripletsSortedAndGrouped.length
+            publicIndex < publicTriplesSortedAndGrouped.length ||
+            privateIndex < privateTriplesSortedAndGrouped.length
         ) {
-            // If we've exhausted all private triplets, we're done.
-            if (privateIndex === privateTripletsSortedAndGrouped.length) {
+            // If we've exhausted all private Tripless, we're done.
+            if (privateIndex === privateTriplesSortedAndGrouped.length) {
                 break;
             }
 
-            // If we've exhausted all public triplets, just append all remaining private triplets.
-            if (publicIndex === publicTripletsSortedAndGrouped.length) {
-                const [privateSubject] =
-                    privateTripletsSortedAndGrouped[privateIndex][0].split(' ');
-                const privateMerkleRootTriplet = createPrivateMerkleRootTriplet(
+            // If we've exhausted all public Tripless, just append all remaining private Tripless.
+            if (publicIndex === publicTriplesSortedAndGrouped.length) {
+                const [privateSubject] = privateTriplesSortedAndGrouped[privateIndex][0].split(' ');
+                const privateMerkleRootTriple = createPrivateMerkleRootTriple(
                     privateSubject,
-                    privateTripletsSortedAndGrouped[privateIndex],
+                    privateTriplesSortedAndGrouped[privateIndex],
                 );
-                publicTripletsSortedAndGrouped.push([privateMerkleRootTriplet]);
+                publicTriplesSortedAndGrouped.push([privateMerkleRootTriple]);
                 privateIndex += 1;
                 continue;
             }
 
-            const [publicSubject] = publicTripletsSortedAndGrouped[publicIndex][0].split(' ');
-            const [privateSubject] = privateTripletsSortedAndGrouped[privateIndex][0].split(' ');
+            const [publicSubject] = publicTriplesSortedAndGrouped[publicIndex][0].split(' ');
+            const [privateSubject] = privateTriplesSortedAndGrouped[privateIndex][0].split(' ');
             const compare = publicSubject.localeCompare(privateSubject);
 
             if (compare < 0) {
                 // The public subject comes before the private one, move forward in public
                 publicIndex += 1;
             } else if (compare > 0) {
-                // The private subject comes before the public one, insert new triplets array in public
-                const privateMerkleRootTriplet = createPrivateMerkleRootTriplet(
+                // The private subject comes before the public one, insert new Tripless array in public
+                const privateMerkleRootTriple = createPrivateMerkleRootTriple(
                     privateSubject,
-                    privateTripletsSortedAndGrouped[privateIndex],
+                    privateTriplesSortedAndGrouped[privateIndex],
                 );
-                publicTripletsSortedAndGrouped.splice(publicIndex, 0, [privateMerkleRootTriplet]);
+                publicTriplesSortedAndGrouped.splice(publicIndex, 0, [privateMerkleRootTriple]);
                 publicIndex += 1;
                 privateIndex += 1;
             } else {
-                // Subjects match, append private merkle root to the existing public triplet array
-                const privateMerkleRootTriplet = createPrivateMerkleRootTriplet(
+                // Subjects match, append private merkle root to the existing public Triples array
+                const privateMerkleRootTriple = createPrivateMerkleRootTriple(
                     privateSubject,
-                    privateTripletsSortedAndGrouped[privateIndex],
+                    privateTriplesSortedAndGrouped[privateIndex],
                 );
-                publicTripletsSortedAndGrouped[publicIndex].push(privateMerkleRootTriplet);
+                publicTriplesSortedAndGrouped[publicIndex].push(privateMerkleRootTriple);
                 publicIndex += 1;
                 privateIndex += 1;
             }
         }
 
-        dataset.public = publicTripletsSortedAndGrouped.flat();
+        dataset.public = publicTriplesSortedAndGrouped.flat();
         if (dataset.private) {
-            dataset.private = privateTripletsSortedAndGrouped.flat();
+            dataset.private = privateTriplesSortedAndGrouped.flat();
         }
 
         const numberOfChunks = kcTools.calculateNumberOfChunks(dataset.public, CHUNK_BYTE_SIZE);
