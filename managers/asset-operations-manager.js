@@ -307,7 +307,6 @@ export default class AssetOperationsManager {
         );
 
         let dataset = {};
-
         if (typeof content === 'string') {
             dataset.public = this.processContent(content);
         } else if (
@@ -317,26 +316,76 @@ export default class AssetOperationsManager {
             if (content.public) {
                 dataset.public = this.processContent(content.public);
             }
-
             if (content.private && typeof content.private === 'string') {
                 dataset.private = this.processContent(content.private);
-
-                const privateMerkleRootTriplet = `_:c14n0 <${PRIVATE_ASSERTION_PREDICATE}> "${kcTools.calculateMerkleRoot(
-                    dataset.private,
-                )}" .`;
-
-                if (dataset.public) {
-                    dataset.public.push(privateMerkleRootTriplet);
-                } else {
-                    dataset.public = [privateMerkleRootTriplet];
-                }
             }
         } else {
             dataset = await kcTools.formatDataset(content);
         }
 
-        const numberOfChunks = kcTools.calculateNumberOfChunks(dataset.public, CHUNK_BYTE_SIZE);
+        dataset.public = kcTools.generateMissingIdsForBlankNodes(dataset.public);
+        if (dataset.private) {
+            dataset.private = kcTools.generateMissingIdsForBlankNodes(dataset.private);
+        }
 
+        let privateTripletsSortedAndGrouped;
+        const publicTripletsSortedAndGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
+        if (dataset.private) {
+            privateTripletsSortedAndGrouped = kcTools.groupNquadsBySubject(dataset.private, true);
+        }
+
+        let publicIndex = 0;
+        let privateIndex = 0;
+
+        while (
+            publicIndex < publicTripletsSortedAndGrouped.length ||
+            privateIndex < privateTripletsSortedAndGrouped.length
+        ) {
+            if (publicIndex === publicTripletsSortedAndGrouped.length) {
+                const [privateSubject] =
+                    privateTripletsSortedAndGrouped[privateIndex][0].split(' ');
+                const privateMerkleRootTriplet = `${privateSubject} <${PRIVATE_ASSERTION_PREDICATE}> "${kcTools.calculateMerkleRoot(
+                    privateTripletsSortedAndGrouped[privateIndex],
+                )}" .`;
+                publicTripletsSortedAndGrouped.push([privateMerkleRootTriplet]);
+                privateIndex += 1;
+                continue;
+            }
+            if (privateIndex === privateTripletsSortedAndGrouped.length) {
+                // Only public left no need to do anything
+                break;
+            }
+            const [publicSubject] = publicTripletsSortedAndGrouped[publicIndex][0].split(' ');
+            const [privateSubject] = privateTripletsSortedAndGrouped[privateIndex][0].split(' ');
+            let compare = publicSubject.localeCompare(privateSubject);
+            if (compare === -1) {
+                // Public comes next
+                publicIndex += 1;
+            } else if (compare === 1) {
+                // Private comes next
+                const privateMerkleRootTriplet = `${privateSubject} <${PRIVATE_ASSERTION_PREDICATE}> "${kcTools.calculateMerkleRoot(
+                    privateTripletsSortedAndGrouped[privateIndex],
+                )}" .`;
+                publicTripletsSortedAndGrouped.splice(publicIndex, 0, [privateMerkleRootTriplet]);
+                publicIndex += 1;
+                privateIndex += 1;
+            } else {
+                // Private  and public match
+                const privateMerkleRootTriplet = `${privateSubject} <${PRIVATE_ASSERTION_PREDICATE}> "${kcTools.calculateMerkleRoot(
+                    privateTripletsSortedAndGrouped[privateIndex],
+                )}" .`;
+                publicTripletsSortedAndGrouped[publicIndex].push(privateMerkleRootTriplet);
+                publicIndex += 1;
+                privateIndex += 1;
+            }
+        }
+
+        dataset.public = publicTripletsSortedAndGrouped.flat();
+        if (dataset.private) {
+            dataset.private = privateTripletsSortedAndGrouped.flat();
+        }
+
+        const numberOfChunks = kcTools.calculateNumberOfChunks(dataset.public, CHUNK_BYTE_SIZE);
         const datasetSize = numberOfChunks * CHUNK_BYTE_SIZE;
 
         this.validationService.validateAssertionSizeInBytes(datasetSize);
