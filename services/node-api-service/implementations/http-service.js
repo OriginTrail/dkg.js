@@ -1,17 +1,18 @@
 import axios from 'axios';
-import { OPERATION_STATUSES  } from '../../../constants.js';
-import { sleepForMilliseconds  } from '../../utilities.js';
+import { OPERATION_STATUSES } from '../../../constants.js';
+import { sleepForMilliseconds } from '../../utilities.js';
 
 export default class HttpService {
-    constructor(config = {}) {
+    constructor(config = {}, apiVersion = 'v1') {
         this.config = config;
+        this.apiVersion = apiVersion;
     }
 
     async info(endpoint, port, authToken) {
         try {
             const response = await axios({
                 method: 'get',
-                url: `${endpoint}:${port}/info`,
+                url: `${this.getBaseUrl(endpoint, port)}/info`,
                 headers: this.prepareRequestConfig(authToken),
             });
 
@@ -47,7 +48,7 @@ export default class HttpService {
             }
             const response = await axios({
                 method: 'get',
-                url: `${endpoint}:${port}/bid-suggestion`,
+                url: `${this.getBaseUrl(endpoint, port)}/bid-suggestion`,
                 params,
                 headers: this.prepareRequestConfig(authToken),
             });
@@ -62,7 +63,7 @@ export default class HttpService {
         try {
             const response = await axios({
                 method: 'post',
-                url: `${endpoint}:${port}/local-store`,
+                url: `${this.getBaseUrl(endpoint, port)}/local-store`,
                 data: fullPathToCachedAssertion
                     ? { filePath: fullPathToCachedAssertion }
                     : assertions,
@@ -79,7 +80,7 @@ export default class HttpService {
         try {
             const response = await axios({
                 method: 'post',
-                url: `${endpoint}:${port}/publish`,
+                url: `${this.getBaseUrl(endpoint, port)}/publish`,
                 data: {
                     datasetRoot,
                     dataset,
@@ -111,7 +112,7 @@ export default class HttpService {
         try {
             const response = await axios({
                 method: 'post',
-                url: `${endpoint}:${port}/publish-paranet`,
+                url: `${this.getBaseUrl(endpoint, port)}/publish-paranet`,
                 data: {
                     assertions,
                     blockchain,
@@ -145,7 +146,7 @@ export default class HttpService {
         try {
             const response = await axios({
                 method: 'post',
-                url: `${endpoint}:${port}/get`,
+                url: `${this.getBaseUrl(endpoint, port)}/get`,
                 data: {
                     id: state ? `${UAL}:${state}` : UAL,
                     contentType,
@@ -176,7 +177,7 @@ export default class HttpService {
         try {
             const response = await axios({
                 method: 'post',
-                url: `${endpoint}:${port}/update`,
+                url: `${this.getBaseUrl(endpoint, port)}/update`,
                 data: {
                     assertionId,
                     assertion,
@@ -198,7 +199,7 @@ export default class HttpService {
         try {
             const response = await axios({
                 method: 'post',
-                url: `${endpoint}:${port}/query`,
+                url: `${this.getBaseUrl(endpoint, port)}/query`,
                 data: { query, type, /*graphState, graphLocation,*/ paranetUAL },
                 headers: this.prepareRequestConfig(authToken),
             });
@@ -212,7 +213,7 @@ export default class HttpService {
         try {
             const response = await axios({
                 method: 'post',
-                url: `${endpoint}:${port}/finality`,
+                url: `${this.getBaseUrl(endpoint, port)}/finality`,
                 data: { ual, blockchain, minimumNumberOfNodeReplications },
                 headers: this.prepareRequestConfig(authToken),
             });
@@ -239,7 +240,7 @@ export default class HttpService {
 
         const axios_config = {
             method: 'get',
-            url: `${endpoint}:${port}/${operation}/${operationId}`,
+            url: `${this.getBaseUrl(endpoint, port)}/${operation}/${operationId}`,
             headers: this.prepareRequestConfig(authToken),
         };
         do {
@@ -275,5 +276,9 @@ export default class HttpService {
         }
 
         return {};
+    }
+
+    getBaseUrl(endpoint, port) {
+        return `${endpoint}:${port}/${this.apiVersion}`;
     }
 }
