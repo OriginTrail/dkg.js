@@ -3,9 +3,20 @@ import { OPERATION_STATUSES } from '../../../constants.js';
 import { sleepForMilliseconds } from '../../utilities.js';
 
 export default class HttpService {
-    constructor(config = {}, apiVersion = 'v1') {
+    constructor(config = {}) {
         this.config = config;
-        this.apiVersion = apiVersion;
+
+        if (
+            !(
+                config.nodeApiVersion === '/' ||
+                config.nodeApiVersion === '/latest' ||
+                /^\/v\d+$/.test(config.nodeApiVersion)
+            )
+        ) {
+            throw Error(`Version must be '/latest', '/' or in '/v{digits}' format.`);
+        }
+
+        this.apiVersion = config.nodeApiVersion ?? '/v1';
     }
 
     async info(endpoint, port, authToken) {
@@ -78,6 +89,17 @@ export default class HttpService {
 
     async publish(endpoint, port, authToken, datasetRoot, dataset, blockchain, hashFunctionId) {
         try {
+            console.log({
+                method: 'post',
+                url: `${this.getBaseUrl(endpoint, port)}/publish`,
+                data: {
+                    datasetRoot,
+                    dataset,
+                    blockchain,
+                    hashFunctionId,
+                },
+                headers: this.prepareRequestConfig(authToken),
+            });
             const response = await axios({
                 method: 'post',
                 url: `${this.getBaseUrl(endpoint, port)}/publish`,
@@ -279,6 +301,6 @@ export default class HttpService {
     }
 
     getBaseUrl(endpoint, port) {
-        return `${endpoint}:${port}/${this.apiVersion}`;
+        return `${endpoint}:${port}${this.apiVersion}`;
     }
 }
