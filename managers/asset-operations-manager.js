@@ -343,40 +343,44 @@ class AssetOperationsManager {
         let tokenId;
         let mintKnowledgeAssetReceipt;
         if (paranetUAL == null) {
-            ({tokenId, receipt: mintKnowledgeAssetReceipt} = await this.blockchainService.createAsset(
-                {
-                    publicAssertionId,
-                    assertionSize: publicAssertionSizeInBytes,
-                    triplesNumber: assertionMetadata.getAssertionTriplesNumber(publicAssertion),
-                    chunksNumber: assertionMetadata.getAssertionChunksNumber(publicAssertion),
-                    epochsNum,
-                    tokenAmount: tokenAmountInWei,
-                    scoreFunctionId: scoreFunctionId ?? 1,
-                    immutable_: immutable,
-                },
-                null,
-                null,
-                blockchain,
-                stepHooks,
-            ));
+            ({ tokenId, receipt: mintKnowledgeAssetReceipt } =
+                await this.blockchainService.createAsset(
+                    {
+                        haha: 'ahahaha',
+                        publicAssertionId,
+                        assertionSize: publicAssertionSizeInBytes,
+                        triplesNumber: assertionMetadata.getAssertionTriplesNumber(publicAssertion),
+                        chunksNumber: assertionMetadata.getAssertionChunksNumber(publicAssertion),
+                        epochsNum,
+                        tokenAmount: tokenAmountInWei,
+                        scoreFunctionId: scoreFunctionId ?? 1,
+                        immutable_: immutable,
+                    },
+                    null,
+                    null,
+                    blockchain,
+                    stepHooks,
+                ));
         } else {
             const { contract: paranetKaContract, tokenId: paranetTokenId } = resolveUAL(paranetUAL);
-            ({tokenId, receipt: mintKnowledgeAssetReceipt} = await this.blockchainService.createAsset(
-                {
-                    publicAssertionId,
-                    assertionSize: publicAssertionSizeInBytes,
-                    triplesNumber: assertionMetadata.getAssertionTriplesNumber(publicAssertion),
-                    chunksNumber: assertionMetadata.getAssertionChunksNumber(publicAssertion),
-                    epochsNum,
-                    tokenAmount: tokenAmountInWei,
-                    scoreFunctionId: scoreFunctionId ?? 1,
-                    immutable_: immutable,
-                },
-                paranetKaContract,
-                paranetTokenId,
-                blockchain,
-                stepHooks,
-            ));
+            ({ tokenId, receipt: mintKnowledgeAssetReceipt } =
+                await this.blockchainService.createAsset(
+                    {
+                        haha: 'ahahaha',
+                        publicAssertionId,
+                        assertionSize: publicAssertionSizeInBytes,
+                        triplesNumber: assertionMetadata.getAssertionTriplesNumber(publicAssertion),
+                        chunksNumber: assertionMetadata.getAssertionChunksNumber(publicAssertion),
+                        epochsNum,
+                        tokenAmount: tokenAmountInWei,
+                        scoreFunctionId: scoreFunctionId ?? 1,
+                        immutable_: immutable,
+                    },
+                    paranetKaContract,
+                    paranetTokenId,
+                    blockchain,
+                    stepHooks,
+                ));
         }
 
         const resolvedUAL = {
@@ -659,7 +663,8 @@ class AssetOperationsManager {
             const filteredTriples = publicAssertion.filter((element) =>
                 element.includes(PRIVATE_ASSERTION_PREDICATE),
             );
-            const privateAssertionLinkTriple = filteredTriples.length > 0 ? filteredTriples[0] : null;
+            const privateAssertionLinkTriple =
+                filteredTriples.length > 0 ? filteredTriples[0] : null;
 
             let queryPrivateOperationId;
             let queryPrivateOperationResult = {};
@@ -890,7 +895,10 @@ class AssetOperationsManager {
                 assertionId: publicAssertionId,
                 operation: {
                     updateKnowledgeAsset: updateKnowledgeAssetReceipt,
-                    localStore: getOperationStatusObject(localStoreOperationResult, localStoreOperationId),
+                    localStore: getOperationStatusObject(
+                        localStoreOperationResult,
+                        localStoreOperationId,
+                    ),
                 },
             };
         }
@@ -920,7 +928,10 @@ class AssetOperationsManager {
             publicAssertionId,
             operation: {
                 updateKnowledgeAsset: updateKnowledgeAssetReceipt,
-                localStore: getOperationStatusObject(localStoreOperationResult, localStoreOperationId),
+                localStore: getOperationStatusObject(
+                    localStoreOperationResult,
+                    localStoreOperationId,
+                ),
                 update: getOperationStatusObject(updateOperationResult, updateOperationId),
             },
         };
@@ -1282,7 +1293,11 @@ class AssetOperationsManager {
             }
         }
 
-        const receipt = await this.blockchainService.addTokens(tokenId, tokenAmountInWei, blockchain);
+        const receipt = await this.blockchainService.addTokens(
+            tokenId,
+            tokenAmountInWei,
+            blockchain,
+        );
 
         return {
             UAL,
@@ -1350,7 +1365,7 @@ class AssetOperationsManager {
 
         return {
             UAL,
-            operation: receipt
+            operation: receipt,
         };
     }
 
@@ -1435,7 +1450,7 @@ class AssetOperationsManager {
 
         return {
             UAL,
-            operation: receipt
+            operation: receipt,
         };
     }
 }

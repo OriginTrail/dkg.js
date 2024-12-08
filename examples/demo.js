@@ -12,7 +12,7 @@ const DkgClient = new DKG({
     endpoint: OT_NODE_HOSTNAME,
     port: OT_NODE_PORT,
     blockchain: {
-        name: 'hardhat1',
+        name: 'hardhat2',
         publicKey: PUBLIC_KEY,
         privateKey: PRIVATE_KEY,
     },
@@ -30,7 +30,7 @@ function divider() {
 (async () => {
     const content = {
         public: {
-            '@context': ['https://schema.org'],
+            '@context': ['http://schema.org'],
             '@id': 'uuid:1',
             company: 'OT',
             user: {
@@ -41,7 +41,7 @@ function divider() {
             },
         },
         private: {
-            '@context': ['https://schema.org'],
+            '@context': ['http://schema.org'],
             '@graph': [
                 {
                     '@id': 'uuid:user:1',
@@ -65,63 +65,66 @@ function divider() {
 
     divider();
 
-    const assertions = await DkgClient.assertion.formatGraph(content);
-    console.log('======================== ASSERTIONS FORMATTED');
-    console.log(JSON.stringify(assertions));
+    // const assertions = await DkgClient.assertion.formatGraph(content);
+    // console.log('======================== ASSERTIONS FORMATTED');
+    // console.log(JSON.stringify(assertions));
 
-    divider();
+    // divider();
 
-    const publicAssertionId = await DkgClient.assertion.getPublicAssertionId(content);
-    console.log('======================== PUBLIC ASSERTION ID (MERKLE ROOT) CALCULATED');
-    console.log(publicAssertionId);
+    // const publicAssertionId = await DkgClient.assertion.getPublicAssertionId(content);
+    // console.log('======================== PUBLIC ASSERTION ID (MERKLE ROOT) CALCULATED');
+    // console.log(publicAssertionId);
 
-    divider();
+    // divider();
 
-    const publicAssertionSize = await DkgClient.assertion.getSizeInBytes(content);
-    console.log('======================== PUBLIC ASSERTION SIZE CALCULATED');
-    console.log(publicAssertionSize);
+    // const publicAssertionSize = await DkgClient.assertion.getSizeInBytes(content);
+    // console.log('======================== PUBLIC ASSERTION SIZE CALCULATED');
+    // console.log(publicAssertionSize);
 
-    divider();
+    // divider();
 
-    const bidSuggestion = await DkgClient.network.getBidSuggestion(
-        publicAssertionId,
-        publicAssertionSize,
-        { epochsNum: 2 },
-    );
-    console.log('======================== BID SUGGESTION CALCULATED');
-    console.log(bidSuggestion);
+    // const bidSuggestion = await DkgClient.network.getBidSuggestion(
+    //     publicAssertionId,
+    //     publicAssertionSize,
+    //     { epochsNum: 2 },
+    // );
+    // console.log('======================== BID SUGGESTION CALCULATED');
+    // console.log(bidSuggestion);
 
-    divider();
+    // divider();
 
-    const increaseAllowanceResult = await DkgClient.asset.increaseAllowance(bidSuggestion);
-    console.log('======================== ALLOWANCE INCREASED');
-    console.log(increaseAllowanceResult);
+    // const increaseAllowanceResult = await DkgClient.asset.increaseAllowance(bidSuggestion);
+    // console.log('======================== ALLOWANCE INCREASED');
+    // console.log(increaseAllowanceResult);
 
-    divider();
+    // divider();
 
-    const decreaseAllowanceResult = await DkgClient.asset.decreaseAllowance(bidSuggestion);
-    console.log('======================== ALLOWANCE DECREASED');
-    console.log(decreaseAllowanceResult);
+    // const decreaseAllowanceResult = await DkgClient.asset.decreaseAllowance(bidSuggestion);
+    // console.log('======================== ALLOWANCE DECREASED');
+    // console.log(decreaseAllowanceResult);
 
-    divider();
+    // divider();
 
-    const setAllowanceResult = await DkgClient.asset.setAllowance(bidSuggestion);
-    console.log('======================== ALLOWANCE SET');
-    console.log(setAllowanceResult);
+    // const setAllowanceResult = await DkgClient.asset.setAllowance(bidSuggestion);
+    // console.log('======================== ALLOWANCE SET');
+    // console.log(setAllowanceResult);
 
-    divider();
+    // divider();
 
-    const createAssetResult = await DkgClient.asset.create(content, { epochsNum: 2 });
+    const createAssetResult = await DkgClient.asset.create(content, {
+        epochsNum: 2,
+        tokenAmount: '100',
+    });
     console.log('======================== ASSET CREATED');
     console.log(createAssetResult);
 
     divider();
 
-    const ownerResult = await DkgClient.asset.getOwner(createAssetResult.UAL);
-    console.log('======================== GET ASSET OWNER');
-    console.log(ownerResult);
+    // const ownerResult = await DkgClient.asset.getOwner(createAssetResult.UAL);
+    // console.log('======================== GET ASSET OWNER');
+    // console.log(ownerResult);
 
-    divider();
+    // divider();
 
     const getAssetResult = await DkgClient.asset.get(createAssetResult.UAL);
     console.log('======================== ASSET RESOLVED');
@@ -129,145 +132,137 @@ function divider() {
 
     divider();
 
-    const updateAssetResult = await DkgClient.asset.update(createAssetResult.UAL, {
-        public: {
-            '@context': ['https://schema.org'],
-            '@id': 'uuid:1',
-            company: 'TL',
-            user: {
-                '@id': 'uuid:user:2',
-            },
-            city: {
-                '@id': 'uuid:Nis',
-            },
-        },
-        private: {
-            '@context': ['https://schema.org'],
-            '@graph': [
-                {
-                    '@id': 'uuid:user:1',
-                    name: 'Adam',
-                    lastname: 'Smith',
-                    identifier: `${Math.floor(Math.random() * 1e10)}`,
-                },
-            ],
-        },
-    });
-    console.log('======================== ASSET UPDATED');
-    console.log(updateAssetResult);
+    // const updateAssetResult = await DkgClient.asset.update(createAssetResult.UAL, {
+    //     public: {
+    //         '@context': ['https://schema.org'],
+    //         '@id': 'uuid:1',
+    //         company: 'TL',
+    //         user: {
+    //             '@id': 'uuid:user:2',
+    //         },
+    //         city: {
+    //             '@id': 'uuid:Nis',
+    //         },
+    //     },
+    //     private: {
+    //         '@context': ['https://schema.org'],
+    //         '@graph': [
+    //             {
+    //                 '@id': 'uuid:user:1',
+    //                 name: 'Adam',
+    //                 lastname: 'Smith',
+    //                 identifier: `${Math.floor(Math.random() * 1e10)}`,
+    //             },
+    //         ],
+    //     },
+    // });
+    // console.log('======================== ASSET UPDATED');
+    // console.log(updateAssetResult);
 
-    divider();
+    // divider();
 
-    const getLatestAssetResult = await DkgClient.asset.get(createAssetResult.UAL);
-    console.log('======================== ASSET LATEST  RESOLVED');
-    console.log(JSON.stringify(getLatestAssetResult, null, 2));
+    // const getLatestAssetResult = await DkgClient.asset.get(createAssetResult.UAL);
+    // console.log('======================== ASSET LATEST  RESOLVED');
+    // console.log(JSON.stringify(getLatestAssetResult, null, 2));
 
-    divider();
+    // divider();
 
-    let getLatestFinalizedAssetResult = await DkgClient.asset.get(createAssetResult.UAL, {
-        state: 'LATEST_FINALIZED',
-    });
-    console.log('======================== ASSET LATEST FINALIZED RESOLVED');
-    console.log(JSON.stringify(getLatestFinalizedAssetResult, null, 2));
+    // let getLatestFinalizedAssetResult = await DkgClient.asset.get(createAssetResult.UAL, {
+    //     state: 'LATEST_FINALIZED',
+    // });
+    // console.log('======================== ASSET LATEST FINALIZED RESOLVED');
+    // console.log(JSON.stringify(getLatestFinalizedAssetResult, null, 2));
 
-    divider();
+    // divider();
 
-    await DkgClient.asset.waitFinalization(createAssetResult.UAL);
-    console.log('======================== FINALIZATION COMPLETED');
+    // await DkgClient.asset.waitFinalization(createAssetResult.UAL);
+    // console.log('======================== FINALIZATION COMPLETED');
 
-    divider();
+    // divider();
 
-    getLatestFinalizedAssetResult = await DkgClient.asset.get(createAssetResult.UAL, {
-        state: 'LATEST_FINALIZED',
-    });
-    console.log('======================== ASSET LATEST FINALIZED RESOLVED');
-    console.log(JSON.stringify(getLatestFinalizedAssetResult, null, 2));
+    // getLatestFinalizedAssetResult = await DkgClient.asset.get(createAssetResult.UAL, {
+    //     state: 'LATEST_FINALIZED',
+    // });
+    // console.log('======================== ASSET LATEST FINALIZED RESOLVED');
+    // console.log(JSON.stringify(getLatestFinalizedAssetResult, null, 2));
 
-    divider();
+    // divider();
 
-    const getFirstStateByIndex = await DkgClient.asset.get(createAssetResult.UAL, {
-        state: 0,
-    });
-    console.log('======================== ASSET FIRST STATE (GET BY STATE INDEX) RESOLVED');
-    console.log(JSON.stringify(getFirstStateByIndex, null, 2));
+    // const getFirstStateByIndex = await DkgClient.asset.get(createAssetResult.UAL, {
+    //     state: 0,
+    // });
+    // console.log('======================== ASSET FIRST STATE (GET BY STATE INDEX) RESOLVED');
+    // console.log(JSON.stringify(getFirstStateByIndex, null, 2));
 
-    divider();
+    // divider();
 
-    const getSecondStateByIndex = await DkgClient.asset.get(createAssetResult.UAL, {
-        state: 1,
-    });
-    console.log('======================== ASSET SECOND STATE (GET BY STATE INDEX) RESOLVED');
-    console.log(JSON.stringify(getSecondStateByIndex, null, 2));
+    // const getSecondStateByIndex = await DkgClient.asset.get(createAssetResult.UAL, {
+    //     state: 1,
+    // });
+    // console.log('======================== ASSET SECOND STATE (GET BY STATE INDEX) RESOLVED');
+    // console.log(JSON.stringify(getSecondStateByIndex, null, 2));
 
-    divider();
+    // divider();
 
-    const getFirstStateByHash = await DkgClient.asset.get(createAssetResult.UAL, {
-        state: createAssetResult.publicAssertionId,
-    });
-    console.log('======================== ASSET FIRST STATE (GET BY STATE HASH) RESOLVED');
-    console.log(JSON.stringify(getFirstStateByHash, null, 2));
+    // const getFirstStateByHash = await DkgClient.asset.get(createAssetResult.UAL, {
+    //     state: createAssetResult.publicAssertionId,
+    // });
+    // console.log('======================== ASSET FIRST STATE (GET BY STATE HASH) RESOLVED');
+    // console.log(JSON.stringify(getFirstStateByHash, null, 2));
 
-    divider();
+    // divider();
 
-    const getSecondStateByHash = await DkgClient.asset.get(createAssetResult.UAL, {
-        state: updateAssetResult.publicAssertionId,
-    });
-    console.log('======================== ASSET SECOND STATE (GET BY STATE HASH) RESOLVED');
-    console.log(JSON.stringify(getSecondStateByHash, null, 2));
+    // const getSecondStateByHash = await DkgClient.asset.get(createAssetResult.UAL, {
+    //     state: updateAssetResult.publicAssertionId,
+    // });
+    // console.log('======================== ASSET SECOND STATE (GET BY STATE HASH) RESOLVED');
+    // console.log(JSON.stringify(getSecondStateByHash, null, 2));
 
-    let queryResult = await DkgClient.graph.query(
-        'construct { ?s ?p ?o } where { ?s ?p ?o . <uuid:1> ?p ?o }',
-        'CONSTRUCT',
-    );
-    console.log('======================== QUERY LOCAL CURRENT RESULT');
-    console.log(
-        JSON.stringify(
-            await jsonld.fromRDF(queryResult.data, {
-                algorithm: 'URDNA2015',
-                format: 'application/n-quads',
-            }),
-            null,
-            2,
-        ),
-    );
+    // let queryResult = await DkgClient.graph.query(
+    //     'construct { ?s ?p ?o } where { ?s ?p ?o . <uuid:1> ?p ?o }',
+    //     'CONSTRUCT',
+    // );
+    // console.log('======================== QUERY LOCAL CURRENT RESULT');
+    // console.log(
+    //     JSON.stringify(
+    //         await jsonld.fromRDF(queryResult.data, {
+    //             algorithm: 'URDNA2015',
+    //             format: 'application/n-quads',
+    //         }),
+    //         null,
+    //         2,
+    //     ),
+    // );
 
-    divider();
+    // divider();
 
     queryResult = await DkgClient.graph.query(
-        'construct { ?s ?p ?o } where { ?s ?p ?o . <uuid:user:1> ?p ?o }',
-        'CONSTRUCT',
-        { graphState: 'HISTORICAL', graphLocation: 'LOCAL_KG' },
+        'select ?s ?p ?o  where { ?s ?p ?o . <uuid:user:1> ?p ?o }',
+        'SELECT',
     );
     console.log('======================== QUERY LOCAL HISTORY RESULT');
-    console.log(
-        JSON.stringify(
-            await jsonld.fromRDF(queryResult.data, {
-                algorithm: 'URDNA2015',
-                format: 'application/n-quads',
-            }),
-            null,
-            2,
-        ),
-    );
+    console.log(queryResult);
 
     divider();
 
-    const extendStoringResult = await DkgClient.asset.extendStoringPeriod(createAssetResult.UAL, 2);
-    console.log(`======================== ASSET STORING PERIOD EXTENDED`);
-    console.log(extendStoringResult);
+    // const extendStoringResult = await DkgClient.asset.extendStoringPeriod(createAssetResult.UAL, 2);
+    // console.log(`======================== ASSET STORING PERIOD EXTENDED`);
+    // console.log(extendStoringResult);
 
-    divider();
+    // divider();
 
-    const addTokensResult = await DkgClient.asset.addTokens(createAssetResult.UAL, {tokenAmount: 1000});
-    console.log(`======================== ADD TOKENS FOR AN ASSET`);
-    console.log(addTokensResult);
+    // const addTokensResult = await DkgClient.asset.addTokens(createAssetResult.UAL, {
+    //     tokenAmount: 1000,
+    // });
+    // console.log(`======================== ADD TOKENS FOR AN ASSET`);
+    // console.log(addTokensResult);
 
-    divider();
+    // divider();
 
-    const newOwner = '0x2ACa90078563133db78085F66e6B8Cf5531623Ad';
-    const transferResult = await DkgClient.asset.transfer(createAssetResult.UAL, newOwner);
-    console.log(`======================== ASSET TRANSFERRED TO ${newOwner}`);
-    console.log(transferResult);
+    // const newOwner = '0x2ACa90078563133db78085F66e6B8Cf5531623Ad';
+    // const transferResult = await DkgClient.asset.transfer(createAssetResult.UAL, newOwner);
+    // console.log(`======================== ASSET TRANSFERRED TO ${newOwner}`);
+    // console.log(transferResult);
 
-    divider();
+    // divider();
 })();
