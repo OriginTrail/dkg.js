@@ -89,17 +89,6 @@ export default class HttpService {
 
     async publish(endpoint, port, authToken, datasetRoot, dataset, blockchain, hashFunctionId) {
         try {
-            console.log({
-                method: 'post',
-                url: `${this.getBaseUrl(endpoint, port)}/publish`,
-                data: {
-                    datasetRoot,
-                    dataset,
-                    blockchain,
-                    hashFunctionId,
-                },
-                headers: this.prepareRequestConfig(authToken),
-            });
             const response = await axios({
                 method: 'post',
                 url: `${this.getBaseUrl(endpoint, port)}/publish`,

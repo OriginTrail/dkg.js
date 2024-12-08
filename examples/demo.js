@@ -19,6 +19,7 @@ const DkgClient = new DKG({
     maxNumberOfRetries: 30,
     frequency: 2,
     contentType: 'all',
+    nodeApiVersion: '/v1',
 });
 
 function divider() {
@@ -98,6 +99,21 @@ function divider() {
     });
     console.log('======================== ASSET CREATED');
     console.log(createCollectionResult);
+
+    divider();
+
+    const getOperationResult = await DkgClient.graph.get(createCollectionResult.UAL);
+    console.log('======================== ASSET GET');
+    console.log(getOperationResult);
+
+    divider();
+
+    const queryOperationResult = await DkgClient.graph.query(
+        `select ?s ?p ?o where { ?s ?p ?o }`,
+        'SELECT',
+    );
+    console.log('======================== ASSET QUERY');
+    console.log(queryOperationResult);
 
     divider();
 })();
