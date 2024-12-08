@@ -10,7 +10,8 @@ export const MAX_FILE_SIZE = 524288000;
  */
 export const DID_PREFIX = 'did:dkg';
 
-export const PRIVATE_ASSERTION_PREDICATE = 'https://ontology.origintrail.io/dkg/1.0#privateAssertionID';
+export const PRIVATE_ASSERTION_PREDICATE =
+    'https://ontology.origintrail.io/dkg/1.0#privateAssertionID';
 
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
@@ -27,7 +28,12 @@ export const BLOCKCHAINS = {
             hubContract: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
         },
     },
-    devnet: {},
+    devnet: {
+        'base:84532': {
+            hubContract: '0x3e5dd82e7529F4e55AA64893D8f8879AE14BF87D',
+            rpc: 'https://sepolia.base.org',
+        },
+    },
     stabledevnet_staging: {
         'base:84532': {
             hubContract: '0xAB4A4794Fc1F415C24807B947280aCa8dC492238',
