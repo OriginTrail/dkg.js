@@ -1,4 +1,4 @@
-import { isAddress  } from 'ethers';
+import { isAddress } from 'ethers';
 import {
     CONTENT_TYPES,
     GRAPH_LOCATIONS,
@@ -11,7 +11,7 @@ import {
     PARANET_NODES_ACCESS_POLICY,
     PARANET_MINERS_ACCESS_POLICY,
 } from '../constants.js';
-import { nodeSupported  } from './utilities.js';
+import { nodeSupported } from './utilities.js';
 
 export default class ValidationService {
     validateNodeInfo(endpoint, port, authToken) {
@@ -73,6 +73,7 @@ export default class ValidationService {
         authToken,
         paranetUAL,
         payer,
+        minimumNumberOfFinalizationConfirmations,
         minimumNumberOfNodeReplications,
     ) {
         this.validateContent(content);
@@ -89,6 +90,9 @@ export default class ValidationService {
         this.validateAuthToken(authToken);
         this.validateParanetUAL(paranetUAL);
         this.validatePayer(payer);
+        this.validateMinimumNumberOfFinalizationConfirmations(
+            minimumNumberOfFinalizationConfirmations,
+        );
         this.validateMinimumNumberOfNodeReplications(minimumNumberOfNodeReplications);
     }
 
@@ -388,9 +392,7 @@ export default class ValidationService {
         this.validateRequiredParam('graphLocation', graphLocation);
         const validGraphLocations = Object.keys(GRAPH_LOCATIONS);
         if (!validGraphLocations.includes(graphLocation)) {
-            throw Error(
-                `Invalid graph location: available locations are: ${validGraphLocations}`,
-            );
+            throw Error(`Invalid graph location: available locations are: ${validGraphLocations}`);
         }
     }
 
@@ -474,8 +476,7 @@ export default class ValidationService {
     }
 
     validateState(state) {
-        if (state !== null)
-            this.validateParamType('state', state, 'number');
+        if (state !== null) this.validateParamType('state', state, 'number');
     }
 
     validateIncludeMetadata(includeMetadata) {
@@ -547,7 +548,22 @@ export default class ValidationService {
         this.validateAddress(payer);
     }
 
+    validateMinimumNumberOfFinalizationConfirmations(minimumNumberOfFinalizationConfirmations) {
+        this.validateRequiredParam(
+            'minimumNumberOfFinalizationConfirmations',
+            minimumNumberOfFinalizationConfirmations,
+        );
+        this.validateParamType(
+            'minimumNumberOfFinalizationConfirmations',
+            minimumNumberOfFinalizationConfirmations,
+            'number',
+        );
+    }
+
     validateMinimumNumberOfNodeReplications(minimumNumberOfNodeReplications) {
+        // null is valid
+        if (minimumNumberOfNodeReplications === null) return;
+
         this.validateRequiredParam(
             'minimumNumberOfNodeReplications',
             minimumNumberOfNodeReplications,
@@ -732,5 +748,23 @@ export default class ValidationService {
                 throw new Error(`Label at index ${index} must be a string.`);
             }
         });
+    }
+
+    validatePublishFinality(
+        endpoint,
+        port,
+        maxNumberOfRetries,
+        frequency,
+        minimumNumberOfFinalizationConfirmations,
+        authToken,
+    ) {
+        this.validateEndpoint(endpoint);
+        this.validatePort(port);
+        this.validateMaxNumberOfRetries(maxNumberOfRetries);
+        this.validateFrequency(frequency);
+        this.validateAuthToken(authToken);
+        this.validateMinimumNumberOfFinalizationConfirmations(
+            minimumNumberOfFinalizationConfirmations,
+        );
     }
 }
