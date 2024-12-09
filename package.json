@@ -3,6 +3,7 @@
     "version": "8.0.0-alpha.5",
     "description": "Javascript library for interaction with the OriginTrail Decentralized Knowledge Graph",
     "main": "index.js",
+    "type": "module",
     "scripts": {
         "compile-contracts": "cd ./node_modules/dkg-evm-module && npm run compile",
         "build": "npx webpack --config webpack.config.js",
@@ -29,9 +30,9 @@
     },
     "homepage": "https://github.com/OriginTrail/dkg.js/tree/main#readme",
     "dependencies": {
-        "assertion-tools": "^2.2.1",
+        "assertion-tools": "^8.0.0-gamma.0",
         "axios": "^0.27.2",
-        "dkg-evm-module": "^8.0.0-alpha.0",
+        "dkg-evm-module": "^8.0.2-alpha.0",
         "ethers": "^6.1.0",
         "jsonld": "^8.1.0",
         "web3": "^1.7.3"

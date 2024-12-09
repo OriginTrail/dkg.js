@@ -1,31 +1,22 @@
-const path = require('path');
-const { mkdir, writeFile, unlink } = require('fs/promises');
-const { assertionMetadata, calculateRoot, formatGraph } = require('assertion-tools');
-const { ethers, ZeroHash } = require('ethers');
-const {
+import { kaTools, kcTools } from 'assertion-tools';
+import { ethers } from 'ethers';
+import {
     deriveUAL,
     getOperationStatusObject,
     resolveUAL,
-    toNQuads,
-    toJSONLD,
-} = require('../services/utilities.js');
-const {
-    ASSET_STATES,
-    CONTENT_TYPES,
+    sleepForMilliseconds,
+} from '../services/utilities.js';
+import {
     OPERATIONS,
-    OPERATIONS_STEP_STATUS,
-    GET_OUTPUT_FORMATS,
     OPERATION_STATUSES,
-    DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY,
-    PRIVATE_ASSERTION_PREDICATE,
-    STORE_TYPES,
-    QUERY_TYPES,
-    OT_NODE_TRIPLE_STORE_REPOSITORIES,
     ZERO_ADDRESS,
-} = require('../constants.js');
-const emptyHooks = require('../util/empty-hooks');
+    CHUNK_BYTE_SIZE,
+    OPERATION_DELAYS,
+    PRIVATE_ASSERTION_PREDICATE,
+} from '../constants.js';
+import emptyHooks from '../util/empty-hooks.js';
 
-class AssetOperationsManager {
+export default class AssetOperationsManager {
     constructor(services) {
         this.nodeApiService = services.nodeApiService;
         this.validationService = services.validationService;
@@ -259,24 +250,27 @@ class AssetOperationsManager {
     }
 
     /**
-     * Creates a new asset.
+     * Helper function to process content by splitting, trimming, and filtering lines.
+     * @param {string} str - The content string to process.
+     * @returns {string[]} - Processed array of strings.
+     */
+    processContent(str) {
+        return str
+            .split('\n')
+            .map((line) => line.trim())
+            .filter((line) => line !== '');
+    }
+
+    /**
+     * Creates a new knowledge collection.
      * @async
-     * @param {Object} content - The content of the asset to be created, contains public, private or both keys.
-     * @param {Object} [options={}] - Additional options for asset creation.
-     * @param {Object} [stepHooks=emptyHooks] - Hooks to execute during asset creation.
+     * @param {Object} content - The content of the knowledge collection to be created, contains public, private or both keys.
+     * @param {Object} [options={}] - Additional options for knowledge collection creation.
+     * @param {Object} [stepHooks=emptyHooks] - Hooks to execute during knowledge collection creation.
      * @returns {Object} Object containing UAL, publicAssertionId and operation status.
      */
     async create(content, options = {}, stepHooks = emptyHooks) {
-        this.validationService.validateObjectType(content);
-        let jsonContent = {};
-
-        // for backwards compatibility
-        if (!content.public && !content.private) {
-            jsonContent.public = content;
-        } else {
-            jsonContent = content;
-        }
-
+        this.validationService.validateJsonldOrNquads(content);
         const {
             blockchain,
             endpoint,
@@ -290,10 +284,12 @@ class AssetOperationsManager {
             tokenAmount,
             authToken,
             paranetUAL,
+            payer,
+            minimumNumberOfNodeReplications,
         } = this.inputService.getAssetCreateArguments(options);
 
         this.validationService.validateAssetCreate(
-            jsonContent,
+            content,
             blockchain,
             endpoint,
             port,
@@ -306,122 +302,119 @@ class AssetOperationsManager {
             tokenAmount,
             authToken,
             paranetUAL,
+            payer,
+            minimumNumberOfNodeReplications,
         );
 
-        const { public: publicAssertion, private: privateAssertion } = await formatGraph(
-            jsonContent,
-        );
-        const publicAssertionSizeInBytes =
-            assertionMetadata.getAssertionSizeInBytes(publicAssertion);
+        let dataset = {};
+        if (typeof content === 'string') {
+            dataset.public = this.processContent(content);
+        } else if (
+            typeof content.public === 'string' ||
+            (!content.public && content.private && typeof content.private === 'string')
+        ) {
+            if (content.public) {
+                dataset.public = this.processContent(content.public);
+            }
+            if (content.private && typeof content.private === 'string') {
+                dataset.private = this.processContent(content.private);
+            }
+        } else {
+            dataset = await kcTools.formatDataset(content);
+        }
 
-        this.validationService.validateAssertionSizeInBytes(
-            publicAssertionSizeInBytes +
-                (privateAssertion === undefined
-                    ? 0
-                    : assertionMetadata.getAssertionSizeInBytes(privateAssertion)),
-        );
-        const publicAssertionId = await calculateRoot(publicAssertion);
+        dataset.public = kcTools.generateMissingIdsForBlankNodes(dataset.public);
+        if (dataset.private) {
+            dataset.private = kcTools.generateMissingIdsForBlankNodes(dataset.private);
+        }
+
+        // Ensure we have a list for private Tripless even if not provided
+        const publicTriplesSortedAndGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
+        const privateTriplesSortedAndGrouped = dataset.private
+            ? kcTools.groupNquadsBySubject(dataset.private, true)
+            : [];
+
+        // A helper function to generate the private merkle root Triples
+        function createPrivateMerkleRootTriple(subject, Tripless) {
+            const merkleRoot = kcTools.calculateMerkleRoot(Tripless);
+            return `${subject} <${PRIVATE_ASSERTION_PREDICATE}> "${merkleRoot}" .`;
+        }
+
+        let publicIndex = 0;
+        let privateIndex = 0;
+
+        while (
+            publicIndex < publicTriplesSortedAndGrouped.length ||
+            privateIndex < privateTriplesSortedAndGrouped.length
+        ) {
+            // If we've exhausted all private Tripless, we're done.
+            if (privateIndex === privateTriplesSortedAndGrouped.length) {
+                break;
+            }
+
+            // If we've exhausted all public Tripless, just append all remaining private Tripless.
+            if (publicIndex === publicTriplesSortedAndGrouped.length) {
+                const [privateSubject] = privateTriplesSortedAndGrouped[privateIndex][0].split(' ');
+                const privateMerkleRootTriple = createPrivateMerkleRootTriple(
+                    privateSubject,
+                    privateTriplesSortedAndGrouped[privateIndex],
+                );
+                publicTriplesSortedAndGrouped.push([privateMerkleRootTriple]);
+                privateIndex += 1;
+                continue;
+            }
+
+            const [publicSubject] = publicTriplesSortedAndGrouped[publicIndex][0].split(' ');
+            const [privateSubject] = privateTriplesSortedAndGrouped[privateIndex][0].split(' ');
+            const compare = publicSubject.localeCompare(privateSubject);
+
+            if (compare < 0) {
+                // The public subject comes before the private one, move forward in public
+                publicIndex += 1;
+            } else if (compare > 0) {
+                // The private subject comes before the public one, insert new Tripless array in public
+                const privateMerkleRootTriple = createPrivateMerkleRootTriple(
+                    privateSubject,
+                    privateTriplesSortedAndGrouped[privateIndex],
+                );
+                publicTriplesSortedAndGrouped.splice(publicIndex, 0, [privateMerkleRootTriple]);
+                publicIndex += 1;
+                privateIndex += 1;
+            } else {
+                // Subjects match, append private merkle root to the existing public Triples array
+                const privateMerkleRootTriple = createPrivateMerkleRootTriple(
+                    privateSubject,
+                    privateTriplesSortedAndGrouped[privateIndex],
+                );
+                publicTriplesSortedAndGrouped[publicIndex].push(privateMerkleRootTriple);
+                publicIndex += 1;
+                privateIndex += 1;
+            }
+        }
+
+        dataset.public = publicTriplesSortedAndGrouped.flat();
+        if (dataset.private) {
+            dataset.private = privateTriplesSortedAndGrouped.flat();
+        }
+
+        const numberOfChunks = kcTools.calculateNumberOfChunks(dataset.public, CHUNK_BYTE_SIZE);
+        const datasetSize = numberOfChunks * CHUNK_BYTE_SIZE;
+
+        this.validationService.validateAssertionSizeInBytes(datasetSize);
+        const datasetRoot = kcTools.calculateMerkleRoot(dataset.public);
 
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
             'ContentAssetStorage',
             blockchain,
         );
 
-        const tokenAmountInWei =
-            tokenAmount ??
-            (await this.nodeApiService.getBidSuggestion(
-                endpoint,
-                port,
-                authToken,
-                blockchain.name,
-                epochsNum,
-                publicAssertionSizeInBytes,
-                contentAssetStorageAddress,
-                publicAssertionId,
-                hashFunctionId,
-            ));
-
-        let tokenId;
-        let mintKnowledgeAssetReceipt;
-        if (paranetUAL == null) {
-            ({ tokenId, receipt: mintKnowledgeAssetReceipt } =
-                await this.blockchainService.createAsset(
-                    {
-                        publicAssertionId,
-                        assertionSize: publicAssertionSizeInBytes,
-                        triplesNumber: assertionMetadata.getAssertionTriplesNumber(publicAssertion),
-                        chunksNumber: assertionMetadata.getAssertionChunksNumber(publicAssertion),
-                        epochsNum,
-                        tokenAmount: tokenAmountInWei,
-                        scoreFunctionId: scoreFunctionId ?? 1,
-                        immutable_: immutable,
-                    },
-                    null,
-                    null,
-                    blockchain,
-                    stepHooks,
-                ));
-        } else {
-            const { contract: paranetKaContract, tokenId: paranetTokenId } = resolveUAL(paranetUAL);
-            ({ tokenId, receipt: mintKnowledgeAssetReceipt } =
-                await this.blockchainService.createAsset(
-                    {
-                        publicAssertionId,
-                        assertionSize: publicAssertionSizeInBytes,
-                        triplesNumber: assertionMetadata.getAssertionTriplesNumber(publicAssertion),
-                        chunksNumber: assertionMetadata.getAssertionChunksNumber(publicAssertion),
-                        epochsNum,
-                        tokenAmount: tokenAmountInWei,
-                        scoreFunctionId: scoreFunctionId ?? 1,
-                        immutable_: immutable,
-                    },
-                    paranetKaContract,
-                    paranetTokenId,
-                    blockchain,
-                    stepHooks,
-                ));
-        }
-
-        const resolvedUAL = {
-            blockchain: blockchain.name,
-            contract: contentAssetStorageAddress,
-            tokenId,
-        };
-        const assertions = [
-            {
-                ...resolvedUAL,
-                assertionId: publicAssertionId,
-                assertion: publicAssertion,
-                storeType: STORE_TYPES.TRIPLE,
-            },
-        ];
-        if (privateAssertion?.length) {
-            let privateAssertionId = null;
-            for (const quad of publicAssertion) {
-                if (quad.includes(PRIVATE_ASSERTION_PREDICATE)) {
-                    [, privateAssertionId] = quad.match(/"(.*?)"/);
-                    break;
-                }
-            }
-            assertions.push({
-                ...resolvedUAL,
-                assertionId: privateAssertionId,
-                assertion: privateAssertion,
-                storeType: STORE_TYPES.TRIPLE,
-            });
-        }
-
-        const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, tokenId);
-
         const publishOperationId = await this.nodeApiService.publish(
             endpoint,
             port,
             authToken,
-            publicAssertionId,
-            publicAssertion,
+            datasetRoot,
+            dataset,
             blockchain.name,
-            contentAssetStorageAddress,
-            tokenId,
             hashFunctionId,
         );
 
@@ -435,343 +428,117 @@ class AssetOperationsManager {
             publishOperationId,
         );
 
-        if (publishOperationResult.status === OPERATION_STATUSES.FAILED) {
+        if (publishOperationResult.status !== OPERATION_STATUSES.COMPLETED) {
             return {
-                UAL,
-                assertionId: publicAssertionId,
+                datasetRoot,
                 operation: {
-                    mintKnowledgeAsset: mintKnowledgeAssetReceipt,
                     publish: getOperationStatusObject(publishOperationResult, publishOperationId),
                 },
             };
         }
 
-        const localStoreOperationId = await this.nodeApiService.localStore(
+        const estimatedPublishingCost =
+            tokenAmount ??
+            (await this.nodeApiService.getBidSuggestion(
+                endpoint,
+                port,
+                authToken,
+                blockchain.name,
+                epochsNum,
+                datasetSize,
+                contentAssetStorageAddress,
+                datasetRoot,
+                hashFunctionId,
+            ));
+
+        let tokenId;
+        let mintKnowledgeAssetReceipt;
+
+        if (paranetUAL == null) {
+            ({ tokenId, receipt: mintKnowledgeAssetReceipt } =
+                await this.blockchainService.createAsset(
+                    {
+                        publishOperationId,
+                        datasetRoot,
+                        datasetSize,
+                        triplesNumber: kaTools.getAssertionTriplesNumber(dataset.public), // todo
+                        chunksNumber: numberOfChunks,
+                        epochsNum,
+                        tokenAmount: estimatedPublishingCost,
+                        scoreFunctionId: scoreFunctionId ?? 1,
+                        immutable_: immutable,
+                        // payer: payer,
+                    },
+                    null,
+                    null,
+                    blockchain,
+                    stepHooks,
+                ));
+        } else {
+            const { contract: paranetKaContract, tokenId: paranetTokenId } = resolveUAL(paranetUAL);
+            ({ tokenId, receipt: mintKnowledgeAssetReceipt } =
+                await this.blockchainService.createAsset(
+                    {
+                        publishOperationId,
+                        datasetRoot,
+                        datasetSize,
+                        triplesNumber: kaTools.getAssertionTriplesNumber(dataset), // todo
+                        chunksNumber: kcTools.calculateNumberOfChunks(dataset),
+                        epochsNum,
+                        tokenAmount: estimatedPublishingCost,
+                        scoreFunctionId: scoreFunctionId ?? 1,
+                        immutable_: immutable,
+                        // payer: payer,
+                    },
+                    paranetKaContract,
+                    paranetTokenId,
+                    blockchain,
+                    stepHooks,
+                ));
+        }
+
+        const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, tokenId);
+
+        const finalitySleepDelay = OPERATION_DELAYS.FINALITY;
+
+        await sleepForMilliseconds(finalitySleepDelay);
+
+        const finalityOperationId = await this.nodeApiService.finality(
             endpoint,
             port,
             authToken,
-            assertions,
+            blockchain.name,
+            UAL,
+            minimumNumberOfNodeReplications,
         );
 
-        const localStoreOperationResult = await this.nodeApiService.getOperationResult(
-            endpoint,
-            port,
-            authToken,
-            OPERATIONS.LOCAL_STORE,
-            maxNumberOfRetries,
-            DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY,
-            localStoreOperationId,
-        );
+        let finalityOperationResult = null;
 
-        stepHooks.afterHook({
-            status: OPERATIONS_STEP_STATUS.CREATE_ASSET_COMPLETED,
-            data: {
-                localStoreOperationId,
-                localStoreOperationResult,
-            },
-        });
+        // TO DO: ADD OPTIONAL WAITING FOR FINALITY
+        try {
+            finalityOperationResult = await this.nodeApiService.getOperationResult(
+                endpoint,
+                port,
+                authToken,
+                OPERATIONS.FINALITY,
+                maxNumberOfRetries,
+                frequency,
+                finalityOperationId,
+            );
+        } catch (error) {
+            console.error(`Attempt failed:`, error.message);
+        }
 
         return {
             UAL,
-            publicAssertionId,
+            datasetRoot,
+            signatures: publishOperationResult.data,
             operation: {
                 mintKnowledgeAsset: mintKnowledgeAssetReceipt,
                 publish: getOperationStatusObject(publishOperationResult, publishOperationId),
-                localStore: getOperationStatusObject(
-                    localStoreOperationResult,
-                    localStoreOperationId,
-                ),
+                finality: finalityOperationResult,
             },
         };
-    }
-
-    /**
-     * Retrieves a public or private assertion for a given UAL.
-     * @async
-     * @param {string} UAL - The Universal Asset Locator
-     * @param {Object} [options={}] - Optional parameters for the asset get operation.
-     * @param {string} [options.state] - The state or state index of the asset, "latest", "finalized", numerical, hash.
-     * @param {string} [options.contentType] - The type of content to retrieve, either "public", "private" or "all".
-     * @param {boolean} [options.validate] - Whether to validate the retrieved assertion.
-     * @param {string} [options.outputFormat] - The format of the retrieved assertion output, either "n-quads" or "json-ld".
-     * @returns {Object} - The result of the asset get operation.
-     */
-    async get(UAL, options = {}) {
-        const {
-            blockchain,
-            endpoint,
-            port,
-            maxNumberOfRetries,
-            frequency,
-            state,
-            contentType,
-            validate,
-            outputFormat,
-            authToken,
-            hashFunctionId,
-            paranetUAL,
-        } = this.inputService.getAssetGetArguments(options);
-
-        this.validationService.validateAssetGet(
-            UAL,
-            blockchain,
-            endpoint,
-            port,
-            maxNumberOfRetries,
-            frequency,
-            state,
-            contentType,
-            hashFunctionId,
-            validate,
-            outputFormat,
-            authToken,
-        );
-
-        const { tokenId } = resolveUAL(UAL);
-
-        let publicAssertionId;
-        let stateFinalized = false;
-        if (state === ASSET_STATES.LATEST) {
-            const unfinalizedState = await this.blockchainService.getUnfinalizedState(
-                tokenId,
-                blockchain,
-            );
-
-            if (unfinalizedState != null && unfinalizedState !== ZeroHash) {
-                publicAssertionId = unfinalizedState;
-                stateFinalized = false;
-            }
-        }
-
-        let assertionIds = [];
-        const isEnumState = Object.values(ASSET_STATES).includes(state);
-        if (!publicAssertionId) {
-            assertionIds = await this.blockchainService.getAssertionIds(tokenId, blockchain);
-
-            if (isEnumState) {
-                publicAssertionId = assertionIds[assertionIds.length - 1];
-                stateFinalized = true;
-            } else if (typeof state === 'number') {
-                if (state >= assertionIds.length) {
-                    throw new Error('State index is out of range.');
-                }
-
-                publicAssertionId = assertionIds[state];
-
-                if (state === assertionIds.length - 1) stateFinalized = true;
-            } else if (assertionIds.includes(state)) {
-                publicAssertionId = state;
-
-                if (state === assertionIds[assertionIds.length - 1]) stateFinalized = true;
-            } else {
-                throw new Error('Incorrect state option.');
-            }
-        }
-
-        const getPublicOperationId = await this.nodeApiService.get(
-            endpoint,
-            port,
-            authToken,
-            UAL,
-            isEnumState ? state : publicAssertionId,
-            hashFunctionId,
-            paranetUAL,
-        );
-
-        const getPublicOperationResult = await this.nodeApiService.getOperationResult(
-            endpoint,
-            port,
-            authToken,
-            OPERATIONS.GET,
-            maxNumberOfRetries,
-            frequency,
-            getPublicOperationId,
-        );
-
-        if (!getPublicOperationResult.data.assertion) {
-            if (getPublicOperationResult.status !== 'FAILED') {
-                getPublicOperationResult.data = {
-                    errorType: 'DKG_CLIENT_ERROR',
-                    errorMessage: 'Unable to find assertion on the network!',
-                };
-                getPublicOperationResult.status = 'FAILED';
-            }
-
-            return {
-                operation: {
-                    publicGet: getOperationStatusObject(
-                        getPublicOperationResult,
-                        getPublicOperationId,
-                    ),
-                },
-            };
-        }
-
-        const { assertion: publicAssertion } = getPublicOperationResult.data;
-        let { privateAssertion } = getPublicOperationResult.data;
-
-        if (validate === true && (await calculateRoot(publicAssertion)) !== publicAssertionId) {
-            getPublicOperationResult.data = {
-                errorType: 'DKG_CLIENT_ERROR',
-                errorMessage: "Calculated root hashes don't match!",
-            };
-        }
-
-        let result = { operation: {} };
-        if (paranetUAL) {
-            result.operation.publicGet = getOperationStatusObject(
-                getPublicOperationResult,
-                getPublicOperationId,
-            );
-            const formattedPublicAssertion = await toJSONLD(publicAssertion.join('\n'));
-            result.public = {
-                assertion: formattedPublicAssertion,
-                assertionId: publicAssertionId,
-            };
-            if (privateAssertion) {
-                const formattedPrivateAssertion = await toJSONLD(privateAssertion.join('\n'));
-                result.private = {
-                    assertion: formattedPrivateAssertion,
-                    assertionId: getPublicOperationResult.data.privateAssertionId,
-                };
-            }
-            return result;
-        }
-        if (contentType !== CONTENT_TYPES.PRIVATE) {
-            let formattedPublicAssertion = publicAssertion;
-            try {
-                if (outputFormat !== GET_OUTPUT_FORMATS.N_QUADS) {
-                    formattedPublicAssertion = await toJSONLD(publicAssertion.join('\n'));
-                } else {
-                    formattedPublicAssertion = publicAssertion.join('\n');
-                }
-            } catch (error) {
-                getPublicOperationResult.data = {
-                    errorType: 'DKG_CLIENT_ERROR',
-                    errorMessage: error.message,
-                };
-            }
-
-            if (contentType === CONTENT_TYPES.PUBLIC) {
-                result = {
-                    ...result,
-                    assertion: formattedPublicAssertion,
-                    assertionId: publicAssertionId,
-                };
-            } else {
-                result.public = {
-                    assertion: formattedPublicAssertion,
-                    assertionId: publicAssertionId,
-                };
-            }
-
-            result.operation.publicGet = getOperationStatusObject(
-                getPublicOperationResult,
-                getPublicOperationId,
-            );
-        }
-
-        if (contentType !== CONTENT_TYPES.PUBLIC) {
-            const filteredTriples = publicAssertion.filter((element) =>
-                element.includes(PRIVATE_ASSERTION_PREDICATE),
-            );
-            const privateAssertionLinkTriple =
-                filteredTriples.length > 0 ? filteredTriples[0] : null;
-
-            let queryPrivateOperationId;
-            let queryPrivateOperationResult = {};
-            if (privateAssertionLinkTriple) {
-                const privateAssertionId = privateAssertionLinkTriple.match(/"(.*?)"/)[1];
-                if (getPublicOperationResult?.data?.privateAssertion?.length)
-                    privateAssertion = getPublicOperationResult.data.privateAssertion;
-                else {
-                    const queryString = `
-                    CONSTRUCT { ?s ?p ?o }
-                    WHERE {
-                        {
-                            GRAPH <assertion:${privateAssertionId}>
-                            {
-                                ?s ?p ?o .
-                            }
-                        }
-                    }`;
-
-                    queryPrivateOperationId = await this.nodeApiService.query(
-                        endpoint,
-                        port,
-                        authToken,
-                        queryString,
-                        QUERY_TYPES.CONSTRUCT,
-                        stateFinalized
-                            ? OT_NODE_TRIPLE_STORE_REPOSITORIES.PRIVATE_CURRENT
-                            : OT_NODE_TRIPLE_STORE_REPOSITORIES.PRIVATE_HISTORY,
-                    );
-
-                    queryPrivateOperationResult = await this.nodeApiService.getOperationResult(
-                        endpoint,
-                        port,
-                        authToken,
-                        OPERATIONS.QUERY,
-                        maxNumberOfRetries,
-                        frequency,
-                        queryPrivateOperationId,
-                    );
-
-                    const privateAssertionNQuads = queryPrivateOperationResult.data;
-
-                    privateAssertion = await toNQuads(
-                        privateAssertionNQuads,
-                        'application/n-quads',
-                    );
-                }
-
-                let formattedPrivateAssertion;
-                if (
-                    privateAssertion.length &&
-                    validate === true &&
-                    (await calculateRoot(privateAssertion)) !== privateAssertionId
-                ) {
-                    queryPrivateOperationResult.data = {
-                        errorType: 'DKG_CLIENT_ERROR',
-                        errorMessage: "Calculated root hashes don't match!",
-                    };
-                }
-
-                try {
-                    if (outputFormat !== GET_OUTPUT_FORMATS.N_QUADS) {
-                        formattedPrivateAssertion = await toJSONLD(privateAssertion.join('\n'));
-                    } else {
-                        formattedPrivateAssertion = privateAssertion.join('\n');
-                    }
-                } catch (error) {
-                    queryPrivateOperationResult.data = {
-                        errorType: 'DKG_CLIENT_ERROR',
-                        errorMessage: error.message,
-                    };
-                }
-
-                if (contentType === CONTENT_TYPES.PRIVATE) {
-                    result = {
-                        ...result,
-                        assertion: formattedPrivateAssertion,
-                        assertionId: privateAssertionId,
-                    };
-                } else {
-                    result.private = {
-                        assertion: formattedPrivateAssertion,
-                        assertionId: privateAssertionId,
-                    };
-                }
-                if (queryPrivateOperationId) {
-                    result.operation.queryPrivate = getOperationStatusObject(
-                        queryPrivateOperationResult,
-                        queryPrivateOperationId,
-                    );
-                }
-            }
-        }
-
-        return result;
     }
 
     /**
@@ -1067,18 +834,18 @@ class AssetOperationsManager {
         endpoint,
         port,
         authToken,
-        assertionId,
+        datasetRoot,
         size,
         hashFunctionId,
     ) {
         const { contract, tokenId } = resolveUAL(UAL);
-        const firstAssertionId = await this.blockchainService.getAssertionIdByIndex(
+        const firstDatasetRoot = await this.blockchainService.getAssertionIdByIndex(
             tokenId,
             0,
             blockchain,
         );
 
-        const keyword = ethers.solidityPacked(['address', 'bytes32'], [contract, firstAssertionId]);
+        const keyword = ethers.solidityPacked(['address', 'bytes32'], [contract, firstDatasetRoot]);
 
         const agreementId = ethers.sha256(
             ethers.solidityPacked(['address', 'uint256', 'bytes'], [contract, tokenId, keyword]),
@@ -1103,7 +870,7 @@ class AssetOperationsManager {
             epochsLeft,
             size,
             contract,
-            assertionId,
+            datasetRoot,
             hashFunctionId,
         );
 
@@ -1147,15 +914,15 @@ class AssetOperationsManager {
     }
 
     /**
-     * Creates a new asset and stores it locally on the node.
+     * Updates an existing asset.
      * @async
-     * @param {Object} content - The content of the asset to be created, contains public, private or both keys.
-     * @param {Object} [options={}] - Additional options for asset creation.
-     * @param {Object} [stepHooks=emptyHooks] - Hooks to execute during asset creation.
+     * @param {string} UAL - The Universal Asset Locator
+     * @param {Object} content - The content of the asset to be updated.
+     * @param {Object} [options={}] - Additional options for asset update.
      * @returns {Object} Object containing UAL, publicAssertionId and operation status.
      */
-    async localStore(content, options = {}, stepHooks = emptyHooks) {
-        this.validationService.validateObjectType(content);
+    async update(UAL, content, options = {}) {
+        this.validationService.validateJsonldOrNquads(content);
 
         const {
             blockchain,
@@ -1163,198 +930,116 @@ class AssetOperationsManager {
             port,
             maxNumberOfRetries,
             frequency,
-            epochsNum,
             hashFunctionId,
             scoreFunctionId,
-            immutable,
             tokenAmount,
             authToken,
-            paranetUAL,
-            assertionCachedLocally,
-        } = this.inputService.getAssetLocalStoreArguments(options);
+            payer,
+        } = this.inputService.getAssetUpdateArguments(options);
 
-        this.validationService.validateAssetCreate(
+        this.validationService.validateAssetUpdate(
             content,
             blockchain,
             endpoint,
             port,
             maxNumberOfRetries,
             frequency,
-            epochsNum,
             hashFunctionId,
             scoreFunctionId,
-            immutable,
             tokenAmount,
             authToken,
-            paranetUAL,
+            payer,
         );
 
-        const { public: publicAssertion, private: privateAssertion } = await formatGraph(content);
-        const publicAssertionSizeInBytes =
-            assertionMetadata.getAssertionSizeInBytes(publicAssertion);
+        const { tokenId } = resolveUAL(UAL);
 
-        this.validationService.validateAssertionSizeInBytes(
-            publicAssertionSizeInBytes +
-                (privateAssertion === undefined
-                    ? 0
-                    : assertionMetadata.getAssertionSizeInBytes(privateAssertion)),
-        );
-        const publicAssertionId = await calculateRoot(publicAssertion);
+        let dataset;
+
+        if (typeof content === 'string') {
+            dataset = content
+                .split('\n')
+                .map((line) => line.trimStart().trimEnd())
+                .filter((line) => line.trim() !== '');
+        } else {
+            dataset = await kcTools.formatDataset(content);
+        }
+
+        const numberOfChunks = kcTools.calculateNumberOfChunks(dataset, CHUNK_BYTE_SIZE);
+
+        const datasetSize = numberOfChunks * CHUNK_BYTE_SIZE;
+
+        this.validationService.validateAssertionSizeInBytes(datasetSize);
+        const datasetRoot = kcTools.calculateMerkleRoot(dataset);
 
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
             'ContentAssetStorage',
             blockchain,
         );
 
-        const tokenAmountInWei =
-            tokenAmount ??
-            (await this.nodeApiService.getBidSuggestion(
-                endpoint,
-                port,
-                authToken,
-                blockchain.name,
-                epochsNum,
-                publicAssertionSizeInBytes,
-                contentAssetStorageAddress,
-                publicAssertionId,
-                hashFunctionId,
-            ));
-
-        const { tokenId, receipt: mintKnowledgeAssetReceipt } =
-            await this.blockchainService.createAsset(
-                {
-                    publicAssertionId,
-                    assertionSize: publicAssertionSizeInBytes,
-                    triplesNumber: assertionMetadata.getAssertionTriplesNumber(publicAssertion),
-                    chunksNumber: assertionMetadata.getAssertionChunksNumber(publicAssertion),
-                    epochsNum,
-                    tokenAmount: tokenAmountInWei,
-                    scoreFunctionId: scoreFunctionId ?? 1,
-                    immutable_: immutable,
-                },
-                null,
-                null,
-                blockchain,
-                stepHooks,
-            );
-
-        const resolvedUAL = {
-            blockchain: blockchain.name,
-            contract: contentAssetStorageAddress,
+        const updateOperationId = await this.nodeApiService.update(
+            endpoint,
+            port,
+            authToken,
+            datasetRoot,
+            dataset,
+            blockchain.name,
+            contentAssetStorageAddress,
             tokenId,
-        };
-        const assertions = [
-            {
-                ...resolvedUAL,
-                assertionId: publicAssertionId,
-                assertion: publicAssertion,
-                storeType: STORE_TYPES.TRIPLE_PARANET,
-                paranetUAL,
-            },
-        ];
-        if (privateAssertion?.length) {
-            let privateAssertionId = null;
-            for (const quad of publicAssertion) {
-                if (quad.includes(PRIVATE_ASSERTION_PREDICATE)) {
-                    [, privateAssertionId] = quad.match(/"(.*?)"/);
-                    break;
-                }
-            }
-            assertions.push({
-                ...resolvedUAL,
-                assertionId: privateAssertionId,
-                assertion: privateAssertion,
-                storeType: STORE_TYPES.TRIPLE_PARANET,
-                paranetUAL,
-            });
-        }
-
-        const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, tokenId);
-        let fullPathToCachedAssertion = null;
-        if (assertionCachedLocally) {
-            const absolutePath = path.resolve('.');
-            const directory = 'local-store-cache';
-            await mkdir(directory, { recursive: true });
-            fullPathToCachedAssertion = path.join(
-                absolutePath,
-                directory,
-                assertions[0].assertionId,
-            );
-            await writeFile(fullPathToCachedAssertion, JSON.stringify(assertions));
-        }
-
-        const localStoreOperationId = await this.nodeApiService.localStore(
-            endpoint,
-            port,
-            authToken,
-            assertions,
-            fullPathToCachedAssertion,
+            hashFunctionId,
         );
-
-        const localStoreOperationResult = await this.nodeApiService.getOperationResult(
+        const updateOperationResult = await this.nodeApiService.getOperationResult(
             endpoint,
             port,
             authToken,
-            OPERATIONS.LOCAL_STORE,
+            OPERATIONS.UPDATE,
             maxNumberOfRetries,
-            DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY,
-            localStoreOperationId,
+            frequency,
+            updateOperationId,
         );
 
-        if (assertionCachedLocally) {
-            const absolutePath = path.resolve('.');
-            const directory = 'local-store-cache';
-            fullPathToCachedAssertion = path.join(
-                absolutePath,
-                directory,
-                assertions[0].assertionId,
-            );
-            await unlink(fullPathToCachedAssertion);
-        }
-
-        if (localStoreOperationResult.status !== OPERATION_STATUSES.COMPLETED) {
+        if (updateOperationResult.status !== OPERATION_STATUSES.COMPLETED) {
             return {
-                UAL,
-                assertionId: publicAssertionId,
+                datasetRoot,
                 operation: {
-                    mintKnowledgeAsset: mintKnowledgeAssetReceipt,
-                    localStore: getOperationStatusObject(
-                        localStoreOperationResult,
-                        localStoreOperationId,
-                    ),
+                    publish: getOperationStatusObject(updateOperationResult, updateOperationId),
                 },
             };
         }
 
-        const { contract: paranetContract, tokenId: paranetTokenId } = resolveUAL(paranetUAL);
-        let submitToParanetReceipt;
-        try {
-            submitToParanetReceipt = await this.blockchainService.submitToParanet(
-                {
-                    paranetContract,
-                    paranetTokenId,
-                    contentAssetStorageAddress,
-                    tokenId,
-                },
+        let tokenAmountInWei;
+
+        if (tokenAmount != null) {
+            tokenAmountInWei = tokenAmount;
+        } else {
+            tokenAmountInWei = await this._getUpdateBidSuggestion(
+                UAL,
                 blockchain,
+                endpoint,
+                port,
+                authToken,
+                datasetRoot,
+                datasetSize,
+                hashFunctionId,
             );
-        } catch (error) {
-            // don't break flow
         }
+
+        const updateKnowledgeAssetReceipt = await this.blockchainService.updateAsset(
+            tokenId,
+            datasetRoot,
+            datasetSize,
+            kaTools.getAssertionTriplesNumber(dataset),
+            kcTools.calculateNumberOfChunks(dataset),
+            tokenAmountInWei,
+            blockchain,
+        );
 
         return {
             UAL,
-            publicAssertionId,
+            datasetRoot,
             operation: {
-                mintKnowledgeAsset: mintKnowledgeAssetReceipt,
-                localStore: getOperationStatusObject(
-                    localStoreOperationResult,
-                    localStoreOperationId,
-                ),
-                submitToParanet: submitToParanetReceipt,
+                updateKnowledgeAsset: updateKnowledgeAssetReceipt,
+                update: getOperationStatusObject(updateOperationResult, updateOperationId),
             },
         };
     }
 }
-
-module.exports = AssetOperationsManager;

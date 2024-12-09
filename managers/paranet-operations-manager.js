@@ -1,8 +1,8 @@
-const { ethers } = require('ethers');
-const { resolveUAL } = require('../services/utilities.js');
-const { INCENTIVE_TYPE } = require('../constants.js');
+import { ethers  } from 'ethers';
+import { resolveUAL  } from '../services/utilities.js';
+import { INCENTIVE_TYPE  } from '../constants.js';
 
-class ParanetOperationsManager {
+export default class ParanetOperationsManager {
     constructor(services) {
         this.blockchainService = services.blockchainService;
         this.inputService = services.inputService;
@@ -915,4 +915,3 @@ class ParanetOperationsManager {
         return isProposalVoter;
     }
 }
-module.exports = ParanetOperationsManager;

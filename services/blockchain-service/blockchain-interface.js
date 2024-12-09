@@ -1,7 +1,10 @@
-const BrowserBlockchainService = require('./implementations/browser-blockchain-service.js');
-const NodeBlockchainService = require('./implementations/node-blockchain-service.js');
+import BrowserBlockchainService from './implementations/browser-blockchain-service.js';
+import NodeBlockchainService from './implementations/node-blockchain-service.js';
 
-module.exports = {
-    Browser: BrowserBlockchainService,
-    Node: NodeBlockchainService,
-};
+const Browser = BrowserBlockchainService;
+const Node = NodeBlockchainService;
+
+export default {
+    Browser,
+    Node,
+}

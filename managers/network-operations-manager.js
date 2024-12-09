@@ -1,4 +1,4 @@
-class NetworkOperationsManager {
+export default class NetworkOperationsManager {
     constructor(services) {
         this.inputService = services.inputService;
         this.blockchainService = services.blockchainService;
@@ -45,4 +45,3 @@ class NetworkOperationsManager {
         return typeof response === 'string' ? BigInt(response) : response;
     }
 }
-module.exports = NetworkOperationsManager;
