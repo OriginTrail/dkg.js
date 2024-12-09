@@ -1,4 +1,4 @@
-import { isAddress  } from 'ethers';
+import { isAddress } from 'ethers';
 import {
     CONTENT_TYPES,
     GRAPH_LOCATIONS,
@@ -11,7 +11,7 @@ import {
     PARANET_NODES_ACCESS_POLICY,
     PARANET_MINERS_ACCESS_POLICY,
 } from '../constants.js';
-import { nodeSupported  } from './utilities.js';
+import { nodeSupported } from './utilities.js';
 
 export default class ValidationService {
     validateNodeInfo(endpoint, port, authToken) {
@@ -106,6 +106,7 @@ export default class ValidationService {
         validate,
         outputFormat,
         authToken,
+        subjectUAL,
     ) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain, OPERATIONS.GET);
@@ -120,6 +121,7 @@ export default class ValidationService {
         this.validateValidate(validate);
         this.validateOutputFormat(outputFormat);
         this.validateAuthToken(authToken);
+        this.validateSubjectUAL(subjectUAL);
     }
 
     validateAssetUpdate(
@@ -388,9 +390,7 @@ export default class ValidationService {
         this.validateRequiredParam('graphLocation', graphLocation);
         const validGraphLocations = Object.keys(GRAPH_LOCATIONS);
         if (!validGraphLocations.includes(graphLocation)) {
-            throw Error(
-                `Invalid graph location: available locations are: ${validGraphLocations}`,
-            );
+            throw Error(`Invalid graph location: available locations are: ${validGraphLocations}`);
         }
     }
 
@@ -474,8 +474,7 @@ export default class ValidationService {
     }
 
     validateState(state) {
-        if (state !== null)
-            this.validateParamType('state', state, 'number');
+        if (state !== null) this.validateParamType('state', state, 'number');
     }
 
     validateIncludeMetadata(includeMetadata) {
@@ -562,6 +561,10 @@ export default class ValidationService {
     validateValidate(validate) {
         this.validateRequiredParam('validate', validate);
         this.validateParamType('validate', validate, 'boolean');
+    }
+
+    validateSubjectUAL(subjectUAL) {
+        this.validateParamType('subjectUAL', subjectUAL, 'boolean');
     }
 
     validateOutputFormat(outputFormat) {

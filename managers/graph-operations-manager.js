@@ -1,4 +1,4 @@
-import { kaTools, kcTools  } from 'assertion-tools';
+import { kaTools, kcTools } from 'assertion-tools';
 import {
     OPERATIONS,
     GET_OUTPUT_FORMATS,
@@ -52,6 +52,7 @@ export default class GraphOperationsManager {
             authToken,
             hashFunctionId,
             paranetUAL,
+            subjectUAL,
         } = this.inputService.getAssetGetArguments(options);
 
         this.validationService.validateAssetGet(
@@ -68,6 +69,7 @@ export default class GraphOperationsManager {
             validate,
             outputFormat,
             authToken,
+            subjectUAL,
         );
 
         const getOperationId = await this.nodeApiService.get(
@@ -77,6 +79,7 @@ export default class GraphOperationsManager {
             UAL,
             state,
             includeMetadata,
+            subjectUAL,
             contentType,
             hashFunctionId,
             paranetUAL,
@@ -91,7 +94,29 @@ export default class GraphOperationsManager {
             frequency,
             getOperationId,
         );
+        if (subjectUAL) {
+            if (getOperationResult.data?.length) {
+                return {
+                    operation: {
+                        get: getOperationStatusObject(getOperationResult, getOperationId),
+                    },
+                    subjectUALPairs: getOperationResult.data,
+                };
+            }
+            if (getOperationResult.status !== 'FAILED') {
+                getOperationResult.data = {
+                    errorType: 'DKG_CLIENT_ERROR',
+                    errorMessage: 'Unable to find assertion on the network!',
+                };
+                getOperationResult.status = 'FAILED';
+            }
 
+            return {
+                operation: {
+                    get: getOperationStatusObject(getOperationResult, getOperationId),
+                },
+            };
+        }
         const { assertion, metadata } = getOperationResult.data;
 
         if (!assertion) {

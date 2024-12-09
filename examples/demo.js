@@ -28,12 +28,52 @@ function divider() {
 }
 
 (async () => {
-    const content = `<uuid:1> <http://schema.org/city> <uuid:belgrade> .
-    <uuid:1> <http://schema.org/company> "OT" .
-    <uuid:1> <http://schema.org/user> <uuid:user:1> .
-    `;
+    // const content = {
+    //     public: `<uuid:1> <http://schema.org/city> <uuid:nis> .
+    //     <uuid:3> <http://schema.org/company> "TL" .`,
+    //     private: `<uuid:2> <http://schema.org/city> <uuid:belgrade> .
+    // <uuid:2> <http://schema.org/company> "OT" .
+    // <uuid:2> <http://schema.org/user> <uuid:user:1> .
+    // <uuid:3> <http://schema.org/user> <uuid:user:1> .
 
-    divider();
+    // `,
+    // };
+    const content = {
+        public: {
+            '@context': ['https://schema.org'],
+            '@id': 'uuid:1',
+            company: 'OT',
+            user: {
+                '@id': 'uuid:user:1',
+            },
+            city: {
+                '@id': 'uuid:belgrade',
+            },
+        },
+        private: {
+            '@context': ['https://schema.org'],
+            '@graph': [
+                {
+                    '@id': 'uuid:user:1',
+                    name: 'Adam',
+                    lastname: 'Smith',
+                },
+                {
+                    '@id': 'uuid:belgrade',
+                    title: 'Belgrade',
+                    postCode: '11000',
+                },
+                {
+                    problem: 'empty',
+                },
+                {
+                    solution: 'generate',
+                },
+            ],
+        },
+    };
+
+    // divider();
 
     const nodeInfo = await DkgClient.node.info();
     console.log('======================== NODE INFO RECEIVED');
@@ -41,13 +81,19 @@ function divider() {
 
     divider();
 
-    const createAssetResult = await DkgClient.asset.create(content, { epochsNum: 2, tokenAmount: '100' });
+    const createAssetResult = await DkgClient.asset.create(content, {
+        epochsNum: 2,
+        tokenAmount: '100',
+    });
     console.log('======================== ASSET CREATED');
     console.log(createAssetResult);
 
     divider();
 
-    const createCollectionResult = await DkgClient.graph.create(content, { epochsNum: 2, tokenAmount: '100' });
+    const createCollectionResult = await DkgClient.graph.create(content, {
+        epochsNum: 2,
+        tokenAmount: '100',
+    });
     console.log('======================== ASSET CREATED');
     console.log(createCollectionResult);
 

@@ -1,6 +1,6 @@
 import axios from 'axios';
-import { OPERATION_STATUSES  } from '../../../constants.js';
-import { sleepForMilliseconds  } from '../../utilities.js';
+import { OPERATION_STATUSES } from '../../../constants.js';
+import { sleepForMilliseconds } from '../../utilities.js';
 
 export default class HttpService {
     constructor(config = {}) {
@@ -138,6 +138,7 @@ export default class HttpService {
         UAL,
         state,
         includeMetadata,
+        subjectUAL,
         contentType,
         hashFunctionId,
         paranetUAL,
@@ -152,6 +153,7 @@ export default class HttpService {
                     includeMetadata,
                     hashFunctionId,
                     paranetUAL,
+                    subjectUAL,
                 },
                 headers: this.prepareRequestConfig(authToken),
             });
