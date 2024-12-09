@@ -87,7 +87,16 @@ export default class HttpService {
         }
     }
 
-    async publish(endpoint, port, authToken, datasetRoot, dataset, blockchain, hashFunctionId) {
+    async publish(
+        endpoint,
+        port,
+        authToken,
+        datasetRoot,
+        dataset,
+        blockchain,
+        hashFunctionId,
+        minimumNumberOfNodeReplications,
+    ) {
         try {
             const response = await axios({
                 method: 'post',
@@ -97,6 +106,7 @@ export default class HttpService {
                     dataset,
                     blockchain,
                     hashFunctionId,
+                    minimumNumberOfNodeReplications,
                 },
                 headers: this.prepareRequestConfig(authToken),
             });
@@ -220,12 +230,23 @@ export default class HttpService {
         }
     }
 
-    async finality(endpoint, port, authToken, blockchain, ual, minimumNumberOfNodeReplications) {
+    async finality(
+        endpoint,
+        port,
+        authToken,
+        blockchain,
+        ual,
+        minimumNumberOfFinalizationConfirmations,
+    ) {
         try {
             const response = await axios({
                 method: 'post',
                 url: `${this.getBaseUrl(endpoint, port)}/finality`,
-                data: { ual, blockchain, minimumNumberOfNodeReplications },
+                data: {
+                    ual,
+                    blockchain,
+                    minimumNumberOfNodeReplications: minimumNumberOfFinalizationConfirmations,
+                },
                 headers: this.prepareRequestConfig(authToken),
             });
             return response.data.operationId;

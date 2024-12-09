@@ -73,6 +73,7 @@ export default class ValidationService {
         authToken,
         paranetUAL,
         payer,
+        minimumNumberOfFinalizationConfirmations,
         minimumNumberOfNodeReplications,
     ) {
         this.validateContent(content);
@@ -89,6 +90,9 @@ export default class ValidationService {
         this.validateAuthToken(authToken);
         this.validateParanetUAL(paranetUAL);
         this.validatePayer(payer);
+        this.validateMinimumNumberOfFinalizationConfirmations(
+            minimumNumberOfFinalizationConfirmations,
+        );
         this.validateMinimumNumberOfNodeReplications(minimumNumberOfNodeReplications);
     }
 
@@ -544,7 +548,22 @@ export default class ValidationService {
         this.validateAddress(payer);
     }
 
+    validateMinimumNumberOfFinalizationConfirmations(minimumNumberOfFinalizationConfirmations) {
+        this.validateRequiredParam(
+            'minimumNumberOfFinalizationConfirmations',
+            minimumNumberOfFinalizationConfirmations,
+        );
+        this.validateParamType(
+            'minimumNumberOfFinalizationConfirmations',
+            minimumNumberOfFinalizationConfirmations,
+            'number',
+        );
+    }
+
     validateMinimumNumberOfNodeReplications(minimumNumberOfNodeReplications) {
+        // null is valid
+        if (minimumNumberOfNodeReplications === null) return;
+
         this.validateRequiredParam(
             'minimumNumberOfNodeReplications',
             minimumNumberOfNodeReplications,
@@ -736,7 +755,7 @@ export default class ValidationService {
         port,
         maxNumberOfRetries,
         frequency,
-        minimumNumberOfNodeReplications,
+        minimumNumberOfFinalizationConfirmations,
         authToken,
     ) {
         this.validateEndpoint(endpoint);
@@ -744,6 +763,8 @@ export default class ValidationService {
         this.validateMaxNumberOfRetries(maxNumberOfRetries);
         this.validateFrequency(frequency);
         this.validateAuthToken(authToken);
-        this.validateMinimumNumberOfNodeReplications(minimumNumberOfNodeReplications);
+        this.validateMinimumNumberOfFinalizationConfirmations(
+            minimumNumberOfFinalizationConfirmations,
+        );
     }
 }

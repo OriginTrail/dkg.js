@@ -222,6 +222,7 @@ export default class GraphOperationsManager {
             authToken,
             paranetUAL,
             payer,
+            minimumNumberOfFinalizationConfirmations,
             minimumNumberOfNodeReplications,
         } = this.inputService.getAssetCreateArguments(options);
 
@@ -240,6 +241,7 @@ export default class GraphOperationsManager {
             authToken,
             paranetUAL,
             payer,
+            minimumNumberOfFinalizationConfirmations,
             minimumNumberOfNodeReplications,
         );
 
@@ -353,6 +355,7 @@ export default class GraphOperationsManager {
             dataset,
             blockchain.name,
             hashFunctionId,
+            minimumNumberOfNodeReplications,
         );
 
         const publishOperationResult = await this.nodeApiService.getOperationResult(
@@ -456,7 +459,7 @@ export default class GraphOperationsManager {
                 publish: getOperationStatusObject(publishOperationResult, publishOperationId),
                 finality: {
                     status:
-                        finalityStatusResult >= minimumNumberOfNodeReplications
+                        finalityStatusResult >= minimumNumberOfFinalizationConfirmations
                             ? 'FINALIZED'
                             : 'NOT FINALIZED',
                 },
@@ -632,7 +635,7 @@ export default class GraphOperationsManager {
             port,
             maxNumberOfRetries,
             frequency,
-            minimumNumberOfNodeReplications,
+            minimumNumberOfFinalizationConfirmations,
             authToken,
         } = this.inputService.getPublishFinalityArguments(options);
 
@@ -642,7 +645,7 @@ export default class GraphOperationsManager {
             port,
             maxNumberOfRetries,
             frequency,
-            minimumNumberOfNodeReplications,
+            minimumNumberOfFinalizationConfirmations,
             authToken,
         );
 
@@ -660,7 +663,7 @@ export default class GraphOperationsManager {
                 authToken,
                 blockchain.name,
                 UAL,
-                minimumNumberOfNodeReplications,
+                minimumNumberOfFinalizationConfirmations,
             );
 
             try {
@@ -680,7 +683,7 @@ export default class GraphOperationsManager {
                     error: error.message,
                 };
             }
-        } else if (finalityStatusResult >= minimumNumberOfNodeReplications) {
+        } else if (finalityStatusResult >= minimumNumberOfFinalizationConfirmations) {
             return {
                 status: 'FINALIZED',
                 numberOfConfirmations: finalityStatusResult,

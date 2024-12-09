@@ -285,6 +285,7 @@ export default class AssetOperationsManager {
             authToken,
             paranetUAL,
             payer,
+            minimumNumberOfFinalizationConfirmations,
             minimumNumberOfNodeReplications,
         } = this.inputService.getAssetCreateArguments(options);
 
@@ -303,6 +304,7 @@ export default class AssetOperationsManager {
             authToken,
             paranetUAL,
             payer,
+            minimumNumberOfFinalizationConfirmations,
             minimumNumberOfNodeReplications,
         );
 
@@ -416,6 +418,7 @@ export default class AssetOperationsManager {
             dataset,
             blockchain.name,
             hashFunctionId,
+            minimumNumberOfNodeReplications,
         );
 
         const publishOperationResult = await this.nodeApiService.getOperationResult(
@@ -519,7 +522,7 @@ export default class AssetOperationsManager {
                 publish: getOperationStatusObject(publishOperationResult, publishOperationId),
                 finality: {
                     status:
-                        finalityStatusResult >= minimumNumberOfNodeReplications
+                        finalityStatusResult >= minimumNumberOfFinalizationConfirmations
                             ? 'FINALIZED'
                             : 'NOT FINALIZED',
                 },
