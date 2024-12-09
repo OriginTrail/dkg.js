@@ -1,4 +1,4 @@
-import { kaTools, kcTools  } from 'assertion-tools';
+import { kaTools, kcTools } from 'assertion-tools';
 import {
     OPERATIONS,
     GET_OUTPUT_FORMATS,
@@ -52,6 +52,7 @@ export default class GraphOperationsManager {
             authToken,
             hashFunctionId,
             paranetUAL,
+            subjectUAL,
         } = this.inputService.getAssetGetArguments(options);
 
         this.validationService.validateAssetGet(
@@ -68,6 +69,7 @@ export default class GraphOperationsManager {
             validate,
             outputFormat,
             authToken,
+            subjectUAL,
         );
 
         const getOperationId = await this.nodeApiService.get(
@@ -77,6 +79,7 @@ export default class GraphOperationsManager {
             UAL,
             state,
             includeMetadata,
+            subjectUAL,
             contentType,
             hashFunctionId,
             paranetUAL,
