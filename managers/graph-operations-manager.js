@@ -94,7 +94,29 @@ export default class GraphOperationsManager {
             frequency,
             getOperationId,
         );
+        if (subjectUAL) {
+            if (getOperationResult.data?.length) {
+                return {
+                    operation: {
+                        get: getOperationStatusObject(getOperationResult, getOperationId),
+                    },
+                    subjectUALPairs: getOperationResult.data,
+                };
+            }
+            if (getOperationResult.status !== 'FAILED') {
+                getOperationResult.data = {
+                    errorType: 'DKG_CLIENT_ERROR',
+                    errorMessage: 'Unable to find assertion on the network!',
+                };
+                getOperationResult.status = 'FAILED';
+            }
 
+            return {
+                operation: {
+                    get: getOperationStatusObject(getOperationResult, getOperationId),
+                },
+            };
+        }
         const { assertion, metadata } = getOperationResult.data;
 
         if (!assertion) {
