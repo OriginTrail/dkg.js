@@ -234,6 +234,20 @@ export default class HttpService {
         }
     }
 
+    async finalityStatus(endpoint, port, authToken, ual) {
+        try {
+            const response = await axios({
+                method: 'get',
+                url: `${this.getBaseUrl(endpoint, port)}/finality-status`,
+                params: { ual },
+                headers: this.prepareRequestConfig(authToken),
+            });
+            return response.data.finality;
+        } catch (error) {
+            throw Error(`Unable to query: ${error.message}`);
+        }
+    }
+
     async getOperationResult(
         endpoint,
         port,
