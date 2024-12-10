@@ -11,7 +11,12 @@ export const MAX_FILE_SIZE = 524288000;
 export const DID_PREFIX = 'did:dkg';
 
 export const PRIVATE_ASSERTION_PREDICATE =
-    'https://ontology.origintrail.io/dkg/1.0#privateAssertionID';
+    'https://ontology.origintrail.io/dkg/1.0#privateMerkleRoot';
+
+export const PRIVATE_RESOURCE_PREDICATE =
+    'https://ontology.origintrail.io/dkg/1.0#representsPrivateResource';
+
+export const PRIVATE_HASH_SUBJECT_PREFIX = 'https://ontology.origintrail.io/dkg/1.0#metadata-hash:';
 
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
