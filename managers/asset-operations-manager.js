@@ -483,35 +483,35 @@ export default class AssetOperationsManager {
 
         const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, tokenId);
 
-        // const finalitySleepDelay = OPERATION_DELAYS.FINALITY;
+        const finalitySleepDelay = OPERATION_DELAYS.FINALITY;
 
-        // await sleepForMilliseconds(finalitySleepDelay);
+        await sleepForMilliseconds(finalitySleepDelay);
 
-        // const finalityOperationId = await this.nodeApiService.finality(
-        //     endpoint,
-        //     port,
-        //     authToken,
-        //     blockchain.name,
-        //     UAL,
-        //     minimumNumberOfNodeReplications,
-        // );
+        const finalityOperationId = await this.nodeApiService.finality(
+            endpoint,
+            port,
+            authToken,
+            blockchain.name,
+            UAL,
+            minimumNumberOfNodeReplications,
+        );
 
         let finalityOperationResult = null;
 
         // TO DO: ADD OPTIONAL WAITING FOR FINALITY
-        // try {
-        //     finalityOperationResult = await this.nodeApiService.getOperationResult(
-        //         endpoint,
-        //         port,
-        //         authToken,
-        //         OPERATIONS.FINALITY,
-        //         maxNumberOfRetries,
-        //         frequency,
-        //         finalityOperationId,
-        //     );
-        // } catch (error) {
-        //     console.error(`Attempt failed:`, error.message);
-        // }
+        try {
+            finalityOperationResult = await this.nodeApiService.getOperationResult(
+                endpoint,
+                port,
+                authToken,
+                OPERATIONS.FINALITY,
+                maxNumberOfRetries,
+                frequency,
+                finalityOperationId,
+            );
+        } catch (error) {
+            console.error(`Attempt failed:`, error.message);
+        }
 
         return {
             UAL,
