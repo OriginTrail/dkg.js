@@ -275,39 +275,6 @@ export default class AssetOperationsManager {
         }
         triplesArray.splice(left, 0, newTriple);
     }
-    splitConnectedArrays(publicTriples) {
-        const groupedPublic = [];
-        let currentSubject = publicTriples[0].split(' ')[0];
-        let currentSubjectHash = currentSubject.startsWith('<private-hash:0x')
-            ? currentSubject
-            : `<private-hash:${ethers.sha256(ethers.toUtf8Bytes(currentSubject.slice(1, -1)))}>`;
-        let currentKA = [publicTriples[0]];
-
-        for (let i = 1; i < publicTriples.length; i++) {
-            const subject = publicTriples[i].split(' ')[0];
-            const subjectHash = subject.startsWith('<private-hash:0x')
-                ? subject
-                : `<private-hash:${ethers.sha256(ethers.toUtf8Bytes(subject.slice(1, -1)))}>`;
-
-            if (
-                currentSubject === subject ||
-                currentSubjectHash === subject ||
-                subjectHash === currentSubject
-            ) {
-                currentKA.push(publicTriples[i]);
-            } else {
-                groupedPublic.push(currentKA);
-                currentSubject = subject;
-                currentSubjectHash = subjectHash;
-                currentKA = [publicTriples[i]];
-            }
-        }
-
-        // Push the last group
-        groupedPublic.push(currentKA);
-
-        return groupedPublic;
-    }
 
     /**
      * Creates a new knowledge collection.
@@ -363,6 +330,8 @@ export default class AssetOperationsManager {
         ) {
             if (content.public) {
                 dataset.public = this.processContent(content.public);
+            } else {
+                dataset.public = [];
             }
             if (content.private && typeof content.private === 'string') {
                 dataset.private = this.processContent(content.private);
@@ -370,127 +339,25 @@ export default class AssetOperationsManager {
         } else {
             dataset = await kcTools.formatDataset(content);
         }
-        console.time('parsingAndSorting');
-        /*dataset.public = kcTools.generateMissingIdsForBlankNodes(dataset.public);
-        if (dataset.private) {
-            dataset.private = kcTools.generateMissingIdsForBlankNodes(dataset.private);
-        }
-        let publicTriplesSortedAndGrouped = [];
-        if (dataset.private?.length) {
-            const privateTriplesSortedAndGrouped = dataset.private
-                ? kcTools.groupNquadsBySubject(dataset.private, true)
-                : [];
-            console.time('privateRoot');
-            const privateRoot = kcTools.calculateMerkleRoot(privateTriplesSortedAndGrouped.flat());
-            console.timeEnd('privateRoot');
-            dataset.public.push([`_:b0 <${PRIVATE_ASSERTION_PREDICATE}> "${privateRoot}" .`]);
-            publicTriplesSortedAndGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
-            if (privateTriplesSortedAndGrouped.length) {
-                let publicIndex = 0;
-                let privateIndex = 0;
-
-                while (
-                    publicIndex < publicTriplesSortedAndGrouped.length ||
-                    privateIndex < privateTriplesSortedAndGrouped.length
-                ) {
-                    // If we've exhausted all private Triples, we're done.
-                    if (privateIndex === privateTriplesSortedAndGrouped.length) {
-                        break;
-                    }
-
-                    // If we've exhausted all public Triples, just insert in sorted manner remaining private Triples.
-                    if (publicIndex === publicTriplesSortedAndGrouped.length) {
-                        const [privateSubject] =
-                            privateTriplesSortedAndGrouped[privateIndex][0].split(' ');
-                        this.insertSortedOuterArray(publicTriplesSortedAndGrouped, [
-                            `<${ethers.sha256(
-                                ethers.toUtf8Bytes(privateSubject),
-                            )}> <representsPrivateResource> _:b0 .`,
-                        ]);
-                        privateIndex += 1;
-                        continue;
-                    }
-                    // It this is slow we can check which index changed and just parse them
-                    const [publicSubject] =
-                        publicTriplesSortedAndGrouped[publicIndex][0].split(' ');
-                    const [privateSubject] =
-                        privateTriplesSortedAndGrouped[privateIndex][0].split(' ');
-                    const compare = publicSubject.localeCompare(privateSubject);
-
-                    if (compare < 0) {
-                        // The public subject comes before the private one, move forward in public
-                        publicIndex += 1;
-                    } else if (compare > 0) {
-                        // The private subject comes before the public one, insert new Triples array in public
-                        publicTriplesSortedAndGrouped.unshift([
-                            `<${ethers.sha256(
-                                ethers.toUtf8Bytes(privateSubject),
-                            )}> <representsPrivateResource> _:b0 .`,
-                        ]);
-                        publicIndex += 1;
-                        privateIndex += 1;
-                    } else {
-                        // Subjects match, append private merkle root to the existing public Triples array in sorted manner
-                        this.insertTripleSorted(
-                            publicTriplesSortedAndGrouped[publicIndex],
-                            `<${ethers.sha256(
-                                ethers.toUtf8Bytes(privateSubject),
-                            )}> <representsPrivateResource> _:b0 .`,
-                        );
-                        publicIndex += 1;
-                        privateIndex += 1;
-                    }
-                }
-            }
-        }
-
-        dataset.public = publicTriplesSortedAndGrouped.length
-            ? publicTriplesSortedAndGrouped.flat()
-            : kcTools.groupNquadsBySubject(dataset.public, true);
-*/
-        dataset.public = kcTools.generateMissingIdsForBlankNodes(dataset.public);
-        if (dataset.private) {
-            dataset.private = kcTools.generateMissingIdsForBlankNodes(dataset.private);
-        }
+        if (dataset.public.length)
+            dataset.public = kcTools.generateMissingIdsForBlankNodes(dataset.public);
 
         if (dataset.private?.length) {
+            dataset.private = kcTools.generateMissingIdsForBlankNodes(dataset.private);
             const privateTriplesGrouped = kcTools.groupNquadsBySubject(dataset.private, true);
 
-            console.time('privateRoot');
-            // const privateRoot = kcTools.calculateMerkleRoot(privateTriplesGrouped.flat());
-            console.timeEnd('privateRoot');
+            const privateRoot = kcTools.calculateMerkleRoot(privateTriplesGrouped.flat());
 
-            // dataset.public.push(`_:b0 <${PRIVATE_ASSERTION_PREDICATE}> "${privateRoot}" .`);
-            dataset.public.push(`_:b0 <${PRIVATE_ASSERTION_PREDICATE}> "A" .`);
+            dataset.public.push(`_:b0 <${PRIVATE_ASSERTION_PREDICATE}> "${privateRoot}" .`);
 
             let publicTriplesGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
 
             const mergedTriples = [];
-
-            // Precompute hashed private subjects to avoid redundant computations
-
-            //     const [privateSubject] = group[0].split(' ');
-            //     return {
-            //         original: privateSubject,
-            //         hashed: `<private-hash:${ethers.sha256(
-            //             ethers.toUtf8Bytes(privateSubject.slice(1, -1)),
-            //         )}>`,
-            //     };
-            // });
-
-            // Create iterators for public and private groups
             let publicIndex = 0;
             let privateIndex = 0;
             let tokenId = 1;
             const publicLength = publicTriplesGrouped.length;
             const privateLength = privateTriplesGrouped.length;
-
-            const test1 = privateTriplesGrouped[privateIndex][0].split(' ')[0];
-            const test2 = privateTriplesGrouped[privateIndex][0].split(' ')[0] + tokenId.toString();
-            console.log(test1);
-            console.log(ethers.toUtf8Bytes(test1));
-            console.log(test2);
-            console.log(ethers.toUtf8Bytes(test2));
 
             // Merge public and private hashes triples in a single pass
             console.time('merge');
@@ -509,7 +376,7 @@ export default class AssetOperationsManager {
                     // Private subject comes before public subject
                     mergedTriples.push([
                         `${`<private-hash:${ethers.sha256(
-                            ethers.toUtf8Bytes(privateSubject.slice(1, -1)) + tokenId.toString(),
+                            ethers.toUtf8Bytes(privateSubject.slice(1, -1)),
                         )}>`} <representsPrivateResource> _:b0 .`,
                     ]);
                     tokenId++;
@@ -519,7 +386,7 @@ export default class AssetOperationsManager {
                     this.insertTripleSorted(
                         publicGroup,
                         `${`<private-hash:${ethers.sha256(
-                            ethers.toUtf8Bytes(privateSubject.slice(1, -1)) + tokenId.toString(),
+                            ethers.toUtf8Bytes(privateSubject.slice(1, -1)),
                         )}>`} <representsPrivateResource> _:b0 .`,
                     );
                     mergedTriples.push(publicGroup);
@@ -537,9 +404,10 @@ export default class AssetOperationsManager {
 
             // Append any remaining private triples
             while (privateIndex < privateLength) {
+                const [privateSubject] = privateTriplesGrouped[privateIndex][0].split(' ');
                 mergedTriples.push(
                     `${`<private-hash:${ethers.sha256(
-                        ethers.toUtf8Bytes(privateSubject.slice(1, -1)) + tokenId.toString(),
+                        ethers.toUtf8Bytes(privateSubject.slice(1, -1)),
                     )}>`} <representsPrivateResource> _:b0 .`,
                 );
                 privateIndex++;
@@ -554,19 +422,12 @@ export default class AssetOperationsManager {
             dataset.public = kcTools.groupNquadsBySubject(dataset.public, true).flat();
         }
 
-        console.timeEnd('parsingAndSorting');
-
         const numberOfChunks = kcTools.calculateNumberOfChunks(dataset.public, CHUNK_BYTE_SIZE);
         const datasetSize = numberOfChunks * CHUNK_BYTE_SIZE;
 
         this.validationService.validateAssertionSizeInBytes(datasetSize);
-        console.time('publicRoot');
-        const datasetRoot = kcTools.calculateMerkleRoot(dataset.public);
-        console.timeEnd('publicRoot');
 
-        console.time('regrout');
-        const regroup = this.splitConnectedArrays(dataset.public);
-        console.timeEnd('regrout');
+        const datasetRoot = kcTools.calculateMerkleRoot(dataset.public);
 
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
             'ContentAssetStorage',
