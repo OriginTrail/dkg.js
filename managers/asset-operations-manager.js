@@ -261,6 +261,54 @@ export default class AssetOperationsManager {
             .filter((line) => line !== '');
     }
 
+    insertTripleSorted(triplesArray, newTriple) {
+        // Assuming triplesArray is already sorted
+        let left = 0;
+        let right = triplesArray.length;
+        while (left < right) {
+            const mid = Math.floor((left + right) / 2);
+            if (triplesArray[mid].localeCompare(newTriple) < 0) {
+                left = mid + 1;
+            } else {
+                right = mid;
+            }
+        }
+        triplesArray.splice(left, 0, newTriple);
+    }
+    splitConnectedArrays(publicTriples) {
+        const groupedPublic = [];
+        let currentSubject = publicTriples[0].split(' ')[0];
+        let currentSubjectHash = currentSubject.startsWith('<private-hash:0x')
+            ? currentSubject
+            : `<private-hash:${ethers.sha256(ethers.toUtf8Bytes(currentSubject.slice(1, -1)))}>`;
+        let currentKA = [publicTriples[0]];
+
+        for (let i = 1; i < publicTriples.length; i++) {
+            const subject = publicTriples[i].split(' ')[0];
+            const subjectHash = subject.startsWith('<private-hash:0x')
+                ? subject
+                : `<private-hash:${ethers.sha256(ethers.toUtf8Bytes(subject.slice(1, -1)))}>`;
+
+            if (
+                currentSubject === subject ||
+                currentSubjectHash === subject ||
+                subjectHash === currentSubject
+            ) {
+                currentKA.push(publicTriples[i]);
+            } else {
+                groupedPublic.push(currentKA);
+                currentSubject = subject;
+                currentSubjectHash = subjectHash;
+                currentKA = [publicTriples[i]];
+            }
+        }
+
+        // Push the last group
+        groupedPublic.push(currentKA);
+
+        return groupedPublic;
+    }
+
     /**
      * Creates a new knowledge collection.
      * @async
@@ -322,86 +370,203 @@ export default class AssetOperationsManager {
         } else {
             dataset = await kcTools.formatDataset(content);
         }
+        console.time('parsingAndSorting');
+        /*dataset.public = kcTools.generateMissingIdsForBlankNodes(dataset.public);
+        if (dataset.private) {
+            dataset.private = kcTools.generateMissingIdsForBlankNodes(dataset.private);
+        }
+        let publicTriplesSortedAndGrouped = [];
+        if (dataset.private?.length) {
+            const privateTriplesSortedAndGrouped = dataset.private
+                ? kcTools.groupNquadsBySubject(dataset.private, true)
+                : [];
+            console.time('privateRoot');
+            const privateRoot = kcTools.calculateMerkleRoot(privateTriplesSortedAndGrouped.flat());
+            console.timeEnd('privateRoot');
+            dataset.public.push([`_:b0 <${PRIVATE_ASSERTION_PREDICATE}> "${privateRoot}" .`]);
+            publicTriplesSortedAndGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
+            if (privateTriplesSortedAndGrouped.length) {
+                let publicIndex = 0;
+                let privateIndex = 0;
 
+                while (
+                    publicIndex < publicTriplesSortedAndGrouped.length ||
+                    privateIndex < privateTriplesSortedAndGrouped.length
+                ) {
+                    // If we've exhausted all private Triples, we're done.
+                    if (privateIndex === privateTriplesSortedAndGrouped.length) {
+                        break;
+                    }
+
+                    // If we've exhausted all public Triples, just insert in sorted manner remaining private Triples.
+                    if (publicIndex === publicTriplesSortedAndGrouped.length) {
+                        const [privateSubject] =
+                            privateTriplesSortedAndGrouped[privateIndex][0].split(' ');
+                        this.insertSortedOuterArray(publicTriplesSortedAndGrouped, [
+                            `<${ethers.sha256(
+                                ethers.toUtf8Bytes(privateSubject),
+                            )}> <representsPrivateResource> _:b0 .`,
+                        ]);
+                        privateIndex += 1;
+                        continue;
+                    }
+                    // It this is slow we can check which index changed and just parse them
+                    const [publicSubject] =
+                        publicTriplesSortedAndGrouped[publicIndex][0].split(' ');
+                    const [privateSubject] =
+                        privateTriplesSortedAndGrouped[privateIndex][0].split(' ');
+                    const compare = publicSubject.localeCompare(privateSubject);
+
+                    if (compare < 0) {
+                        // The public subject comes before the private one, move forward in public
+                        publicIndex += 1;
+                    } else if (compare > 0) {
+                        // The private subject comes before the public one, insert new Triples array in public
+                        publicTriplesSortedAndGrouped.unshift([
+                            `<${ethers.sha256(
+                                ethers.toUtf8Bytes(privateSubject),
+                            )}> <representsPrivateResource> _:b0 .`,
+                        ]);
+                        publicIndex += 1;
+                        privateIndex += 1;
+                    } else {
+                        // Subjects match, append private merkle root to the existing public Triples array in sorted manner
+                        this.insertTripleSorted(
+                            publicTriplesSortedAndGrouped[publicIndex],
+                            `<${ethers.sha256(
+                                ethers.toUtf8Bytes(privateSubject),
+                            )}> <representsPrivateResource> _:b0 .`,
+                        );
+                        publicIndex += 1;
+                        privateIndex += 1;
+                    }
+                }
+            }
+        }
+
+        dataset.public = publicTriplesSortedAndGrouped.length
+            ? publicTriplesSortedAndGrouped.flat()
+            : kcTools.groupNquadsBySubject(dataset.public, true);
+*/
         dataset.public = kcTools.generateMissingIdsForBlankNodes(dataset.public);
         if (dataset.private) {
             dataset.private = kcTools.generateMissingIdsForBlankNodes(dataset.private);
         }
 
-        // Ensure we have a list for private Tripless even if not provided
-        const publicTriplesSortedAndGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
-        const privateTriplesSortedAndGrouped = dataset.private
-            ? kcTools.groupNquadsBySubject(dataset.private, true)
-            : [];
+        if (dataset.private?.length) {
+            const privateTriplesGrouped = kcTools.groupNquadsBySubject(dataset.private, true);
 
-        // A helper function to generate the private merkle root Triples
-        function createPrivateMerkleRootTriple(subject, Tripless) {
-            const merkleRoot = kcTools.calculateMerkleRoot(Tripless);
-            return `${subject} <${PRIVATE_ASSERTION_PREDICATE}> "${merkleRoot}" .`;
-        }
+            console.time('privateRoot');
+            // const privateRoot = kcTools.calculateMerkleRoot(privateTriplesGrouped.flat());
+            console.timeEnd('privateRoot');
 
-        let publicIndex = 0;
-        let privateIndex = 0;
+            // dataset.public.push(`_:b0 <${PRIVATE_ASSERTION_PREDICATE}> "${privateRoot}" .`);
+            dataset.public.push(`_:b0 <${PRIVATE_ASSERTION_PREDICATE}> "A" .`);
 
-        while (
-            publicIndex < publicTriplesSortedAndGrouped.length ||
-            privateIndex < privateTriplesSortedAndGrouped.length
-        ) {
-            // If we've exhausted all private Tripless, we're done.
-            if (privateIndex === privateTriplesSortedAndGrouped.length) {
-                break;
+            let publicTriplesGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
+
+            const mergedTriples = [];
+
+            // Precompute hashed private subjects to avoid redundant computations
+
+            //     const [privateSubject] = group[0].split(' ');
+            //     return {
+            //         original: privateSubject,
+            //         hashed: `<private-hash:${ethers.sha256(
+            //             ethers.toUtf8Bytes(privateSubject.slice(1, -1)),
+            //         )}>`,
+            //     };
+            // });
+
+            // Create iterators for public and private groups
+            let publicIndex = 0;
+            let privateIndex = 0;
+            let tokenId = 1;
+            const publicLength = publicTriplesGrouped.length;
+            const privateLength = privateTriplesGrouped.length;
+
+            const test1 = privateTriplesGrouped[privateIndex][0].split(' ')[0];
+            const test2 = privateTriplesGrouped[privateIndex][0].split(' ')[0] + tokenId.toString();
+            console.log(test1);
+            console.log(ethers.toUtf8Bytes(test1));
+            console.log(test2);
+            console.log(ethers.toUtf8Bytes(test2));
+
+            // Merge public and private hashes triples in a single pass
+            console.time('merge');
+            while (publicIndex < publicLength && privateIndex < privateLength) {
+                const publicGroup = publicTriplesGrouped[publicIndex];
+                const [publicSubject] = publicGroup[0].split(' ');
+                const [privateSubject] = privateTriplesGrouped[privateIndex][0].split(' ');
+
+                const compare = publicSubject.localeCompare(privateSubject);
+                if (compare < 0) {
+                    // Public subject comes before private subject
+                    mergedTriples.push(publicGroup);
+                    publicIndex++;
+                    tokenId++;
+                } else if (compare > 0) {
+                    // Private subject comes before public subject
+                    mergedTriples.push([
+                        `${`<private-hash:${ethers.sha256(
+                            ethers.toUtf8Bytes(privateSubject.slice(1, -1)) + tokenId.toString(),
+                        )}>`} <representsPrivateResource> _:b0 .`,
+                    ]);
+                    tokenId++;
+                    privateIndex++;
+                } else {
+                    // Subjects match, merge triples
+                    this.insertTripleSorted(
+                        publicGroup,
+                        `${`<private-hash:${ethers.sha256(
+                            ethers.toUtf8Bytes(privateSubject.slice(1, -1)) + tokenId.toString(),
+                        )}>`} <representsPrivateResource> _:b0 .`,
+                    );
+                    mergedTriples.push(publicGroup);
+                    publicIndex++;
+                    privateIndex++;
+                    tokenId++;
+                }
             }
 
-            // If we've exhausted all public Tripless, just append all remaining private Tripless.
-            if (publicIndex === publicTriplesSortedAndGrouped.length) {
-                const [privateSubject] = privateTriplesSortedAndGrouped[privateIndex][0].split(' ');
-                const privateMerkleRootTriple = createPrivateMerkleRootTriple(
-                    privateSubject,
-                    privateTriplesSortedAndGrouped[privateIndex],
-                );
-                publicTriplesSortedAndGrouped.push([privateMerkleRootTriple]);
-                privateIndex += 1;
-                continue;
+            // Append any remaining public triples
+            while (publicIndex < publicLength) {
+                mergedTriples.push(...publicTriplesGrouped[publicIndex]);
+                publicIndex++;
             }
 
-            const [publicSubject] = publicTriplesSortedAndGrouped[publicIndex][0].split(' ');
-            const [privateSubject] = privateTriplesSortedAndGrouped[privateIndex][0].split(' ');
-            const compare = publicSubject.localeCompare(privateSubject);
-
-            if (compare < 0) {
-                // The public subject comes before the private one, move forward in public
-                publicIndex += 1;
-            } else if (compare > 0) {
-                // The private subject comes before the public one, insert new Tripless array in public
-                const privateMerkleRootTriple = createPrivateMerkleRootTriple(
-                    privateSubject,
-                    privateTriplesSortedAndGrouped[privateIndex],
+            // Append any remaining private triples
+            while (privateIndex < privateLength) {
+                mergedTriples.push(
+                    `${`<private-hash:${ethers.sha256(
+                        ethers.toUtf8Bytes(privateSubject.slice(1, -1)) + tokenId.toString(),
+                    )}>`} <representsPrivateResource> _:b0 .`,
                 );
-                publicTriplesSortedAndGrouped.splice(publicIndex, 0, [privateMerkleRootTriple]);
-                publicIndex += 1;
-                privateIndex += 1;
-            } else {
-                // Subjects match, append private merkle root to the existing public Triples array
-                const privateMerkleRootTriple = createPrivateMerkleRootTriple(
-                    privateSubject,
-                    privateTriplesSortedAndGrouped[privateIndex],
-                );
-                publicTriplesSortedAndGrouped[publicIndex].push(privateMerkleRootTriple);
-                publicIndex += 1;
-                privateIndex += 1;
+                privateIndex++;
+                tokenId++;
             }
+            console.timeEnd('merge');
+
+            // Update the public dataset with the merged triples
+            dataset.public = mergedTriples.flat();
+        } else {
+            // If there's no private dataset, ensure public is grouped correctly
+            dataset.public = kcTools.groupNquadsBySubject(dataset.public, true).flat();
         }
 
-        dataset.public = publicTriplesSortedAndGrouped.flat();
-        if (dataset.private) {
-            dataset.private = privateTriplesSortedAndGrouped.flat();
-        }
+        console.timeEnd('parsingAndSorting');
 
         const numberOfChunks = kcTools.calculateNumberOfChunks(dataset.public, CHUNK_BYTE_SIZE);
         const datasetSize = numberOfChunks * CHUNK_BYTE_SIZE;
 
         this.validationService.validateAssertionSizeInBytes(datasetSize);
+        console.time('publicRoot');
         const datasetRoot = kcTools.calculateMerkleRoot(dataset.public);
+        console.timeEnd('publicRoot');
+
+        console.time('regrout');
+        const regroup = this.splitConnectedArrays(dataset.public);
+        console.timeEnd('regrout');
 
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
             'ContentAssetStorage',
