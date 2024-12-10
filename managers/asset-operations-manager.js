@@ -1,17 +1,11 @@
 import { kaTools, kcTools } from 'assertion-tools';
 import { ethers } from 'ethers';
-import {
-    deriveUAL,
-    getOperationStatusObject,
-    resolveUAL,
-    sleepForMilliseconds,
-} from '../services/utilities.js';
+import { deriveUAL, getOperationStatusObject, resolveUAL } from '../services/utilities.js';
 import {
     OPERATIONS,
     OPERATION_STATUSES,
     ZERO_ADDRESS,
     CHUNK_BYTE_SIZE,
-    OPERATION_DELAYS,
     PRIVATE_ASSERTION_PREDICATE,
 } from '../constants.js';
 import emptyHooks from '../util/empty-hooks.js';
@@ -439,17 +433,7 @@ export default class AssetOperationsManager {
 
         const estimatedPublishingCost =
             tokenAmount ??
-            (await this.nodeApiService.getBidSuggestion(
-                endpoint,
-                port,
-                authToken,
-                blockchain.name,
-                epochsNum,
-                datasetSize,
-                contentAssetStorageAddress,
-                datasetRoot,
-                hashFunctionId,
-            ));
+            (await this.blockchainService.getStakeWeightedAverageAsk()) * epochsNum * datasetSize;
 
         let tokenId;
         let mintKnowledgeAssetReceipt;
@@ -499,35 +483,35 @@ export default class AssetOperationsManager {
 
         const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, tokenId);
 
-        const finalitySleepDelay = OPERATION_DELAYS.FINALITY;
+        // const finalitySleepDelay = OPERATION_DELAYS.FINALITY;
 
-        await sleepForMilliseconds(finalitySleepDelay);
+        // await sleepForMilliseconds(finalitySleepDelay);
 
-        const finalityOperationId = await this.nodeApiService.finality(
-            endpoint,
-            port,
-            authToken,
-            blockchain.name,
-            UAL,
-            minimumNumberOfNodeReplications,
-        );
+        // const finalityOperationId = await this.nodeApiService.finality(
+        //     endpoint,
+        //     port,
+        //     authToken,
+        //     blockchain.name,
+        //     UAL,
+        //     minimumNumberOfNodeReplications,
+        // );
 
         let finalityOperationResult = null;
 
         // TO DO: ADD OPTIONAL WAITING FOR FINALITY
-        try {
-            finalityOperationResult = await this.nodeApiService.getOperationResult(
-                endpoint,
-                port,
-                authToken,
-                OPERATIONS.FINALITY,
-                maxNumberOfRetries,
-                frequency,
-                finalityOperationId,
-            );
-        } catch (error) {
-            console.error(`Attempt failed:`, error.message);
-        }
+        // try {
+        //     finalityOperationResult = await this.nodeApiService.getOperationResult(
+        //         endpoint,
+        //         port,
+        //         authToken,
+        //         OPERATIONS.FINALITY,
+        //         maxNumberOfRetries,
+        //         frequency,
+        //         finalityOperationId,
+        //     );
+        // } catch (error) {
+        //     console.error(`Attempt failed:`, error.message);
+        // }
 
         return {
             UAL,
@@ -715,39 +699,17 @@ export default class AssetOperationsManager {
             blockchain,
         );
 
-        const { tokenId, contract } = resolveUAL(UAL);
+        const { tokenId } = resolveUAL(UAL);
 
         let tokenAmountInWei;
 
         if (tokenAmount != null) {
             tokenAmountInWei = tokenAmount;
         } else {
-            const endpoint = this.inputService.getEndpoint(options);
-            const port = this.inputService.getPort(options);
-            const authToken = this.inputService.getAuthToken(options);
-            const hashFunctionId = this.inputService.getHashFunctionId(options);
-
-            const latestFinalizedState = await this.blockchainService.getLatestAssertionId(
-                tokenId,
-                blockchain,
-            );
-
-            const latestFinalizedStateSize = await this.blockchainService.getAssertionSize(
-                latestFinalizedState,
-                blockchain,
-            );
-
-            tokenAmountInWei = await this.nodeApiService.getBidSuggestion(
-                endpoint,
-                port,
-                authToken,
-                blockchain.name,
-                epochsNumber,
-                latestFinalizedStateSize,
-                contract,
-                latestFinalizedState,
-                hashFunctionId,
-            );
+            tokenAmountInWei =
+                (await this.blockchainService.getStakeWeightedAverageAsk()) *
+                epochsNumber *
+                datasetSize; // need to get dataset size somewhere
         }
 
         const receipt = await this.blockchainService.extendAssetStoringPeriod(
@@ -828,16 +790,7 @@ export default class AssetOperationsManager {
         };
     }
 
-    async _getUpdateBidSuggestion(
-        UAL,
-        blockchain,
-        endpoint,
-        port,
-        authToken,
-        datasetRoot,
-        size,
-        hashFunctionId,
-    ) {
+    async _getUpdateBidSuggestion(UAL, blockchain, size) {
         const { contract, tokenId } = resolveUAL(UAL);
         const firstDatasetRoot = await this.blockchainService.getAssertionIdByIndex(
             tokenId,
@@ -862,17 +815,8 @@ export default class AssetOperationsManager {
 
         const epochsLeft = agreementData.epochsNumber - currentEpoch;
 
-        const bidSuggestion = await this.nodeApiService.getBidSuggestion(
-            endpoint,
-            port,
-            authToken,
-            blockchain.name,
-            epochsLeft,
-            size,
-            contract,
-            datasetRoot,
-            hashFunctionId,
-        );
+        const bidSuggestion =
+            (await this.blockchainService.getStakeWeightedAverageAsk()) * epochsLeft * size;
 
         const tokenAmountInWei =
             BigInt(bidSuggestion) -
@@ -1011,16 +955,7 @@ export default class AssetOperationsManager {
         if (tokenAmount != null) {
             tokenAmountInWei = tokenAmount;
         } else {
-            tokenAmountInWei = await this._getUpdateBidSuggestion(
-                UAL,
-                blockchain,
-                endpoint,
-                port,
-                authToken,
-                datasetRoot,
-                datasetSize,
-                hashFunctionId,
-            );
+            tokenAmountInWei = await this._getUpdateBidSuggestion(UAL, blockchain, datasetSize);
         }
 
         const updateKnowledgeAssetReceipt = await this.blockchainService.updateAsset(

@@ -123,6 +123,7 @@ export const ASSERTION_STATES = {
 };
 
 export const CONTENT_TYPES = {
+    PRIVATE: 'private',
     PUBLIC: 'public',
     ALL: 'all',
 };
