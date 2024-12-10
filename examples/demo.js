@@ -58,27 +58,27 @@ function divider() {
                 '@id': 'uuid:belgrade',
             },
         },
-        // private: {
-        //     '@context': ['https://schema.org'],
-        //     '@graph': [
-        //         {
-        //             '@id': 'uuid:user:1',
-        //             name: 'Adam',
-        //             lastname: 'Smith',
-        //         },
-        //         {
-        //             '@id': 'uuid:belgrade',
-        //             title: 'Belgrade',
-        //             postCode: '11000',
-        //         },
-        //         {
-        //             problem: 'empty',
-        //         },
-        //         {
-        //             solution: 'generate',
-        //         },
-        //     ],
-        // },
+        private: {
+            '@context': ['https://schema.org'],
+            '@graph': [
+                {
+                    '@id': 'uuid:user:1',
+                    name: 'Adam',
+                    lastname: 'Smith',
+                },
+                {
+                    '@id': 'uuid:belgrade',
+                    title: 'Belgrade',
+                    postCode: '11000',
+                },
+                {
+                    problem: 'empty',
+                },
+                {
+                    solution: 'generate',
+                },
+            ],
+        },
     };
 
     // divider();

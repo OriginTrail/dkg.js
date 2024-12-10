@@ -13,6 +13,7 @@ import {
     CHUNK_BYTE_SIZE,
     OPERATION_DELAYS,
     PRIVATE_ASSERTION_PREDICATE,
+    PRIVATE_RESOURCE_PREDICATE,
 } from '../constants.js';
 import emptyHooks from '../util/empty-hooks.js';
 
@@ -339,8 +340,6 @@ export default class AssetOperationsManager {
         } else {
             dataset = await kcTools.formatDataset(content);
         }
-        if (dataset.public.length)
-            dataset.public = kcTools.generateMissingIdsForBlankNodes(dataset.public);
 
         if (dataset.private?.length) {
             dataset.private = kcTools.generateMissingIdsForBlankNodes(dataset.private);
@@ -350,12 +349,14 @@ export default class AssetOperationsManager {
 
             dataset.public.push(`_:b0 <${PRIVATE_ASSERTION_PREDICATE}> "${privateRoot}" .`);
 
+            if (dataset.public.length) {
+                dataset.public = kcTools.generateMissingIdsForBlankNodes(dataset.public);
+            }
             let publicTriplesGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
 
             const mergedTriples = [];
             let publicIndex = 0;
             let privateIndex = 0;
-            let tokenId = 1;
             const publicLength = publicTriplesGrouped.length;
             const privateLength = privateTriplesGrouped.length;
 
@@ -371,28 +372,27 @@ export default class AssetOperationsManager {
                     // Public subject comes before private subject
                     mergedTriples.push(publicGroup);
                     publicIndex++;
-                    tokenId++;
                 } else if (compare > 0) {
                     // Private subject comes before public subject
                     mergedTriples.push([
-                        `${`<private-hash:${ethers.sha256(
-                            ethers.toUtf8Bytes(privateSubject.slice(1, -1)),
-                        )}>`} <representsPrivateResource> _:b0 .`,
+                        `${`<private-hash:${ethers.solidityPackedSha256(
+                            ['string'],
+                            [privateSubject.slice(1, -1)],
+                        )}>`} <${PRIVATE_RESOURCE_PREDICATE}> _:b0 .`,
                     ]);
-                    tokenId++;
                     privateIndex++;
                 } else {
                     // Subjects match, merge triples
                     this.insertTripleSorted(
                         publicGroup,
-                        `${`<private-hash:${ethers.sha256(
-                            ethers.toUtf8Bytes(privateSubject.slice(1, -1)),
-                        )}>`} <representsPrivateResource> _:b0 .`,
+                        `${`<private-hash:${ethers.solidityPackedSha256(
+                            ['string'],
+                            [privateSubject.slice(1, -1)],
+                        )}>`} <${PRIVATE_RESOURCE_PREDICATE}> _:b0 .`,
                     );
                     mergedTriples.push(publicGroup);
                     publicIndex++;
                     privateIndex++;
-                    tokenId++;
                 }
             }
 
@@ -405,16 +405,14 @@ export default class AssetOperationsManager {
             // Append any remaining private triples
             while (privateIndex < privateLength) {
                 const [privateSubject] = privateTriplesGrouped[privateIndex][0].split(' ');
-                mergedTriples.push(
-                    `${`<private-hash:${ethers.sha256(
-                        ethers.toUtf8Bytes(privateSubject.slice(1, -1)),
-                    )}>`} <representsPrivateResource> _:b0 .`,
-                );
+                mergedTriples.push([
+                    `${`<private-hash:${ethers.solidityPackedSha256(
+                        ['string'],
+                        [privateSubject.slice(1, -1)],
+                    )}>`} <${PRIVATE_RESOURCE_PREDICATE}> _:b0 .`,
+                ]);
                 privateIndex++;
-                tokenId++;
             }
-            console.timeEnd('merge');
-
             // Update the public dataset with the merged triples
             dataset.public = mergedTriples.flat();
         } else {
