@@ -30,7 +30,7 @@
     },
     "homepage": "https://github.com/OriginTrail/dkg.js/tree/main#readme",
     "dependencies": {
-        "assertion-tools": "^8.0.0-gamma.0",
+        "assertion-tools": "^8.0.0-gamma.1",
         "axios": "^0.27.2",
         "dkg-evm-module": "^8.0.2-alpha.0",
         "ethers": "^6.1.0",

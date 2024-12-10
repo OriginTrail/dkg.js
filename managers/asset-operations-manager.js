@@ -14,6 +14,7 @@ import {
     OPERATION_DELAYS,
     PRIVATE_ASSERTION_PREDICATE,
     PRIVATE_RESOURCE_PREDICATE,
+    PRIVATE_HASH_SUBJECT_PREFIX,
 } from '../constants.js';
 import emptyHooks from '../util/empty-hooks.js';
 
@@ -347,7 +348,9 @@ export default class AssetOperationsManager {
 
             const privateRoot = kcTools.calculateMerkleRoot(privateTriplesGrouped.flat());
 
-            dataset.public.push(`_:b0 <${PRIVATE_ASSERTION_PREDICATE}> "${privateRoot}" .`);
+            dataset.public.push(
+                `<${kaTools.generateNamedNode()}> <${PRIVATE_ASSERTION_PREDICATE}> "${privateRoot}" .`,
+            );
 
             if (dataset.public.length) {
                 dataset.public = kcTools.generateMissingIdsForBlankNodes(dataset.public);
@@ -373,21 +376,13 @@ export default class AssetOperationsManager {
                     publicIndex++;
                 } else if (compare > 0) {
                     // Private subject comes before public subject
-                    mergedTriples.push([
-                        `${`<private-hash:${ethers.solidityPackedSha256(
-                            ['string'],
-                            [privateSubject.slice(1, -1)],
-                        )}>`} <${PRIVATE_RESOURCE_PREDICATE}> _:b0 .`,
-                    ]);
+                    mergedTriples.push([this.generatePrivateRepresentation(privateSubject)]);
                     privateIndex++;
                 } else {
                     // Subjects match, merge triples
                     this.insertTripleSorted(
                         publicGroup,
-                        `${`<private-hash:${ethers.solidityPackedSha256(
-                            ['string'],
-                            [privateSubject.slice(1, -1)],
-                        )}>`} <${PRIVATE_RESOURCE_PREDICATE}> _:b0 .`,
+                        this.generatePrivateRepresentation(privateSubject),
                     );
                     mergedTriples.push(publicGroup);
                     publicIndex++;
@@ -404,12 +399,7 @@ export default class AssetOperationsManager {
             // Append any remaining private triples
             while (privateIndex < privateLength) {
                 const [privateSubject] = privateTriplesGrouped[privateIndex][0].split(' ');
-                mergedTriples.push([
-                    `${`<private-hash:${ethers.solidityPackedSha256(
-                        ['string'],
-                        [privateSubject.slice(1, -1)],
-                    )}>`} <${PRIVATE_RESOURCE_PREDICATE}> _:b0 .`,
-                ]);
+                mergedTriples.push([this.generatePrivateRepresentation(privateSubject)]);
                 privateIndex++;
             }
             // Update the public dataset with the merged triples
@@ -562,6 +552,13 @@ export default class AssetOperationsManager {
                 finality: finalityOperationResult,
             },
         };
+    }
+
+    generatePrivateRepresentation(privateSubject) {
+        return `${`<${PRIVATE_HASH_SUBJECT_PREFIX}${ethers.solidityPackedSha256(
+            ['string'],
+            [privateSubject.slice(1, -1)],
+        )}>`} <${PRIVATE_RESOURCE_PREDICATE}> <${kaTools.generateNamedNode()}> .`;
     }
 
     /**
