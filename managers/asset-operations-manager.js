@@ -527,7 +527,7 @@ export default class AssetOperationsManager {
 
         let finalityOperationResult = null;
 
-        // TO DO: ADD OPTIONAL WAITING FOR FINALITY
+        // TODO: ADD OPTIONAL WAITING FOR FINALITY
         try {
             finalityOperationResult = await this.nodeApiService.getOperationResult(
                 endpoint,
