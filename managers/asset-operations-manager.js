@@ -361,7 +361,6 @@ export default class AssetOperationsManager {
             const privateLength = privateTriplesGrouped.length;
 
             // Merge public and private hashes triples in a single pass
-            console.time('merge');
             while (publicIndex < publicLength && privateIndex < privateLength) {
                 const publicGroup = publicTriplesGrouped[publicIndex];
                 const [publicSubject] = publicGroup[0].split(' ');
