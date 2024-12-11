@@ -11,10 +11,10 @@ import {
     OPERATION_STATUSES,
     ZERO_ADDRESS,
     CHUNK_BYTE_SIZE,
-    PRIVATE_ASSERTION_PREDICATE,
     OPERATION_DELAYS,
     PRIVATE_RESOURCE_PREDICATE,
     PRIVATE_HASH_SUBJECT_PREFIX,
+    PRIVATE_ASSERTION_PREDICATE,
 } from '../constants.js';
 import emptyHooks from '../util/empty-hooks.js';
 

@@ -67,7 +67,8 @@ export default class InputService {
             authToken: this.getAuthToken(options),
             hashFunctionId: this.getHashFunctionId(options),
             paranetUAL: this.getParanetUAL(options),
-            metadata: this.getIncludeMetadata,
+            metadata: this.getIncludeMetadata(options),
+            subjectUAL: this.getSubjectUAL(options),
         };
     }
 
@@ -297,6 +298,10 @@ export default class InputService {
             this.config.includeMetadata ??
             DEFAULT_PARAMETERS.INCLUDE_METADATA
         );
+    }
+
+    getSubjectUAL(options) {
+        return options.subjectUAL ?? this.config.subjectUAL ?? false;
     }
 
     getContentType(options) {

@@ -110,6 +110,7 @@ export default class ValidationService {
         validate,
         outputFormat,
         authToken,
+        subjectUAL,
     ) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain, OPERATIONS.GET);
@@ -124,6 +125,7 @@ export default class ValidationService {
         this.validateValidate(validate);
         this.validateOutputFormat(outputFormat);
         this.validateAuthToken(authToken);
+        this.validateSubjectUAL(subjectUAL);
     }
 
     validateAssetUpdate(
@@ -578,6 +580,10 @@ export default class ValidationService {
     validateValidate(validate) {
         this.validateRequiredParam('validate', validate);
         this.validateParamType('validate', validate, 'boolean');
+    }
+
+    validateSubjectUAL(subjectUAL) {
+        this.validateParamType('subjectUAL', subjectUAL, 'boolean');
     }
 
     validateOutputFormat(outputFormat) {

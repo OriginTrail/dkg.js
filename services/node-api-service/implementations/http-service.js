@@ -123,6 +123,7 @@ export default class HttpService {
         UAL,
         state,
         includeMetadata,
+        subjectUAL,
         contentType,
         hashFunctionId,
         paranetUAL,
@@ -137,6 +138,7 @@ export default class HttpService {
                     includeMetadata,
                     hashFunctionId,
                     paranetUAL,
+                    subjectUAL,
                 },
                 headers: this.prepareRequestConfig(authToken),
             });

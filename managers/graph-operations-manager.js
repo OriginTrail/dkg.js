@@ -1,10 +1,13 @@
 import { kaTools, kcTools } from 'assertion-tools';
+import { ethers } from 'ethers';
 import {
     OPERATIONS,
     GET_OUTPUT_FORMATS,
     CHUNK_BYTE_SIZE,
     OPERATION_STATUSES,
     OPERATION_DELAYS,
+    PRIVATE_RESOURCE_PREDICATE,
+    PRIVATE_HASH_SUBJECT_PREFIX,
     PRIVATE_ASSERTION_PREDICATE,
 } from '../constants.js';
 import {
@@ -52,6 +55,7 @@ export default class GraphOperationsManager {
             authToken,
             hashFunctionId,
             paranetUAL,
+            subjectUAL,
         } = this.inputService.getAssetGetArguments(options);
 
         this.validationService.validateAssetGet(
@@ -68,6 +72,7 @@ export default class GraphOperationsManager {
             validate,
             outputFormat,
             authToken,
+            subjectUAL,
         );
 
         const getOperationId = await this.nodeApiService.get(
@@ -77,6 +82,7 @@ export default class GraphOperationsManager {
             UAL,
             state,
             includeMetadata,
+            subjectUAL,
             contentType,
             hashFunctionId,
             paranetUAL,
@@ -91,7 +97,29 @@ export default class GraphOperationsManager {
             frequency,
             getOperationId,
         );
+        if (subjectUAL) {
+            if (getOperationResult.data?.length) {
+                return {
+                    operation: {
+                        get: getOperationStatusObject(getOperationResult, getOperationId),
+                    },
+                    subjectUALPairs: getOperationResult.data,
+                };
+            }
+            if (getOperationResult.status !== 'FAILED') {
+                getOperationResult.data = {
+                    errorType: 'DKG_CLIENT_ERROR',
+                    errorMessage: 'Unable to find assertion on the network!',
+                };
+                getOperationResult.status = 'FAILED';
+            }
 
+            return {
+                operation: {
+                    get: getOperationStatusObject(getOperationResult, getOperationId),
+                },
+            };
+        }
         const { assertion, metadata } = getOperationResult.data;
 
         if (!assertion) {
@@ -254,6 +282,8 @@ export default class GraphOperationsManager {
         ) {
             if (content.public) {
                 dataset.public = this.processContent(content.public);
+            } else {
+                dataset.public = [];
             }
             if (content.private && typeof content.private === 'string') {
                 dataset.private = this.processContent(content.private);
@@ -262,78 +292,70 @@ export default class GraphOperationsManager {
             dataset = await kcTools.formatDataset(content);
         }
 
-        dataset.public = kcTools.generateMissingIdsForBlankNodes(dataset.public);
-        if (dataset.private) {
+        if (dataset.private?.length) {
             dataset.private = kcTools.generateMissingIdsForBlankNodes(dataset.private);
-        }
 
-        // Ensure we have a list for private Tripless even if not provided
-        const publicTriplesSortedAndGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
-        const privateTriplesSortedAndGrouped = dataset.private
-            ? kcTools.groupNquadsBySubject(dataset.private, true)
-            : [];
+            const privateTriplesGrouped = kcTools.groupNquadsBySubject(dataset.private, true);
+            dataset.private = privateTriplesGrouped.flat();
+            const privateRoot = kcTools.calculateMerkleRoot(dataset.private);
+            dataset.public.push(
+                `<${kaTools.generateNamedNode()}> <${PRIVATE_ASSERTION_PREDICATE}> "${privateRoot}" .`,
+            );
 
-        // A helper function to generate the private merkle root Triples
-        function createPrivateMerkleRootTriple(subject, Tripless) {
-            const merkleRoot = kcTools.calculateMerkleRoot(Tripless);
-            return `${subject} <${PRIVATE_ASSERTION_PREDICATE}> "${merkleRoot}" .`;
-        }
+            if (dataset.public.length) {
+                dataset.public = kcTools.generateMissingIdsForBlankNodes(dataset.public);
+            }
+            let publicTriplesGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
 
-        let publicIndex = 0;
-        let privateIndex = 0;
+            const mergedTriples = [];
+            let publicIndex = 0;
+            let privateIndex = 0;
+            const publicLength = publicTriplesGrouped.length;
+            const privateLength = privateTriplesGrouped.length;
 
-        while (
-            publicIndex < publicTriplesSortedAndGrouped.length ||
-            privateIndex < privateTriplesSortedAndGrouped.length
-        ) {
-            // If we've exhausted all private Tripless, we're done.
-            if (privateIndex === privateTriplesSortedAndGrouped.length) {
-                break;
+            // Merge public and private hashes triples in a single pass
+            while (publicIndex < publicLength && privateIndex < privateLength) {
+                const publicGroup = publicTriplesGrouped[publicIndex];
+                const [publicSubject] = publicGroup[0].split(' ');
+                const [privateSubject] = privateTriplesGrouped[privateIndex][0].split(' ');
+
+                const compare = publicSubject.localeCompare(privateSubject);
+                if (compare < 0) {
+                    // Public subject comes before private subject
+                    mergedTriples.push(publicGroup);
+                    publicIndex++;
+                } else if (compare > 0) {
+                    // Private subject comes before public subject
+                    mergedTriples.push([this.generatePrivateRepresentation(privateSubject)]);
+                    privateIndex++;
+                } else {
+                    // Subjects match, merge triples
+                    this.insertTripleSorted(
+                        publicGroup,
+                        this.generatePrivateRepresentation(privateSubject),
+                    );
+                    mergedTriples.push(publicGroup);
+                    publicIndex++;
+                    privateIndex++;
+                }
             }
 
-            // If we've exhausted all public Tripless, just append all remaining private Tripless.
-            if (publicIndex === publicTriplesSortedAndGrouped.length) {
-                const [privateSubject] = privateTriplesSortedAndGrouped[privateIndex][0].split(' ');
-                const privateMerkleRootTriple = createPrivateMerkleRootTriple(
-                    privateSubject,
-                    privateTriplesSortedAndGrouped[privateIndex],
-                );
-                publicTriplesSortedAndGrouped.push([privateMerkleRootTriple]);
-                privateIndex += 1;
-                continue;
+            while (publicIndex < publicLength) {
+                mergedTriples.push(...publicTriplesGrouped[publicIndex]);
+                publicIndex++;
             }
 
-            const [publicSubject] = publicTriplesSortedAndGrouped[publicIndex][0].split(' ');
-            const [privateSubject] = privateTriplesSortedAndGrouped[privateIndex][0].split(' ');
-            const compare = publicSubject.localeCompare(privateSubject);
-
-            if (compare < 0) {
-                // The public subject comes before the private one, move forward in public
-                publicIndex += 1;
-            } else if (compare > 0) {
-                // The private subject comes before the public one, insert new Tripless array in public
-                const privateMerkleRootTriple = createPrivateMerkleRootTriple(
-                    privateSubject,
-                    privateTriplesSortedAndGrouped[privateIndex],
-                );
-                publicTriplesSortedAndGrouped.splice(publicIndex, 0, [privateMerkleRootTriple]);
-                publicIndex += 1;
-                privateIndex += 1;
-            } else {
-                // Subjects match, append private merkle root to the existing public Triples array
-                const privateMerkleRootTriple = createPrivateMerkleRootTriple(
-                    privateSubject,
-                    privateTriplesSortedAndGrouped[privateIndex],
-                );
-                publicTriplesSortedAndGrouped[publicIndex].push(privateMerkleRootTriple);
-                publicIndex += 1;
-                privateIndex += 1;
+            // Append any remaining private triples
+            while (privateIndex < privateLength) {
+                const [privateSubject] = privateTriplesGrouped[privateIndex][0].split(' ');
+                mergedTriples.push([this.generatePrivateRepresentation(privateSubject)]);
+                privateIndex++;
             }
-        }
-
-        dataset.public = publicTriplesSortedAndGrouped.flat();
-        if (dataset.private) {
-            dataset.private = privateTriplesSortedAndGrouped.flat();
+            // Update the public dataset with the merged triples
+            dataset.public = mergedTriples.flat();
+        } else {
+            // If there's no private dataset, ensure public is grouped correctly
+            dataset.public = kcTools.groupNquadsBySubject(dataset.public, true).flat();
         }
 
         const numberOfChunks = kcTools.calculateNumberOfChunks(dataset.public, CHUNK_BYTE_SIZE);
@@ -458,6 +480,14 @@ export default class GraphOperationsManager {
             },
         };
     }
+
+    generatePrivateRepresentation(privateSubject) {
+        return `${`<${PRIVATE_HASH_SUBJECT_PREFIX}${ethers.solidityPackedSha256(
+            ['string'],
+            [privateSubject.slice(1, -1)],
+        )}>`} <${PRIVATE_RESOURCE_PREDICATE}> <${kaTools.generateNamedNode()}> .`;
+    }
+
     /**
      * Creates a new asset and stores it locally on the node.
      * @async
