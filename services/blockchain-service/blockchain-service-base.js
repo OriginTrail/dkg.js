@@ -521,8 +521,8 @@ class BlockchainServiceBase {
             ));
 
             return this.executeContractFunction(
-                'ContentAsset',
-                'extendAssetStoringPeriod',
+                'KnowledgeCollection',
+                'extendKnowledgeCollectionLifetime',
                 [tokenId, epochsNumber, tokenAmount],
                 blockchain,
             );
@@ -539,7 +539,7 @@ class BlockchainServiceBase {
         }
     }
 
-    async addTokens(tokenId, tokenAmount, blockchain) {
+    async addTokens(knowledegCollectionId, tokenAmount, blockchain) {
         const sender = await this.getPublicKey(blockchain);
         let serviceAgreementV1Address;
         let allowanceIncreased = false;
@@ -559,9 +559,9 @@ class BlockchainServiceBase {
             ));
 
             return this.executeContractFunction(
-                'ContentAsset',
-                'increaseAssetTokenAmount',
-                [tokenId, tokenAmount],
+                'KnowledegCollection',
+                'increaseKnowledgeCollectionTokenAmount',
+                [knowledegCollectionId, tokenAmount],
                 blockchain,
             );
         } catch (error) {
@@ -661,11 +661,11 @@ class BlockchainServiceBase {
         };
     }
 
-    async getAssertionSize(assertionId, blockchain) {
+    async getAssertionSize(knowledegCollectionId, blockchain) {
         return this.callContractFunction(
-            'AssertionStorage',
-            'getAssertionSize',
-            [assertionId],
+            'KnowledgeCollectionStorage',
+            'getByteSize',
+            [knowledegCollectionId],
             blockchain,
         );
     }

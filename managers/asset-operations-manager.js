@@ -836,49 +836,6 @@ class AssetOperationsManager {
     }
 
     /**
-     * Retrieves all assertion ids for a specified asset and a given blockchain.
-     * @async
-     * @param {string} UAL - The Universal Asset Locator of the asset.
-     * @param {Object} [options={}] - Optional parameters for blockchain service.
-     * @returns {Object} An object containing the UAL, issuer and operation status.
-     */
-    async getStates(UAL, options = {}) {
-        const blockchain = this.inputService.getBlockchain(options);
-        this.validationService.validateAssetGetStates(UAL, blockchain);
-
-        const { tokenId } = resolveUAL(UAL);
-
-        const states = await this.blockchainService.getAssertionIds(tokenId, blockchain);
-
-        return {
-            UAL,
-            states,
-            operation: getOperationStatusObject({ data: {}, status: 'COMPLETED' }, null),
-        };
-    }
-
-    /**
-     * Burn an asset on a specified blockchain.
-     * @async
-     * @param {string} UAL - The Universal Asset Locator of the asset.
-     * @param {Object} [options={}] - Optional parameters for blockchain service.
-     * @returns {Object} An object containing the UAL and operation status.
-     */
-    async burn(UAL, options = {}) {
-        const blockchain = this.inputService.getBlockchain(options);
-
-        this.validationService.validateAssetBurn(UAL, blockchain);
-
-        const { tokenId } = resolveUAL(UAL);
-        const receipt = await this.blockchainService.burnAsset(tokenId, blockchain);
-
-        return {
-            UAL,
-            operation: receipt,
-        };
-    }
-
-    /**
      * Extend the storing period of an asset on a specified blockchain.
      * @async
      * @param {string} UAL - The Universal Asset Locator of the asset.
