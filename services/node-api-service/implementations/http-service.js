@@ -5,13 +5,25 @@ import { sleepForMilliseconds } from '../../utilities.js';
 export default class HttpService {
     constructor(config = {}) {
         this.config = config;
+
+        if (
+            !(
+                config.nodeApiVersion === '/' ||
+                config.nodeApiVersion === '/latest' ||
+                /^\/v\d+$/.test(config.nodeApiVersion)
+            )
+        ) {
+            throw Error(`Version must be '/latest', '/' or in '/v{digits}' format.`);
+        }
+
+        this.apiVersion = config.nodeApiVersion ?? '/v1';
     }
 
     async info(endpoint, port, authToken) {
         try {
             const response = await axios({
                 method: 'get',
-                url: `${endpoint}:${port}/info`,
+                url: `${this.getBaseUrl(endpoint, port)}/info`,
                 headers: this.prepareRequestConfig(authToken),
             });
 
@@ -21,48 +33,11 @@ export default class HttpService {
         }
     }
 
-    async getBidSuggestion(
-        endpoint,
-        port,
-        authToken,
-        blockchain,
-        epochsNumber,
-        assertionSize,
-        contentAssetStorageAddress,
-        firstAssertionId,
-        hashFunctionId,
-        bidSuggestionRange,
-    ) {
-        try {
-            const params = {
-                blockchain,
-                epochsNumber,
-                assertionSize,
-                contentAssetStorageAddress,
-                firstAssertionId,
-                hashFunctionId,
-            };
-            if (bidSuggestionRange != null) {
-                params.bidSuggestionRange = bidSuggestionRange;
-            }
-            const response = await axios({
-                method: 'get',
-                url: `${endpoint}:${port}/bid-suggestion`,
-                params,
-                headers: this.prepareRequestConfig(authToken),
-            });
-
-            return response.data.bidSuggestion;
-        } catch (error) {
-            throw Error(`Unable to get bid suggestion: ${error.message}`);
-        }
-    }
-
     async localStore(endpoint, port, authToken, assertions, fullPathToCachedAssertion) {
         try {
             const response = await axios({
                 method: 'post',
-                url: `${endpoint}:${port}/local-store`,
+                url: `${this.getBaseUrl(endpoint, port)}/local-store`,
                 data: fullPathToCachedAssertion
                     ? { filePath: fullPathToCachedAssertion }
                     : assertions,
@@ -75,16 +50,26 @@ export default class HttpService {
         }
     }
 
-    async publish(endpoint, port, authToken, datasetRoot, dataset, blockchain, hashFunctionId) {
+    async publish(
+        endpoint,
+        port,
+        authToken,
+        datasetRoot,
+        dataset,
+        blockchain,
+        hashFunctionId,
+        minimumNumberOfNodeReplications,
+    ) {
         try {
             const response = await axios({
                 method: 'post',
-                url: `${endpoint}:${port}/publish`,
+                url: `${this.getBaseUrl(endpoint, port)}/publish`,
                 data: {
                     datasetRoot,
                     dataset,
                     blockchain,
                     hashFunctionId,
+                    minimumNumberOfNodeReplications,
                 },
                 headers: this.prepareRequestConfig(authToken),
             });
@@ -111,7 +96,7 @@ export default class HttpService {
         try {
             const response = await axios({
                 method: 'post',
-                url: `${endpoint}:${port}/publish-paranet`,
+                url: `${this.getBaseUrl(endpoint, port)}/publish-paranet`,
                 data: {
                     assertions,
                     blockchain,
@@ -146,7 +131,7 @@ export default class HttpService {
         try {
             const response = await axios({
                 method: 'post',
-                url: `${endpoint}:${port}/get`,
+                url: `${this.getBaseUrl(endpoint, port)}/get`,
                 data: {
                     id: state ? `${UAL}:${state}` : UAL,
                     contentType,
@@ -178,7 +163,7 @@ export default class HttpService {
         try {
             const response = await axios({
                 method: 'post',
-                url: `${endpoint}:${port}/update`,
+                url: `${this.getBaseUrl(endpoint, port)}/update`,
                 data: {
                     assertionId,
                     assertion,
@@ -200,7 +185,7 @@ export default class HttpService {
         try {
             const response = await axios({
                 method: 'post',
-                url: `${endpoint}:${port}/query`,
+                url: `${this.getBaseUrl(endpoint, port)}/query`,
                 data: { query, type, /*graphState, graphLocation,*/ paranetUAL },
                 headers: this.prepareRequestConfig(authToken),
             });
@@ -210,15 +195,40 @@ export default class HttpService {
         }
     }
 
-    async finality(endpoint, port, authToken, blockchain, ual, minimumNumberOfNodeReplications) {
+    async finality(
+        endpoint,
+        port,
+        authToken,
+        blockchain,
+        ual,
+        minimumNumberOfFinalizationConfirmations,
+    ) {
         try {
             const response = await axios({
                 method: 'post',
-                url: `${endpoint}:${port}/finality`,
-                data: { ual, blockchain, minimumNumberOfNodeReplications },
+                url: `${this.getBaseUrl(endpoint, port)}/ask`,
+                data: {
+                    ual,
+                    blockchain,
+                    minimumNumberOfNodeReplications: minimumNumberOfFinalizationConfirmations,
+                },
                 headers: this.prepareRequestConfig(authToken),
             });
             return response.data.operationId;
+        } catch (error) {
+            throw Error(`Unable to query: ${error.message}`);
+        }
+    }
+
+    async finalityStatus(endpoint, port, authToken, ual) {
+        try {
+            const response = await axios({
+                method: 'get',
+                url: `${this.getBaseUrl(endpoint, port)}/finality`,
+                params: { ual },
+                headers: this.prepareRequestConfig(authToken),
+            });
+            return response.data.finality;
         } catch (error) {
             throw Error(`Unable to query: ${error.message}`);
         }
@@ -241,7 +251,7 @@ export default class HttpService {
 
         const axios_config = {
             method: 'get',
-            url: `${endpoint}:${port}/${operation}/${operationId}`,
+            url: `${this.getBaseUrl(endpoint, port)}/${operation}/${operationId}`,
             headers: this.prepareRequestConfig(authToken),
         };
         do {
@@ -277,5 +287,9 @@ export default class HttpService {
         }
 
         return {};
+    }
+
+    getBaseUrl(endpoint, port) {
+        return `${endpoint}:${port}${this.apiVersion}`;
     }
 }

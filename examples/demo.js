@@ -19,6 +19,7 @@ const DkgClient = new DKG({
     maxNumberOfRetries: 30,
     frequency: 2,
     contentType: 'all',
+    nodeApiVersion: '/v1',
 });
 
 function divider() {
@@ -84,6 +85,8 @@ function divider() {
     const createAssetResult = await DkgClient.asset.create(content, {
         epochsNum: 2,
         tokenAmount: '100',
+        minimumNumberOfFinalizationConfirmations: 5,
+        minimumNumberOfNodeReplications: 3,
     });
     console.log('======================== ASSET CREATED');
     console.log(createAssetResult);
@@ -93,9 +96,29 @@ function divider() {
     const createCollectionResult = await DkgClient.graph.create(content, {
         epochsNum: 2,
         tokenAmount: '100',
+        minimumNumberOfFinalizationConfirmations: 1,
     });
     console.log('======================== ASSET CREATED');
     console.log(createCollectionResult);
+
+    divider();
+
+    const publishFinalityResult = await DkgClient.graph.publishFinality(createAssetResult.UAL);
+    console.log('======================== ASSET FINALITY');
+    console.log(publishFinalityResult);
+
+    const getOperationResult = await DkgClient.graph.get(createCollectionResult.UAL);
+    console.log('======================== ASSET GET');
+    console.log(getOperationResult);
+
+    divider();
+
+    const queryOperationResult = await DkgClient.graph.query(
+        `select ?s ?p ?o where { ?s ?p ?o }`,
+        'SELECT',
+    );
+    console.log('======================== ASSET QUERY');
+    console.log(queryOperationResult);
 
     divider();
 })();
