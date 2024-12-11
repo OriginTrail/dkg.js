@@ -13,18 +13,6 @@ export default class InputService {
         this.config = config;
     }
 
-    getBidSuggestionArguments(options) {
-        return {
-            blockchain: this.getBlockchain(options),
-            endpoint: this.getEndpoint(options),
-            port: this.getPort(options),
-            epochsNum: this.getEpochsNum(options),
-            hashFunctionId: this.getHashFunctionId(options),
-            authToken: this.getAuthToken(options),
-            bidSuggestionRange: this.getBidSuggestionRange(options),
-        };
-    }
-
     getAssetCreateArguments(options) {
         return {
             blockchain: this.getBlockchain(options),
@@ -333,10 +321,6 @@ export default class InputService {
 
     getAuthToken(options) {
         return options.auth?.token ?? this.config?.auth?.token ?? null;
-    }
-
-    getBidSuggestionRange(options) {
-        return options.bidSuggestionRange ?? LOW_BID_SUGGESTION;
     }
 
     getParanetUAL(options) {

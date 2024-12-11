@@ -379,17 +379,7 @@ export default class GraphOperationsManager {
 
         const estimatedPublishingCost =
             tokenAmount ??
-            (await this.nodeApiService.getBidSuggestion(
-                endpoint,
-                port,
-                authToken,
-                blockchain.name,
-                epochsNum,
-                datasetSize,
-                contentAssetStorageAddress,
-                datasetRoot,
-                hashFunctionId,
-            ));
+            (await this.blockchainService.getStakeWeightedAverageAsk()) * epochsNum * datasetSize;
 
         let tokenId;
         let mintKnowledgeAssetReceipt;
@@ -565,17 +555,7 @@ export default class GraphOperationsManager {
 
         const estimatedPublishingCost =
             tokenAmount ??
-            (await this.nodeApiService.getBidSuggestion(
-                endpoint,
-                port,
-                authToken,
-                blockchain.name,
-                epochsNum,
-                datasetSize,
-                contentAssetStorageAddress,
-                datasetRoot,
-                hashFunctionId,
-            ));
+            (await this.blockchainService.getStakeWeightedAverageAsk()) * epochsNum * datasetSize;
 
         const { tokenId, receipt: mintKnowledgeAssetReceipt } =
             await this.blockchainService.createAsset(

@@ -608,10 +608,6 @@ export default class ValidationService {
         this.validateParamType('newOwner', newOwner, 'string');
     }
 
-    validateGetBidSuggestion(bidSuggestionRange) {
-        this.validateBidSuggestionRange(bidSuggestionRange);
-    }
-
     validateBidSuggestionRange(bidSuggestionRange) {
         if (!BID_SUGGESTION_RANGE_ENUM.includes(bidSuggestionRange)) {
             throw Error(

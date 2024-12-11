@@ -3,9 +3,9 @@
 import Web3 from 'web3';
 import axios from 'axios';
 import { createRequire } from 'module';
-import { OPERATIONS_STEP_STATUS, DEFAULT_GAS_PRICE  } from '../../constants.js';
+import { OPERATIONS_STEP_STATUS, DEFAULT_GAS_PRICE } from '../../constants.js';
 import emptyHooks from '../../util/empty-hooks.js';
-import { sleepForMilliseconds  } from '../utilities.js';
+import { sleepForMilliseconds } from '../utilities.js';
 
 const require = createRequire(import.meta.url);
 
@@ -23,6 +23,7 @@ const ParanetIncentivesPoolFactoryAbi = require('dkg-evm-module/abi/ParanetIncen
 const ParanetNeuroIncentivesPoolAbi = require('dkg-evm-module/abi/ParanetNeuroIncentivesPool.json');
 const ParanetKnowledgeMinersRegistryAbi = require('dkg-evm-module/abi/ParanetKnowledgeMinersRegistry.json');
 const IdentityStorageAbi = require('dkg-evm-module/abi/IdentityStorage.json');
+// const ShardingTableStorageAbi = require('dkg-evm-module/abi/ShardingTableStorage.sol.json');
 
 export default class BlockchainServiceBase {
     constructor(config = {}) {
@@ -43,6 +44,7 @@ export default class BlockchainServiceBase {
         this.abis.ParanetNeuroIncentivesPool = ParanetNeuroIncentivesPoolAbi;
         this.abis.ParanetKnowledgeMinersRegistry = ParanetKnowledgeMinersRegistryAbi;
         this.abis.IdentityStorage = IdentityStorageAbi;
+        // this.abis.ShardingTableStorageAbi = ShardingTableStorageAbi;
 
         this.abis.ContentAsset.filter((obj) => obj.type === 'event').forEach((event) => {
             const concatInputs = event.inputs.map((input) => input.internalType);
@@ -1073,6 +1075,19 @@ export default class BlockchainServiceBase {
             [operationalWallet],
             blockchain,
         );
+    }
+
+    // Get ask operations
+    // To get price, multiply with size in bytes and epochs
+    async getStakeWeightedAverageAsk() {
+        return;
+        // Uncomment when contracts integrated
+        // return this.callContractFunction(
+        //     'ShardingTableStorage',
+        //     'getStakeWeightedAverageAsk',
+        //     [],
+        //     blockchain,
+        // );
     }
 
     // Blockchain operations

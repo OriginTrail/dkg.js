@@ -33,43 +33,6 @@ export default class HttpService {
         }
     }
 
-    async getBidSuggestion(
-        endpoint,
-        port,
-        authToken,
-        blockchain,
-        epochsNumber,
-        assertionSize,
-        contentAssetStorageAddress,
-        firstAssertionId,
-        hashFunctionId,
-        bidSuggestionRange,
-    ) {
-        try {
-            const params = {
-                blockchain,
-                epochsNumber,
-                assertionSize,
-                contentAssetStorageAddress,
-                firstAssertionId,
-                hashFunctionId,
-            };
-            if (bidSuggestionRange != null) {
-                params.bidSuggestionRange = bidSuggestionRange;
-            }
-            const response = await axios({
-                method: 'get',
-                url: `${this.getBaseUrl(endpoint, port)}/bid-suggestion`,
-                params,
-                headers: this.prepareRequestConfig(authToken),
-            });
-
-            return response.data.bidSuggestion;
-        } catch (error) {
-            throw Error(`Unable to get bid suggestion: ${error.message}`);
-        }
-    }
-
     async localStore(endpoint, port, authToken, assertions, fullPathToCachedAssertion) {
         try {
             const response = await axios({
