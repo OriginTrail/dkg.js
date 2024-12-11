@@ -206,7 +206,7 @@ export default class HttpService {
         try {
             const response = await axios({
                 method: 'post',
-                url: `${this.getBaseUrl(endpoint, port)}/finality`,
+                url: `${this.getBaseUrl(endpoint, port)}/ask`,
                 data: {
                     ual,
                     blockchain,
@@ -224,7 +224,7 @@ export default class HttpService {
         try {
             const response = await axios({
                 method: 'get',
-                url: `${this.getBaseUrl(endpoint, port)}/finality-status`,
+                url: `${this.getBaseUrl(endpoint, port)}/finality`,
                 params: { ual },
                 headers: this.prepareRequestConfig(authToken),
             });
