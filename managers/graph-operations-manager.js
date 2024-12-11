@@ -464,6 +464,7 @@ export default class GraphOperationsManager {
                             : 'NOT FINALIZED',
                 },
                 numberOfConfirmations: finalityStatusResult,
+                requiredConfirmations: minimumNumberOfFinalizationConfirmations,
             },
         };
     }
@@ -687,11 +688,13 @@ export default class GraphOperationsManager {
             return {
                 status: 'FINALIZED',
                 numberOfConfirmations: finalityStatusResult,
+                requiredConfirmations: minimumNumberOfFinalizationConfirmations,
             };
         } else {
             return {
                 status: 'NOT FINALIZED',
                 numberOfConfirmations: finalityStatusResult,
+                requiredConfirmations: minimumNumberOfFinalizationConfirmations,
             };
         }
     }

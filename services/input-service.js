@@ -255,7 +255,7 @@ export default class InputService {
             frequency: this.getFrequency(options),
             authToken: this.getAuthToken(options),
             minimumNumberOfFinalizationConfirmations:
-                this.getMinimumNumberOfFinalizationConfirmations(options) ?? 5,
+                this.getMinimumNumberOfFinalizationConfirmations(options) ?? 3,
         };
     }
 

@@ -527,6 +527,7 @@ export default class AssetOperationsManager {
                             : 'NOT FINALIZED',
                 },
                 numberOfConfirmations: finalityStatusResult,
+                requiredConfirmations: minimumNumberOfFinalizationConfirmations,
             },
         };
     }
