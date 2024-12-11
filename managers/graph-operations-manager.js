@@ -222,6 +222,7 @@ export default class GraphOperationsManager {
             authToken,
             paranetUAL,
             payer,
+            minimumNumberOfFinalizationConfirmations,
             minimumNumberOfNodeReplications,
         } = this.inputService.getAssetCreateArguments(options);
 
@@ -240,6 +241,7 @@ export default class GraphOperationsManager {
             authToken,
             paranetUAL,
             payer,
+            minimumNumberOfFinalizationConfirmations,
             minimumNumberOfNodeReplications,
         );
 
@@ -353,6 +355,7 @@ export default class GraphOperationsManager {
             dataset,
             blockchain.name,
             hashFunctionId,
+            minimumNumberOfNodeReplications,
         );
 
         const publishOperationResult = await this.nodeApiService.getOperationResult(
@@ -440,31 +443,12 @@ export default class GraphOperationsManager {
 
         await sleepForMilliseconds(finalitySleepDelay);
 
-        const finalityOperationId = await this.nodeApiService.finality(
+        const finalityStatusResult = await this.nodeApiService.finalityStatus(
             endpoint,
             port,
             authToken,
-            blockchain.name,
             UAL,
-            minimumNumberOfNodeReplications,
         );
-
-        let finalityOperationResult = null;
-
-        // TO DO: ADD OPTIONAL WAITING FOR FINALITY
-        try {
-            finalityOperationResult = await this.nodeApiService.getOperationResult(
-                endpoint,
-                port,
-                authToken,
-                OPERATIONS.FINALITY,
-                maxNumberOfRetries,
-                frequency,
-                finalityOperationId,
-            );
-        } catch (error) {
-            console.error(`Attempt failed:`, error.message);
-        }
 
         return {
             UAL,
@@ -473,7 +457,14 @@ export default class GraphOperationsManager {
             operation: {
                 mintKnowledgeAsset: mintKnowledgeAssetReceipt,
                 publish: getOperationStatusObject(publishOperationResult, publishOperationId),
-                finality: finalityOperationResult,
+                finality: {
+                    status:
+                        finalityStatusResult >= minimumNumberOfFinalizationConfirmations
+                            ? 'FINALIZED'
+                            : 'NOT FINALIZED',
+                },
+                numberOfConfirmations: finalityStatusResult,
+                requiredConfirmations: minimumNumberOfFinalizationConfirmations,
             },
         };
     }
@@ -631,5 +622,80 @@ export default class GraphOperationsManager {
                 ),
             },
         };
+    }
+
+    /**
+     * Checks whether KA is finalized on the node.
+     * @async
+     * @param {string} UAL - The Universal Asset Locator, representing asset or collection.
+     */
+    async publishFinality(UAL, options = {}) {
+        const {
+            blockchain,
+            endpoint,
+            port,
+            maxNumberOfRetries,
+            frequency,
+            minimumNumberOfFinalizationConfirmations,
+            authToken,
+        } = this.inputService.getPublishFinalityArguments(options);
+
+        // blockchain not mandatory so it's not validated
+        this.validationService.validatePublishFinality(
+            endpoint,
+            port,
+            maxNumberOfRetries,
+            frequency,
+            minimumNumberOfFinalizationConfirmations,
+            authToken,
+        );
+
+        const finalityStatusResult = await this.nodeApiService.finalityStatus(
+            endpoint,
+            port,
+            authToken,
+            UAL,
+        );
+
+        if (finalityStatusResult === 0) {
+            const finalityOperationId = await this.nodeApiService.finality(
+                endpoint,
+                port,
+                authToken,
+                blockchain.name,
+                UAL,
+                minimumNumberOfFinalizationConfirmations,
+            );
+
+            try {
+                return this.nodeApiService.getOperationResult(
+                    endpoint,
+                    port,
+                    authToken,
+                    OPERATIONS.FINALITY,
+                    maxNumberOfRetries,
+                    frequency,
+                    finalityOperationId,
+                );
+            } catch (error) {
+                console.error(`Finality attempt failed:`, error.message);
+                return {
+                    status: 'NOT FINALIZED',
+                    error: error.message,
+                };
+            }
+        } else if (finalityStatusResult >= minimumNumberOfFinalizationConfirmations) {
+            return {
+                status: 'FINALIZED',
+                numberOfConfirmations: finalityStatusResult,
+                requiredConfirmations: minimumNumberOfFinalizationConfirmations,
+            };
+        } else {
+            return {
+                status: 'NOT FINALIZED',
+                numberOfConfirmations: finalityStatusResult,
+                requiredConfirmations: minimumNumberOfFinalizationConfirmations,
+            };
+        }
     }
 }

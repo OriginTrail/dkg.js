@@ -285,6 +285,7 @@ export default class AssetOperationsManager {
             authToken,
             paranetUAL,
             payer,
+            minimumNumberOfFinalizationConfirmations,
             minimumNumberOfNodeReplications,
         } = this.inputService.getAssetCreateArguments(options);
 
@@ -303,6 +304,7 @@ export default class AssetOperationsManager {
             authToken,
             paranetUAL,
             payer,
+            minimumNumberOfFinalizationConfirmations,
             minimumNumberOfNodeReplications,
         );
 
@@ -416,6 +418,7 @@ export default class AssetOperationsManager {
             dataset,
             blockchain.name,
             hashFunctionId,
+            minimumNumberOfNodeReplications,
         );
 
         const publishOperationResult = await this.nodeApiService.getOperationResult(
@@ -503,31 +506,12 @@ export default class AssetOperationsManager {
 
         await sleepForMilliseconds(finalitySleepDelay);
 
-        const finalityOperationId = await this.nodeApiService.finality(
+        const finalityStatusResult = await this.nodeApiService.finalityStatus(
             endpoint,
             port,
             authToken,
-            blockchain.name,
             UAL,
-            minimumNumberOfNodeReplications,
         );
-
-        let finalityOperationResult = null;
-
-        // TO DO: ADD OPTIONAL WAITING FOR FINALITY
-        try {
-            finalityOperationResult = await this.nodeApiService.getOperationResult(
-                endpoint,
-                port,
-                authToken,
-                OPERATIONS.FINALITY,
-                maxNumberOfRetries,
-                frequency,
-                finalityOperationId,
-            );
-        } catch (error) {
-            console.error(`Attempt failed:`, error.message);
-        }
 
         return {
             UAL,
@@ -536,7 +520,14 @@ export default class AssetOperationsManager {
             operation: {
                 mintKnowledgeAsset: mintKnowledgeAssetReceipt,
                 publish: getOperationStatusObject(publishOperationResult, publishOperationId),
-                finality: finalityOperationResult,
+                finality: {
+                    status:
+                        finalityStatusResult >= minimumNumberOfFinalizationConfirmations
+                            ? 'FINALIZED'
+                            : 'NOT FINALIZED',
+                },
+                numberOfConfirmations: finalityStatusResult,
+                requiredConfirmations: minimumNumberOfFinalizationConfirmations,
             },
         };
     }

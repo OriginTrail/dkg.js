@@ -85,7 +85,8 @@ function divider() {
     const createAssetResult = await DkgClient.asset.create(content, {
         epochsNum: 2,
         tokenAmount: '100',
-        minimumNumberOfNodeReplications: 1,
+        minimumNumberOfFinalizationConfirmations: 5,
+        minimumNumberOfNodeReplications: 3,
     });
     console.log('======================== ASSET CREATED');
     console.log(createAssetResult);
@@ -95,12 +96,16 @@ function divider() {
     const createCollectionResult = await DkgClient.graph.create(content, {
         epochsNum: 2,
         tokenAmount: '100',
-        minimumNumberOfNodeReplications: 1,
+        minimumNumberOfFinalizationConfirmations: 1,
     });
     console.log('======================== ASSET CREATED');
     console.log(createCollectionResult);
 
     divider();
+
+    const publishFinalityResult = await DkgClient.graph.publishFinality(createAssetResult.UAL);
+    console.log('======================== ASSET FINALITY');
+    console.log(publishFinalityResult);
 
     const getOperationResult = await DkgClient.graph.get(createCollectionResult.UAL);
     console.log('======================== ASSET GET');
