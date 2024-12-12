@@ -553,11 +553,12 @@ export default class AssetOperationsManager {
             },
         };
     }
-
+    hashSubject(subject) {
+        ethers.solidityPackedSha256(['string'], [subject.slice(1, -1)]);
+    }
     generatePrivateRepresentation(privateSubject) {
-        return `${`<${PRIVATE_HASH_SUBJECT_PREFIX}${ethers.solidityPackedSha256(
-            ['string'],
-            [privateSubject.slice(1, -1)],
+        return `${`<${PRIVATE_HASH_SUBJECT_PREFIX}${hashSubject(
+            privateSubject,
         )}>`} <${PRIVATE_RESOURCE_PREDICATE}> <${kaTools.generateNamedNode()}> .`;
     }
 
@@ -983,6 +984,189 @@ export default class AssetOperationsManager {
         } else {
             dataset = await kcTools.formatDataset(content);
         }
+
+        const getOperationId = await this.nodeApiService.get(
+            endpoint,
+            port,
+            authToken,
+            UAL,
+            '',
+            false,
+            true,
+            null,
+            1,
+            null,
+        );
+
+        const subjectUALPairsResult = await this.nodeApiService.getOperationResult(
+            endpoint,
+            port,
+            authToken,
+            OPERATIONS.GET,
+            maxNumberOfRetries,
+            frequency,
+            getOperationId,
+        );
+        const subjectUALMap = new Map();
+        const subjectHashUALMap = new Map();
+
+        const { subjectUALPairs, privateMerkleRootTriple } = subjectUALPairsResult;
+        subjectUALPairs.forEach((pair) => {
+            if (pair.subject) {
+                subjectUALMap.set(pair.subject, pair.UAL);
+            }
+            if (pair.privateSubjectHash) {
+                subjectHashUALMap.set(pair.privateSubjectHash, pair.UAL);
+            }
+        });
+
+        if (dataset.private?.length) {
+            dataset.private = kcTools.generateMissingIdsForBlankNodes(dataset.private);
+            const privateTriplesGrouped = kcTools.groupNquadsBySubject(dataset.private, true);
+
+            const privateRoot = kcTools.calculateMerkleRoot(privateTriplesGrouped.flat());
+
+            let publicTriplesGrouped = [];
+            if (dataset.public?.length) {
+                dataset.public = kcTools.generateMissingIdsForBlankNodes(dataset.public);
+            }
+            if (privateMerkleRootTriple) {
+                publicTriplesGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
+                const [privateMerkleRootTripleSubject] = privateMerkleRootTriple.split(' ');
+                let privateMerkleRootTripleExists = false;
+                // This is sorted is should probably be done by binary search
+                for (const [index, [triple]] of publicTriplesGrouped.entries()) {
+                    const [subject] = triple.split(' ');
+                    if (privateMerkleRootTripleSubject === subject) {
+                        const changePrivateRootIndex = publicTriplesGrouped[index].findIndex(
+                            PRIVATE_RESOURCE_PREDICATE,
+                        );
+                        publicTriplesGrouped[index][
+                            changePrivateRootIndex
+                        ] = `${privateMerkleRootTripleSubject} <${PRIVATE_ASSERTION_PREDICATE}> "${privateRoot}" .`;
+                        privateMerkleRootTripleExists = true;
+                    }
+                }
+            } else {
+                dataset.public.push(
+                    `<${kaTools.generateNamedNode()}> <${PRIVATE_ASSERTION_PREDICATE}> "${privateRoot}" .`,
+                );
+                publicTriplesGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
+            }
+
+            const mergedTriples = [];
+            let publicIndex = 0;
+            let privateIndex = 0;
+            const publicLength = publicTriplesGrouped.length;
+            const privateLength = privateTriplesGrouped.length;
+            let tokensToBeMinted = 0;
+            // Merge public and private hashes triples in a single pass
+            while (publicIndex < publicLength && privateIndex < privateLength) {
+                const publicGroup = publicTriplesGrouped[publicIndex];
+                const [publicSubject] = publicGroup[0].split(' ');
+                const [privateSubject] = privateTriplesGrouped[privateIndex][0].split(' ');
+
+                // If this subject existed in previous state remove it from maps as it already has a token
+                const subjectExistedInPreviousState =
+                    subjectUALMap.delete(publicSubject) ||
+                    subjectHashUALMap.delete(this.hashSubject(publicSubject));
+                // If it didn't exist than we need to mint new asset
+                if (!subjectExistedInPreviousState) {
+                    tokensToBeMinted += 1;
+                }
+                const compare = publicSubject.localeCompare(privateSubject);
+                if (compare < 0) {
+                    // If this subject existed in previous state remove it from maps as it already has a token
+                    const subjectExistedInPreviousState =
+                        subjectUALMap.delete(publicSubject) ||
+                        subjectHashUALMap.delete(this.hashSubject(publicSubject));
+                    // If it didn't exist than we need to mint new token
+                    if (!subjectExistedInPreviousState) {
+                        tokensToBeMinted += 1;
+                    }
+                    // Public subject comes before private subject
+                    mergedTriples.push(publicGroup);
+                    publicIndex++;
+                } else if (compare > 0) {
+                    // Private subject comes before public subject
+                    // If this subject existed in previous state remove it from maps as it already has a token
+                    const subjectExistedInPreviousState =
+                        subjectUALMap.delete(privateSubject) ||
+                        subjectHashUALMap.delete(this.hashSubject(privateSubject));
+                    // If it didn't exist than we need to mint new token
+                    if (!subjectExistedInPreviousState) {
+                        tokensToBeMinted += 1;
+                    }
+                    mergedTriples.push([this.generatePrivateRepresentation(privateSubject)]);
+                    privateIndex++;
+                } else {
+                    // Subjects match, merge triples
+                    // If this subject existed in previous state remove it from maps as it already has a token
+                    const subjectExistedInPreviousState =
+                        subjectUALMap.delete(privateSubject) ||
+                        subjectHashUALMap.delete(this.hashSubject(privateSubject));
+                    // If it didn't exist than we need to mint new token
+                    if (!subjectExistedInPreviousState) {
+                        tokensToBeMinted += 1;
+                    }
+                    this.insertTripleSorted(
+                        publicGroup,
+                        this.generatePrivateRepresentation(privateSubject),
+                    );
+                    mergedTriples.push(publicGroup);
+                    publicIndex++;
+                    privateIndex++;
+                }
+            }
+
+            // Append any remaining public triples
+            while (publicIndex < publicLength) {
+                const [publicSubject] = publicGroup[0].split(' ');
+                const subjectExistedInPreviousState =
+                    subjectUALMap.delete(publicSubject) ||
+                    subjectHashUALMap.delete(this.hashSubject(publicSubject));
+                // If it didn't exist than we need to mint new token
+                if (!subjectExistedInPreviousState) {
+                    tokensToBeMinted += 1;
+                }
+                mergedTriples.push(...publicTriplesGrouped[publicIndex]);
+                publicIndex++;
+            }
+
+            // Append any remaining private triples
+            while (privateIndex < privateLength) {
+                const [privateSubject] = privateTriplesGrouped[privateIndex][0].split(' ');
+                const subjectExistedInPreviousState =
+                    subjectUALMap.delete(privateSubject) ||
+                    subjectHashUALMap.delete(this.hashSubject(privateSubject));
+                // If it didn't exist than we need to mint new token
+                if (!subjectExistedInPreviousState) {
+                    tokensToBeMinted += 1;
+                }
+                mergedTriples.push([this.generatePrivateRepresentation(privateSubject)]);
+                privateIndex++;
+            }
+            // Update the public dataset with the merged triples
+            dataset.public = mergedTriples.flat();
+        } else {
+            // If there's no private dataset, ensure public is grouped correctly
+            dataset.public = kcTools.groupNquadsBySubject(dataset.public, true).flat();
+
+            for (const [publicTriple] of dataset.public) {
+                const [publicSubject] = publicTriple[0].split(' ');
+                const subjectExistedInPreviousState =
+                    subjectUALMap.delete(publicSubject) ||
+                    subjectHashUALMap.delete(this.hashSubject(publicSubject));
+                if (!subjectExistedInPreviousState) {
+                    tokensToBeMinted += 1;
+                }
+            }
+        }
+
+        // Find all old subject UALs that are not in new dataset
+        const tokensToBeBurned = new Set([...subjectUALMap.values(), ...subjectHashUALMap.values()])
+            .map((ual) => ual.split('/').pop())
+            .sort();
 
         const numberOfChunks = kcTools.calculateNumberOfChunks(dataset, CHUNK_BYTE_SIZE);
 
