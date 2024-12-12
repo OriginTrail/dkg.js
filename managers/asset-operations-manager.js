@@ -520,6 +520,7 @@ export default class AssetOperationsManager {
         return {
             UAL,
             datasetRoot,
+            publisherNodeSignature: publishOperationResult.data.publisherNodeSignature,
             signatures: publishOperationResult.data.signatures,
             operation: {
                 mintKnowledgeAsset: mintKnowledgeAssetReceipt,
