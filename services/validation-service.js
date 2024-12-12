@@ -75,6 +75,7 @@ export default class ValidationService {
         payer,
         minimumNumberOfFinalizationConfirmations,
         minimumNumberOfNodeReplications,
+        batchSize,
     ) {
         this.validateContent(content);
         this.validateBlockchain(blockchain, OPERATIONS.PUBLISH);
@@ -94,6 +95,7 @@ export default class ValidationService {
             minimumNumberOfFinalizationConfirmations,
         );
         this.validateMinimumNumberOfNodeReplications(minimumNumberOfNodeReplications);
+        this.validateBatchSize(batchSize);
     }
 
     validateAssetGet(
@@ -111,6 +113,7 @@ export default class ValidationService {
         outputFormat,
         authToken,
         subjectUAL,
+        batchSize,
     ) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain, OPERATIONS.GET);
@@ -126,6 +129,7 @@ export default class ValidationService {
         this.validateOutputFormat(outputFormat);
         this.validateAuthToken(authToken);
         this.validateSubjectUAL(subjectUAL);
+        this.validateBatchSize(batchSize);
     }
 
     validateAssetUpdate(
@@ -140,6 +144,7 @@ export default class ValidationService {
         tokenAmount,
         authToken,
         payer,
+        batchSize,
     ) {
         this.validateContent(content);
         this.validateBlockchain(blockchain, OPERATIONS.UPDATE);
@@ -152,6 +157,7 @@ export default class ValidationService {
         this.validateTokenAmount(tokenAmount);
         this.validateAuthToken(authToken);
         this.validatePayer(payer);
+        this.validateBatchSize(batchSize);
     }
 
     validateAssetTransfer(UAL, newOwner, blockchain) {
@@ -759,6 +765,7 @@ export default class ValidationService {
         frequency,
         minimumNumberOfFinalizationConfirmations,
         authToken,
+        batchSize,
     ) {
         this.validateEndpoint(endpoint);
         this.validatePort(port);
@@ -768,5 +775,13 @@ export default class ValidationService {
         this.validateMinimumNumberOfFinalizationConfirmations(
             minimumNumberOfFinalizationConfirmations,
         );
+        this.validateBatchSize(batchSize);
+    }
+
+    validateBatchSize(batchSize) {
+        this.validateRequiredParam('batchSize', batchSize);
+        this.validateParamType('batchSize', batchSize, 'number');
+
+        if (batchSize <= 0) throw Error('Invalid batch size.');
     }
 }

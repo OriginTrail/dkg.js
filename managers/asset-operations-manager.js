@@ -304,6 +304,7 @@ export default class AssetOperationsManager {
             payer,
             minimumNumberOfFinalizationConfirmations,
             minimumNumberOfNodeReplications,
+            batchSize,
         } = this.inputService.getAssetCreateArguments(options);
 
         this.validationService.validateAssetCreate(
@@ -323,6 +324,7 @@ export default class AssetOperationsManager {
             payer,
             minimumNumberOfFinalizationConfirmations,
             minimumNumberOfNodeReplications,
+            batchSize,
         );
 
         let dataset = {};
@@ -431,6 +433,7 @@ export default class AssetOperationsManager {
             blockchain.name,
             hashFunctionId,
             minimumNumberOfNodeReplications,
+            batchSize,
         );
 
         const publishOperationResult = await this.nodeApiService.getOperationResult(
@@ -443,7 +446,10 @@ export default class AssetOperationsManager {
             publishOperationId,
         );
 
-        if (publishOperationResult.status !== OPERATION_STATUSES.COMPLETED && !publishOperationResult.minAcksReached) {
+        if (
+            publishOperationResult.status !== OPERATION_STATUSES.COMPLETED &&
+            !publishOperationResult.minAcksReached
+        ) {
             return {
                 datasetRoot,
                 operation: {
@@ -897,6 +903,7 @@ export default class AssetOperationsManager {
             tokenAmount,
             authToken,
             payer,
+            batchSize,
         } = this.inputService.getAssetUpdateArguments(options);
 
         this.validationService.validateAssetUpdate(
@@ -911,6 +918,7 @@ export default class AssetOperationsManager {
             tokenAmount,
             authToken,
             payer,
+            batchSize,
         );
 
         const { tokenId } = resolveUAL(UAL);
@@ -984,6 +992,7 @@ export default class AssetOperationsManager {
             kcTools.calculateNumberOfChunks(dataset),
             tokenAmountInWei,
             blockchain,
+            batchSize,
         );
 
         return {
