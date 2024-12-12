@@ -13,18 +13,6 @@ export default class InputService {
         this.config = config;
     }
 
-    getBidSuggestionArguments(options) {
-        return {
-            blockchain: this.getBlockchain(options),
-            endpoint: this.getEndpoint(options),
-            port: this.getPort(options),
-            epochsNum: this.getEpochsNum(options),
-            hashFunctionId: this.getHashFunctionId(options),
-            authToken: this.getAuthToken(options),
-            bidSuggestionRange: this.getBidSuggestionRange(options),
-        };
-    }
-
     getAssetCreateArguments(options) {
         return {
             blockchain: this.getBlockchain(options),
@@ -40,7 +28,10 @@ export default class InputService {
             authToken: this.getAuthToken(options),
             paranetUAL: this.getParanetUAL(options),
             payer: this.getPayer(options),
-            minimumNumberOfNodeReplications: this.getMinimumNumberOfNodeReplications(options) ?? 5,
+            minimumNumberOfFinalizationConfirmations:
+                this.getMinimumNumberOfFinalizationConfirmations(options) ?? 3,
+            minimumNumberOfNodeReplications: this.getMinimumNumberOfNodeReplications(options),
+            batchSize: this.getBatchSize(options),
         };
     }
 
@@ -79,6 +70,7 @@ export default class InputService {
             paranetUAL: this.getParanetUAL(options),
             metadata: this.getIncludeMetadata(options),
             subjectUAL: this.getSubjectUAL(options),
+            batchSize: this.getBatchSize(options),
         };
     }
 
@@ -94,6 +86,7 @@ export default class InputService {
             tokenAmount: this.getTokenAmount(options),
             authToken: this.getAuthToken(options),
             payer: this.getPayer(options),
+            batchSize: this.getBatchSize(options),
         };
     }
 
@@ -245,6 +238,20 @@ export default class InputService {
         return options.graphState ?? this.config.graphState ?? DEFAULT_PARAMETERS.GRAPH_STATE;
     }
 
+    getPublishFinalityArguments(options) {
+        return {
+            blockchain: this.getBlockchain(options),
+            endpoint: this.getEndpoint(options),
+            port: this.getPort(options),
+            maxNumberOfRetries: this.getMaxNumberOfRetries(options),
+            frequency: this.getFrequency(options),
+            authToken: this.getAuthToken(options),
+            minimumNumberOfFinalizationConfirmations:
+                this.getMinimumNumberOfFinalizationConfirmations(options) ?? 3,
+            batchSize: this.getBatchSize(options),
+        };
+    }
+
     getEndpoint(options) {
         return options.endpoint ?? this.config.endpoint ?? null;
     }
@@ -325,16 +332,20 @@ export default class InputService {
         return options.auth?.token ?? this.config?.auth?.token ?? null;
     }
 
-    getBidSuggestionRange(options) {
-        return options.bidSuggestionRange ?? LOW_BID_SUGGESTION;
-    }
-
     getParanetUAL(options) {
         return options.paranetUAL ?? this.config.paranetUAL ?? null;
     }
 
     getPayer(options) {
         return options.payer ?? this.config.payer ?? null;
+    }
+
+    getMinimumNumberOfFinalizationConfirmations(options) {
+        return (
+            options.minimumNumberOfFinalizationConfirmations ??
+            this.config.minimumNumberOfFinalizationConfirmations ??
+            null
+        );
     }
 
     getMinimumNumberOfNodeReplications(options) {
@@ -403,5 +414,9 @@ export default class InputService {
 
     getAssertionCachedLocally(options) {
         return options.assertionCachedLocally ?? false;
+    }
+
+    getBatchSize(options) {
+        return options.batchSize ?? undefined;
     }
 }

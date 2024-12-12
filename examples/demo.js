@@ -19,6 +19,7 @@ const DkgClient = new DKG({
     maxNumberOfRetries: 30,
     frequency: 2,
     contentType: 'all',
+    nodeApiVersion: '/v1',
 });
 
 function divider() {
@@ -89,21 +90,84 @@ function divider() {
 
     divider();
 
-    const createAssetResult = await DkgClient.asset.create(content, {
+    console.time('Publish (1 replication, 3 finalizations)')
+    const result0 = await DkgClient.asset.create(content, {
         epochsNum: 2,
         tokenAmount: '100',
+        minimumNumberOfFinalizationConfirmations: 3,
+        minimumNumberOfNodeReplications: 1,
     });
-    console.log('======================== ASSET CREATED');
-    console.log(createAssetResult);
+    console.timeEnd('Publish (1 replication, 3 finalizations)')
+
+    console.log(JSON.stringify(result0));
 
     divider();
 
-    const createCollectionResult = await DkgClient.graph.create(content, {
+    console.time('Publish (1 replication, 1 finalization)')
+    const result1 = await DkgClient.asset.create(content, {
         epochsNum: 2,
         tokenAmount: '100',
+        minimumNumberOfFinalizationConfirmations: 1,
+        minimumNumberOfNodeReplications: 1,
     });
-    console.log('======================== ASSET CREATED');
-    console.log(createCollectionResult);
+    console.timeEnd('Publish (1 replication, 1 finalization)')
+
+    console.log(JSON.stringify(result1));
 
     divider();
+
+    console.time('Publish (3 replications, 3 finalizations)')
+    const result2 = await DkgClient.asset.create(content, {
+        epochsNum: 2,
+        tokenAmount: '100',
+        minimumNumberOfFinalizationConfirmations: 3,
+        minimumNumberOfNodeReplications: 3,
+    });
+    console.timeEnd('Publish (3 replications, 3 finalizations)')
+
+    console.log(JSON.stringify(result2));
+
+    divider();
+
+    console.time('Publish (5 replications, 5 finalizations)')
+    const result3 = await DkgClient.asset.create(content, {
+        epochsNum: 2,
+        tokenAmount: '100',
+        minimumNumberOfFinalizationConfirmations: 5,
+        minimumNumberOfNodeReplications: 5,
+    });
+    console.timeEnd('Publish (5 replications, 5 finalizations)')
+
+    console.log(JSON.stringify(result3));
+
+    // divider();
+
+    // const createCollectionResult = await DkgClient.graph.create(content, {
+    //     epochsNum: 2,
+    //     tokenAmount: '100',
+    //     minimumNumberOfFinalizationConfirmations: 1,
+    // });
+    // console.log('======================== ASSET CREATED');
+    // console.log(createCollectionResult);
+
+    // divider();
+
+    // const publishFinalityResult = await DkgClient.graph.publishFinality(createAssetResult.UAL);
+    // console.log('======================== ASSET FINALITY');
+    // console.log(publishFinalityResult);
+
+    // const getOperationResult = await DkgClient.graph.get(createCollectionResult.UAL);
+    // console.log('======================== ASSET GET');
+    // console.log(getOperationResult);
+
+    // divider();
+
+    // const queryOperationResult = await DkgClient.graph.query(
+    //     `select ?s ?p ?o where { ?s ?p ?o }`,
+    //     'SELECT',
+    // );
+    // console.log('======================== ASSET QUERY');
+    // console.log(queryOperationResult);
+
+    // divider();
 })();

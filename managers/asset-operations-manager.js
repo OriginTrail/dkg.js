@@ -12,6 +12,8 @@ import {
     ZERO_ADDRESS,
     CHUNK_BYTE_SIZE,
     OPERATION_DELAYS,
+    PRIVATE_RESOURCE_PREDICATE,
+    PRIVATE_HASH_SUBJECT_PREFIX,
     PRIVATE_ASSERTION_PREDICATE,
     PRIVATE_RESOURCE_PREDICATE,
     PRIVATE_HASH_SUBJECT_PREFIX,
@@ -302,7 +304,9 @@ export default class AssetOperationsManager {
             authToken,
             paranetUAL,
             payer,
+            minimumNumberOfFinalizationConfirmations,
             minimumNumberOfNodeReplications,
+            batchSize,
         } = this.inputService.getAssetCreateArguments(options);
 
         this.validationService.validateAssetCreate(
@@ -320,7 +324,9 @@ export default class AssetOperationsManager {
             authToken,
             paranetUAL,
             payer,
+            minimumNumberOfFinalizationConfirmations,
             minimumNumberOfNodeReplications,
+            batchSize,
         );
 
         let dataset = {};
@@ -344,6 +350,7 @@ export default class AssetOperationsManager {
 
         if (dataset.private?.length) {
             dataset.private = kcTools.generateMissingIdsForBlankNodes(dataset.private);
+
             const privateTriplesGrouped = kcTools.groupNquadsBySubject(dataset.private, true);
 
             const privateRoot = kcTools.calculateMerkleRoot(privateTriplesGrouped.flat());
@@ -429,6 +436,8 @@ export default class AssetOperationsManager {
             dataset,
             blockchain.name,
             hashFunctionId,
+            minimumNumberOfNodeReplications,
+            batchSize,
         );
 
         const publishOperationResult = await this.nodeApiService.getOperationResult(
@@ -441,7 +450,10 @@ export default class AssetOperationsManager {
             publishOperationId,
         );
 
-        if (publishOperationResult.status !== OPERATION_STATUSES.COMPLETED) {
+        if (
+            publishOperationResult.status !== OPERATION_STATUSES.COMPLETED &&
+            !publishOperationResult.minAcksReached
+        ) {
             return {
                 datasetRoot,
                 operation: {
@@ -452,17 +464,7 @@ export default class AssetOperationsManager {
 
         const estimatedPublishingCost =
             tokenAmount ??
-            (await this.nodeApiService.getBidSuggestion(
-                endpoint,
-                port,
-                authToken,
-                blockchain.name,
-                epochsNum,
-                datasetSize,
-                contentAssetStorageAddress,
-                datasetRoot,
-                hashFunctionId,
-            ));
+            (await this.blockchainService.getStakeWeightedAverageAsk()) * epochsNum * datasetSize;
 
         let tokenId;
         let mintKnowledgeAssetReceipt;
@@ -512,44 +514,35 @@ export default class AssetOperationsManager {
 
         const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, tokenId);
 
-        const finalitySleepDelay = OPERATION_DELAYS.FINALITY;
-
-        await sleepForMilliseconds(finalitySleepDelay);
-
-        const finalityOperationId = await this.nodeApiService.finality(
-            endpoint,
-            port,
-            authToken,
-            blockchain.name,
-            UAL,
-            minimumNumberOfNodeReplications,
-        );
-
-        let finalityOperationResult = null;
-
-        // TODO: ADD OPTIONAL WAITING FOR FINALITY
-        try {
-            finalityOperationResult = await this.nodeApiService.getOperationResult(
+        let finalityStatusResult = 0;
+        if (minimumNumberOfFinalizationConfirmations > 0) {
+            finalityStatusResult = await this.nodeApiService.finalityStatus(
                 endpoint,
                 port,
                 authToken,
-                OPERATIONS.FINALITY,
+                UAL,
+                minimumNumberOfFinalizationConfirmations,
                 maxNumberOfRetries,
                 frequency,
-                finalityOperationId,
             );
-        } catch (error) {
-            console.error(`Attempt failed:`, error.message);
         }
 
         return {
             UAL,
             datasetRoot,
-            signatures: publishOperationResult.data,
+            publisherNodeSignature: publishOperationResult.data.publisherNodeSignature,
+            signatures: publishOperationResult.data.signatures,
             operation: {
                 mintKnowledgeAsset: mintKnowledgeAssetReceipt,
                 publish: getOperationStatusObject(publishOperationResult, publishOperationId),
-                finality: finalityOperationResult,
+                finality: {
+                    status:
+                        finalityStatusResult >= minimumNumberOfFinalizationConfirmations
+                            ? 'FINALIZED'
+                            : 'NOT FINALIZED',
+                },
+                numberOfConfirmations: finalityStatusResult,
+                requiredConfirmations: minimumNumberOfFinalizationConfirmations,
             },
         };
     }
@@ -735,39 +728,17 @@ export default class AssetOperationsManager {
             blockchain,
         );
 
-        const { tokenId, contract } = resolveUAL(UAL);
+        const { tokenId } = resolveUAL(UAL);
 
         let tokenAmountInWei;
 
         if (tokenAmount != null) {
             tokenAmountInWei = tokenAmount;
         } else {
-            const endpoint = this.inputService.getEndpoint(options);
-            const port = this.inputService.getPort(options);
-            const authToken = this.inputService.getAuthToken(options);
-            const hashFunctionId = this.inputService.getHashFunctionId(options);
-
-            const latestFinalizedState = await this.blockchainService.getLatestAssertionId(
-                tokenId,
-                blockchain,
-            );
-
-            const latestFinalizedStateSize = await this.blockchainService.getAssertionSize(
-                latestFinalizedState,
-                blockchain,
-            );
-
-            tokenAmountInWei = await this.nodeApiService.getBidSuggestion(
-                endpoint,
-                port,
-                authToken,
-                blockchain.name,
-                epochsNumber,
-                latestFinalizedStateSize,
-                contract,
-                latestFinalizedState,
-                hashFunctionId,
-            );
+            tokenAmountInWei =
+                (await this.blockchainService.getStakeWeightedAverageAsk()) *
+                epochsNumber *
+                datasetSize; // need to get dataset size somewhere
         }
 
         const receipt = await this.blockchainService.extendAssetStoringPeriod(
@@ -848,16 +819,7 @@ export default class AssetOperationsManager {
         };
     }
 
-    async _getUpdateBidSuggestion(
-        UAL,
-        blockchain,
-        endpoint,
-        port,
-        authToken,
-        datasetRoot,
-        size,
-        hashFunctionId,
-    ) {
+    async _getUpdateBidSuggestion(UAL, blockchain, size) {
         const { contract, tokenId } = resolveUAL(UAL);
         const firstDatasetRoot = await this.blockchainService.getAssertionIdByIndex(
             tokenId,
@@ -882,17 +844,8 @@ export default class AssetOperationsManager {
 
         const epochsLeft = agreementData.epochsNumber - currentEpoch;
 
-        const bidSuggestion = await this.nodeApiService.getBidSuggestion(
-            endpoint,
-            port,
-            authToken,
-            blockchain.name,
-            epochsLeft,
-            size,
-            contract,
-            datasetRoot,
-            hashFunctionId,
-        );
+        const bidSuggestion =
+            (await this.blockchainService.getStakeWeightedAverageAsk()) * epochsLeft * size;
 
         const tokenAmountInWei =
             BigInt(bidSuggestion) -
@@ -955,6 +908,7 @@ export default class AssetOperationsManager {
             tokenAmount,
             authToken,
             payer,
+            batchSize,
         } = this.inputService.getAssetUpdateArguments(options);
 
         this.validationService.validateAssetUpdate(
@@ -969,6 +923,7 @@ export default class AssetOperationsManager {
             tokenAmount,
             authToken,
             payer,
+            batchSize,
         );
 
         const { tokenId } = resolveUAL(UAL);
@@ -1031,16 +986,7 @@ export default class AssetOperationsManager {
         if (tokenAmount != null) {
             tokenAmountInWei = tokenAmount;
         } else {
-            tokenAmountInWei = await this._getUpdateBidSuggestion(
-                UAL,
-                blockchain,
-                endpoint,
-                port,
-                authToken,
-                datasetRoot,
-                datasetSize,
-                hashFunctionId,
-            );
+            tokenAmountInWei = await this._getUpdateBidSuggestion(UAL, blockchain, datasetSize);
         }
 
         const updateKnowledgeAssetReceipt = await this.blockchainService.updateAsset(
@@ -1051,6 +997,7 @@ export default class AssetOperationsManager {
             kcTools.calculateNumberOfChunks(dataset),
             tokenAmountInWei,
             blockchain,
+            batchSize,
         );
 
         return {

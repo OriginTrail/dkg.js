@@ -73,7 +73,9 @@ export default class ValidationService {
         authToken,
         paranetUAL,
         payer,
+        minimumNumberOfFinalizationConfirmations,
         minimumNumberOfNodeReplications,
+        batchSize,
     ) {
         this.validateContent(content);
         this.validateBlockchain(blockchain, OPERATIONS.PUBLISH);
@@ -89,7 +91,11 @@ export default class ValidationService {
         this.validateAuthToken(authToken);
         this.validateParanetUAL(paranetUAL);
         this.validatePayer(payer);
+        this.validateMinimumNumberOfFinalizationConfirmations(
+            minimumNumberOfFinalizationConfirmations,
+        );
         this.validateMinimumNumberOfNodeReplications(minimumNumberOfNodeReplications);
+        this.validateBatchSize(batchSize);
     }
 
     validateAssetGet(
@@ -107,6 +113,7 @@ export default class ValidationService {
         outputFormat,
         authToken,
         subjectUAL,
+        batchSize,
     ) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain, OPERATIONS.GET);
@@ -122,6 +129,7 @@ export default class ValidationService {
         this.validateOutputFormat(outputFormat);
         this.validateAuthToken(authToken);
         this.validateSubjectUAL(subjectUAL);
+        this.validateBatchSize(batchSize);
     }
 
     validateAssetUpdate(
@@ -136,6 +144,7 @@ export default class ValidationService {
         tokenAmount,
         authToken,
         payer,
+        batchSize,
     ) {
         this.validateContent(content);
         this.validateBlockchain(blockchain, OPERATIONS.UPDATE);
@@ -148,6 +157,7 @@ export default class ValidationService {
         this.validateTokenAmount(tokenAmount);
         this.validateAuthToken(authToken);
         this.validatePayer(payer);
+        this.validateBatchSize(batchSize);
     }
 
     validateAssetTransfer(UAL, newOwner, blockchain) {
@@ -546,7 +556,22 @@ export default class ValidationService {
         this.validateAddress(payer);
     }
 
+    validateMinimumNumberOfFinalizationConfirmations(minimumNumberOfFinalizationConfirmations) {
+        this.validateRequiredParam(
+            'minimumNumberOfFinalizationConfirmations',
+            minimumNumberOfFinalizationConfirmations,
+        );
+        this.validateParamType(
+            'minimumNumberOfFinalizationConfirmations',
+            minimumNumberOfFinalizationConfirmations,
+            'number',
+        );
+    }
+
     validateMinimumNumberOfNodeReplications(minimumNumberOfNodeReplications) {
+        // null is valid
+        if (minimumNumberOfNodeReplications === null) return;
+
         this.validateRequiredParam(
             'minimumNumberOfNodeReplications',
             minimumNumberOfNodeReplications,
@@ -593,10 +618,6 @@ export default class ValidationService {
     validateNewOwner(newOwner) {
         this.validateRequiredParam('newOwner', newOwner);
         this.validateParamType('newOwner', newOwner, 'string');
-    }
-
-    validateGetBidSuggestion(bidSuggestionRange) {
-        this.validateBidSuggestionRange(bidSuggestionRange);
     }
 
     validateBidSuggestionRange(bidSuggestionRange) {
@@ -735,5 +756,33 @@ export default class ValidationService {
                 throw new Error(`Label at index ${index} must be a string.`);
             }
         });
+    }
+
+    validatePublishFinality(
+        endpoint,
+        port,
+        maxNumberOfRetries,
+        frequency,
+        minimumNumberOfFinalizationConfirmations,
+        authToken,
+        batchSize,
+    ) {
+        this.validateEndpoint(endpoint);
+        this.validatePort(port);
+        this.validateMaxNumberOfRetries(maxNumberOfRetries);
+        this.validateFrequency(frequency);
+        this.validateAuthToken(authToken);
+        this.validateMinimumNumberOfFinalizationConfirmations(
+            minimumNumberOfFinalizationConfirmations,
+        );
+        this.validateBatchSize(batchSize);
+    }
+
+    validateBatchSize(batchSize) {
+        if (batchSize === undefined) return;
+        this.validateRequiredParam('batchSize', batchSize);
+        this.validateParamType('batchSize', batchSize, 'number');
+
+        if (batchSize <= 0) throw Error('Invalid batch size.');
     }
 }

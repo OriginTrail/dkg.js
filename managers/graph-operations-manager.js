@@ -1,13 +1,16 @@
 import { kaTools, kcTools } from 'assertion-tools';
+import { ethers } from 'ethers';
 import {
     OPERATIONS,
     GET_OUTPUT_FORMATS,
     CHUNK_BYTE_SIZE,
     OPERATION_STATUSES,
     OPERATION_DELAYS,
+    PRIVATE_RESOURCE_PREDICATE,
+    PRIVATE_HASH_SUBJECT_PREFIX,
+    PRIVATE_ASSERTION_PREDICATE,
 } from '../constants.js';
 import {
-    deriveRepository,
     getOperationStatusObject,
     resolveUAL,
     deriveUAL,
@@ -53,6 +56,7 @@ export default class GraphOperationsManager {
             hashFunctionId,
             paranetUAL,
             subjectUAL,
+            batchSize,
         } = this.inputService.getAssetGetArguments(options);
 
         this.validationService.validateAssetGet(
@@ -70,6 +74,7 @@ export default class GraphOperationsManager {
             outputFormat,
             authToken,
             subjectUAL,
+            batchSize,
         );
 
         const getOperationId = await this.nodeApiService.get(
@@ -83,6 +88,7 @@ export default class GraphOperationsManager {
             contentType,
             hashFunctionId,
             paranetUAL,
+            batchSize,
         );
 
         const getOperationResult = await this.nodeApiService.getOperationResult(
@@ -233,7 +239,6 @@ export default class GraphOperationsManager {
      */
     async create(content, options = {}, stepHooks = emptyHooks) {
         this.validationService.validateJsonldOrNquads(content);
-
         const {
             blockchain,
             endpoint,
@@ -248,6 +253,7 @@ export default class GraphOperationsManager {
             authToken,
             paranetUAL,
             payer,
+            minimumNumberOfFinalizationConfirmations,
             minimumNumberOfNodeReplications,
         } = this.inputService.getAssetCreateArguments(options);
 
@@ -266,26 +272,100 @@ export default class GraphOperationsManager {
             authToken,
             paranetUAL,
             payer,
+            minimumNumberOfFinalizationConfirmations,
             minimumNumberOfNodeReplications,
         );
 
-        let dataset;
-
+        let dataset = {};
         if (typeof content === 'string') {
-            dataset = content
-                .split('\n')
-                .map((line) => line.trimStart().trimEnd())
-                .filter((line) => line.trim() !== '');
+            dataset.public = this.processContent(content);
+        } else if (
+            typeof content.public === 'string' ||
+            (!content.public && content.private && typeof content.private === 'string')
+        ) {
+            if (content.public) {
+                dataset.public = this.processContent(content.public);
+            } else {
+                dataset.public = [];
+            }
+            if (content.private && typeof content.private === 'string') {
+                dataset.private = this.processContent(content.private);
+            }
         } else {
             dataset = await kcTools.formatDataset(content);
         }
 
-        const numberOfChunks = kcTools.calculateNumberOfChunks(dataset, CHUNK_BYTE_SIZE);
+        if (dataset.private?.length) {
+            dataset.private = kcTools.generateMissingIdsForBlankNodes(dataset.private);
 
+            const privateTriplesGrouped = kcTools.groupNquadsBySubject(dataset.private, true);
+            dataset.private = privateTriplesGrouped.flat();
+            const privateRoot = kcTools.calculateMerkleRoot(dataset.private);
+            dataset.public.push(
+                `<${kaTools.generateNamedNode()}> <${PRIVATE_ASSERTION_PREDICATE}> "${privateRoot}" .`,
+            );
+
+            if (dataset.public.length) {
+                dataset.public = kcTools.generateMissingIdsForBlankNodes(dataset.public);
+            }
+            let publicTriplesGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
+
+            const mergedTriples = [];
+            let publicIndex = 0;
+            let privateIndex = 0;
+            const publicLength = publicTriplesGrouped.length;
+            const privateLength = privateTriplesGrouped.length;
+
+            // Merge public and private hashes triples in a single pass
+            while (publicIndex < publicLength && privateIndex < privateLength) {
+                const publicGroup = publicTriplesGrouped[publicIndex];
+                const [publicSubject] = publicGroup[0].split(' ');
+                const [privateSubject] = privateTriplesGrouped[privateIndex][0].split(' ');
+
+                const compare = publicSubject.localeCompare(privateSubject);
+                if (compare < 0) {
+                    // Public subject comes before private subject
+                    mergedTriples.push(publicGroup);
+                    publicIndex++;
+                } else if (compare > 0) {
+                    // Private subject comes before public subject
+                    mergedTriples.push([this.generatePrivateRepresentation(privateSubject)]);
+                    privateIndex++;
+                } else {
+                    // Subjects match, merge triples
+                    this.insertTripleSorted(
+                        publicGroup,
+                        this.generatePrivateRepresentation(privateSubject),
+                    );
+                    mergedTriples.push(publicGroup);
+                    publicIndex++;
+                    privateIndex++;
+                }
+            }
+
+            while (publicIndex < publicLength) {
+                mergedTriples.push(...publicTriplesGrouped[publicIndex]);
+                publicIndex++;
+            }
+
+            // Append any remaining private triples
+            while (privateIndex < privateLength) {
+                const [privateSubject] = privateTriplesGrouped[privateIndex][0].split(' ');
+                mergedTriples.push([this.generatePrivateRepresentation(privateSubject)]);
+                privateIndex++;
+            }
+            // Update the public dataset with the merged triples
+            dataset.public = mergedTriples.flat();
+        } else {
+            // If there's no private dataset, ensure public is grouped correctly
+            dataset.public = kcTools.groupNquadsBySubject(dataset.public, true).flat();
+        }
+
+        const numberOfChunks = kcTools.calculateNumberOfChunks(dataset.public, CHUNK_BYTE_SIZE);
         const datasetSize = numberOfChunks * CHUNK_BYTE_SIZE;
 
         this.validationService.validateAssertionSizeInBytes(datasetSize);
-        const datasetRoot = kcTools.calculateMerkleRoot(dataset);
+        const datasetRoot = kcTools.calculateMerkleRoot(dataset.public);
 
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
             'ContentAssetStorage',
@@ -300,6 +380,7 @@ export default class GraphOperationsManager {
             dataset,
             blockchain.name,
             hashFunctionId,
+            minimumNumberOfNodeReplications,
         );
 
         const publishOperationResult = await this.nodeApiService.getOperationResult(
@@ -323,17 +404,7 @@ export default class GraphOperationsManager {
 
         const estimatedPublishingCost =
             tokenAmount ??
-            (await this.nodeApiService.getBidSuggestion(
-                endpoint,
-                port,
-                authToken,
-                blockchain.name,
-                epochsNum,
-                datasetSize,
-                contentAssetStorageAddress,
-                datasetRoot,
-                hashFunctionId,
-            ));
+            (await this.blockchainService.getStakeWeightedAverageAsk()) * epochsNum * datasetSize;
 
         let tokenId;
         let mintKnowledgeAssetReceipt;
@@ -344,8 +415,8 @@ export default class GraphOperationsManager {
                     {
                         publishOperationId,
                         datasetRoot,
-                        assertionSize: datasetSize,
-                        triplesNumber: kaTools.getAssertionTriplesNumber(dataset), // todo
+                        datasetSize,
+                        triplesNumber: kaTools.getAssertionTriplesNumber(dataset.public), // todo
                         chunksNumber: numberOfChunks,
                         epochsNum,
                         tokenAmount: estimatedPublishingCost,
@@ -365,7 +436,7 @@ export default class GraphOperationsManager {
                     {
                         publishOperationId,
                         datasetRoot,
-                        assertionSize: datasetSize,
+                        datasetSize,
                         triplesNumber: kaTools.getAssertionTriplesNumber(dataset), // todo
                         chunksNumber: kcTools.calculateNumberOfChunks(dataset),
                         epochsNum,
@@ -387,41 +458,37 @@ export default class GraphOperationsManager {
 
         await sleepForMilliseconds(finalitySleepDelay);
 
-        const finalityOperationId = await this.nodeApiService.finality(
+        const finalityStatusResult = await this.nodeApiService.finalityStatus(
             endpoint,
             port,
             authToken,
-            blockchain.name,
             UAL,
-            minimumNumberOfNodeReplications,
         );
-
-        let finalityOperationResult = null;
-
-        // TO DO: ADD OPTIONAL WAITING FOR FINALITY
-        try {
-            finalityOperationResult = await this.nodeApiService.getOperationResult(
-                endpoint,
-                port,
-                authToken,
-                OPERATIONS.FINALITY,
-                maxNumberOfRetries,
-                frequency,
-                finalityOperationId,
-            );
-        } catch (error) {
-            console.error(`Attempt failed:`, error.message);
-        }
 
         return {
             UAL,
             datasetRoot,
+            signatures: publishOperationResult.data,
             operation: {
                 mintKnowledgeAsset: mintKnowledgeAssetReceipt,
                 publish: getOperationStatusObject(publishOperationResult, publishOperationId),
-                finality: finalityOperationResult,
+                finality: {
+                    status:
+                        finalityStatusResult >= minimumNumberOfFinalizationConfirmations
+                            ? 'FINALIZED'
+                            : 'NOT FINALIZED',
+                },
+                numberOfConfirmations: finalityStatusResult,
+                requiredConfirmations: minimumNumberOfFinalizationConfirmations,
             },
         };
+    }
+
+    generatePrivateRepresentation(privateSubject) {
+        return `${`<${PRIVATE_HASH_SUBJECT_PREFIX}${ethers.solidityPackedSha256(
+            ['string'],
+            [privateSubject.slice(1, -1)],
+        )}>`} <${PRIVATE_RESOURCE_PREDICATE}> <${kaTools.generateNamedNode()}> .`;
     }
 
     /**
@@ -521,17 +588,7 @@ export default class GraphOperationsManager {
 
         const estimatedPublishingCost =
             tokenAmount ??
-            (await this.nodeApiService.getBidSuggestion(
-                endpoint,
-                port,
-                authToken,
-                blockchain.name,
-                epochsNum,
-                datasetSize,
-                contentAssetStorageAddress,
-                datasetRoot,
-                hashFunctionId,
-            ));
+            (await this.blockchainService.getStakeWeightedAverageAsk()) * epochsNum * datasetSize;
 
         const { tokenId, receipt: mintKnowledgeAssetReceipt } =
             await this.blockchainService.createAsset(
@@ -578,5 +635,83 @@ export default class GraphOperationsManager {
                 ),
             },
         };
+    }
+
+    /**
+     * Checks whether KA is finalized on the node.
+     * @async
+     * @param {string} UAL - The Universal Asset Locator, representing asset or collection.
+     */
+    async publishFinality(UAL, options = {}) {
+        const {
+            blockchain,
+            endpoint,
+            port,
+            maxNumberOfRetries,
+            frequency,
+            minimumNumberOfFinalizationConfirmations,
+            authToken,
+            batchSize,
+        } = this.inputService.getPublishFinalityArguments(options);
+
+        // blockchain not mandatory so it's not validated
+        this.validationService.validatePublishFinality(
+            endpoint,
+            port,
+            maxNumberOfRetries,
+            frequency,
+            minimumNumberOfFinalizationConfirmations,
+            authToken,
+            batchSize,
+        );
+
+        const finalityStatusResult = await this.nodeApiService.finalityStatus(
+            endpoint,
+            port,
+            authToken,
+            UAL,
+        );
+
+        if (finalityStatusResult === 0) {
+            const finalityOperationId = await this.nodeApiService.ask(
+                endpoint,
+                port,
+                authToken,
+                blockchain.name,
+                UAL,
+                minimumNumberOfFinalizationConfirmations,
+                batchSize,
+            );
+
+            try {
+                return this.nodeApiService.getOperationResult(
+                    endpoint,
+                    port,
+                    authToken,
+                    OPERATIONS.FINALITY,
+                    maxNumberOfRetries,
+                    frequency,
+                    finalityOperationId,
+                );
+            } catch (error) {
+                console.error(`Finality attempt failed:`, error.message);
+                return {
+                    status: 'NOT FINALIZED',
+                    error: error.message,
+                };
+            }
+        } else if (finalityStatusResult >= minimumNumberOfFinalizationConfirmations) {
+            return {
+                status: 'FINALIZED',
+                numberOfConfirmations: finalityStatusResult,
+                requiredConfirmations: minimumNumberOfFinalizationConfirmations,
+            };
+        } else {
+            return {
+                status: 'NOT FINALIZED',
+                numberOfConfirmations: finalityStatusResult,
+                requiredConfirmations: minimumNumberOfFinalizationConfirmations,
+            };
+        }
     }
 }
