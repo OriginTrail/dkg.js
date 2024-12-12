@@ -220,18 +220,47 @@ export default class HttpService {
         }
     }
 
-    async finalityStatus(endpoint, port, authToken, ual) {
-        try {
-            const response = await axios({
-                method: 'get',
-                url: `${this.getBaseUrl(endpoint, port)}/finality`,
-                params: { ual },
-                headers: this.prepareRequestConfig(authToken),
-            });
-            return response.data.finality;
-        } catch (error) {
-            throw Error(`Unable to query: ${error.message}`);
-        }
+    async finalityStatus(
+        endpoint,
+        port,
+        authToken,
+        ual,
+        requiredConfirmations,
+        maxNumberOfRetries,
+        frequency
+    ) {
+        let retries = 0;
+        let finality = 0;
+    
+        const axios_config = {
+            method: 'get',
+            url: `${this.getBaseUrl(endpoint, port)}/finality`,
+            params: { ual },
+            headers: this.prepareRequestConfig(authToken),
+        };
+    
+        do {
+            if (retries > maxNumberOfRetries) {
+                throw Error(
+                    `Unable to achieve required confirmations. Max number of retries (${maxNumberOfRetries}) reached.`
+                );
+            }
+    
+            retries += 1;
+    
+            // eslint-disable-next-line no-await-in-loop
+            await sleepForMilliseconds(frequency * 1000);
+    
+            try {
+                // eslint-disable-next-line no-await-in-loop
+                const response = await axios(axios_config);
+                finality = response.data.finality || 0;
+            } catch (e) {
+                finality = 0;
+            }
+        } while (finality < requiredConfirmations && retries <= maxNumberOfRetries);
+    
+        return finality;
     }
 
     async getOperationResult(
@@ -243,7 +272,6 @@ export default class HttpService {
         frequency,
         operationId,
     ) {
-        await sleepForMilliseconds(500);
         let response = {
             status: OPERATION_STATUSES.PENDING,
         };
@@ -276,7 +304,8 @@ export default class HttpService {
             }
         } while (
             response.data.status !== OPERATION_STATUSES.COMPLETED &&
-            response.data.status !== OPERATION_STATUSES.FAILED
+            response.data.status !== OPERATION_STATUSES.FAILED &&
+            !response.data.minAcksReached
         );
         return response.data;
     }

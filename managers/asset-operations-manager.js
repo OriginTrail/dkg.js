@@ -443,7 +443,7 @@ export default class AssetOperationsManager {
             publishOperationId,
         );
 
-        if (publishOperationResult.status !== OPERATION_STATUSES.COMPLETED) {
+        if (publishOperationResult.status !== OPERATION_STATUSES.COMPLETED && !publishOperationResult.minAcksReached) {
             return {
                 datasetRoot,
                 operation: {
@@ -504,21 +504,23 @@ export default class AssetOperationsManager {
 
         const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, tokenId);
 
-        const finalitySleepDelay = OPERATION_DELAYS.FINALITY;
-
-        await sleepForMilliseconds(finalitySleepDelay);
-
-        const finalityStatusResult = await this.nodeApiService.finalityStatus(
-            endpoint,
-            port,
-            authToken,
-            UAL,
-        );
+        let finalityStatusResult = 0;
+        if (minimumNumberOfFinalizationConfirmations > 0) {
+            finalityStatusResult = await this.nodeApiService.finalityStatus(
+                endpoint,
+                port,
+                authToken,
+                UAL,
+                minimumNumberOfFinalizationConfirmations,
+                maxNumberOfRetries,
+                frequency,
+            );
+        }
 
         return {
             UAL,
             datasetRoot,
-            signatures: publishOperationResult.data,
+            signatures: publishOperationResult.data.signatures,
             operation: {
                 mintKnowledgeAsset: mintKnowledgeAssetReceipt,
                 publish: getOperationStatusObject(publishOperationResult, publishOperationId),
