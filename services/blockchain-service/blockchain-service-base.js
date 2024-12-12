@@ -23,6 +23,8 @@ const ParanetIncentivesPoolFactoryAbi = require('dkg-evm-module/abi/ParanetIncen
 const ParanetNeuroIncentivesPoolAbi = require('dkg-evm-module/abi/ParanetNeuroIncentivesPool.json');
 const ParanetKnowledgeMinersRegistryAbi = require('dkg-evm-module/abi/ParanetKnowledgeMinersRegistry.json');
 const IdentityStorageAbi = require('dkg-evm-module/abi/IdentityStorage.json');
+const KnowledgeCollectionAbi = require('dkg-evm-module/abi/KnowledgeCollection.json');
+
 // const ShardingTableStorageAbi = require('dkg-evm-module/abi/ShardingTableStorage.sol.json');
 
 export default class BlockchainServiceBase {
@@ -44,6 +46,7 @@ export default class BlockchainServiceBase {
         this.abis.ParanetNeuroIncentivesPool = ParanetNeuroIncentivesPoolAbi;
         this.abis.ParanetKnowledgeMinersRegistry = ParanetKnowledgeMinersRegistryAbi;
         this.abis.IdentityStorage = IdentityStorageAbi;
+        this.abis.KnowledgeCollection = KnowledgeCollectionAbi;
         // this.abis.ShardingTableStorageAbi = ShardingTableStorageAbi;
 
         this.abis.ContentAsset.filter((obj) => obj.type === 'event').forEach((event) => {
@@ -385,9 +388,44 @@ export default class BlockchainServiceBase {
         };
     }
 
+    async increaseKnowledgeCollectionAllowance(sender, tokenAmount, blockchain) {
+        const knowledgeCollectionAddress = await this.getContractAddress(
+            'KnowledgeCollection',
+            blockchain,
+        );
+
+        const allowance = await this.callContractFunction(
+            'Token',
+            'allowance',
+            [sender, knowledgeCollectionAddress],
+            blockchain,
+        );
+
+        const allowanceGap = BigInt(tokenAmount) - BigInt(allowance);
+
+        if (allowanceGap > 0) {
+            await this.executeContractFunction(
+                'Token',
+                'increaseAllowance',
+                [knowledgeCollectionAddress, allowanceGap],
+                blockchain,
+            );
+
+            return {
+                allowanceIncreased: true,
+                allowanceGap,
+            };
+        }
+
+        return {
+            allowanceIncreased: false,
+            allowanceGap,
+        };
+    }
+
     // Knowledge assets operations
 
-    async createAsset(
+    async createKnowledgeCollection(
         requestData,
         paranetKaContract,
         paranetTokenId,
@@ -400,20 +438,14 @@ export default class BlockchainServiceBase {
         let allowanceGap = 0;
 
         try {
-            serviceAgreementV1Address = await this.getContractAddress(
-                'ServiceAgreementV1',
-                blockchain,
-            );
-
             let allowanceIncreased, allowanceGap;
 
             if (requestData?.payer) {
                 // Handle the case when payer is passed
             } else {
                 ({ allowanceIncreased, allowanceGap } =
-                    await this.increaseServiceAgreementV1Allowance(
+                    await this.increaseKnowledgeCollectionAllowance(
                         sender,
-                        serviceAgreementV1Address,
                         requestData.tokenAmount,
                         blockchain,
                     ));
@@ -426,8 +458,8 @@ export default class BlockchainServiceBase {
             let receipt;
             if (paranetKaContract == null && paranetTokenId == null) {
                 receipt = await this.executeContractFunction(
-                    'ContentAsset',
-                    'createAsset',
+                    'KnowledgeCollection',
+                    'createKnowledgeCollection',
                     [Object.values(requestData)],
                     blockchain,
                 );

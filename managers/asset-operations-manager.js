@@ -443,7 +443,10 @@ export default class AssetOperationsManager {
             publishOperationId,
         );
 
-        if (publishOperationResult.status !== OPERATION_STATUSES.COMPLETED && !publishOperationResult.minAcksReached) {
+        if (
+            publishOperationResult.status !== OPERATION_STATUSES.COMPLETED &&
+            !publishOperationResult.minAcksReached
+        ) {
             return {
                 datasetRoot,
                 operation: {
@@ -451,6 +454,27 @@ export default class AssetOperationsManager {
                 },
             };
         }
+
+        const { signatures } = publishOperationResult.data;
+
+        const {
+            identityId: publisherNodeIdentityId,
+            signer: publisherNodeSigner,
+            r: publisherNodeR,
+            vs: publisherNodeVS,
+        } = publishOperationResult.data.publisherNodeSignature;
+
+        const identityIds = [];
+        const signers = [];
+        const r = [];
+        const vs = [];
+
+        signatures.forEach((signature) => {
+            identityIds.push(signature.identityId);
+            signers.push(signature.signer);
+            r.push(signature.r);
+            vs.push(signature.vs);
+        });
 
         const estimatedPublishingCost =
             tokenAmount ??
@@ -461,18 +485,24 @@ export default class AssetOperationsManager {
 
         if (paranetUAL == null) {
             ({ tokenId, receipt: mintKnowledgeAssetReceipt } =
-                await this.blockchainService.createAsset(
+                await this.blockchainService.createKnowledgeCollection(
                     {
-                        publishOperationId,
-                        datasetRoot,
-                        datasetSize,
-                        triplesNumber: kaTools.getAssertionTriplesNumber(dataset.public), // todo
-                        chunksNumber: numberOfChunks,
-                        epochsNum,
+                        merkleRoot: datasetRoot,
+                        knowledgeAssetsAmount: kcTools.countDistinctSubjects(dataset.public),
+                        byteSize: datasetSize,
+                        triplesAmount: kaTools.getAssertionTriplesNumber(dataset.public),
+                        chunksAmount: numberOfChunks,
+                        epochs: epochsNum,
                         tokenAmount: estimatedPublishingCost,
-                        scoreFunctionId: scoreFunctionId ?? 1,
-                        immutable_: immutable,
-                        // payer: payer,
+                        paymaster: payer,
+                        publisherNodeIdentityId,
+                        publisherNodeSigner,
+                        publisherNodeR,
+                        publisherNodeVS,
+                        identityIds,
+                        signers,
+                        r,
+                        vs,
                     },
                     null,
                     null,
@@ -482,18 +512,24 @@ export default class AssetOperationsManager {
         } else {
             const { contract: paranetKaContract, tokenId: paranetTokenId } = resolveUAL(paranetUAL);
             ({ tokenId, receipt: mintKnowledgeAssetReceipt } =
-                await this.blockchainService.createAsset(
+                await this.blockchainService.createKnowledgeCollection(
                     {
-                        publishOperationId,
-                        datasetRoot,
-                        datasetSize,
-                        triplesNumber: kaTools.getAssertionTriplesNumber(dataset), // todo
-                        chunksNumber: kcTools.calculateNumberOfChunks(dataset),
-                        epochsNum,
+                        merkleRoot: datasetRoot,
+                        knowledgeAssetsAmount: kcTools.countDistinctSubjects(dataset.public),
+                        byteSize: datasetSize,
+                        triplesAmount: kaTools.getAssertionTriplesNumber(dataset.public),
+                        chunksAmount: numberOfChunks,
+                        epochs: epochsNum,
                         tokenAmount: estimatedPublishingCost,
-                        scoreFunctionId: scoreFunctionId ?? 1,
-                        immutable_: immutable,
-                        // payer: payer,
+                        paymaster: payer,
+                        publisherNodeIdentityId,
+                        publisherNodeSigner,
+                        publisherNodeR,
+                        publisherNodeVS,
+                        identityIds,
+                        signers,
+                        r,
+                        vs,
                     },
                     paranetKaContract,
                     paranetTokenId,
