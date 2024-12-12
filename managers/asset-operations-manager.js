@@ -15,6 +15,8 @@ import {
     PRIVATE_RESOURCE_PREDICATE,
     PRIVATE_HASH_SUBJECT_PREFIX,
     PRIVATE_ASSERTION_PREDICATE,
+    PRIVATE_RESOURCE_PREDICATE,
+    PRIVATE_HASH_SUBJECT_PREFIX,
 } from '../constants.js';
 import emptyHooks from '../util/empty-hooks.js';
 
@@ -350,8 +352,8 @@ export default class AssetOperationsManager {
             dataset.private = kcTools.generateMissingIdsForBlankNodes(dataset.private);
 
             const privateTriplesGrouped = kcTools.groupNquadsBySubject(dataset.private, true);
-            dataset.private = privateTriplesGrouped.flat();
-            const privateRoot = kcTools.calculateMerkleRoot(dataset.private);
+
+            const privateRoot = kcTools.calculateMerkleRoot(privateTriplesGrouped.flat());
 
             dataset.public.push(
                 `<${kaTools.generateNamedNode()}> <${PRIVATE_ASSERTION_PREDICATE}> "${privateRoot}" .`,
@@ -395,6 +397,7 @@ export default class AssetOperationsManager {
                 }
             }
 
+            // Append any remaining public triples
             while (publicIndex < publicLength) {
                 mergedTriples.push(...publicTriplesGrouped[publicIndex]);
                 publicIndex++;
@@ -417,6 +420,7 @@ export default class AssetOperationsManager {
         const datasetSize = numberOfChunks * CHUNK_BYTE_SIZE;
 
         this.validationService.validateAssertionSizeInBytes(datasetSize);
+
         const datasetRoot = kcTools.calculateMerkleRoot(dataset.public);
 
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
