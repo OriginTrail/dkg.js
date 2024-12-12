@@ -779,6 +779,7 @@ export default class ValidationService {
     }
 
     validateBatchSize(batchSize) {
+        if (batchSize === undefined) return;
         this.validateRequiredParam('batchSize', batchSize);
         this.validateParamType('batchSize', batchSize, 'number');
 

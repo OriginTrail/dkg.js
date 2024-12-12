@@ -417,6 +417,6 @@ export default class InputService {
     }
 
     getBatchSize(options) {
-        return options.assertionCachedLocally ?? undefined;
+        return options.batchSize ?? undefined;
     }
 }
