@@ -56,6 +56,7 @@ export default class GraphOperationsManager {
             hashFunctionId,
             paranetUAL,
             subjectUAL,
+            batchSize,
         } = this.inputService.getAssetGetArguments(options);
 
         this.validationService.validateAssetGet(
@@ -73,6 +74,7 @@ export default class GraphOperationsManager {
             outputFormat,
             authToken,
             subjectUAL,
+            batchSize,
         );
 
         const getOperationId = await this.nodeApiService.get(
@@ -86,6 +88,7 @@ export default class GraphOperationsManager {
             contentType,
             hashFunctionId,
             paranetUAL,
+            batchSize,
         );
 
         const getOperationResult = await this.nodeApiService.getOperationResult(
@@ -648,6 +651,7 @@ export default class GraphOperationsManager {
             frequency,
             minimumNumberOfFinalizationConfirmations,
             authToken,
+            batchSize,
         } = this.inputService.getPublishFinalityArguments(options);
 
         // blockchain not mandatory so it's not validated
@@ -658,6 +662,7 @@ export default class GraphOperationsManager {
             frequency,
             minimumNumberOfFinalizationConfirmations,
             authToken,
+            batchSize,
         );
 
         const finalityStatusResult = await this.nodeApiService.finalityStatus(
@@ -668,13 +673,14 @@ export default class GraphOperationsManager {
         );
 
         if (finalityStatusResult === 0) {
-            const finalityOperationId = await this.nodeApiService.finality(
+            const finalityOperationId = await this.nodeApiService.ask(
                 endpoint,
                 port,
                 authToken,
                 blockchain.name,
                 UAL,
                 minimumNumberOfFinalizationConfirmations,
+                batchSize,
             );
 
             try {

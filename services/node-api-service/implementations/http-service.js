@@ -59,6 +59,7 @@ export default class HttpService {
         blockchain,
         hashFunctionId,
         minimumNumberOfNodeReplications,
+        batchSize,
     ) {
         try {
             const response = await axios({
@@ -70,6 +71,7 @@ export default class HttpService {
                     blockchain,
                     hashFunctionId,
                     minimumNumberOfNodeReplications,
+                    batchSize,
                 },
                 headers: this.prepareRequestConfig(authToken),
             });
@@ -127,6 +129,7 @@ export default class HttpService {
         contentType,
         hashFunctionId,
         paranetUAL,
+        batchSize,
     ) {
         try {
             const response = await axios({
@@ -139,6 +142,7 @@ export default class HttpService {
                     hashFunctionId,
                     paranetUAL,
                     subjectUAL,
+                    batchSize,
                 },
                 headers: this.prepareRequestConfig(authToken),
             });
@@ -159,6 +163,7 @@ export default class HttpService {
         contract,
         tokenId,
         hashFunctionId,
+        batchSize,
     ) {
         try {
             const response = await axios({
@@ -171,6 +176,7 @@ export default class HttpService {
                     contract,
                     tokenId,
                     hashFunctionId,
+                    batchSize,
                 },
                 headers: this.prepareRequestConfig(authToken),
             });
@@ -195,13 +201,14 @@ export default class HttpService {
         }
     }
 
-    async finality(
+    async ask(
         endpoint,
         port,
         authToken,
         blockchain,
         ual,
         minimumNumberOfFinalizationConfirmations,
+        batchSize,
     ) {
         try {
             const response = await axios({
@@ -211,6 +218,7 @@ export default class HttpService {
                     ual,
                     blockchain,
                     minimumNumberOfNodeReplications: minimumNumberOfFinalizationConfirmations,
+                    batchSize,
                 },
                 headers: this.prepareRequestConfig(authToken),
             });
@@ -227,30 +235,30 @@ export default class HttpService {
         ual,
         requiredConfirmations,
         maxNumberOfRetries,
-        frequency
+        frequency,
     ) {
         let retries = 0;
         let finality = 0;
-    
+
         const axios_config = {
             method: 'get',
             url: `${this.getBaseUrl(endpoint, port)}/finality`,
             params: { ual },
             headers: this.prepareRequestConfig(authToken),
         };
-    
+
         do {
             if (retries > maxNumberOfRetries) {
                 throw Error(
-                    `Unable to achieve required confirmations. Max number of retries (${maxNumberOfRetries}) reached.`
+                    `Unable to achieve required confirmations. Max number of retries (${maxNumberOfRetries}) reached.`,
                 );
             }
-    
+
             retries += 1;
-    
+
             // eslint-disable-next-line no-await-in-loop
             await sleepForMilliseconds(frequency * 1000);
-    
+
             try {
                 // eslint-disable-next-line no-await-in-loop
                 const response = await axios(axios_config);
@@ -259,7 +267,7 @@ export default class HttpService {
                 finality = 0;
             }
         } while (finality < requiredConfirmations && retries <= maxNumberOfRetries);
-    
+
         return finality;
     }
 

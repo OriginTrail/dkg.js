@@ -31,6 +31,7 @@ export default class InputService {
             minimumNumberOfFinalizationConfirmations:
                 this.getMinimumNumberOfFinalizationConfirmations(options) ?? 3,
             minimumNumberOfNodeReplications: this.getMinimumNumberOfNodeReplications(options),
+            batchSize: this.getBatchSize(options),
         };
     }
 
@@ -69,6 +70,7 @@ export default class InputService {
             paranetUAL: this.getParanetUAL(options),
             metadata: this.getIncludeMetadata(options),
             subjectUAL: this.getSubjectUAL(options),
+            batchSize: this.getBatchSize(options),
         };
     }
 
@@ -84,6 +86,7 @@ export default class InputService {
             tokenAmount: this.getTokenAmount(options),
             authToken: this.getAuthToken(options),
             payer: this.getPayer(options),
+            batchSize: this.getBatchSize(options),
         };
     }
 
@@ -245,6 +248,7 @@ export default class InputService {
             authToken: this.getAuthToken(options),
             minimumNumberOfFinalizationConfirmations:
                 this.getMinimumNumberOfFinalizationConfirmations(options) ?? 3,
+            batchSize: this.getBatchSize(options),
         };
     }
 
@@ -410,5 +414,9 @@ export default class InputService {
 
     getAssertionCachedLocally(options) {
         return options.assertionCachedLocally ?? false;
+    }
+
+    getBatchSize(options) {
+        return options.batchSize ?? undefined;
     }
 }
