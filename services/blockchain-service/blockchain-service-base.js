@@ -3,9 +3,9 @@
 import Web3 from 'web3';
 import axios from 'axios';
 import { createRequire } from 'module';
-import { OPERATIONS_STEP_STATUS, DEFAULT_GAS_PRICE  } from '../../constants.js';
+import { OPERATIONS_STEP_STATUS, DEFAULT_GAS_PRICE } from '../../constants.js';
 import emptyHooks from '../../util/empty-hooks.js';
-import { sleepForMilliseconds  } from '../utilities.js';
+import { sleepForMilliseconds } from '../utilities.js';
 
 const require = createRequire(import.meta.url);
 
@@ -23,6 +23,10 @@ const ParanetIncentivesPoolFactoryAbi = require('dkg-evm-module/abi/ParanetIncen
 const ParanetNeuroIncentivesPoolAbi = require('dkg-evm-module/abi/ParanetNeuroIncentivesPool.json');
 const ParanetKnowledgeMinersRegistryAbi = require('dkg-evm-module/abi/ParanetKnowledgeMinersRegistry.json');
 const IdentityStorageAbi = require('dkg-evm-module/abi/IdentityStorage.json');
+const KnowledgeCollectionAbi = require('dkg-evm-module/abi/KnowledgeCollection.json');
+const KnowledgeCollectionLibAbi = require('dkg-evm-module/abi/KnowledgeCollectionLib.json');
+
+// const ShardingTableStorageAbi = require('dkg-evm-module/abi/ShardingTableStorage.sol.json');
 
 export default class BlockchainServiceBase {
     constructor(config = {}) {
@@ -43,6 +47,9 @@ export default class BlockchainServiceBase {
         this.abis.ParanetNeuroIncentivesPool = ParanetNeuroIncentivesPoolAbi;
         this.abis.ParanetKnowledgeMinersRegistry = ParanetKnowledgeMinersRegistryAbi;
         this.abis.IdentityStorage = IdentityStorageAbi;
+        this.abis.KnowledgeCollection = KnowledgeCollectionAbi;
+        this.abis.KnowledgeCollectionLib = KnowledgeCollectionLibAbi;
+        // this.abis.ShardingTableStorageAbi = ShardingTableStorageAbi;
 
         this.abis.ContentAsset.filter((obj) => obj.type === 'event').forEach((event) => {
             const concatInputs = event.inputs.map((input) => input.internalType);
@@ -318,7 +325,7 @@ export default class BlockchainServiceBase {
             this[blockchain.name].contractAddresses[blockchain.hubContract][contractName] =
                 await this.callContractFunction(
                     'Hub',
-                    contractName.includes('AssetStorage')
+                    contractName.includes('AssetStorage') || contractName.includes('CollectionStorage')
                         ? 'getAssetStorageAddress'
                         : 'getContractAddress',
                     [contractName],
@@ -383,9 +390,44 @@ export default class BlockchainServiceBase {
         };
     }
 
+    async increaseKnowledgeCollectionAllowance(sender, tokenAmount, blockchain) {
+        const knowledgeCollectionAddress = await this.getContractAddress(
+            'KnowledgeCollection',
+            blockchain,
+        );
+
+        const allowance = await this.callContractFunction(
+            'Token',
+            'allowance',
+            [sender, knowledgeCollectionAddress],
+            blockchain,
+        );
+
+        const allowanceGap = BigInt(tokenAmount) - BigInt(allowance);
+
+        if (allowanceGap > 0) {
+            await this.executeContractFunction(
+                'Token',
+                'increaseAllowance',
+                [knowledgeCollectionAddress, allowanceGap],
+                blockchain,
+            );
+
+            return {
+                allowanceIncreased: true,
+                allowanceGap,
+            };
+        }
+
+        return {
+            allowanceIncreased: false,
+            allowanceGap,
+        };
+    }
+
     // Knowledge assets operations
 
-    async createAsset(
+    async createKnowledgeCollection(
         requestData,
         paranetKaContract,
         paranetTokenId,
@@ -398,20 +440,14 @@ export default class BlockchainServiceBase {
         let allowanceGap = 0;
 
         try {
-            serviceAgreementV1Address = await this.getContractAddress(
-                'ServiceAgreementV1',
-                blockchain,
-            );
-
             let allowanceIncreased, allowanceGap;
 
             if (requestData?.payer) {
                 // Handle the case when payer is passed
             } else {
                 ({ allowanceIncreased, allowanceGap } =
-                    await this.increaseServiceAgreementV1Allowance(
+                    await this.increaseKnowledgeCollectionAllowance(
                         sender,
-                        serviceAgreementV1Address,
                         requestData.tokenAmount,
                         blockchain,
                     ));
@@ -424,9 +460,9 @@ export default class BlockchainServiceBase {
             let receipt;
             if (paranetKaContract == null && paranetTokenId == null) {
                 receipt = await this.executeContractFunction(
-                    'ContentAsset',
-                    'createAsset',
-                    [Object.values(requestData)],
+                    'KnowledgeCollection',
+                    'createKnowledgeCollection',
+                    [...Object.values(requestData)],
                     blockchain,
                 );
             } else {
@@ -438,16 +474,16 @@ export default class BlockchainServiceBase {
                 );
             }
 
-            let { tokenId } = await this.decodeEventLogs(receipt, 'AssetMinted', blockchain);
+            let { id } = await this.decodeEventLogs(receipt, 'KnowledgeCollectionCreated', blockchain);
 
-            tokenId = parseInt(tokenId, 10);
+            id = parseInt(id, 10);
 
             stepHooks.afterHook({
                 status: OPERATIONS_STEP_STATUS.CREATE_ASSET_COMPLETED,
-                data: { tokenId },
+                data: { id },
             });
 
-            return { tokenId, receipt };
+            return { knowledgeCollectionId: id, receipt };
         } catch (error) {
             if (allowanceIncreased) {
                 await this.executeContractFunction(
@@ -1073,6 +1109,19 @@ export default class BlockchainServiceBase {
             [operationalWallet],
             blockchain,
         );
+    }
+
+    // Get ask operations
+    // To get price, multiply with size in bytes and epochs
+    async getStakeWeightedAverageAsk() {
+        return;
+        // Uncomment when contracts integrated
+        // return this.callContractFunction(
+        //     'ShardingTableStorage',
+        //     'getStakeWeightedAverageAsk',
+        //     [],
+        //     blockchain,
+        // );
     }
 
     // Blockchain operations
