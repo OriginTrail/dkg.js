@@ -15,8 +15,6 @@ import {
     PRIVATE_RESOURCE_PREDICATE,
     PRIVATE_HASH_SUBJECT_PREFIX,
     PRIVATE_ASSERTION_PREDICATE,
-    PRIVATE_RESOURCE_PREDICATE,
-    PRIVATE_HASH_SUBJECT_PREFIX,
 } from '../constants.js';
 import emptyHooks from '../util/empty-hooks.js';
 
@@ -353,7 +351,9 @@ export default class AssetOperationsManager {
 
             const privateTriplesGrouped = kcTools.groupNquadsBySubject(dataset.private, true);
 
-            const privateRoot = kcTools.calculateMerkleRoot(privateTriplesGrouped.flat());
+            dataset.private = privateTriplesGrouped.flat();
+
+            const privateRoot = kcTools.calculateMerkleRoot(dataset.private);
 
             dataset.public.push(
                 `<${kaTools.generateNamedNode()}> <${PRIVATE_ASSERTION_PREDICATE}> "${privateRoot}" .`,
