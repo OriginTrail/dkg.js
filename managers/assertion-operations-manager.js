@@ -79,7 +79,7 @@ export default class AssertionOperationsManager {
         this.validationService.validateJsonldOrNquads(content);
         this.validationService.validateConditions(conditions);
 
-        const assertions = await kcTools.formatAssertion(content);
+        const assertions = await kcTools.formatDataset(content);
 
         const resultAssertions = [];
 

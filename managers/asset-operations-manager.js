@@ -341,7 +341,7 @@ export default class AssetOperationsManager {
                 assertion.private = this.processContent(content.private);
             }
         } else {
-            assertion = await kcTools.formatAssertion(content);
+            assertion = await kcTools.formatDataset(content);
         }
 
         if (assertion.private?.length) {
@@ -956,7 +956,7 @@ export default class AssetOperationsManager {
                 .map((line) => line.trimStart().trimEnd())
                 .filter((line) => line.trim() !== '');
         } else {
-            assertion = await kcTools.formatAssertion(content);
+            assertion = await kcTools.formatDataset(content);
         }
 
         const numberOfChunks = kcTools.calculateNumberOfChunks(assertion, CHUNK_BYTE_SIZE);
