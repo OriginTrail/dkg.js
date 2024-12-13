@@ -345,7 +345,9 @@ export default class AssetOperationsManager {
             dataset = await kcTools.formatDataset(content);
         }
 
+        console.time('parsingGrouping');
         let publicTriplesGrouped = [];
+        let tokensCount = 0;
         if (dataset.public?.length) {
             dataset.public = kcTools.generateMissingIdsForBlankNodes(dataset.public);
 
@@ -360,7 +362,7 @@ export default class AssetOperationsManager {
                     `<${kaTools.generateNamedNode()}> <${PRIVATE_ASSERTION_PREDICATE}> "${privateRoot}" .`,
                 );
                 publicTriplesGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
-
+                tokensCount += publicTriplesGrouped.length();
                 //  This can probably be optimized as it's sorted so check can go faster
                 const publicSubjectMap = publicTriplesGrouped.reduce((map, group, index) => {
                     const [publicSubject] = group[0].split(' ');
@@ -395,10 +397,12 @@ export default class AssetOperationsManager {
                     }
                 }
                 // At the end of public append new triple arrays
+                tokensCount += privateTriplesGroupedWithoutPublicPair.length;
                 publicTriplesGrouped.push(...privateTriplesGroupedWithoutPublicPair);
             } else {
                 // There are no private triples
                 publicTriplesGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
+                tokensCount += publicTriplesGrouped.length;
                 dataset.public = publicTriplesGrouped.flat();
             }
         } else {
@@ -412,7 +416,8 @@ export default class AssetOperationsManager {
             dataset.public.push(
                 `<${kaTools.generateNamedNode()}> <${PRIVATE_ASSERTION_PREDICATE}> "${privateRoot}" .`,
             );
-
+            const privateTriplesGroupedWithoutPublicPair = [];
+            const privateTripleSubjectHashesGroupedWithoutPublicPair = [];
             for (const { privateTriple, privateIndex } of privateTriplesGrouped.entries()) {
                 const [privateSubject] = privateTriple.split(' ');
                 const privateSubjectHash = ethers.solidityPackedSha256(
@@ -429,9 +434,11 @@ export default class AssetOperationsManager {
                     privateTriplesGrouped[privateIndex],
                 );
             }
-
-            publicTriplesGrouped = privateTriplesGroupedWithoutPublicPair;
+            // Count of private tokens + private root
+            tokensCount += privateTripleSubjectHashesGroupedWithoutPublicPair.length + 1;
+            dataset.public.push(...privateTripleSubjectHashesGroupedWithoutPublicPair);
         }
+        console.timeEnd('parsingGrouping');
 
         const numberOfChunks = kcTools.calculateNumberOfChunks(dataset.public, CHUNK_BYTE_SIZE);
         const datasetSize = numberOfChunks * CHUNK_BYTE_SIZE;
