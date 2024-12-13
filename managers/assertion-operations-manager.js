@@ -26,7 +26,7 @@ export default class AssertionOperationsManager {
      * @returns {Promise<String>} a promise that resolves with a string representing the
      * Merkle root of the formatted public assertion.
      */
-    async getPublicAssertionId(content) {
+    async getPublicAssertionMerkleRoot(content) {
         const assertions = await kaTools.formatGraph(content);
         return kcTools.calculateMerkleRoot(assertions.public);
     }
@@ -79,7 +79,7 @@ export default class AssertionOperationsManager {
         this.validationService.validateJsonldOrNquads(content);
         this.validationService.validateConditions(conditions);
 
-        const assertions = await kcTools.formatDataset(content);
+        const assertions = await kcTools.formatAssertion(content);
 
         const resultAssertions = [];
 
@@ -106,9 +106,9 @@ export default class AssertionOperationsManager {
                     const labelTriple = `<<<${subject}> <${predicate}> ${object}>> ${LABEL_PREFIX} <${condition.label}> .`;
                     resultAssertions.push(labelTriple);
                 } else if (condition.condition({ subject, predicate, object })) {
-                        const labelTriple = `<<<${subject}> <${predicate}> ${object}>> ${LABEL_PREFIX} <${condition.label}> .`;
-                        resultAssertions.push(labelTriple);
-                    }
+                    const labelTriple = `<<<${subject}> <${predicate}> ${object}>> ${LABEL_PREFIX} <${condition.label}> .`;
+                    resultAssertions.push(labelTriple);
+                }
             });
         });
         return resultAssertions;
