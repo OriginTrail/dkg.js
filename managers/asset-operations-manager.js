@@ -13,7 +13,6 @@ import {
     CHUNK_BYTE_SIZE,
     OPERATION_DELAYS,
     PRIVATE_RESOURCE_PREDICATE,
-    PRIVATE_HASH_SUBJECT_PREFIX,
     PRIVATE_ASSERTION_PREDICATE,
     PRIVATE_RESOURCE_PREDICATE,
     PRIVATE_HASH_SUBJECT_PREFIX,
@@ -1026,15 +1025,15 @@ export default class AssetOperationsManager {
             }
         });
 
+        let privateTriplesGrouped = [];
+
         // Handle inserting private root triple in new public
         // Private exist in new assertion
         if (dataset.private?.length) {
             dataset.private = kcTools.generateMissingIdsForBlankNodes(dataset.private);
-            const privateTriplesGrouped = kcTools.groupNquadsBySubject(dataset.private, true);
+            privateTriplesGrouped = kcTools.groupNquadsBySubject(dataset.private, true);
             dataset.private = privateTriplesGrouped.flat();
-            const privateRoot = kcTools.calculateMerkleRoot(
-                privateTriplesGrouped.flat(dataset.private),
-            );
+            const privateRoot = kcTools.calculateMerkleRoot(dataset.private);
 
             let publicTriplesGrouped = [];
             if (dataset.public?.length) {
@@ -1044,7 +1043,6 @@ export default class AssetOperationsManager {
             if (privateMerkleRootTriple) {
                 publicTriplesGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
                 const [privateMerkleRootTripleSubject] = privateMerkleRootTriple.split(' ');
-                let privateMerkleRootTripleExists = false;
                 // This is sorted is should probably be done by binary search
                 for (const [index, [triple]] of publicTriplesGrouped.entries()) {
                     const [subject] = triple.split(' ');
@@ -1055,7 +1053,6 @@ export default class AssetOperationsManager {
                         publicTriplesGrouped[index][
                             changePrivateRootIndex
                         ] = `${privateMerkleRootTripleSubject} <${PRIVATE_ASSERTION_PREDICATE}> "${privateRoot}" .`;
-                        privateMerkleRootTripleExists = true;
                     }
                 }
                 // Private root triple didn't existed before insert it
@@ -1066,8 +1063,92 @@ export default class AssetOperationsManager {
                 publicTriplesGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
             }
         }
-
+        let tokensCount = 0;
+        let tokensToBeMinted = 0;
+        let tokensToBeBurned = [];
         // Finding new and old UAL creating private data representations
+        // Private exists in new data
+        if (dataset.public?.length) {
+            if (dataset.private?.length) {
+                const publicSubjectMap = publicTriplesGrouped.reduce((map, group, index) => {
+                    const [publicSubject] = group[0].split(' ');
+                    map.set(publicSubject, index);
+                    return map;
+                }, new Map());
+                // Find if private subject has a public pair
+                const privateTriplesGroupedWithoutPublicPair = [];
+                const privateTripleSubjectHashesGroupedWithoutPublicPair = [];
+                for (const [privateIndex, privateTriples] of privateTriplesGrouped.entries()) {
+                    const [privateSubject] = privateTriples[0].split(' ');
+                    const privateSubjectHash = ethers.solidityPackedSha256(
+                        ['string'],
+                        [privateSubject.slice(1, -1)],
+                    );
+
+                    if (publicSubjectMap.has(privateSubject)) {
+                        const publicIndex = publicSubjectMap.get(privateSubject);
+                        this.insertTripleSorted(
+                            publicTriplesGrouped[publicIndex],
+                            this.generatePrivateRepresentation(privateSubjectHash),
+                        );
+                    } else {
+                        const index = this.insertTripleSorted(
+                            privateTripleSubjectHashesGroupedWithoutPublicPair,
+                            privateSubjectHash,
+                        );
+                        privateTriplesGroupedWithoutPublicPair.splice(
+                            index,
+                            0,
+                            this.generatePrivateRepresentation(privateSubjectHash),
+                        );
+                    }
+                }
+                // At the end of public append new triple arrays
+
+                // Here I have all public
+
+                tokensCount += privateTriplesGroupedWithoutPublicPair.length;
+                publicTriplesGrouped.push(...privateTriplesGroupedWithoutPublicPair);
+                dataset.public = publicTriplesGrouped.flat();
+            } else {
+                publicTriplesGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
+                tokensCount += publicTriplesGrouped.length;
+                dataset.public = publicTriplesGrouped.flat();
+                // Find tokens to burn and mint
+                for (const [publicTriple] of publicTriplesGrouped) {
+                    const [publicSubject] = publicTriple.split(' ');
+                    // Check if this is recourse or hash
+
+                    // For previous state I have all resources that existed and hashes of public and private
+                    if (subjectUALMap.has() || subjectHashUALMap.has()) {
+                    }
+                }
+            }
+        }
+        // There is no public triples
+        else {
+            const privateTriplesGroupedWithoutPublicPair = [];
+            const privateTripleSubjectHashesGroupedWithoutPublicPair = [];
+            for (const { privateTriple, privateIndex } of privateTriplesGrouped.entries()) {
+                const [privateSubject] = privateTriple.split(' ');
+                const privateSubjectHash = ethers.solidityPackedSha256(
+                    ['string'],
+                    [privateSubject.slice(1, -1)],
+                );
+                const index = this.insertTripleSorted(
+                    privateTripleSubjectHashesGroupedWithoutPublicPair,
+                    privateSubjectHash,
+                );
+                privateTriplesGroupedWithoutPublicPair.splice(
+                    index,
+                    0,
+                    privateTriplesGrouped[privateIndex],
+                );
+            }
+            // Count of private tokens + private root
+            tokensCount += privateTripleSubjectHashesGroupedWithoutPublicPair.length + 1;
+            dataset.public.push(...privateTripleSubjectHashesGroupedWithoutPublicPair);
+        }
 
         const numberOfChunks = kcTools.calculateNumberOfChunks(dataset, CHUNK_BYTE_SIZE);
 
