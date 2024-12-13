@@ -1003,6 +1003,7 @@ export default class AssetOperationsManager {
             null,
         );
 
+        // Add error hadnling if this failes updated failes
         const subjectUALPairsResult = await this.nodeApiService.getOperationResult(
             endpoint,
             port,
@@ -1109,6 +1110,39 @@ export default class AssetOperationsManager {
 
                 tokensCount += privateTriplesGroupedWithoutPublicPair.length;
                 publicTriplesGrouped.push(...privateTriplesGroupedWithoutPublicPair);
+                for (const [publicTriple] of publicTriplesGrouped) {
+                    const [publicSubject] = publicTriple.split(' ');
+                    // Check if this is recourse or hash
+                    if (publicSubject.startsWith(`<${PRIVATE_HASH_SUBJECT_PREFIX}`)) {
+                        const publicSubjectParsed = publicSubject.trim(
+                            PRIVATE_HASH_SUBJECT_PREFIX.length + 1,
+                            -1,
+                        );
+                        if (!subjectHashUALMap.has(publicSubjectParsed)) {
+                            tokensToBeMinted += 1;
+                        } else {
+                            subjectHashUALMap.delete(publicSubjectParsed);
+                        }
+                    } else {
+                        const publicSubjectParsed = publicSubject.trim(1 - 1);
+                        if (!subjectUALMap.has(publicSubjectParsed)) {
+                            const publicSubjectHahsed = ethers.solidityPackedSha256(
+                                ['string'],
+                                [publicSubjectParsed],
+                            );
+                            if (!subjectHashUALMap.has(publicSubjectHahsed)) {
+                                tokensToBeMinted += 1;
+                            } else {
+                                subjectHashUALMap.delete(publicSubjectHahsed);
+                            }
+                        } else {
+                            subjectUALMap.delete(publicSubjectParsed);
+                        }
+                    }
+                }
+                tokensToBeBurned = [
+                    ...Set(...subjectHashUALMap.values(), ...subjectUALMap().values),
+                ].map((ual) => ual.split('/').pop());
                 dataset.public = publicTriplesGrouped.flat();
             } else {
                 publicTriplesGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
@@ -1118,11 +1152,36 @@ export default class AssetOperationsManager {
                 for (const [publicTriple] of publicTriplesGrouped) {
                     const [publicSubject] = publicTriple.split(' ');
                     // Check if this is recourse or hash
-
-                    // For previous state I have all resources that existed and hashes of public and private
-                    if (subjectUALMap.has() || subjectHashUALMap.has()) {
+                    if (publicSubject.startsWith(`<${PRIVATE_HASH_SUBJECT_PREFIX}`)) {
+                        const publicSubjectParsed = publicSubject.trim(
+                            PRIVATE_HASH_SUBJECT_PREFIX.length + 1,
+                            -1,
+                        );
+                        if (!subjectHashUALMap.has(publicSubjectParsed)) {
+                            tokensToBeMinted += 1;
+                        } else {
+                            subjectHashUALMap.delete(publicSubjectParsed);
+                        }
+                    } else {
+                        const publicSubjectParsed = publicSubject.trim(1 - 1);
+                        if (!subjectUALMap.has(publicSubjectParsed)) {
+                            const publicSubjectHahsed = ethers.solidityPackedSha256(
+                                ['string'],
+                                [publicSubjectParsed],
+                            );
+                            if (!subjectHashUALMap.has(publicSubjectHahsed)) {
+                                tokensToBeMinted += 1;
+                            } else {
+                                subjectHashUALMap.delete(publicSubjectHahsed);
+                            }
+                        } else {
+                            subjectUALMap.delete(publicSubjectParsed);
+                        }
                     }
                 }
+                tokensToBeBurned = [
+                    ...Set(...subjectHashUALMap.values(), ...subjectUALMap().values),
+                ].map((ual) => ual.split('/').pop());
             }
         }
         // There is no public triples
@@ -1148,6 +1207,22 @@ export default class AssetOperationsManager {
             // Count of private tokens + private root
             tokensCount += privateTripleSubjectHashesGroupedWithoutPublicPair.length + 1;
             dataset.public.push(...privateTripleSubjectHashesGroupedWithoutPublicPair);
+            for (const publicTriple of privateTripleSubjectHashesGroupedWithoutPublicPair) {
+                const [publicSubject] = publicTriple.split(' ');
+                // Check if this is recourse or hash
+                const publicSubjectParsed = publicSubject.trim(
+                    PRIVATE_HASH_SUBJECT_PREFIX.length + 1,
+                    -1,
+                );
+                if (!subjectHashUALMap.has(publicSubjectParsed)) {
+                    tokensToBeMinted += 1;
+                } else {
+                    subjectHashUALMap.delete(publicSubjectParsed);
+                }
+            }
+            tokensToBeBurned = [
+                ...Set(...subjectHashUALMap.values(), ...subjectUALMap().values),
+            ].map((ual) => ual.split('/').pop());
         }
 
         const numberOfChunks = kcTools.calculateNumberOfChunks(dataset, CHUNK_BYTE_SIZE);
