@@ -370,14 +370,14 @@ export default class AssetOperationsManager {
                 // Find if private subject has a public pair
                 const privateTriplesGroupedWithoutPublicPair = [];
                 const privateTripleSubjectHashesGroupedWithoutPublicPair = [];
-                for (const { privateTriple, privateIndex } of privateTriplesGrouped.entries()) {
-                    const [privateSubject] = privateTriple.split(' ');
+                for (const [privateIndex, privateTriple] of privateTriplesGrouped.entries()) {
+                    const [privateSubject] = privateTriple[0].split(' ');
                     const privateSubjectHash = ethers.solidityPackedSha256(
                         ['string'],
                         [privateSubject.slice(1, -1)],
                     );
-                    if (publicSubjectMap.has(privateTriple)) {
-                        publicIndex = publicSubjectMap.get(privateTriple);
+                    if (publicSubjectMap.has(privateSubject)) {
+                        publicIndex = publicSubjectMap.get(privateSubject);
                         this.insertTripleSorted(
                             privateTriplesGrouped[publicIndex],
                             this.generatePrivateRepresentation(privateSubjectHash),
