@@ -32,7 +32,7 @@
     "dependencies": {
         "assertion-tools": "^8.0.0-gamma.1",
         "axios": "^0.27.2",
-        "dkg-evm-module": "^8.0.2-alpha.0",
+        "dkg-evm-module": "^8.0.3-gamma.7",
         "ethers": "^6.1.0",
         "jsonld": "^8.1.0",
         "web3": "^1.7.3"

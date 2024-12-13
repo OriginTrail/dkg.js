@@ -80,57 +80,57 @@ function divider() {
     console.log('======================== NODE INFO RECEIVED');
     console.log(nodeInfo);
 
-    divider();
+    // divider();
 
-    console.time('Publish (1 replication, 3 finalizations)')
-    const result0 = await DkgClient.asset.create(content, {
-        epochsNum: 2,
-        tokenAmount: '100',
-        minimumNumberOfFinalizationConfirmations: 3,
-        minimumNumberOfNodeReplications: 1,
-    });
-    console.timeEnd('Publish (1 replication, 3 finalizations)')
+    // console.time('Publish (1 replication, 3 finalizations)')
+    // const result0 = await DkgClient.asset.create(content, {
+    //     epochsNum: 2,
+    //     tokenAmount: '100',
+    //     minimumNumberOfFinalizationConfirmations: 3,
+    //     minimumNumberOfNodeReplications: 1,
+    // });
+    // console.timeEnd('Publish (1 replication, 3 finalizations)')
 
-    console.log(JSON.stringify(result0));
+    // console.log(JSON.stringify(result0));
 
-    divider();
+    // divider();
 
-    console.time('Publish (1 replication, 1 finalization)')
-    const result1 = await DkgClient.asset.create(content, {
-        epochsNum: 2,
-        tokenAmount: '100',
-        minimumNumberOfFinalizationConfirmations: 1,
-        minimumNumberOfNodeReplications: 1,
-    });
-    console.timeEnd('Publish (1 replication, 1 finalization)')
+    // console.time('Publish (1 replication, 1 finalization)')
+    // const result1 = await DkgClient.asset.create(content, {
+    //     epochsNum: 2,
+    //     tokenAmount: '100',
+    //     minimumNumberOfFinalizationConfirmations: 1,
+    //     minimumNumberOfNodeReplications: 1,
+    // });
+    // console.timeEnd('Publish (1 replication, 1 finalization)')
 
-    console.log(JSON.stringify(result1));
+    // console.log(JSON.stringify(result1));
 
     divider();
 
     console.time('Publish (3 replications, 3 finalizations)')
     const result2 = await DkgClient.asset.create(content, {
         epochsNum: 2,
-        tokenAmount: '100',
+        tokenAmount: '100000000000',
         minimumNumberOfFinalizationConfirmations: 3,
         minimumNumberOfNodeReplications: 3,
     });
     console.timeEnd('Publish (3 replications, 3 finalizations)')
 
-    console.log(JSON.stringify(result2));
+    console.log(result2);
 
-    divider();
+    // divider();
 
-    console.time('Publish (5 replications, 5 finalizations)')
-    const result3 = await DkgClient.asset.create(content, {
-        epochsNum: 2,
-        tokenAmount: '100',
-        minimumNumberOfFinalizationConfirmations: 5,
-        minimumNumberOfNodeReplications: 5,
-    });
-    console.timeEnd('Publish (5 replications, 5 finalizations)')
+    // console.time('Publish (5 replications, 5 finalizations)')
+    // const result3 = await DkgClient.asset.create(content, {
+    //     epochsNum: 2,
+    //     tokenAmount: '100',
+    //     minimumNumberOfFinalizationConfirmations: 5,
+    //     minimumNumberOfNodeReplications: 5,
+    // });
+    // console.timeEnd('Publish (5 replications, 5 finalizations)')
 
-    console.log(JSON.stringify(result3));
+    // console.log(JSON.stringify(result3));
 
     // divider();
 

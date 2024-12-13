@@ -6,6 +6,7 @@ import {
     LOW_BID_SUGGESTION,
     PARANET_NODES_ACCESS_POLICY,
     PARANET_MINERS_ACCESS_POLICY,
+    ZERO_ADDRESS,
 } from '../constants.js';
 
 export default class InputService {
@@ -333,7 +334,7 @@ export default class InputService {
     }
 
     getPayer(options) {
-        return options.payer ?? this.config.payer ?? null;
+        return options.payer ?? this.config.payer ?? ZERO_ADDRESS;
     }
 
     getMinimumNumberOfFinalizationConfirmations(options) {

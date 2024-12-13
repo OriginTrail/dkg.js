@@ -10,7 +10,7 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
         this.config = config;
         this.events = {};
 
-        this.abis.ContentAsset.filter((obj) => obj.type === 'event').forEach((event) => {
+        this.abis.KnowledgeCollectionLib.filter((obj) => obj.type === 'event').forEach((event) => {
             const concatInputs = event.inputs.map((input) => input.internalType);
 
             this.events[event.name] = {

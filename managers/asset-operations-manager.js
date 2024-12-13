@@ -418,7 +418,7 @@ export default class AssetOperationsManager {
         const datasetRoot = kcTools.calculateMerkleRoot(dataset.public);
 
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
-            'ContentAssetStorage',
+            'KnowledgeCollectionStorage',
             blockchain,
         );
 
@@ -459,19 +459,16 @@ export default class AssetOperationsManager {
 
         const {
             identityId: publisherNodeIdentityId,
-            signer: publisherNodeSigner,
             r: publisherNodeR,
             vs: publisherNodeVS,
         } = publishOperationResult.data.publisherNodeSignature;
 
         const identityIds = [];
-        const signers = [];
         const r = [];
         const vs = [];
 
         signatures.forEach((signature) => {
             identityIds.push(signature.identityId);
-            signers.push(signature.signer);
             r.push(signature.r);
             vs.push(signature.vs);
         });
@@ -480,13 +477,14 @@ export default class AssetOperationsManager {
             tokenAmount ??
             (await this.blockchainService.getStakeWeightedAverageAsk()) * epochsNum * datasetSize;
 
-        let tokenId;
+        let knowledgeCollectionId;
         let mintKnowledgeAssetReceipt;
 
         if (paranetUAL == null) {
-            ({ tokenId, receipt: mintKnowledgeAssetReceipt } =
+            ({ knowledgeCollectionId, receipt: mintKnowledgeAssetReceipt } =
                 await this.blockchainService.createKnowledgeCollection(
                     {
+                        publishOperationId,
                         merkleRoot: datasetRoot,
                         knowledgeAssetsAmount: kcTools.countDistinctSubjects(dataset.public),
                         byteSize: datasetSize,
@@ -496,11 +494,9 @@ export default class AssetOperationsManager {
                         tokenAmount: estimatedPublishingCost,
                         paymaster: payer,
                         publisherNodeIdentityId,
-                        publisherNodeSigner,
                         publisherNodeR,
                         publisherNodeVS,
                         identityIds,
-                        signers,
                         r,
                         vs,
                     },
@@ -511,7 +507,7 @@ export default class AssetOperationsManager {
                 ));
         } else {
             const { contract: paranetKaContract, tokenId: paranetTokenId } = resolveUAL(paranetUAL);
-            ({ tokenId, receipt: mintKnowledgeAssetReceipt } =
+            ({ knowledgeCollectionId, receipt: mintKnowledgeAssetReceipt } =
                 await this.blockchainService.createKnowledgeCollection(
                     {
                         merkleRoot: datasetRoot,
@@ -523,11 +519,9 @@ export default class AssetOperationsManager {
                         tokenAmount: estimatedPublishingCost,
                         paymaster: payer,
                         publisherNodeIdentityId,
-                        publisherNodeSigner,
                         publisherNodeR,
                         publisherNodeVS,
                         identityIds,
-                        signers,
                         r,
                         vs,
                     },
@@ -538,7 +532,7 @@ export default class AssetOperationsManager {
                 ));
         }
 
-        const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, tokenId);
+        const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, knowledgeCollectionId);
 
         let finalityStatusResult = 0;
         if (minimumNumberOfFinalizationConfirmations > 0) {
