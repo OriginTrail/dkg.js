@@ -345,7 +345,6 @@ export default class AssetOperationsManager {
             dataset = await kcTools.formatDataset(content);
         }
 
-        console.time('parsingGrouping');
         let publicTriplesGrouped = [];
         let tokensCount = 0;
         if (dataset.public?.length) {
@@ -357,12 +356,11 @@ export default class AssetOperationsManager {
                 const privateTriplesGrouped = kcTools.groupNquadsBySubject(dataset.private, true);
                 dataset.private = privateTriplesGrouped.flat();
                 const privateRoot = kcTools.calculateMerkleRoot(dataset.private);
-
                 dataset.public.push(
                     `<${kaTools.generateNamedNode()}> <${PRIVATE_ASSERTION_PREDICATE}> "${privateRoot}" .`,
                 );
                 publicTriplesGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
-                tokensCount += publicTriplesGrouped.length();
+                tokensCount += publicTriplesGrouped.length;
                 //  This can probably be optimized as it's sorted so check can go faster
                 const publicSubjectMap = publicTriplesGrouped.reduce((map, group, index) => {
                     const [publicSubject] = group[0].split(' ');
@@ -379,7 +377,7 @@ export default class AssetOperationsManager {
                         [privateSubject.slice(1, -1)],
                     );
                     if (publicSubjectMap.has(privateSubject)) {
-                        publicIndex = publicSubjectMap.get(privateSubject);
+                        const publicIndex = publicSubjectMap.get(privateSubject);
                         this.insertTripleSorted(
                             privateTriplesGrouped[publicIndex],
                             this.generatePrivateRepresentation(privateSubjectHash),
@@ -438,7 +436,6 @@ export default class AssetOperationsManager {
             tokensCount += privateTripleSubjectHashesGroupedWithoutPublicPair.length + 1;
             dataset.public.push(...privateTripleSubjectHashesGroupedWithoutPublicPair);
         }
-        console.timeEnd('parsingGrouping');
 
         const numberOfChunks = kcTools.calculateNumberOfChunks(dataset.public, CHUNK_BYTE_SIZE);
         const datasetSize = numberOfChunks * CHUNK_BYTE_SIZE;
