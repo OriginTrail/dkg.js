@@ -379,7 +379,7 @@ export default class AssetOperationsManager {
                     if (publicSubjectMap.has(privateSubject)) {
                         const publicIndex = publicSubjectMap.get(privateSubject);
                         this.insertTripleSorted(
-                            privateTriplesGrouped[publicIndex],
+                            publicTriplesGrouped[publicIndex],
                             this.generatePrivateRepresentation(privateSubjectHash),
                         );
                     } else {
@@ -390,13 +390,14 @@ export default class AssetOperationsManager {
                         privateTriplesGroupedWithoutPublicPair.splice(
                             index,
                             0,
-                            privateTriplesGrouped[privateIndex],
+                            this.generatePrivateRepresentation(privateSubjectHash),
                         );
                     }
                 }
                 // At the end of public append new triple arrays
                 tokensCount += privateTriplesGroupedWithoutPublicPair.length;
                 publicTriplesGrouped.push(...privateTriplesGroupedWithoutPublicPair);
+                dataset.public = publicTriplesGrouped.flat();
             } else {
                 // There are no private triples
                 publicTriplesGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
