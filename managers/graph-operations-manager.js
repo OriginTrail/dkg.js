@@ -232,7 +232,7 @@ export default class GraphOperationsManager {
      * @param {Object} content - The content of the knowledge collection to be created, contains public, private or both keys.
      * @param {Object} [options={}] - Additional options for knowledge collection creation.
      * @param {Object} [stepHooks=emptyHooks] - Hooks to execute during knowledge collection creation.
-     * @returns {Object} Object containing UAL, publicAssertionId and operation status.
+     * @returns {Object} Object containing UAL, publicAssertionMerkleRoot and operation status.
      */
     async create(content, options = {}, stepHooks = emptyHooks) {
         this.validationService.validateJsonldOrNquads(content);
@@ -273,39 +273,39 @@ export default class GraphOperationsManager {
             minimumNumberOfNodeReplications,
         );
 
-        let dataset = {};
+        let assertion = {};
         if (typeof content === 'string') {
-            dataset.public = this.processContent(content);
+            assertion.public = this.processContent(content);
         } else if (
             typeof content.public === 'string' ||
             (!content.public && content.private && typeof content.private === 'string')
         ) {
             if (content.public) {
-                dataset.public = this.processContent(content.public);
+                assertion.public = this.processContent(content.public);
             } else {
-                dataset.public = [];
+                assertion.public = [];
             }
             if (content.private && typeof content.private === 'string') {
-                dataset.private = this.processContent(content.private);
+                assertion.private = this.processContent(content.private);
             }
         } else {
-            dataset = await kcTools.formatDataset(content);
+            assertion = await kcTools.formatDataset(content);
         }
 
-        if (dataset.private?.length) {
-            dataset.private = kcTools.generateMissingIdsForBlankNodes(dataset.private);
+        if (assertion.private?.length) {
+            assertion.private = kcTools.generateMissingIdsForBlankNodes(assertion.private);
 
-            const privateTriplesGrouped = kcTools.groupNquadsBySubject(dataset.private, true);
-            dataset.private = privateTriplesGrouped.flat();
-            const privateRoot = kcTools.calculateMerkleRoot(dataset.private);
-            dataset.public.push(
+            const privateTriplesGrouped = kcTools.groupNquadsBySubject(assertion.private, true);
+            assertion.private = privateTriplesGrouped.flat();
+            const privateRoot = kcTools.calculateMerkleRoot(assertion.private);
+            assertion.public.push(
                 `<${kaTools.generateNamedNode()}> <${PRIVATE_ASSERTION_PREDICATE}> "${privateRoot}" .`,
             );
 
-            if (dataset.public.length) {
-                dataset.public = kcTools.generateMissingIdsForBlankNodes(dataset.public);
+            if (assertion.public.length) {
+                assertion.public = kcTools.generateMissingIdsForBlankNodes(assertion.public);
             }
-            let publicTriplesGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
+            let publicTriplesGrouped = kcTools.groupNquadsBySubject(assertion.public, true);
 
             const mergedTriples = [];
             let publicIndex = 0;
@@ -351,18 +351,18 @@ export default class GraphOperationsManager {
                 mergedTriples.push([this.generatePrivateRepresentation(privateSubject)]);
                 privateIndex++;
             }
-            // Update the public dataset with the merged triples
-            dataset.public = mergedTriples.flat();
+            // Update the public assertion with the merged triples
+            assertion.public = mergedTriples.flat();
         } else {
-            // If there's no private dataset, ensure public is grouped correctly
-            dataset.public = kcTools.groupNquadsBySubject(dataset.public, true).flat();
+            // If there's no private assertion, ensure public is grouped correctly
+            assertion.public = kcTools.groupNquadsBySubject(assertion.public, true).flat();
         }
 
-        const numberOfChunks = kcTools.calculateNumberOfChunks(dataset.public, CHUNK_BYTE_SIZE);
-        const datasetSize = numberOfChunks * CHUNK_BYTE_SIZE;
+        const numberOfChunks = kcTools.calculateNumberOfChunks(assertion.public, CHUNK_BYTE_SIZE);
+        const assertionSize = numberOfChunks * CHUNK_BYTE_SIZE;
 
-        this.validationService.validateAssertionSizeInBytes(datasetSize);
-        const datasetRoot = kcTools.calculateMerkleRoot(dataset.public);
+        this.validationService.validateAssertionSizeInBytes(assertionSize);
+        const assertionMerkleRoot = kcTools.calculateMerkleRoot(assertion.public);
 
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
             'ContentAssetStorage',
@@ -373,8 +373,8 @@ export default class GraphOperationsManager {
             endpoint,
             port,
             authToken,
-            datasetRoot,
-            dataset,
+            assertionMerkleRoot,
+            assertion,
             blockchain.name,
             hashFunctionId,
             minimumNumberOfNodeReplications,
@@ -392,7 +392,7 @@ export default class GraphOperationsManager {
 
         if (publishOperationResult.status !== OPERATION_STATUSES.COMPLETED) {
             return {
-                datasetRoot,
+                assertionMerkleRoot,
                 operation: {
                     publish: getOperationStatusObject(publishOperationResult, publishOperationId),
                 },
@@ -401,7 +401,7 @@ export default class GraphOperationsManager {
 
         const estimatedPublishingCost =
             tokenAmount ??
-            (await this.blockchainService.getStakeWeightedAverageAsk()) * epochsNum * datasetSize;
+            (await this.blockchainService.getStakeWeightedAverageAsk()) * epochsNum * assertionSize;
 
         let tokenId;
         let mintKnowledgeAssetReceipt;
@@ -411,9 +411,9 @@ export default class GraphOperationsManager {
                 await this.blockchainService.createAsset(
                     {
                         publishOperationId,
-                        datasetRoot,
-                        datasetSize,
-                        triplesNumber: kaTools.getAssertionTriplesNumber(dataset.public), // todo
+                        assertionMerkleRoot,
+                        assertionSize,
+                        triplesNumber: kaTools.getAssertionTriplesNumber(assertion.public), // todo
                         chunksNumber: numberOfChunks,
                         epochsNum,
                         tokenAmount: estimatedPublishingCost,
@@ -432,10 +432,10 @@ export default class GraphOperationsManager {
                 await this.blockchainService.createAsset(
                     {
                         publishOperationId,
-                        datasetRoot,
-                        datasetSize,
-                        triplesNumber: kaTools.getAssertionTriplesNumber(dataset), // todo
-                        chunksNumber: kcTools.calculateNumberOfChunks(dataset),
+                        assertionMerkleRoot,
+                        assertionSize,
+                        triplesNumber: kaTools.getAssertionTriplesNumber(assertion), // todo
+                        chunksNumber: kcTools.calculateNumberOfChunks(assertion),
                         epochsNum,
                         tokenAmount: estimatedPublishingCost,
                         scoreFunctionId: scoreFunctionId ?? 1,
@@ -464,7 +464,7 @@ export default class GraphOperationsManager {
 
         return {
             UAL,
-            datasetRoot,
+            assertionMerkleRoot,
             signatures: publishOperationResult.data,
             operation: {
                 mintKnowledgeAsset: mintKnowledgeAssetReceipt,
@@ -494,7 +494,7 @@ export default class GraphOperationsManager {
      * @param {Object} content - The content of the asset to be created, contains public, private or both keys.
      * @param {Object} [options={}] - Additional options for asset creation.
      * @param {Object} [stepHooks=emptyHooks] - Hooks to execute during asset creation.
-     * @returns {Object} Object containing UAL, publicAssertionId and operation status.
+     * @returns {Object} Object containing UAL, publicAssertionMerkleRoot and operation status.
      */
     async localStore(content, options = {}, stepHooks = emptyHooks) {
         this.validationService.validateJsonldOrNquads(content);
@@ -530,23 +530,23 @@ export default class GraphOperationsManager {
             paranetUAL,
         );
 
-        let dataset;
+        let assertion;
 
         if (typeof content === 'string') {
-            dataset = content
+            assertion = content
                 .split('\n')
                 .map((line) => line.trimStart().trimEnd())
                 .filter((line) => line.trim() !== '');
         } else {
-            dataset = await kcTools.formatDataset(content);
+            assertion = await kcTools.formatDataset(content);
         }
 
-        const numberOfChunks = kcTools.calculateNumberOfChunks(dataset, CHUNK_BYTE_SIZE);
+        const numberOfChunks = kcTools.calculateNumberOfChunks(assertion, CHUNK_BYTE_SIZE);
 
-        const datasetSize = numberOfChunks * CHUNK_BYTE_SIZE;
+        const assertionSize = numberOfChunks * CHUNK_BYTE_SIZE;
 
-        this.validationService.validateAssertionSizeInBytes(datasetSize);
-        const datasetRoot = kcTools.calculateMerkleRoot(dataset);
+        this.validationService.validateAssertionSizeInBytes(assertionSize);
+        const assertionMerkleRoot = kcTools.calculateMerkleRoot(assertion);
 
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
             'ContentAssetStorage',
@@ -557,7 +557,7 @@ export default class GraphOperationsManager {
             endpoint,
             port,
             authToken,
-            dataset,
+            assertion,
             null, // full path to cached assertions
         );
 
@@ -573,7 +573,7 @@ export default class GraphOperationsManager {
 
         if (localStoreOperationResult.status !== OPERATION_STATUSES.COMPLETED) {
             return {
-                datasetRoot,
+                assertionMerkleRoot,
                 operation: {
                     publish: getOperationStatusObject(
                         localStoreOperationResult,
@@ -585,15 +585,15 @@ export default class GraphOperationsManager {
 
         const estimatedPublishingCost =
             tokenAmount ??
-            (await this.blockchainService.getStakeWeightedAverageAsk()) * epochsNum * datasetSize;
+            (await this.blockchainService.getStakeWeightedAverageAsk()) * epochsNum * assertionSize;
 
         const { tokenId, receipt: mintKnowledgeAssetReceipt } =
             await this.blockchainService.createAsset(
                 {
                     localStoreOperationId,
-                    datasetRoot,
-                    assertionSize: datasetSize,
-                    triplesNumber: kaTools.getAssertionTriplesNumber(dataset), // todo
+                    assertionMerkleRoot,
+                    assertionSize: assertionSize,
+                    triplesNumber: kaTools.getAssertionTriplesNumber(assertion), // todo
                     chunksNumber: numberOfChunks,
                     epochsNum,
                     tokenAmount: estimatedPublishingCost,
@@ -616,14 +616,14 @@ export default class GraphOperationsManager {
         //     fullPathToCachedAssertion = path.join(
         //         absolutePath,
         //         directory,
-        //         assertions[0].assertionId,
+        //         assertions[0].assertionMerkleRoot,
         //     );
         //     await writeFile(fullPathToCachedAssertion, JSON.stringify(assertions));
         // }
 
         return {
             UAL,
-            datasetRoot,
+            assertionMerkleRoot,
             operation: {
                 mintKnowledgeAsset: mintKnowledgeAssetReceipt,
                 localStore: getOperationStatusObject(

@@ -522,10 +522,10 @@ export default class BlockchainServiceBase {
         );
     }
 
-    async getLatestAssertionId(tokenId, blockchain) {
+    async getLatestAssertionMerkleRoot(tokenId, blockchain) {
         return this.callContractFunction(
             'ContentAssetStorage',
-            'getLatestAssertionId',
+            'getLatestAssertionMerkleRoot',
             [tokenId],
             blockchain,
         );
@@ -662,29 +662,29 @@ export default class BlockchainServiceBase {
         }
     }
 
-    async getAssertionIdByIndex(tokenId, index, blockchain) {
+    async getAssertionMerkleRootByIndex(tokenId, index, blockchain) {
         return this.callContractFunction(
             'ContentAssetStorage',
-            'getAssertionIdByIndex',
+            'getAssertionMerkleRootByIndex',
             [tokenId, index],
             blockchain,
         );
     }
 
-    async getAssertionIds(tokenId, blockchain) {
+    async getAssertionMerkleRoots(tokenId, blockchain) {
         return this.callContractFunction(
             'ContentAssetStorage',
-            'getAssertionIds',
+            'getAssertionMerkleRoots',
             [tokenId],
             blockchain,
         );
     }
 
-    async getAssertionIssuer(tokenId, assertionId, assertionIndex, blockchain) {
+    async getAssertionIssuer(tokenId, assertionMerkleRoot, assertionIndex, blockchain) {
         return this.callContractFunction(
             'ContentAssetStorage',
             'getAssertionIssuer',
-            [tokenId, assertionId, assertionIndex],
+            [tokenId, assertionMerkleRoot, assertionIndex],
             blockchain,
         );
     }
@@ -708,11 +708,11 @@ export default class BlockchainServiceBase {
         };
     }
 
-    async getAssertionSize(assertionId, blockchain) {
+    async getAssertionSize(assertionMerkleRoot, blockchain) {
         return this.callContractFunction(
             'AssertionStorage',
             'getAssertionSize',
-            [assertionId],
+            [assertionMerkleRoot],
             blockchain,
         );
     }

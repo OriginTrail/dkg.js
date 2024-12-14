@@ -82,7 +82,8 @@
                 </div>
                 <div class="col-6">
                     <el-table :data="tableData" style="width: 100%">
-                        <el-table-column prop="assertionId" label="Assertion ID"> </el-table-column>
+                        <el-table-column prop="assertionMerkleRoot" label="Assertion ID">
+                        </el-table-column>
                         <el-table-column prop="UAL" label="UAL"> </el-table-column>
                         <el-table-column label="Operations">
                             <template slot-scope="scope">
@@ -129,7 +130,7 @@
                         getUAL: '',
                         tableData: [
                             {
-                                assertionId: '',
+                                assertionMerkleRoot: '',
                                 UAL: '',
                             },
                         ],
@@ -155,7 +156,7 @@
                 },
                 methods: {
                     initializeDKGClient(blockchain) {
-                        console.log(this.selectedNetwork)
+                        console.log(this.selectedNetwork);
                         window.DkgClient = new DKG({
                             environment: 'development',
                             endpoint: 'http://localhost',
@@ -174,7 +175,7 @@
                             'el-icon-loading',
                             0,
                         );
-                        let { UAL, assertionId } = await DkgClient.asset.create(
+                        let { UAL, assertionMerkleRoot } = await DkgClient.asset.create(
                             this.assetData,
                             this.publishOptions,
                         );
@@ -186,7 +187,7 @@
                             4000,
                         );
                         this.disabled = false;
-                        this.tableData.push({ assertionId, UAL });
+                        this.tableData.push({ assertionMerkleRoot, UAL });
                     },
                     async get() {
                         let loading = this.notification(

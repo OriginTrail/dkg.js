@@ -284,7 +284,7 @@ export default class AssetOperationsManager {
      * @param {Object} content - The content of the knowledge collection to be created, contains public, private or both keys.
      * @param {Object} [options={}] - Additional options for knowledge collection creation.
      * @param {Object} [stepHooks=emptyHooks] - Hooks to execute during knowledge collection creation.
-     * @returns {Object} Object containing UAL, publicAssertionId and operation status.
+     * @returns {Object} Object containing UAL, publicAssertionMerkleRoot and operation status.
      */
     async create(content, options = {}, stepHooks = emptyHooks) {
         this.validationService.validateJsonldOrNquads(content);
@@ -325,40 +325,40 @@ export default class AssetOperationsManager {
             minimumNumberOfNodeReplications,
         );
 
-        let dataset = {};
+        let assertion = {};
         if (typeof content === 'string') {
-            dataset.public = this.processContent(content);
+            assertion.public = this.processContent(content);
         } else if (
             typeof content.public === 'string' ||
             (!content.public && content.private && typeof content.private === 'string')
         ) {
             if (content.public) {
-                dataset.public = this.processContent(content.public);
+                assertion.public = this.processContent(content.public);
             } else {
-                dataset.public = [];
+                assertion.public = [];
             }
             if (content.private && typeof content.private === 'string') {
-                dataset.private = this.processContent(content.private);
+                assertion.private = this.processContent(content.private);
             }
         } else {
-            dataset = await kcTools.formatDataset(content);
+            assertion = await kcTools.formatDataset(content);
         }
 
-        if (dataset.private?.length) {
-            dataset.private = kcTools.generateMissingIdsForBlankNodes(dataset.private);
+        if (assertion.private?.length) {
+            assertion.private = kcTools.generateMissingIdsForBlankNodes(assertion.private);
 
-            const privateTriplesGrouped = kcTools.groupNquadsBySubject(dataset.private, true);
-            dataset.private = privateTriplesGrouped.flat();
-            const privateRoot = kcTools.calculateMerkleRoot(dataset.private);
+            const privateTriplesGrouped = kcTools.groupNquadsBySubject(assertion.private, true);
+            assertion.private = privateTriplesGrouped.flat();
+            const privateRoot = kcTools.calculateMerkleRoot(assertion.private);
 
-            dataset.public.push(
+            assertion.public.push(
                 `<${kaTools.generateNamedNode()}> <${PRIVATE_ASSERTION_PREDICATE}> "${privateRoot}" .`,
             );
 
-            if (dataset.public.length) {
-                dataset.public = kcTools.generateMissingIdsForBlankNodes(dataset.public);
+            if (assertion.public.length) {
+                assertion.public = kcTools.generateMissingIdsForBlankNodes(assertion.public);
             }
-            let publicTriplesGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
+            let publicTriplesGrouped = kcTools.groupNquadsBySubject(assertion.public, true);
 
             const mergedTriples = [];
             let publicIndex = 0;
@@ -404,18 +404,18 @@ export default class AssetOperationsManager {
                 mergedTriples.push([this.generatePrivateRepresentation(privateSubject)]);
                 privateIndex++;
             }
-            // Update the public dataset with the merged triples
-            dataset.public = mergedTriples.flat();
+            // Update the public assertion with the merged triples
+            assertion.public = mergedTriples.flat();
         } else {
-            // If there's no private dataset, ensure public is grouped correctly
-            dataset.public = kcTools.groupNquadsBySubject(dataset.public, true).flat();
+            // If there's no private assertion, ensure public is grouped correctly
+            assertion.public = kcTools.groupNquadsBySubject(assertion.public, true).flat();
         }
 
-        const numberOfChunks = kcTools.calculateNumberOfChunks(dataset.public, CHUNK_BYTE_SIZE);
-        const datasetSize = numberOfChunks * CHUNK_BYTE_SIZE;
+        const numberOfChunks = kcTools.calculateNumberOfChunks(assertion.public, CHUNK_BYTE_SIZE);
+        const assertionSize = numberOfChunks * CHUNK_BYTE_SIZE;
 
-        this.validationService.validateAssertionSizeInBytes(datasetSize);
-        const datasetRoot = kcTools.calculateMerkleRoot(dataset.public);
+        this.validationService.validateAssertionSizeInBytes(assertionSize);
+        const assertionMerkleRoot = kcTools.calculateMerkleRoot(assertion.public);
 
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
             'KnowledgeCollectionStorage',
@@ -426,8 +426,8 @@ export default class AssetOperationsManager {
             endpoint,
             port,
             authToken,
-            datasetRoot,
-            dataset,
+            assertionMerkleRoot,
+            assertion,
             blockchain.name,
             hashFunctionId,
             minimumNumberOfNodeReplications,
@@ -448,7 +448,7 @@ export default class AssetOperationsManager {
             !publishOperationResult.minAcksReached
         ) {
             return {
-                datasetRoot,
+                assertionMerkleRoot,
                 operation: {
                     publish: getOperationStatusObject(publishOperationResult, publishOperationId),
                 },
@@ -475,7 +475,7 @@ export default class AssetOperationsManager {
 
         const estimatedPublishingCost =
             tokenAmount ??
-            (await this.blockchainService.getStakeWeightedAverageAsk()) * epochsNum * datasetSize;
+            (await this.blockchainService.getStakeWeightedAverageAsk()) * epochsNum * assertionSize;
 
         let knowledgeCollectionId;
         let mintKnowledgeAssetReceipt;
@@ -485,10 +485,10 @@ export default class AssetOperationsManager {
                 await this.blockchainService.createKnowledgeCollection(
                     {
                         publishOperationId,
-                        merkleRoot: datasetRoot,
-                        knowledgeAssetsAmount: kcTools.countDistinctSubjects(dataset.public),
-                        byteSize: datasetSize,
-                        triplesAmount: kaTools.getAssertionTriplesNumber(dataset.public),
+                        merkleRoot: assertionMerkleRoot,
+                        knowledgeAssetsAmount: kcTools.countDistinctSubjects(assertion.public),
+                        byteSize: assertionSize,
+                        triplesAmount: kaTools.getAssertionTriplesNumber(assertion.public),
                         chunksAmount: numberOfChunks,
                         epochs: epochsNum,
                         tokenAmount: estimatedPublishingCost,
@@ -510,10 +510,10 @@ export default class AssetOperationsManager {
             ({ knowledgeCollectionId, receipt: mintKnowledgeAssetReceipt } =
                 await this.blockchainService.createKnowledgeCollection(
                     {
-                        merkleRoot: datasetRoot,
-                        knowledgeAssetsAmount: kcTools.countDistinctSubjects(dataset.public),
-                        byteSize: datasetSize,
-                        triplesAmount: kaTools.getAssertionTriplesNumber(dataset.public),
+                        merkleRoot: assertionMerkleRoot,
+                        knowledgeAssetsAmount: kcTools.countDistinctSubjects(assertion.public),
+                        byteSize: assertionSize,
+                        triplesAmount: kaTools.getAssertionTriplesNumber(assertion.public),
                         chunksAmount: numberOfChunks,
                         epochs: epochsNum,
                         tokenAmount: estimatedPublishingCost,
@@ -549,7 +549,7 @@ export default class AssetOperationsManager {
 
         return {
             UAL,
-            datasetRoot,
+            assertionMerkleRoot,
             signatures: publishOperationResult.data.signatures,
             operation: {
                 mintKnowledgeAsset: mintKnowledgeAssetReceipt,
@@ -632,7 +632,7 @@ export default class AssetOperationsManager {
 
         const { tokenId } = resolveUAL(UAL);
 
-        const state = await this.blockchainService.getAssertionIdByIndex(
+        const state = await this.blockchainService.getAssertionMerkleRootByIndex(
             tokenId,
             stateIndex,
             blockchain,
@@ -665,7 +665,7 @@ export default class AssetOperationsManager {
 
         const { tokenId } = resolveUAL(UAL);
 
-        const states = await this.blockchainService.getAssertionIds(tokenId, blockchain);
+        const states = await this.blockchainService.getAssertionMerkleRoots(tokenId, blockchain);
 
         const latestStateIndex = states.length - 1;
 
@@ -698,7 +698,7 @@ export default class AssetOperationsManager {
 
         const { tokenId } = resolveUAL(UAL);
 
-        const states = await this.blockchainService.getAssertionIds(tokenId, blockchain);
+        const states = await this.blockchainService.getAssertionMerkleRoots(tokenId, blockchain);
 
         return {
             UAL,
@@ -757,7 +757,7 @@ export default class AssetOperationsManager {
             tokenAmountInWei =
                 (await this.blockchainService.getStakeWeightedAverageAsk()) *
                 epochsNumber *
-                datasetSize; // need to get dataset size somewhere
+                assertionSize; // need to get assertion size somewhere
         }
 
         const receipt = await this.blockchainService.extendAssetStoringPeriod(
@@ -798,7 +798,7 @@ export default class AssetOperationsManager {
             const authToken = this.inputService.getAuthToken(options);
             const hashFunctionId = this.inputService.getHashFunctionId(options);
 
-            const latestFinalizedState = await this.blockchainService.getLatestAssertionId(
+            const latestFinalizedState = await this.blockchainService.getLatestAssertionMerkleRoot(
                 tokenId,
                 blockchain,
             );
@@ -840,13 +840,16 @@ export default class AssetOperationsManager {
 
     async _getUpdateBidSuggestion(UAL, blockchain, size) {
         const { contract, tokenId } = resolveUAL(UAL);
-        const firstDatasetRoot = await this.blockchainService.getAssertionIdByIndex(
+        const firstassertionMerkleRoot = await this.blockchainService.getAssertionMerkleRootByIndex(
             tokenId,
             0,
             blockchain,
         );
 
-        const keyword = ethers.solidityPacked(['address', 'bytes32'], [contract, firstDatasetRoot]);
+        const keyword = ethers.solidityPacked(
+            ['address', 'bytes32'],
+            [contract, firstassertionMerkleRoot],
+        );
 
         const agreementId = ethers.sha256(
             ethers.solidityPacked(['address', 'uint256', 'bytes'], [contract, tokenId, keyword]),
@@ -911,7 +914,7 @@ export default class AssetOperationsManager {
      * @param {string} UAL - The Universal Asset Locator
      * @param {Object} content - The content of the asset to be updated.
      * @param {Object} [options={}] - Additional options for asset update.
-     * @returns {Object} Object containing UAL, publicAssertionId and operation status.
+     * @returns {Object} Object containing UAL, publicAssertionMerkleRoot and operation status.
      */
     async update(UAL, content, options = {}) {
         this.validationService.validateJsonldOrNquads(content);
@@ -945,23 +948,23 @@ export default class AssetOperationsManager {
 
         const { tokenId } = resolveUAL(UAL);
 
-        let dataset;
+        let assertion;
 
         if (typeof content === 'string') {
-            dataset = content
+            assertion = content
                 .split('\n')
                 .map((line) => line.trimStart().trimEnd())
                 .filter((line) => line.trim() !== '');
         } else {
-            dataset = await kcTools.formatDataset(content);
+            assertion = await kcTools.formatDataset(content);
         }
 
-        const numberOfChunks = kcTools.calculateNumberOfChunks(dataset, CHUNK_BYTE_SIZE);
+        const numberOfChunks = kcTools.calculateNumberOfChunks(assertion, CHUNK_BYTE_SIZE);
 
-        const datasetSize = numberOfChunks * CHUNK_BYTE_SIZE;
+        const assertionSize = numberOfChunks * CHUNK_BYTE_SIZE;
 
-        this.validationService.validateAssertionSizeInBytes(datasetSize);
-        const datasetRoot = kcTools.calculateMerkleRoot(dataset);
+        this.validationService.validateAssertionSizeInBytes(assertionSize);
+        const assertionMerkleRoot = kcTools.calculateMerkleRoot(assertion);
 
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
             'ContentAssetStorage',
@@ -972,8 +975,8 @@ export default class AssetOperationsManager {
             endpoint,
             port,
             authToken,
-            datasetRoot,
-            dataset,
+            assertionMerkleRoot,
+            assertion,
             blockchain.name,
             contentAssetStorageAddress,
             tokenId,
@@ -991,7 +994,7 @@ export default class AssetOperationsManager {
 
         if (updateOperationResult.status !== OPERATION_STATUSES.COMPLETED) {
             return {
-                datasetRoot,
+                assertionMerkleRoot,
                 operation: {
                     publish: getOperationStatusObject(updateOperationResult, updateOperationId),
                 },
@@ -1003,22 +1006,22 @@ export default class AssetOperationsManager {
         if (tokenAmount != null) {
             tokenAmountInWei = tokenAmount;
         } else {
-            tokenAmountInWei = await this._getUpdateBidSuggestion(UAL, blockchain, datasetSize);
+            tokenAmountInWei = await this._getUpdateBidSuggestion(UAL, blockchain, assertionSize);
         }
 
         const updateKnowledgeAssetReceipt = await this.blockchainService.updateAsset(
             tokenId,
-            datasetRoot,
-            datasetSize,
-            kaTools.getAssertionTriplesNumber(dataset),
-            kcTools.calculateNumberOfChunks(dataset),
+            assertionMerkleRoot,
+            assertionSize,
+            kaTools.getAssertionTriplesNumber(assertion),
+            kcTools.calculateNumberOfChunks(assertion),
             tokenAmountInWei,
             blockchain,
         );
 
         return {
             UAL,
-            datasetRoot,
+            assertionMerkleRoot,
             operation: {
                 updateKnowledgeAsset: updateKnowledgeAssetReceipt,
                 update: getOperationStatusObject(updateOperationResult, updateOperationId),
