@@ -1010,6 +1010,17 @@ export default class AssetOperationsManager {
             getOperationId,
         );
 
+        if (subjectUALPairsResult.status !== OPERATION_STATUSES.COMPLETED) {
+            return {
+                operation: {
+                    getSubjectUALPairs: getOperationStatusObject(
+                        subjectUALPairsResult,
+                        getOperationId,
+                    ),
+                },
+            };
+        }
+
         // Initialize maps for quick lookups
         const oldSubjectUALMap = new Map();
         const oldSubjectHashUALMap = new Map();
@@ -1053,6 +1064,7 @@ export default class AssetOperationsManager {
         let tokensToBeMinted = 0;
         let tokensToBeBurned = [];
 
+        dataset.private = kcTools.generateMissingIdsForBlankNodes(dataset.private);
         publicTriplesGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
         // We always have public as there is private root triple here already
         if (dataset.private?.length) {
@@ -1213,7 +1225,7 @@ export default class AssetOperationsManager {
             return {
                 datasetRoot,
                 operation: {
-                    publish: getOperationStatusObject(updateOperationResult, updateOperationId),
+                    update: getOperationStatusObject(updateOperationResult, updateOperationId),
                 },
             };
         }
