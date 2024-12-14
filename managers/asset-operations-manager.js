@@ -348,92 +348,108 @@ export default class AssetOperationsManager {
         let publicTriplesGrouped = [];
         let tokensCount = 0;
         if (dataset.public?.length) {
+            // Assign IDs to blank nodes
             dataset.public = kcTools.generateMissingIdsForBlankNodes(dataset.public);
 
+            // If we also have private triples
             if (dataset.private?.length) {
                 dataset.private = kcTools.generateMissingIdsForBlankNodes(dataset.private);
 
+                // Group private triples by subject and flatten
                 const privateTriplesGrouped = kcTools.groupNquadsBySubject(dataset.private, true);
                 dataset.private = privateTriplesGrouped.flat();
+
+                // Compute private root and add to public
                 const privateRoot = kcTools.calculateMerkleRoot(dataset.private);
                 dataset.public.push(
                     `<${kaTools.generateNamedNode()}> <${PRIVATE_ASSERTION_PREDICATE}> "${privateRoot}" .`,
                 );
+
+                // Group public triples by subject
                 publicTriplesGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
                 tokensCount += publicTriplesGrouped.length;
-                //  This can probably be optimized as it's sorted so check can go faster
-                const publicSubjectMap = publicTriplesGrouped.reduce((map, group, index) => {
-                    const [publicSubject] = group[0].split(' ');
-                    map.set(publicSubject, index);
-                    return map;
-                }, new Map());
-                // Find if private subject has a public pair
+
+                // Create a map of public subject -> index for quick lookup
+                const publicSubjectMap = new Map();
+                for (let i = 0; i < publicTriplesGrouped.length; i++) {
+                    const [publicSubject] = publicTriplesGrouped[i][0].split(' ');
+                    publicSubjectMap.set(publicSubject, i);
+                }
+
                 const privateTriplesGroupedWithoutPublicPair = [];
                 const privateTripleSubjectHashesGroupedWithoutPublicPair = [];
-                for (const [privateIndex, privateTriples] of privateTriplesGrouped.entries()) {
+
+                // Integrate private subjects into public or store separately if no match
+                for (const privateTriples of privateTriplesGrouped) {
                     const [privateSubject] = privateTriples[0].split(' ');
-                    const privateSubjectHash = ethers.solidityPackedSha256(
+                    const subjectHash = ethers.solidityPackedSha256(
                         ['string'],
                         [privateSubject.slice(1, -1)],
                     );
+
                     if (publicSubjectMap.has(privateSubject)) {
+                        // If there's a public pair, insert a representation in that group
                         const publicIndex = publicSubjectMap.get(privateSubject);
                         this.insertTripleSorted(
                             publicTriplesGrouped[publicIndex],
-                            this.generatePrivateRepresentation(privateSubjectHash),
+                            this.generatePrivateRepresentation(subjectHash),
                         );
                     } else {
+                        // If no public pair, maintain separate list, inserting sorted by hash
                         const index = this.insertTripleSorted(
                             privateTripleSubjectHashesGroupedWithoutPublicPair,
-                            privateSubjectHash,
+                            subjectHash,
                         );
                         privateTriplesGroupedWithoutPublicPair.splice(
                             index,
                             0,
-                            this.generatePrivateRepresentation(privateSubjectHash),
+                            this.generatePrivateRepresentation(subjectHash),
                         );
                     }
                 }
-                // At the end of public append new triple arrays
+
+                // Append any non-paired private subjects at the end
                 tokensCount += privateTriplesGroupedWithoutPublicPair.length;
                 publicTriplesGrouped.push(...privateTriplesGroupedWithoutPublicPair);
+
                 dataset.public = publicTriplesGrouped.flat();
             } else {
-                // There are no private triples
+                // No private triples, just group and flatten public
                 publicTriplesGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
                 tokensCount += publicTriplesGrouped.length;
                 dataset.public = publicTriplesGrouped.flat();
             }
         } else {
-            // There is no public triples
+            // No public triples, just process private
             dataset.private = kcTools.generateMissingIdsForBlankNodes(dataset.private);
 
             const privateTriplesGrouped = kcTools.groupNquadsBySubject(dataset.private, true);
             dataset.private = privateTriplesGrouped.flat();
             const privateRoot = kcTools.calculateMerkleRoot(dataset.private);
 
-            dataset.public.push(
+            // Add private root assertion as a public triple
+            dataset.public = [
                 `<${kaTools.generateNamedNode()}> <${PRIVATE_ASSERTION_PREDICATE}> "${privateRoot}" .`,
-            );
+            ];
+
             const privateTriplesGroupedWithoutPublicPair = [];
             const privateTripleSubjectHashesGroupedWithoutPublicPair = [];
-            for (const { privateTriple, privateIndex } of privateTriplesGrouped.entries()) {
-                const [privateSubject] = privateTriple.split(' ');
-                const privateSubjectHash = ethers.solidityPackedSha256(
+
+            // Insert each private subject into a sorted structure
+            for (let i = 0; i < privateTriplesGrouped.length; i++) {
+                const [privateSubject] = privateTriplesGrouped[i][0].split(' ');
+                const subjectHash = ethers.solidityPackedSha256(
                     ['string'],
                     [privateSubject.slice(1, -1)],
                 );
                 const index = this.insertTripleSorted(
                     privateTripleSubjectHashesGroupedWithoutPublicPair,
-                    privateSubjectHash,
+                    subjectHash,
                 );
-                privateTriplesGroupedWithoutPublicPair.splice(
-                    index,
-                    0,
-                    privateTriplesGrouped[privateIndex],
-                );
+                privateTriplesGroupedWithoutPublicPair.splice(index, 0, privateTriplesGrouped[i]);
             }
-            // Count of private tokens + private root
+
+            // Count tokens: private subjects + one for the private root
             tokensCount += privateTripleSubjectHashesGroupedWithoutPublicPair.length + 1;
             dataset.public.push(...privateTripleSubjectHashesGroupedWithoutPublicPair);
         }
