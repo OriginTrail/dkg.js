@@ -1077,7 +1077,6 @@ export default class AssetOperationsManager {
             }
 
             const privateTriplesGroupedWithoutPublicPair = [];
-            const privateTripleSubjectHashesGroupedWithoutPublicPair = [];
 
             // Integrate private subjects into public or create new entries if no public pair
             for (const privateTriples of privateTriplesGrouped) {
@@ -1097,17 +1096,16 @@ export default class AssetOperationsManager {
                 } else {
                     // No matching public pair - insert as a new hashed subject
                     const index = this.insertTripleSorted(
-                        privateTripleSubjectHashesGroupedWithoutPublicPair,
-                        privateSubjectHash,
-                    );
-                    privateTriplesGroupedWithoutPublicPair.splice(index, 0, [
+                        privateTriplesGroupedWithoutPublicPair,
                         `${`<${PRIVATE_HASH_SUBJECT_PREFIX}${privateSubjectHash}>`} <${PRIVATE_RESOURCE_PREDICATE}> <${kaTools.generateNamedNode()}> .`,
-                    ]);
+                    );
                 }
             }
 
             tokensCount += privateTriplesGroupedWithoutPublicPair.length;
-            publicTriplesGrouped.push(...privateTriplesGroupedWithoutPublicPair);
+            for (const triple of privateTriplesGroupedWithoutPublicPair) {
+                publicTriplesGrouped.push([triple]);
+            }
 
             // Determine tokens to mint or burn
             for (const triples of publicTriplesGrouped) {
