@@ -397,7 +397,7 @@ export default class AssetOperationsManager {
                     // If no public pair, maintain separate list, inserting sorted by hash
                     this.insertTripleSorted(
                         privateTripleSubjectHashesGroupedWithoutPublicPair,
-                        privateSubjectHash,
+                        `${`<${PRIVATE_HASH_SUBJECT_PREFIX}${privateSubjectHash}>`} <${PRIVATE_RESOURCE_PREDICATE}> <${kaTools.generateNamedNode()}> .`,
                     );
                 }
             }
