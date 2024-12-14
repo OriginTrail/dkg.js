@@ -375,7 +375,6 @@ export default class AssetOperationsManager {
                 publicSubjectMap.set(publicSubject, i);
             }
 
-            const privateTriplesGroupedWithoutPublicPair = [];
             const privateTripleSubjectHashesGroupedWithoutPublicPair = [];
 
             // Integrate private subjects into public or store separately if no match to be appended later
@@ -403,7 +402,7 @@ export default class AssetOperationsManager {
             }
 
             // Append any non-paired private subjects at the end
-            tokensCount += privateTriplesGroupedWithoutPublicPair.length;
+            tokensCount += privateTripleSubjectHashesGroupedWithoutPublicPair.length;
             for (const triple of privateTripleSubjectHashesGroupedWithoutPublicPair) {
                 publicTriplesGrouped.push([triple]);
             }
