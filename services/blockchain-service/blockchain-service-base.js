@@ -24,7 +24,7 @@ const ParanetNeuroIncentivesPoolAbi = require('dkg-evm-module/abi/ParanetNeuroIn
 const ParanetKnowledgeMinersRegistryAbi = require('dkg-evm-module/abi/ParanetKnowledgeMinersRegistry.json');
 const IdentityStorageAbi = require('dkg-evm-module/abi/IdentityStorage.json');
 const KnowledgeCollectionAbi = require('dkg-evm-module/abi/KnowledgeCollection.json');
-const KnowledgeCollectionLibAbi = require('dkg-evm-module/abi/KnowledgeCollectionLib.json');
+const KnowledgeCollectionStorageAbi = require('dkg-evm-module/abi/KnowledgeCollectionStorage.json');
 
 // const ShardingTableStorageAbi = require('dkg-evm-module/abi/ShardingTableStorage.sol.json');
 
@@ -48,17 +48,19 @@ export default class BlockchainServiceBase {
         this.abis.ParanetKnowledgeMinersRegistry = ParanetKnowledgeMinersRegistryAbi;
         this.abis.IdentityStorage = IdentityStorageAbi;
         this.abis.KnowledgeCollection = KnowledgeCollectionAbi;
-        this.abis.KnowledgeCollectionLib = KnowledgeCollectionLibAbi;
+        this.abis.KnowledgeCollectionStorage = KnowledgeCollectionStorageAbi;
         // this.abis.ShardingTableStorageAbi = ShardingTableStorageAbi;
 
-        this.abis.ContentAsset.filter((obj) => obj.type === 'event').forEach((event) => {
-            const concatInputs = event.inputs.map((input) => input.internalType);
+        this.abis.KnowledgeCollectionStorage.filter((obj) => obj.type === 'event').forEach(
+            (event) => {
+                const concatInputs = event.inputs.map((input) => input.internalType);
 
-            this.events[event.name] = {
-                hash: Web3.utils.keccak256(`${event.name}(${concatInputs})`),
-                inputs: event.inputs,
-            };
-        });
+                this.events[event.name] = {
+                    hash: Web3.utils.keccak256(`${event.name}(${concatInputs})`),
+                    inputs: event.inputs,
+                };
+            },
+        );
     }
 
     initializeWeb3() {
@@ -325,7 +327,8 @@ export default class BlockchainServiceBase {
             this[blockchain.name].contractAddresses[blockchain.hubContract][contractName] =
                 await this.callContractFunction(
                     'Hub',
-                    contractName.includes('AssetStorage') || contractName.includes('CollectionStorage')
+                    contractName.includes('AssetStorage') ||
+                        contractName.includes('CollectionStorage')
                         ? 'getAssetStorageAddress'
                         : 'getContractAddress',
                     [contractName],
@@ -474,7 +477,11 @@ export default class BlockchainServiceBase {
                 );
             }
 
-            let { id } = await this.decodeEventLogs(receipt, 'KnowledgeCollectionCreated', blockchain);
+            let { id } = await this.decodeEventLogs(
+                receipt,
+                'KnowledgeCollectionCreated',
+                blockchain,
+            );
 
             id = parseInt(id, 10);
 

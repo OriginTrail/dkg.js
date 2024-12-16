@@ -1,5 +1,5 @@
-import jsonld from 'jsonld';
-import DKG from '../index.js';
+const jsonld = require('jsonld');
+const DKG = require('../index.cjs');
 
 const ENVIRONMENT = 'development';
 const OT_NODE_HOSTNAME = 'http://localhost';
@@ -76,9 +76,9 @@ function divider() {
 
     // divider();
 
-    // const nodeInfo = await DkgClient.node.info();
-    // console.log('======================== NODE INFO RECEIVED');
-    // console.log(nodeInfo);
+    const nodeInfo = await DkgClient.node.info();
+    console.log('======================== NODE INFO RECEIVED');
+    console.log(nodeInfo);
 
     // divider();
 
@@ -108,14 +108,14 @@ function divider() {
 
     divider();
 
-    console.time('Publish (3 replications, 3 finalizations)')
+    console.time('Publish (3 replications, 3 finalizations)');
     const result2 = await DkgClient.asset.create(content, {
         epochsNum: 2,
         tokenAmount: '100000000000',
         minimumNumberOfFinalizationConfirmations: 3,
         minimumNumberOfNodeReplications: 3,
     });
-    console.timeEnd('Publish (3 replications, 3 finalizations)')
+    console.timeEnd('Publish (3 replications, 3 finalizations)');
 
     console.log(result2);
 
