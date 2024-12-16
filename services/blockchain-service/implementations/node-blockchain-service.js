@@ -1,7 +1,7 @@
 /* eslint-disable no-param-reassign */
 /* eslint-disable no-await-in-loop */
 import Web3 from 'web3';
-import { TRANSACTION_RETRY_ERRORS, WEBSOCKET_PROVIDER_OPTIONS  } from '../../../constants.js';
+import { TRANSACTION_RETRY_ERRORS, WEBSOCKET_PROVIDER_OPTIONS } from '../../../constants.js';
 import BlockchainServiceBase from '../blockchain-service-base.js';
 
 export default class NodeBlockchainService extends BlockchainServiceBase {
@@ -10,14 +10,16 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
         this.config = config;
         this.events = {};
 
-        this.abis.KnowledgeCollectionLib.filter((obj) => obj.type === 'event').forEach((event) => {
-            const concatInputs = event.inputs.map((input) => input.internalType);
+        this.abis.KnowledgeCollectionStorage.filter((obj) => obj.type === 'event').forEach(
+            (event) => {
+                const concatInputs = event.inputs.map((input) => input.internalType);
 
-            this.events[event.name] = {
-                hash: Web3.utils.keccak256(`${event.name}(${concatInputs})`),
-                inputs: event.inputs,
-            };
-        });
+                this.events[event.name] = {
+                    hash: Web3.utils.keccak256(`${event.name}(${concatInputs})`),
+                    inputs: event.inputs,
+                };
+            },
+        );
     }
 
     initializeWeb3(blockchainName, blockchainRpc, blockchainOptions) {
