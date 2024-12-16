@@ -120,7 +120,8 @@ export default class GraphOperationsManager {
                 },
             };
         }
-        const { assertion, metadata } = getOperationResult.data;
+        const { metadata } = getOperationResult.data;
+        let assertion = getOperationResult.data.assertion;
 
         if (!assertion) {
             if (getOperationResult.status !== 'FAILED') {
@@ -151,6 +152,16 @@ export default class GraphOperationsManager {
         let formattedAssertion;
         let formattedMetadata;
         if (outputFormat === GET_OUTPUT_FORMATS.JSON_LD) {
+            if (assertion.public || assertion.private) {
+                const tempAssertion = [];
+                if (assertion.public) {
+                    tempAssertion.push(...assertion.public);
+                }
+                if (assertion.private) {
+                    tempAssertion.push(...assertion.private);
+                }
+                assertion = tempAssertion;
+            }
             formattedAssertion = await toJSONLD(assertion.join('\n'));
             if (includeMetadata) {
                 formattedMetadata = await toJSONLD(metadata.join('\n'));
