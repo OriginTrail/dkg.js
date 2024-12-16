@@ -276,6 +276,7 @@ export default class AssetOperationsManager {
             }
         }
         triplesArray.splice(left, 0, newTriple);
+        return left;
     }
 
     /**
@@ -344,71 +345,74 @@ export default class AssetOperationsManager {
             dataset = await kcTools.formatDataset(content);
         }
 
+        let publicTriplesGrouped = [];
+        let tokensCount = 0;
+        // Assign IDs to blank nodes
+
+        dataset.public = kcTools.generateMissingIdsForBlankNodes(dataset.public);
+
         if (dataset.private?.length) {
             dataset.private = kcTools.generateMissingIdsForBlankNodes(dataset.private);
 
+            // Group private triples by subject and flatten
             const privateTriplesGrouped = kcTools.groupNquadsBySubject(dataset.private, true);
             dataset.private = privateTriplesGrouped.flat();
-            const privateRoot = kcTools.calculateMerkleRoot(dataset.private);
 
+            // Compute private root and add to public
+            const privateRoot = kcTools.calculateMerkleRoot(dataset.private);
             dataset.public.push(
                 `<${kaTools.generateNamedNode()}> <${PRIVATE_ASSERTION_PREDICATE}> "${privateRoot}" .`,
             );
 
-            if (dataset.public.length) {
-                dataset.public = kcTools.generateMissingIdsForBlankNodes(dataset.public);
+            // Group public triples by subject
+            publicTriplesGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
+            tokensCount += publicTriplesGrouped.length;
+
+            // Create a map of public subject -> index for quick lookup
+            const publicSubjectMap = new Map();
+            for (let i = 0; i < publicTriplesGrouped.length; i++) {
+                const [publicSubject] = publicTriplesGrouped[i][0].split(' ');
+                publicSubjectMap.set(publicSubject, i);
             }
-            let publicTriplesGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
 
-            const mergedTriples = [];
-            let publicIndex = 0;
-            let privateIndex = 0;
-            const publicLength = publicTriplesGrouped.length;
-            const privateLength = privateTriplesGrouped.length;
+            const privateTripleSubjectHashesGroupedWithoutPublicPair = [];
 
-            // Merge public and private hashes triples in a single pass
-            while (publicIndex < publicLength && privateIndex < privateLength) {
-                const publicGroup = publicTriplesGrouped[publicIndex];
-                const [publicSubject] = publicGroup[0].split(' ');
-                const [privateSubject] = privateTriplesGrouped[privateIndex][0].split(' ');
+            // Integrate private subjects into public or store separately if no match to be appended later
+            for (const privateTriples of privateTriplesGrouped) {
+                const [privateSubject] = privateTriples[0].split(' ');
+                const privateSubjectHash = ethers.solidityPackedSha256(
+                    ['string'],
+                    [privateSubject.slice(1, -1)],
+                );
 
-                const compare = publicSubject.localeCompare(privateSubject);
-                if (compare < 0) {
-                    // Public subject comes before private subject
-                    mergedTriples.push(publicGroup);
-                    publicIndex++;
-                } else if (compare > 0) {
-                    // Private subject comes before public subject
-                    mergedTriples.push([this.generatePrivateRepresentation(privateSubject)]);
-                    privateIndex++;
-                } else {
-                    // Subjects match, merge triples
+                if (publicSubjectMap.has(privateSubject)) {
+                    // If there's a public pair, insert a representation in that group
+                    const publicIndex = publicSubjectMap.get(privateSubject);
                     this.insertTripleSorted(
-                        publicGroup,
-                        this.generatePrivateRepresentation(privateSubject),
+                        publicTriplesGrouped[publicIndex],
+                        this.generatePrivateRepresentation(privateSubjectHash),
                     );
-                    mergedTriples.push(publicGroup);
-                    publicIndex++;
-                    privateIndex++;
+                } else {
+                    // If no public pair, maintain separate list, inserting sorted by hash
+                    this.insertTripleSorted(
+                        privateTripleSubjectHashesGroupedWithoutPublicPair,
+                        `${`<${PRIVATE_HASH_SUBJECT_PREFIX}${privateSubjectHash}>`} <${PRIVATE_RESOURCE_PREDICATE}> <${kaTools.generateNamedNode()}> .`,
+                    );
                 }
             }
 
-            while (publicIndex < publicLength) {
-                mergedTriples.push(...publicTriplesGrouped[publicIndex]);
-                publicIndex++;
+            // Append any non-paired private subjects at the end
+            tokensCount += privateTripleSubjectHashesGroupedWithoutPublicPair.length;
+            for (const triple of privateTripleSubjectHashesGroupedWithoutPublicPair) {
+                publicTriplesGrouped.push([triple]);
             }
 
-            // Append any remaining private triples
-            while (privateIndex < privateLength) {
-                const [privateSubject] = privateTriplesGrouped[privateIndex][0].split(' ');
-                mergedTriples.push([this.generatePrivateRepresentation(privateSubject)]);
-                privateIndex++;
-            }
-            // Update the public dataset with the merged triples
-            dataset.public = mergedTriples.flat();
+            dataset.public = publicTriplesGrouped.flat();
         } else {
-            // If there's no private dataset, ensure public is grouped correctly
-            dataset.public = kcTools.groupNquadsBySubject(dataset.public, true).flat();
+            // No private triples, just group and flatten public
+            publicTriplesGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
+            tokensCount += publicTriplesGrouped.length;
+            dataset.public = publicTriplesGrouped.flat();
         }
 
         const numberOfChunks = kcTools.calculateNumberOfChunks(dataset.public, CHUNK_BYTE_SIZE);
@@ -566,11 +570,8 @@ export default class AssetOperationsManager {
         };
     }
 
-    generatePrivateRepresentation(privateSubject) {
-        return `${`<${PRIVATE_HASH_SUBJECT_PREFIX}${ethers.solidityPackedSha256(
-            ['string'],
-            [privateSubject.slice(1, -1)],
-        )}>`} <${PRIVATE_RESOURCE_PREDICATE}> <${kaTools.generateNamedNode()}> .`;
+    generatePrivateRepresentation(privateSubjectHash) {
+        return `${`<${PRIVATE_HASH_SUBJECT_PREFIX}${privateSubjectHash}>`} <${PRIVATE_RESOURCE_PREDICATE}> <${kaTools.generateNamedNode()}> .`;
     }
 
     /**

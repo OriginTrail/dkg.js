@@ -76,9 +76,9 @@ function divider() {
 
     // divider();
 
-    const nodeInfo = await DkgClient.node.info();
-    console.log('======================== NODE INFO RECEIVED');
-    console.log(nodeInfo);
+    // const nodeInfo = await DkgClient.node.info();
+    // console.log('======================== NODE INFO RECEIVED');
+    // console.log(nodeInfo);
 
     // divider();
 
