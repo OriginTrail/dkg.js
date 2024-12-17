@@ -303,70 +303,74 @@ export default class GraphOperationsManager {
             dataset = await kcTools.formatDataset(content);
         }
 
+        let publicTriplesGrouped = [];
+        let tokensCount = 0;
+        // Assign IDs to blank nodes
+
+        dataset.public = kcTools.generateMissingIdsForBlankNodes(dataset.public);
+
         if (dataset.private?.length) {
             dataset.private = kcTools.generateMissingIdsForBlankNodes(dataset.private);
 
+            // Group private triples by subject and flatten
             const privateTriplesGrouped = kcTools.groupNquadsBySubject(dataset.private, true);
             dataset.private = privateTriplesGrouped.flat();
+
+            // Compute private root and add to public
             const privateRoot = kcTools.calculateMerkleRoot(dataset.private);
             dataset.public.push(
                 `<${kaTools.generateNamedNode()}> <${PRIVATE_ASSERTION_PREDICATE}> "${privateRoot}" .`,
             );
 
-            if (dataset.public.length) {
-                dataset.public = kcTools.generateMissingIdsForBlankNodes(dataset.public);
+            // Group public triples by subject
+            publicTriplesGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
+            tokensCount += publicTriplesGrouped.length;
+
+            // Create a map of public subject -> index for quick lookup
+            const publicSubjectMap = new Map();
+            for (let i = 0; i < publicTriplesGrouped.length; i++) {
+                const [publicSubject] = publicTriplesGrouped[i][0].split(' ');
+                publicSubjectMap.set(publicSubject, i);
             }
-            let publicTriplesGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
 
-            const mergedTriples = [];
-            let publicIndex = 0;
-            let privateIndex = 0;
-            const publicLength = publicTriplesGrouped.length;
-            const privateLength = privateTriplesGrouped.length;
+            const privateTripleSubjectHashesGroupedWithoutPublicPair = [];
 
-            // Merge public and private hashes triples in a single pass
-            while (publicIndex < publicLength && privateIndex < privateLength) {
-                const publicGroup = publicTriplesGrouped[publicIndex];
-                const [publicSubject] = publicGroup[0].split(' ');
-                const [privateSubject] = privateTriplesGrouped[privateIndex][0].split(' ');
+            // Integrate private subjects into public or store separately if no match to be appended later
+            for (const privateTriples of privateTriplesGrouped) {
+                const [privateSubject] = privateTriples[0].split(' ');
+                const privateSubjectHash = ethers.solidityPackedSha256(
+                    ['string'],
+                    [privateSubject.slice(1, -1)],
+                );
 
-                const compare = publicSubject.localeCompare(privateSubject);
-                if (compare < 0) {
-                    // Public subject comes before private subject
-                    mergedTriples.push(publicGroup);
-                    publicIndex++;
-                } else if (compare > 0) {
-                    // Private subject comes before public subject
-                    mergedTriples.push([this.generatePrivateRepresentation(privateSubject)]);
-                    privateIndex++;
-                } else {
-                    // Subjects match, merge triples
+                if (publicSubjectMap.has(privateSubject)) {
+                    // If there's a public pair, insert a representation in that group
+                    const publicIndex = publicSubjectMap.get(privateSubject);
                     this.insertTripleSorted(
-                        publicGroup,
-                        this.generatePrivateRepresentation(privateSubject),
+                        publicTriplesGrouped[publicIndex],
+                        this.generatePrivateRepresentation(privateSubjectHash),
                     );
-                    mergedTriples.push(publicGroup);
-                    publicIndex++;
-                    privateIndex++;
+                } else {
+                    // If no public pair, maintain separate list, inserting sorted by hash
+                    this.insertTripleSorted(
+                        privateTripleSubjectHashesGroupedWithoutPublicPair,
+                        `${`<${PRIVATE_HASH_SUBJECT_PREFIX}${privateSubjectHash}>`} <${PRIVATE_RESOURCE_PREDICATE}> <${kaTools.generateNamedNode()}> .`,
+                    );
                 }
             }
 
-            while (publicIndex < publicLength) {
-                mergedTriples.push(...publicTriplesGrouped[publicIndex]);
-                publicIndex++;
+            // Append any non-paired private subjects at the end
+            tokensCount += privateTripleSubjectHashesGroupedWithoutPublicPair.length;
+            for (const triple of privateTripleSubjectHashesGroupedWithoutPublicPair) {
+                publicTriplesGrouped.push([triple]);
             }
 
-            // Append any remaining private triples
-            while (privateIndex < privateLength) {
-                const [privateSubject] = privateTriplesGrouped[privateIndex][0].split(' ');
-                mergedTriples.push([this.generatePrivateRepresentation(privateSubject)]);
-                privateIndex++;
-            }
-            // Update the public dataset with the merged triples
-            dataset.public = mergedTriples.flat();
+            dataset.public = publicTriplesGrouped.flat();
         } else {
-            // If there's no private dataset, ensure public is grouped correctly
-            dataset.public = kcTools.groupNquadsBySubject(dataset.public, true).flat();
+            // No private triples, just group and flatten public
+            publicTriplesGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
+            tokensCount += publicTriplesGrouped.length;
+            dataset.public = publicTriplesGrouped.flat();
         }
 
         const numberOfChunks = kcTools.calculateNumberOfChunks(dataset.public, CHUNK_BYTE_SIZE);
@@ -376,7 +380,7 @@ export default class GraphOperationsManager {
         const datasetRoot = kcTools.calculateMerkleRoot(dataset.public);
 
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
-            'ContentAssetStorage',
+            'KnowledgeCollectionStorage',
             blockchain,
         );
 
@@ -401,7 +405,10 @@ export default class GraphOperationsManager {
             publishOperationId,
         );
 
-        if (publishOperationResult.status !== OPERATION_STATUSES.COMPLETED) {
+        if (
+            publishOperationResult.status !== OPERATION_STATUSES.COMPLETED &&
+            !publishOperationResult.minAcksReached
+        ) {
             return {
                 datasetRoot,
                 operation: {
@@ -410,27 +417,50 @@ export default class GraphOperationsManager {
             };
         }
 
+        const { signatures } = publishOperationResult.data;
+
+        const {
+            identityId: publisherNodeIdentityId,
+            r: publisherNodeR,
+            vs: publisherNodeVS,
+        } = publishOperationResult.data.publisherNodeSignature;
+
+        const identityIds = [];
+        const r = [];
+        const vs = [];
+
+        signatures.forEach((signature) => {
+            identityIds.push(signature.identityId);
+            r.push(signature.r);
+            vs.push(signature.vs);
+        });
+
         const estimatedPublishingCost =
             tokenAmount ??
             (await this.blockchainService.getStakeWeightedAverageAsk()) * epochsNum * datasetSize;
 
-        let tokenId;
+        let knowledgeCollectionId;
         let mintKnowledgeAssetReceipt;
 
         if (paranetUAL == null) {
-            ({ tokenId, receipt: mintKnowledgeAssetReceipt } =
-                await this.blockchainService.createAsset(
+            ({ knowledgeCollectionId, receipt: mintKnowledgeAssetReceipt } =
+                await this.blockchainService.createKnowledgeCollection(
                     {
                         publishOperationId,
-                        datasetRoot,
-                        datasetSize,
-                        triplesNumber: kaTools.getAssertionTriplesNumber(dataset.public), // todo
-                        chunksNumber: numberOfChunks,
-                        epochsNum,
+                        merkleRoot: datasetRoot,
+                        knowledgeAssetsAmount: kcTools.countDistinctSubjects(dataset.public),
+                        byteSize: datasetSize,
+                        triplesAmount: kaTools.getAssertionTriplesNumber(dataset.public),
+                        chunksAmount: numberOfChunks,
+                        epochs: epochsNum,
                         tokenAmount: estimatedPublishingCost,
-                        scoreFunctionId: scoreFunctionId ?? 1,
-                        immutable_: immutable,
-                        // payer: payer,
+                        paymaster: payer,
+                        publisherNodeIdentityId,
+                        publisherNodeR,
+                        publisherNodeVS,
+                        identityIds,
+                        r,
+                        vs,
                     },
                     null,
                     null,
@@ -439,19 +469,23 @@ export default class GraphOperationsManager {
                 ));
         } else {
             const { contract: paranetKaContract, tokenId: paranetTokenId } = resolveUAL(paranetUAL);
-            ({ tokenId, receipt: mintKnowledgeAssetReceipt } =
-                await this.blockchainService.createAsset(
+            ({ knowledgeCollectionId, receipt: mintKnowledgeAssetReceipt } =
+                await this.blockchainService.createKnowledgeCollection(
                     {
-                        publishOperationId,
-                        datasetRoot,
-                        datasetSize,
-                        triplesNumber: kaTools.getAssertionTriplesNumber(dataset), // todo
-                        chunksNumber: kcTools.calculateNumberOfChunks(dataset),
-                        epochsNum,
+                        merkleRoot: datasetRoot,
+                        knowledgeAssetsAmount: kcTools.countDistinctSubjects(dataset.public),
+                        byteSize: datasetSize,
+                        triplesAmount: kaTools.getAssertionTriplesNumber(dataset.public),
+                        chunksAmount: numberOfChunks,
+                        epochs: epochsNum,
                         tokenAmount: estimatedPublishingCost,
-                        scoreFunctionId: scoreFunctionId ?? 1,
-                        immutable_: immutable,
-                        // payer: payer,
+                        paymaster: payer,
+                        publisherNodeIdentityId,
+                        publisherNodeR,
+                        publisherNodeVS,
+                        identityIds,
+                        r,
+                        vs,
                     },
                     paranetKaContract,
                     paranetTokenId,
@@ -460,23 +494,25 @@ export default class GraphOperationsManager {
                 ));
         }
 
-        const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, tokenId);
+        const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, knowledgeCollectionId);
 
-        const finalitySleepDelay = OPERATION_DELAYS.FINALITY;
-
-        await sleepForMilliseconds(finalitySleepDelay);
-
-        const finalityStatusResult = await this.nodeApiService.finalityStatus(
-            endpoint,
-            port,
-            authToken,
-            UAL,
-        );
+        let finalityStatusResult = 0;
+        if (minimumNumberOfFinalizationConfirmations > 0) {
+            finalityStatusResult = await this.nodeApiService.finalityStatus(
+                endpoint,
+                port,
+                authToken,
+                UAL,
+                minimumNumberOfFinalizationConfirmations,
+                maxNumberOfRetries,
+                frequency,
+            );
+        }
 
         return {
             UAL,
             datasetRoot,
-            signatures: publishOperationResult.data,
+            signatures: publishOperationResult.data.signatures,
             operation: {
                 mintKnowledgeAsset: mintKnowledgeAssetReceipt,
                 publish: getOperationStatusObject(publishOperationResult, publishOperationId),
