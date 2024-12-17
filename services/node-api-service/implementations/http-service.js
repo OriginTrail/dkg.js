@@ -7,16 +7,14 @@ export default class HttpService {
         this.config = config;
 
         if (
-            !(
-                config.nodeApiVersion === '/' ||
-                config.nodeApiVersion === '/latest' ||
-                /^\/v\d+$/.test(config.nodeApiVersion)
-            )
+            config.nodeApiVersion === '/' ||
+            config.nodeApiVersion === '/latest' ||
+            /^\/v\d+$/.test(config.nodeApiVersion)
         ) {
-            throw Error(`Version must be '/latest', '/' or in '/v{digits}' format.`);
+            this.apiVersion = config.nodeApiVersion;
+        } else {
+            this.apiVersion = '/v0';
         }
-
-        this.apiVersion = config.nodeApiVersion ?? '/v1';
     }
 
     async info(endpoint, port, authToken) {
@@ -227,30 +225,30 @@ export default class HttpService {
         ual,
         requiredConfirmations,
         maxNumberOfRetries,
-        frequency
+        frequency,
     ) {
         let retries = 0;
         let finality = 0;
-    
+
         const axios_config = {
             method: 'get',
             url: `${this.getBaseUrl(endpoint, port)}/finality`,
             params: { ual },
             headers: this.prepareRequestConfig(authToken),
         };
-    
+
         do {
             if (retries > maxNumberOfRetries) {
                 throw Error(
-                    `Unable to achieve required confirmations. Max number of retries (${maxNumberOfRetries}) reached.`
+                    `Unable to achieve required confirmations. Max number of retries (${maxNumberOfRetries}) reached.`,
                 );
             }
-    
+
             retries += 1;
-    
+
             // eslint-disable-next-line no-await-in-loop
             await sleepForMilliseconds(frequency * 1000);
-    
+
             try {
                 // eslint-disable-next-line no-await-in-loop
                 const response = await axios(axios_config);
@@ -259,7 +257,7 @@ export default class HttpService {
                 finality = 0;
             }
         } while (finality < requiredConfirmations && retries <= maxNumberOfRetries);
-    
+
         return finality;
     }
 
