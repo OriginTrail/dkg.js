@@ -13,7 +13,7 @@ export default class HttpService {
         ) {
             this.apiVersion = config.nodeApiVersion;
         } else {
-            this.apiVersion = '/v0';
+            this.apiVersion = '/v1';
         }
     }
 
