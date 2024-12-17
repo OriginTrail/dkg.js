@@ -346,7 +346,6 @@ export default class AssetOperationsManager {
         }
 
         let publicTriplesGrouped = [];
-        let tokensCount = 0;
         // Assign IDs to blank nodes
 
         dataset.public = kcTools.generateMissingIdsForBlankNodes(dataset.public);
@@ -366,7 +365,6 @@ export default class AssetOperationsManager {
 
             // Group public triples by subject
             publicTriplesGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
-            tokensCount += publicTriplesGrouped.length;
 
             // Create a map of public subject -> index for quick lookup
             const publicSubjectMap = new Map();
@@ -402,7 +400,6 @@ export default class AssetOperationsManager {
             }
 
             // Append any non-paired private subjects at the end
-            tokensCount += privateTripleSubjectHashesGroupedWithoutPublicPair.length;
             for (const triple of privateTripleSubjectHashesGroupedWithoutPublicPair) {
                 publicTriplesGrouped.push([triple]);
             }
@@ -411,7 +408,6 @@ export default class AssetOperationsManager {
         } else {
             // No private triples, just group and flatten public
             publicTriplesGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
-            tokensCount += publicTriplesGrouped.length;
             dataset.public = publicTriplesGrouped.flat();
         }
 
