@@ -388,7 +388,7 @@ export default class AssetOperationsManager {
                     const publicIndex = publicSubjectMap.get(privateSubject);
                     this.insertTripleSorted(
                         publicTriplesGrouped[publicIndex],
-                        `${privateSubject} <${PRIVATE_RESOURCE_PREDICATE}> <${kaTools.generateNamedNode()}> `,
+                        `${privateSubject} <${PRIVATE_RESOURCE_PREDICATE}> <${kaTools.generateNamedNode()}> .`,
                     );
                 } else {
                     // If no public pair, maintain separate list, inserting sorted by hash
