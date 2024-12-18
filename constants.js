@@ -2,7 +2,7 @@
  * @constant {number} MAX_FILE_SIZE
  * - Max file size for publish
  */
-const MAX_FILE_SIZE = 2621440;
+const MAX_FILE_SIZE = 10 * 1000 * 1000;
 
 /**
  * @constant {number} DID_PREFIX
