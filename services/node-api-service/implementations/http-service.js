@@ -7,16 +7,14 @@ export default class HttpService {
         this.config = config;
 
         if (
-            !(
-                config.nodeApiVersion === '/' ||
-                config.nodeApiVersion === '/latest' ||
-                /^\/v\d+$/.test(config.nodeApiVersion)
-            )
+            config.nodeApiVersion === '/' ||
+            config.nodeApiVersion === '/latest' ||
+            /^\/v\d+$/.test(config.nodeApiVersion)
         ) {
-            throw Error(`Version must be '/latest', '/' or in '/v{digits}' format.`);
+            this.apiVersion = config.nodeApiVersion;
+        } else {
+            this.apiVersion = '/v1';
         }
-
-        this.apiVersion = config.nodeApiVersion ?? '/v1';
     }
 
     async info(endpoint, port, authToken) {

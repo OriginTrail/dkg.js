@@ -1023,4 +1023,450 @@ export default class AssetOperationsManager {
             },
         };
     }
+
+    /**
+     * Creates a new knowledge collection.
+     * @async
+     * @param {Object} content - The content of the knowledge collection to be created, contains public, private or both keys.
+     * @param {Object} [options={}] - Additional options for knowledge collection creation.
+     * @param {Object} [stepHooks=emptyHooks] - Hooks to execute during knowledge collection creation.
+     * @returns {Object} Object containing UAL, publicAssertionId and operation status.
+     */
+    async create(content, options = {}, stepHooks = emptyHooks) {
+        this.validationService.validateJsonldOrNquads(content);
+        const {
+            blockchain,
+            endpoint,
+            port,
+            maxNumberOfRetries,
+            frequency,
+            epochsNum,
+            hashFunctionId,
+            scoreFunctionId,
+            immutable,
+            tokenAmount,
+            authToken,
+            paranetUAL,
+            payer,
+            minimumNumberOfFinalizationConfirmations,
+            minimumNumberOfNodeReplications,
+        } = this.inputService.getAssetCreateArguments(options);
+
+        this.validationService.validateAssetCreate(
+            content,
+            blockchain,
+            endpoint,
+            port,
+            maxNumberOfRetries,
+            frequency,
+            epochsNum,
+            hashFunctionId,
+            scoreFunctionId,
+            immutable,
+            tokenAmount,
+            authToken,
+            paranetUAL,
+            payer,
+            minimumNumberOfFinalizationConfirmations,
+            minimumNumberOfNodeReplications,
+        );
+
+        let dataset = {};
+        if (typeof content === 'string') {
+            dataset.public = this.processContent(content);
+        } else if (
+            typeof content.public === 'string' ||
+            (!content.public && content.private && typeof content.private === 'string')
+        ) {
+            if (content.public) {
+                dataset.public = this.processContent(content.public);
+            } else {
+                dataset.public = [];
+            }
+            if (content.private && typeof content.private === 'string') {
+                dataset.private = this.processContent(content.private);
+            }
+        } else {
+            dataset = await kcTools.formatDataset(content);
+        }
+
+        let publicTriplesGrouped = [];
+        let tokensCount = 0;
+        // Assign IDs to blank nodes
+
+        dataset.public = kcTools.generateMissingIdsForBlankNodes(dataset.public);
+
+        if (dataset.private?.length) {
+            dataset.private = kcTools.generateMissingIdsForBlankNodes(dataset.private);
+
+            // Group private triples by subject and flatten
+            const privateTriplesGrouped = kcTools.groupNquadsBySubject(dataset.private, true);
+            dataset.private = privateTriplesGrouped.flat();
+
+            // Compute private root and add to public
+            const privateRoot = kcTools.calculateMerkleRoot(dataset.private);
+            dataset.public.push(
+                `<${kaTools.generateNamedNode()}> <${PRIVATE_ASSERTION_PREDICATE}> "${privateRoot}" .`,
+            );
+
+            // Group public triples by subject
+            publicTriplesGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
+            tokensCount += publicTriplesGrouped.length;
+
+            // Create a map of public subject -> index for quick lookup
+            const publicSubjectMap = new Map();
+            for (let i = 0; i < publicTriplesGrouped.length; i++) {
+                const [publicSubject] = publicTriplesGrouped[i][0].split(' ');
+                publicSubjectMap.set(publicSubject, i);
+            }
+
+            const privateTripleSubjectHashesGroupedWithoutPublicPair = [];
+
+            // Integrate private subjects into public or store separately if no match to be appended later
+            for (const privateTriples of privateTriplesGrouped) {
+                const [privateSubject] = privateTriples[0].split(' ');
+                const privateSubjectHash = ethers.solidityPackedSha256(
+                    ['string'],
+                    [privateSubject.slice(1, -1)],
+                );
+
+                if (publicSubjectMap.has(privateSubject)) {
+                    // If there's a public pair, insert a representation in that group
+                    const publicIndex = publicSubjectMap.get(privateSubject);
+                    this.insertTripleSorted(
+                        publicTriplesGrouped[publicIndex],
+                        this.generatePrivateRepresentation(privateSubjectHash),
+                    );
+                } else {
+                    // If no public pair, maintain separate list, inserting sorted by hash
+                    this.insertTripleSorted(
+                        privateTripleSubjectHashesGroupedWithoutPublicPair,
+                        `${`<${PRIVATE_HASH_SUBJECT_PREFIX}${privateSubjectHash}>`} <${PRIVATE_RESOURCE_PREDICATE}> <${kaTools.generateNamedNode()}> .`,
+                    );
+                }
+            }
+
+            // Append any non-paired private subjects at the end
+            tokensCount += privateTripleSubjectHashesGroupedWithoutPublicPair.length;
+            for (const triple of privateTripleSubjectHashesGroupedWithoutPublicPair) {
+                publicTriplesGrouped.push([triple]);
+            }
+
+            dataset.public = publicTriplesGrouped.flat();
+        } else {
+            // No private triples, just group and flatten public
+            publicTriplesGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
+            tokensCount += publicTriplesGrouped.length;
+            dataset.public = publicTriplesGrouped.flat();
+        }
+
+        const numberOfChunks = kcTools.calculateNumberOfChunks(dataset.public, CHUNK_BYTE_SIZE);
+        const datasetSize = numberOfChunks * CHUNK_BYTE_SIZE;
+
+        this.validationService.validateAssertionSizeInBytes(datasetSize);
+        const datasetRoot = kcTools.calculateMerkleRoot(dataset.public);
+
+        const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
+            'KnowledgeCollectionStorage',
+            blockchain,
+        );
+
+        const publishOperationId = await this.nodeApiService.publish(
+            endpoint,
+            port,
+            authToken,
+            datasetRoot,
+            dataset,
+            blockchain.name,
+            hashFunctionId,
+            minimumNumberOfNodeReplications,
+        );
+
+        const publishOperationResult = await this.nodeApiService.getOperationResult(
+            endpoint,
+            port,
+            authToken,
+            OPERATIONS.PUBLISH,
+            maxNumberOfRetries,
+            frequency,
+            publishOperationId,
+        );
+
+        if (
+            publishOperationResult.status !== OPERATION_STATUSES.COMPLETED &&
+            !publishOperationResult.minAcksReached
+        ) {
+            return {
+                datasetRoot,
+                operation: {
+                    publish: getOperationStatusObject(publishOperationResult, publishOperationId),
+                },
+            };
+        }
+
+        const { signatures } = publishOperationResult.data;
+
+        const {
+            identityId: publisherNodeIdentityId,
+            r: publisherNodeR,
+            vs: publisherNodeVS,
+        } = publishOperationResult.data.publisherNodeSignature;
+
+        const identityIds = [];
+        const r = [];
+        const vs = [];
+
+        signatures.forEach((signature) => {
+            identityIds.push(signature.identityId);
+            r.push(signature.r);
+            vs.push(signature.vs);
+        });
+
+        const estimatedPublishingCost =
+            tokenAmount ??
+            (await this.blockchainService.getStakeWeightedAverageAsk()) * epochsNum * datasetSize;
+
+        let knowledgeCollectionId;
+        let mintKnowledgeAssetReceipt;
+
+        if (paranetUAL == null) {
+            ({ knowledgeCollectionId, receipt: mintKnowledgeAssetReceipt } =
+                await this.blockchainService.createKnowledgeCollection(
+                    {
+                        publishOperationId,
+                        merkleRoot: datasetRoot,
+                        knowledgeAssetsAmount: kcTools.countDistinctSubjects(dataset.public),
+                        byteSize: datasetSize,
+                        triplesAmount: kaTools.getAssertionTriplesNumber(dataset.public),
+                        chunksAmount: numberOfChunks,
+                        epochs: epochsNum,
+                        tokenAmount: estimatedPublishingCost,
+                        paymaster: payer,
+                        publisherNodeIdentityId,
+                        publisherNodeR,
+                        publisherNodeVS,
+                        identityIds,
+                        r,
+                        vs,
+                    },
+                    null,
+                    null,
+                    blockchain,
+                    stepHooks,
+                ));
+        } else {
+            const { contract: paranetKaContract, tokenId: paranetTokenId } = resolveUAL(paranetUAL);
+            ({ knowledgeCollectionId, receipt: mintKnowledgeAssetReceipt } =
+                await this.blockchainService.createKnowledgeCollection(
+                    {
+                        merkleRoot: datasetRoot,
+                        knowledgeAssetsAmount: kcTools.countDistinctSubjects(dataset.public),
+                        byteSize: datasetSize,
+                        triplesAmount: kaTools.getAssertionTriplesNumber(dataset.public),
+                        chunksAmount: numberOfChunks,
+                        epochs: epochsNum,
+                        tokenAmount: estimatedPublishingCost,
+                        paymaster: payer,
+                        publisherNodeIdentityId,
+                        publisherNodeR,
+                        publisherNodeVS,
+                        identityIds,
+                        r,
+                        vs,
+                    },
+                    paranetKaContract,
+                    paranetTokenId,
+                    blockchain,
+                    stepHooks,
+                ));
+        }
+
+        const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, knowledgeCollectionId);
+
+        let finalityStatusResult = 0;
+        if (minimumNumberOfFinalizationConfirmations > 0) {
+            finalityStatusResult = await this.nodeApiService.finalityStatus(
+                endpoint,
+                port,
+                authToken,
+                UAL,
+                minimumNumberOfFinalizationConfirmations,
+                maxNumberOfRetries,
+                frequency,
+            );
+        }
+
+        return {
+            UAL,
+            datasetRoot,
+            signatures: publishOperationResult.data.signatures,
+            operation: {
+                mintKnowledgeAsset: mintKnowledgeAssetReceipt,
+                publish: getOperationStatusObject(publishOperationResult, publishOperationId),
+                finality: {
+                    status:
+                        finalityStatusResult >= minimumNumberOfFinalizationConfirmations
+                            ? 'FINALIZED'
+                            : 'NOT FINALIZED',
+                },
+                numberOfConfirmations: finalityStatusResult,
+                requiredConfirmations: minimumNumberOfFinalizationConfirmations,
+            },
+        };
+    }
+
+    /**
+     * Retrieves a public or private assertion for a given UAL.
+     * @async
+     * @param {string} UAL - The Universal Asset Locator, representing asset or collection.
+     * @param {Object} [options={}] - Optional parameters for the asset get operation.
+     * @param {number} [options.state] - The state index of the asset. If omitted, the latest state will be used.
+     * @param {boolean} [options.includeMetadata] - If metadata should be included. Default is false.
+     * @param {string} [options.contentType] - The type of content to retrieve, either "public" or "all" (default)
+     * @param {boolean} [options.validate] - Whether to validate the retrieved assertion.
+     * @param {string} [options.outputFormat] - The format of the retrieved assertion output, either "n-quads" or "json-ld".
+     * @returns {Object} - The result of the asset get operation.
+     */
+    async get(UAL, options = {}) {
+        const {
+            blockchain,
+            endpoint,
+            port,
+            maxNumberOfRetries,
+            frequency,
+            state,
+            includeMetadata,
+            contentType,
+            validate,
+            outputFormat,
+            authToken,
+            hashFunctionId,
+            paranetUAL,
+            subjectUAL,
+        } = this.inputService.getAssetGetArguments(options);
+
+        this.validationService.validateAssetGet(
+            UAL,
+            blockchain,
+            endpoint,
+            port,
+            maxNumberOfRetries,
+            frequency,
+            state,
+            includeMetadata,
+            contentType,
+            hashFunctionId,
+            validate,
+            outputFormat,
+            authToken,
+            subjectUAL,
+        );
+
+        const getOperationId = await this.nodeApiService.get(
+            endpoint,
+            port,
+            authToken,
+            UAL,
+            state,
+            includeMetadata,
+            subjectUAL,
+            contentType,
+            hashFunctionId,
+            paranetUAL,
+        );
+
+        const getOperationResult = await this.nodeApiService.getOperationResult(
+            endpoint,
+            port,
+            authToken,
+            OPERATIONS.GET,
+            maxNumberOfRetries,
+            frequency,
+            getOperationId,
+        );
+        if (subjectUAL) {
+            if (getOperationResult.data?.length) {
+                return {
+                    operation: {
+                        get: getOperationStatusObject(getOperationResult, getOperationId),
+                    },
+                    subjectUALPairs: getOperationResult.data,
+                };
+            }
+            if (getOperationResult.status !== 'FAILED') {
+                getOperationResult.data = {
+                    errorType: 'DKG_CLIENT_ERROR',
+                    errorMessage: 'Unable to find assertion on the network!',
+                };
+                getOperationResult.status = 'FAILED';
+            }
+
+            return {
+                operation: {
+                    get: getOperationStatusObject(getOperationResult, getOperationId),
+                },
+            };
+        }
+        const { metadata } = getOperationResult.data;
+        let assertion = getOperationResult.data.assertion;
+
+        if (!assertion) {
+            if (getOperationResult.status !== 'FAILED') {
+                getOperationResult.data = {
+                    errorType: 'DKG_CLIENT_ERROR',
+                    errorMessage: 'Unable to find assertion on the network!',
+                };
+                getOperationResult.status = 'FAILED';
+            }
+
+            return {
+                operation: {
+                    get: getOperationStatusObject(getOperationResult, getOperationId),
+                },
+            };
+        }
+
+        if (validate === true) {
+            const isValid = true; // TODO: validate assertion
+            if (!isValid) {
+                getOperationResult.data = {
+                    errorType: 'DKG_CLIENT_ERROR',
+                    errorMessage: "Calculated root hashes don't match!",
+                };
+            }
+        }
+
+        let formattedAssertion;
+        let formattedMetadata;
+        if (outputFormat === GET_OUTPUT_FORMATS.JSON_LD) {
+            if (assertion.public || assertion.private) {
+                const tempAssertion = [];
+                if (assertion.public) {
+                    tempAssertion.push(...assertion.public);
+                }
+                if (assertion.private) {
+                    tempAssertion.push(...assertion.private);
+                }
+                assertion = tempAssertion;
+            }
+            formattedAssertion = await toJSONLD(assertion.join('\n'));
+            if (includeMetadata) {
+                formattedMetadata = await toJSONLD(metadata.join('\n'));
+            }
+        }
+        if (outputFormat === GET_OUTPUT_FORMATS.N_QUADS) {
+            formattedAssertion = await toNQuads(assertion, 'application/n-quads');
+            if (includeMetadata) {
+                formattedMetadata = await toNQuads(metadata, 'application/n-quads');
+            }
+        }
+
+        return {
+            assertion: formattedAssertion,
+            ...(includeMetadata && metadata && { metadata: formattedMetadata }),
+            operation: {
+                get: getOperationStatusObject(getOperationResult, getOperationId),
+            },
+        };
+    }
 }
