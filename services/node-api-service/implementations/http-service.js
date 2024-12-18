@@ -179,12 +179,12 @@ export default class HttpService {
         }
     }
 
-    async query(endpoint, port, authToken, query, type, /*graphState, graphLocation,*/ paranetUAL) {
+    async query(endpoint, port, authToken, query, type, paranetUAL, repository) {
         try {
             const response = await axios({
                 method: 'post',
                 url: `${this.getBaseUrl(endpoint, port)}/query`,
-                data: { query, type, /*graphState, graphLocation,*/ paranetUAL },
+                data: { query, type, repository, paranetUAL },
                 headers: this.prepareRequestConfig(authToken),
             });
             return response.data.operationId;

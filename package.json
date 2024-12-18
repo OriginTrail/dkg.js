@@ -1,6 +1,6 @@
 {
     "name": "dkg.js",
-    "version": "8.0.0-gamma.0",
+    "version": "8.0.0-gamma.1",
     "description": "Javascript library for interaction with the OriginTrail Decentralized Knowledge Graph",
     "main": "index.js",
     "exports": {
@@ -10,8 +10,8 @@
     "type": "module",
     "scripts": {
         "compile-contracts": "cd ./node_modules/dkg-evm-module && npm run compile",
-        "build": "npx webpack --config webpack.config.js",
-        "watch": "npx webpack --config webpack.config.js --watch --progress",
+        "build": "npm run cjs-compat && npx webpack --config webpack.config.cjs",
+        "watch": "npm run cjs-compat && npx webpack --config webpack.config.cjs --watch --progress",
         "lint": "eslint .",
         "cjs-compat": "npx rollup index.js --file index.cjs --format cjs",
         "postinstall": "npm run cjs-compat"

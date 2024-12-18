@@ -23,23 +23,24 @@ export default class ValidationService {
     validateGraphQuery(
         queryString,
         queryType,
-        // graphLocation,
-        // graphState,
         endpoint,
         port,
         maxNumberOfRetries,
         frequency,
         authToken,
+        repository,
     ) {
         this.validateQueryString(queryString);
         this.validateQueryType(queryType);
-        // this.validateGraphLocation(graphLocation);
-        // this.validateGraphState(graphState);
         this.validateEndpoint(endpoint);
         this.validatePort(port);
         this.validateMaxNumberOfRetries(maxNumberOfRetries);
         this.validateFrequency(frequency);
         this.validateAuthToken(authToken);
+
+        if (repository) {
+            this.validateRepository(repository);
+        }
     }
 
     validateIsValidUAL(blockchain) {
@@ -381,6 +382,11 @@ export default class ValidationService {
     validateQueryString(queryString) {
         this.validateRequiredParam('queryString', queryString);
         this.validateParamType('queryString', queryString, 'string');
+    }
+
+    validateRepository(repository) {
+        this.validateRequiredParam('repository', repository);
+        this.validateParamType('repository', repository, 'string');
     }
 
     validateQueryType(queryType) {
