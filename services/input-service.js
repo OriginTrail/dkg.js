@@ -27,7 +27,6 @@ export default class InputService {
             immutable: this.getImmutable(options),
             tokenAmount: this.getTokenAmount(options),
             authToken: this.getAuthToken(options),
-            paranetUAL: this.getParanetUAL(options),
             payer: this.getPayer(options),
             minimumNumberOfFinalizationConfirmations:
                 this.getMinimumNumberOfFinalizationConfirmations(options) ?? 3,
