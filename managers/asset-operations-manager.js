@@ -4,17 +4,18 @@ import {
     deriveUAL,
     getOperationStatusObject,
     resolveUAL,
-    sleepForMilliseconds,
+    toNQuads,
+    toJSONLD,
 } from '../services/utilities.js';
 import {
     OPERATIONS,
     OPERATION_STATUSES,
     ZERO_ADDRESS,
     CHUNK_BYTE_SIZE,
-    OPERATION_DELAYS,
     PRIVATE_RESOURCE_PREDICATE,
     PRIVATE_HASH_SUBJECT_PREFIX,
     PRIVATE_ASSERTION_PREDICATE,
+    GET_OUTPUT_FORMATS,
 } from '../constants.js';
 import emptyHooks from '../util/empty-hooks.js';
 
