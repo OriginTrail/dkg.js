@@ -181,12 +181,12 @@ export default class HttpService {
         }
     }
 
-    async query(endpoint, port, authToken, query, type, /*graphState, graphLocation,*/ paranetUAL) {
+    async query(endpoint, port, authToken, query, type, paranetUAL, repository) {
         try {
             const response = await axios({
                 method: 'post',
                 url: `${this.getBaseUrl(endpoint, port)}/query`,
-                data: { query, type, /*graphState, graphLocation,*/ paranetUAL },
+                data: { query, type, repository, paranetUAL },
                 headers: this.prepareRequestConfig(authToken),
             });
             return response.data.operationId;
@@ -227,30 +227,30 @@ export default class HttpService {
         ual,
         requiredConfirmations,
         maxNumberOfRetries,
-        frequency
+        frequency,
     ) {
         let retries = 0;
         let finality = 0;
-    
+
         const axios_config = {
             method: 'get',
             url: `${this.getBaseUrl(endpoint, port)}/finality`,
             params: { ual },
             headers: this.prepareRequestConfig(authToken),
         };
-    
+
         do {
             if (retries > maxNumberOfRetries) {
                 throw Error(
-                    `Unable to achieve required confirmations. Max number of retries (${maxNumberOfRetries}) reached.`
+                    `Unable to achieve required confirmations. Max number of retries (${maxNumberOfRetries}) reached.`,
                 );
             }
-    
+
             retries += 1;
-    
+
             // eslint-disable-next-line no-await-in-loop
             await sleepForMilliseconds(frequency * 1000);
-    
+
             try {
                 // eslint-disable-next-line no-await-in-loop
                 const response = await axios(axios_config);
@@ -259,7 +259,7 @@ export default class HttpService {
                 finality = 0;
             }
         } while (finality < requiredConfirmations && retries <= maxNumberOfRetries);
-    
+
         return finality;
     }
 

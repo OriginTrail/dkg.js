@@ -98,6 +98,7 @@ export default class InputService {
             frequency: this.getFrequency(options),
             authToken: this.getAuthToken(options),
             paranetUAL: this.getParanetUAL(options),
+            repository: this.getRepository(options),
         };
     }
 
@@ -331,6 +332,10 @@ export default class InputService {
 
     getParanetUAL(options) {
         return options.paranetUAL ?? this.config.paranetUAL ?? null;
+    }
+
+    getRepository(options) {
+        return options.repository ?? this.config.repository ?? null;
     }
 
     getPayer(options) {
