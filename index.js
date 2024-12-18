@@ -23,7 +23,7 @@ export default class DkgClient {
         this.paranet = new ParanetOperationsManager(services);
 
         // Backwards compatibility
-        this.asset.get = this.graph.get;
-        this.asset.create = this.graph.create;
+        this.graph.get = this.asset.get;
+        this.graph.create = this.asset.create;
     }
 }
