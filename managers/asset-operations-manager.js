@@ -301,7 +301,6 @@ export default class AssetOperationsManager {
             immutable,
             tokenAmount,
             authToken,
-            paranetUAL,
             payer,
             minimumNumberOfFinalizationConfirmations,
             minimumNumberOfNodeReplications,
@@ -320,7 +319,6 @@ export default class AssetOperationsManager {
             immutable,
             tokenAmount,
             authToken,
-            paranetUAL,
             payer,
             minimumNumberOfFinalizationConfirmations,
             minimumNumberOfNodeReplications,
@@ -484,58 +482,29 @@ export default class AssetOperationsManager {
         let knowledgeCollectionId;
         let mintKnowledgeAssetReceipt;
 
-        if (paranetUAL == null) {
-            ({ knowledgeCollectionId, receipt: mintKnowledgeAssetReceipt } =
-                await this.blockchainService.createKnowledgeCollection(
-                    {
-                        publishOperationId,
-                        merkleRoot: datasetRoot,
-                        knowledgeAssetsAmount: kcTools.countDistinctSubjects(dataset.public),
-                        byteSize: datasetSize,
-                        triplesAmount: kaTools.getAssertionTriplesNumber(dataset.public),
-                        chunksAmount: numberOfChunks,
-                        epochs: epochsNum,
-                        tokenAmount: estimatedPublishingCost,
-                        paymaster: payer,
-                        publisherNodeIdentityId,
-                        publisherNodeR,
-                        publisherNodeVS,
-                        identityIds,
-                        r,
-                        vs,
-                    },
-                    null,
-                    null,
-                    blockchain,
-                    stepHooks,
-                ));
-        } else {
-            const { contract: paranetKaContract, tokenId: paranetTokenId } = resolveUAL(paranetUAL);
-            ({ knowledgeCollectionId, receipt: mintKnowledgeAssetReceipt } =
-                await this.blockchainService.createKnowledgeCollection(
-                    {
-                        publishOperationId,
-                        merkleRoot: datasetRoot,
-                        knowledgeAssetsAmount: kcTools.countDistinctSubjects(dataset.public),
-                        byteSize: datasetSize,
-                        triplesAmount: kaTools.getAssertionTriplesNumber(dataset.public),
-                        chunksAmount: numberOfChunks,
-                        epochs: epochsNum,
-                        tokenAmount: estimatedPublishingCost,
-                        paymaster: payer,
-                        publisherNodeIdentityId,
-                        publisherNodeR,
-                        publisherNodeVS,
-                        identityIds,
-                        r,
-                        vs,
-                    },
-                    paranetKaContract,
-                    paranetTokenId,
-                    blockchain,
-                    stepHooks,
-                ));
-        }
+        ({ knowledgeCollectionId, receipt: mintKnowledgeAssetReceipt } =
+            await this.blockchainService.createKnowledgeCollection(
+                {
+                    publishOperationId,
+                    merkleRoot: datasetRoot,
+                    knowledgeAssetsAmount: kcTools.countDistinctSubjects(dataset.public),
+                    byteSize: datasetSize,
+                    chunksAmount: numberOfChunks,
+                    epochs: epochsNum,
+                    tokenAmount: estimatedPublishingCost,
+                    paymaster: payer,
+                    publisherNodeIdentityId,
+                    publisherNodeR,
+                    publisherNodeVS,
+                    identityIds,
+                    r,
+                    vs,
+                },
+                null,
+                null,
+                blockchain,
+                stepHooks,
+            ));
 
         const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, knowledgeCollectionId);
 
@@ -916,6 +885,8 @@ export default class AssetOperationsManager {
      * @returns {Object} Object containing UAL, publicAssertionId and operation status.
      */
     async update(UAL, content, options = {}) {
+        console.log('Update feature is currently unavailable in version 8.0.0, coming soon!');
+        return;
         this.validationService.validateJsonldOrNquads(content);
 
         const {

@@ -9,13 +9,7 @@ import { sleepForMilliseconds } from '../utilities.js';
 
 const require = createRequire(import.meta.url);
 
-const AssertionStorageAbi = require('dkg-evm-module/abi/AssertionStorage.json');
 const HubAbi = require('dkg-evm-module/abi/Hub.json');
-const ServiceAgreementV1Abi = require('dkg-evm-module/abi/ServiceAgreementV1.json');
-const ServiceAgreementStorageProxyAbi = require('dkg-evm-module/abi/ServiceAgreementStorageProxy.json');
-const ContentAssetStorageAbi = require('dkg-evm-module/abi/ContentAssetStorage.json');
-const UnfinalizedStateStorageAbi = require('dkg-evm-module/abi/UnfinalizedStateStorage.json');
-const ContentAssetAbi = require('dkg-evm-module/abi/ContentAssetV2.json');
 const TokenAbi = require('dkg-evm-module/abi/Token.json');
 const ParanetAbi = require('dkg-evm-module/abi/Paranet.json');
 const ParanetsRegistryAbi = require('dkg-evm-module/abi/ParanetsRegistry.json');
@@ -33,13 +27,13 @@ export default class BlockchainServiceBase {
         this.config = config;
         this.events = {};
         this.abis = {};
-        this.abis.AssertionStorage = AssertionStorageAbi;
+        // this.abis.AssertionStorage = AssertionStorageAbi;
         this.abis.Hub = HubAbi;
-        this.abis.ServiceAgreementV1 = ServiceAgreementV1Abi;
-        this.abis.ServiceAgreementStorageProxy = ServiceAgreementStorageProxyAbi;
-        this.abis.ContentAssetStorage = ContentAssetStorageAbi;
-        this.abis.UnfinalizedStateStorage = UnfinalizedStateStorageAbi;
-        this.abis.ContentAsset = ContentAssetAbi;
+        // this.abis.ServiceAgreementV1 = ServiceAgreementV1Abi;
+        // this.abis.ServiceAgreementStorageProxy = ServiceAgreementStorageProxyAbi;
+        // this.abis.ContentAssetStorage = ContentAssetStorageAbi;
+        // this.abis.UnfinalizedStateStorage = UnfinalizedStateStorageAbi;
+        // this.abis.ContentAsset = ContentAssetAbi;
         this.abis.Token = TokenAbi;
         this.abis.Paranet = ParanetAbi;
         this.abis.ParanetsRegistry = ParanetsRegistryAbi;
@@ -358,41 +352,6 @@ export default class BlockchainServiceBase {
         return this[blockchain.name].contracts[blockchain.hubContract][contractName];
     }
 
-    async increaseServiceAgreementV1Allowance(
-        sender,
-        serviceAgreementV1Address,
-        tokenAmount,
-        blockchain,
-    ) {
-        const allowance = await this.callContractFunction(
-            'Token',
-            'allowance',
-            [sender, serviceAgreementV1Address],
-            blockchain,
-        );
-
-        const allowanceGap = BigInt(tokenAmount) - BigInt(allowance);
-
-        if (allowanceGap > 0) {
-            await this.executeContractFunction(
-                'Token',
-                'increaseAllowance',
-                [serviceAgreementV1Address, allowanceGap],
-                blockchain,
-            );
-
-            return {
-                allowanceIncreased: true,
-                allowanceGap,
-            };
-        }
-
-        return {
-            allowanceIncreased: false,
-            allowanceGap,
-        };
-    }
-
     async increaseKnowledgeCollectionAllowance(sender, tokenAmount, blockchain) {
         const knowledgeCollectionAddress = await this.getContractAddress(
             'KnowledgeCollection',
@@ -548,119 +507,119 @@ export default class BlockchainServiceBase {
         return this.executeContractFunction('ContentAsset', 'burnAsset', [tokenId], blockchain);
     }
 
-    async extendAssetStoringPeriod(tokenId, epochsNumber, tokenAmount, blockchain) {
-        const sender = await this.getPublicKey(blockchain);
-        let serviceAgreementV1Address;
-        let allowanceIncreased = false;
-        let allowanceGap = 0;
+    // async extendAssetStoringPeriod(tokenId, epochsNumber, tokenAmount, blockchain) {
+    //     const sender = await this.getPublicKey(blockchain);
+    //     let serviceAgreementV1Address;
+    //     let allowanceIncreased = false;
+    //     let allowanceGap = 0;
 
-        try {
-            serviceAgreementV1Address = await this.getContractAddress(
-                'ServiceAgreementV1',
-                blockchain,
-            );
+    //     try {
+    //         serviceAgreementV1Address = await this.getContractAddress(
+    //             'ServiceAgreementV1',
+    //             blockchain,
+    //         );
 
-            ({ allowanceIncreased, allowanceGap } = await this.increaseServiceAgreementV1Allowance(
-                sender,
-                serviceAgreementV1Address,
-                tokenAmount,
-                blockchain,
-            ));
+    //         ({ allowanceIncreased, allowanceGap } = await this.increaseServiceAgreementV1Allowance(
+    //             sender,
+    //             serviceAgreementV1Address,
+    //             tokenAmount,
+    //             blockchain,
+    //         ));
 
-            return this.executeContractFunction(
-                'ContentAsset',
-                'extendAssetStoringPeriod',
-                [tokenId, epochsNumber, tokenAmount],
-                blockchain,
-            );
-        } catch (error) {
-            if (allowanceIncreased) {
-                await this.executeContractFunction(
-                    'Token',
-                    'decreaseAllowance',
-                    [serviceAgreementV1Address, allowanceGap],
-                    blockchain,
-                );
-            }
-            throw error;
-        }
-    }
+    //         return this.executeContractFunction(
+    //             'ContentAsset',
+    //             'extendAssetStoringPeriod',
+    //             [tokenId, epochsNumber, tokenAmount],
+    //             blockchain,
+    //         );
+    //     } catch (error) {
+    //         if (allowanceIncreased) {
+    //             await this.executeContractFunction(
+    //                 'Token',
+    //                 'decreaseAllowance',
+    //                 [serviceAgreementV1Address, allowanceGap],
+    //                 blockchain,
+    //             );
+    //         }
+    //         throw error;
+    //     }
+    // }
 
-    async addTokens(tokenId, tokenAmount, blockchain) {
-        const sender = await this.getPublicKey(blockchain);
-        let serviceAgreementV1Address;
-        let allowanceIncreased = false;
-        let allowanceGap = 0;
+    // async addTokens(tokenId, tokenAmount, blockchain) {
+    //     const sender = await this.getPublicKey(blockchain);
+    //     let serviceAgreementV1Address;
+    //     let allowanceIncreased = false;
+    //     let allowanceGap = 0;
 
-        try {
-            serviceAgreementV1Address = await this.getContractAddress(
-                'ServiceAgreementV1',
-                blockchain,
-            );
+    //     try {
+    //         serviceAgreementV1Address = await this.getContractAddress(
+    //             'ServiceAgreementV1',
+    //             blockchain,
+    //         );
 
-            ({ allowanceIncreased, allowanceGap } = await this.increaseServiceAgreementV1Allowance(
-                sender,
-                serviceAgreementV1Address,
-                tokenAmount,
-                blockchain,
-            ));
+    //         ({ allowanceIncreased, allowanceGap } = await this.increaseServiceAgreementV1Allowance(
+    //             sender,
+    //             serviceAgreementV1Address,
+    //             tokenAmount,
+    //             blockchain,
+    //         ));
 
-            return this.executeContractFunction(
-                'ContentAsset',
-                'increaseAssetTokenAmount',
-                [tokenId, tokenAmount],
-                blockchain,
-            );
-        } catch (error) {
-            if (allowanceIncreased) {
-                await this.executeContractFunction(
-                    'Token',
-                    'decreaseAllowance',
-                    [serviceAgreementV1Address, allowanceGap],
-                    blockchain,
-                );
-            }
-            throw error;
-        }
-    }
+    //         return this.executeContractFunction(
+    //             'ContentAsset',
+    //             'increaseAssetTokenAmount',
+    //             [tokenId, tokenAmount],
+    //             blockchain,
+    //         );
+    //     } catch (error) {
+    //         if (allowanceIncreased) {
+    //             await this.executeContractFunction(
+    //                 'Token',
+    //                 'decreaseAllowance',
+    //                 [serviceAgreementV1Address, allowanceGap],
+    //                 blockchain,
+    //             );
+    //         }
+    //         throw error;
+    //     }
+    // }
 
-    async addUpdateTokens(tokenId, tokenAmount, blockchain) {
-        const sender = await this.getPublicKey(blockchain);
-        let serviceAgreementV1Address;
-        let allowanceIncreased = false;
-        let allowanceGap = 0;
+    // async addUpdateTokens(tokenId, tokenAmount, blockchain) {
+    //     const sender = await this.getPublicKey(blockchain);
+    //     let serviceAgreementV1Address;
+    //     let allowanceIncreased = false;
+    //     let allowanceGap = 0;
 
-        try {
-            serviceAgreementV1Address = await this.getContractAddress(
-                'ServiceAgreementV1',
-                blockchain,
-            );
+    //     try {
+    //         serviceAgreementV1Address = await this.getContractAddress(
+    //             'ServiceAgreementV1',
+    //             blockchain,
+    //         );
 
-            ({ allowanceIncreased, allowanceGap } = await this.increaseServiceAgreementV1Allowance(
-                sender,
-                serviceAgreementV1Address,
-                tokenAmount,
-                blockchain,
-            ));
+    //         ({ allowanceIncreased, allowanceGap } = await this.increaseServiceAgreementV1Allowance(
+    //             sender,
+    //             serviceAgreementV1Address,
+    //             tokenAmount,
+    //             blockchain,
+    //         ));
 
-            return this.executeContractFunction(
-                'ContentAsset',
-                'increaseAssetUpdateTokenAmount',
-                [tokenId, tokenAmount],
-                blockchain,
-            );
-        } catch (error) {
-            if (allowanceIncreased) {
-                await this.executeContractFunction(
-                    'Token',
-                    'decreaseAllowance',
-                    [serviceAgreementV1Address, allowanceGap],
-                    blockchain,
-                );
-            }
-            throw error;
-        }
-    }
+    //         return this.executeContractFunction(
+    //             'ContentAsset',
+    //             'increaseAssetUpdateTokenAmount',
+    //             [tokenId, tokenAmount],
+    //             blockchain,
+    //         );
+    //     } catch (error) {
+    //         if (allowanceIncreased) {
+    //             await this.executeContractFunction(
+    //                 'Token',
+    //                 'decreaseAllowance',
+    //                 [serviceAgreementV1Address, allowanceGap],
+    //                 blockchain,
+    //             );
+    //         }
+    //         throw error;
+    //     }
+    // }
 
     async getAssertionIdByIndex(tokenId, index, blockchain) {
         return this.callContractFunction(

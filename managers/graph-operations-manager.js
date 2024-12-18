@@ -151,15 +151,20 @@ export default class GraphOperationsManager {
         let formattedAssertion;
         let formattedMetadata;
         if (outputFormat === GET_OUTPUT_FORMATS.JSON_LD) {
-            formattedAssertion = await toJSONLD(assertion.join('\n'));
+            formattedAssertion = await toJSONLD(
+                [...(assertion.public ?? []), ...(assertion.private ?? [])].join('\n'),
+            );
             if (includeMetadata) {
                 formattedMetadata = await toJSONLD(metadata.join('\n'));
             }
         }
         if (outputFormat === GET_OUTPUT_FORMATS.N_QUADS) {
-            formattedAssertion = await toNQuads(assertion, 'application/n-quads');
+            formattedAssertion = await toNQuads(
+                [...(assertion.public ?? []), ...(assertion.private ?? [])].join('\n'),
+                'application/n-quads',
+            );
             if (includeMetadata) {
-                formattedMetadata = await toNQuads(metadata, 'application/n-quads');
+                formattedMetadata = await toNQuads(metadata.join('\n'), 'application/n-quads');
             }
         }
 

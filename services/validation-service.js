@@ -72,7 +72,6 @@ export default class ValidationService {
         immutable,
         tokenAmount,
         authToken,
-        paranetUAL,
         payer,
         minimumNumberOfFinalizationConfirmations,
         minimumNumberOfNodeReplications,
@@ -89,7 +88,6 @@ export default class ValidationService {
         this.validateImmutable(immutable);
         this.validateTokenAmount(tokenAmount);
         this.validateAuthToken(authToken);
-        this.validateParanetUAL(paranetUAL);
         this.validatePayer(payer);
         this.validateMinimumNumberOfFinalizationConfirmations(
             minimumNumberOfFinalizationConfirmations,
