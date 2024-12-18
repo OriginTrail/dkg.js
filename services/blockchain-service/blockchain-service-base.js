@@ -1080,14 +1080,12 @@ export default class BlockchainServiceBase {
     // Get ask operations
     // To get price, multiply with size in bytes and epochs
     async getStakeWeightedAverageAsk() {
-        return;
-        // Uncomment when contracts integrated
-        // return this.callContractFunction(
-        //     'ShardingTableStorage',
-        //     'getStakeWeightedAverageAsk',
-        //     [],
-        //     blockchain,
-        // );
+        return this.callContractFunction(
+            'ShardingTableStorage',
+            'getStakeWeightedAverageAsk',
+            [],
+            blockchain,
+        );
     }
 
     // Blockchain operations

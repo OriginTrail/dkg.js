@@ -2,7 +2,7 @@
  * @constant {number} MAX_FILE_SIZE
  * - Max file size for publish
  */
-export const MAX_FILE_SIZE = 524288000;
+export const MAX_FILE_SIZE = 10000000;
 
 /**
  * @constant {number} DID_PREFIX
