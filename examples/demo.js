@@ -30,15 +30,23 @@ function divider() {
 
 (async () => {
     // const content = {
-    //     public: `<uuid:1> <http://schema.org/city> <uuid:nis> .
-    //     <uuid:3> <http://schema.org/company> "TL" .`,
-    //     private: `<uuid:2> <http://schema.org/city> <uuid:belgrade> .
-    // <uuid:2> <http://schema.org/company> "OT" .
-    // <uuid:2> <http://schema.org/user> <uuid:user:1> .
-    // <uuid:3> <http://schema.org/user> <uuid:user:1> .
-
-    // `,
+    //     // public: `<uuid:1> <http://schema.org/city> <uuid:nis> .
+    //     // <uuid:1> <http://schema.org/city> <uuid:novi-sad> .
+    //     //     <uuid:3> <http://schema.org/company> "TL" .
+    //     //     <uuid:3> <http://schema.org/company> "TraceLabs" .`,
+    //     private: `<uuid:3> <http://schema.org/city> <uuid:belgrade> .
+    //     <uuid:2>     <http://schema.org/company> "OT" .
+    //     <uuid:2> <http://schema.org/user> <uuid:user:1> .
+    //     <uuid:1> <http://schema.org/user> <uuid:user:1> .`,
     // };
+
+    // for (let i = 0; i < 1_000_000; i += 1) {
+    //     const id = Math.ceil(Math.random() * 100_000);
+    //     const index = id % 2;
+    //     content[
+    //         index ? 'public' : 'private'
+    //     ] += `\n <uuid:${id}> <http://schema.org/company> "object" .`;
+    // }
     const content = {
         public: {
             '@context': ['https://schema.org'],

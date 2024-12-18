@@ -13,8 +13,9 @@ import {
     CHUNK_BYTE_SIZE,
     OPERATION_DELAYS,
     PRIVATE_RESOURCE_PREDICATE,
-    PRIVATE_HASH_SUBJECT_PREFIX,
     PRIVATE_ASSERTION_PREDICATE,
+    PRIVATE_RESOURCE_PREDICATE,
+    PRIVATE_HASH_SUBJECT_PREFIX,
 } from '../constants.js';
 import emptyHooks from '../util/empty-hooks.js';
 
@@ -419,6 +420,7 @@ export default class AssetOperationsManager {
         const datasetSize = numberOfChunks * CHUNK_BYTE_SIZE;
 
         this.validationService.validateAssertionSizeInBytes(datasetSize);
+
         const datasetRoot = kcTools.calculateMerkleRoot(dataset.public);
 
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
@@ -569,9 +571,13 @@ export default class AssetOperationsManager {
             },
         };
     }
-
-    generatePrivateRepresentation(privateSubjectHash) {
-        return `${`<${PRIVATE_HASH_SUBJECT_PREFIX}${privateSubjectHash}>`} <${PRIVATE_RESOURCE_PREDICATE}> <${kaTools.generateNamedNode()}> .`;
+    hashSubject(subject) {
+        ethers.solidityPackedSha256(['string'], [subject.slice(1, -1)]);
+    }
+    generatePrivateRepresentation(privateSubject) {
+        return `${`<${PRIVATE_HASH_SUBJECT_PREFIX}${hashSubject(
+            privateSubject,
+        )}>`} <${PRIVATE_RESOURCE_PREDICATE}> <${kaTools.generateNamedNode()}> .`;
     }
 
     /**
@@ -957,6 +963,206 @@ export default class AssetOperationsManager {
             dataset = await kcTools.formatDataset(content);
         }
 
+        const getOperationId = await this.nodeApiService.get(
+            endpoint,
+            port,
+            authToken,
+            UAL,
+            '',
+            false,
+            true,
+            null,
+            1,
+            null,
+        );
+
+        // TODO: Add error hadnling if this failes updated failes
+        const subjectUALPairsResult = await this.nodeApiService.getOperationResult(
+            endpoint,
+            port,
+            authToken,
+            OPERATIONS.GET,
+            maxNumberOfRetries,
+            frequency,
+            getOperationId,
+        );
+
+        if (subjectUALPairsResult.status !== OPERATION_STATUSES.COMPLETED) {
+            return {
+                operation: {
+                    getSubjectUALPairs: getOperationStatusObject(
+                        subjectUALPairsResult,
+                        getOperationId,
+                    ),
+                },
+            };
+        }
+
+        // Initialize maps for quick lookups
+        const oldSubjectUALMap = new Map();
+        const oldSubjectHashUALMap = new Map();
+
+        const { subjectUALPairs, privateMerkleRootTriple } = subjectUALPairsResult;
+
+        // Populate subjectUALMap and subjectHashUALMap from the pairs
+        for (const pair of subjectUALPairs) {
+            if (pair.subject) {
+                oldSubjectUALMap.set(pair.subject, pair.UAL);
+            }
+            if (pair.privateSubjectHash) {
+                oldSubjectHashUALMap.set(pair.privateSubjectHash, pair.UAL);
+            }
+        }
+
+        let privateTriplesGrouped = [];
+        let publicTriplesGrouped = [];
+
+        // Handle private root update/insertion
+        if (dataset.private?.length) {
+            dataset.private = kcTools.generateMissingIdsForBlankNodes(dataset.private);
+            privateTriplesGrouped = kcTools.groupNquadsBySubject(dataset.private, true);
+            dataset.private = privateTriplesGrouped.flat();
+            const privateRoot = kcTools.calculateMerkleRoot(dataset.private);
+
+            if (privateMerkleRootTriple) {
+                // Private root triple existed before, so we update it
+                let newPrivateMerkleRootTriple = privateMerkleRootTriple.split(' ');
+                newPrivateMerkleRootTriple[2] = `"${privateRoot}"`;
+                dataset.public.push(newPrivateMerkleRootTriple.join(' '));
+            } else {
+                // Private root triple didn't exist, insert it
+                dataset.public.push(
+                    `<${kaTools.generateNamedNode()}> <${PRIVATE_ASSERTION_PREDICATE}> "${privateRoot}" .`,
+                );
+            }
+        }
+
+        let tokensCount = 0;
+        let tokensToBeMinted = 0;
+        let tokensToBeBurned = [];
+
+        dataset.private = kcTools.generateMissingIdsForBlankNodes(dataset.private);
+        publicTriplesGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
+        // We always have public as there is private root triple here already
+        if (dataset.private?.length) {
+            // Both public and private data exist
+            const publicSubjectMap = new Map();
+
+            for (let i = 0; i < publicTriplesGrouped.length; i++) {
+                const [publicSubject] = publicTriplesGrouped[i][0].split(' ');
+                publicSubjectMap.set(publicSubject, i);
+            }
+
+            const privateTriplesGroupedWithoutPublicPair = [];
+
+            // Integrate private subjects into public or create new entries if no public pair
+            for (const privateTriples of privateTriplesGrouped) {
+                const [privateSubject] = privateTriples[0].split(' ');
+                const privateSubjectHash = ethers.solidityPackedSha256(
+                    ['string'],
+                    [privateSubject.slice(1, -1)],
+                );
+
+                if (publicSubjectMap.has(privateSubject)) {
+                    // Insert private representation into existing public subject group
+                    const publicIndex = publicSubjectMap.get(privateSubject);
+                    this.insertTripleSorted(
+                        publicTriplesGrouped[publicIndex],
+                        `${`<${PRIVATE_HASH_SUBJECT_PREFIX}${privateSubjectHash}>`} <${PRIVATE_RESOURCE_PREDICATE}> <${kaTools.generateNamedNode()}> .`,
+                    );
+                } else {
+                    // No matching public pair - insert as a new hashed subject
+                    const index = this.insertTripleSorted(
+                        privateTriplesGroupedWithoutPublicPair,
+                        `${`<${PRIVATE_HASH_SUBJECT_PREFIX}${privateSubjectHash}>`} <${PRIVATE_RESOURCE_PREDICATE}> <${kaTools.generateNamedNode()}> .`,
+                    );
+                }
+            }
+
+            tokensCount += privateTriplesGroupedWithoutPublicPair.length;
+            for (const triple of privateTriplesGroupedWithoutPublicPair) {
+                publicTriplesGrouped.push([triple]);
+            }
+
+            // Determine tokens to mint or burn
+            for (const triples of publicTriplesGrouped) {
+                // Each group is an array of triples, check only the first triple for subject
+                const [publicSubject] = triples[0].split(' ');
+
+                // Public subject is hash
+                if (publicSubject.startsWith(`<${PRIVATE_HASH_SUBJECT_PREFIX}`)) {
+                    // Subject is a hashed private subject
+                    const publicSubjectParsed = publicSubject.slice(
+                        PRIVATE_HASH_SUBJECT_PREFIX.length + 1,
+                        -1,
+                    );
+                    if (!oldSubjectHashUALMap.has(publicSubjectParsed)) {
+                        // If didn't exist before it should be minted
+                        tokensToBeMinted += 1;
+                    } else {
+                        // If existed remove from the map so only those that don't exist in new assertion stay
+                        oldSubjectHashUALMap.delete(publicSubjectParsed);
+                    }
+                } else {
+                    // Subject is a public resource
+                    const publicSubjectParsed = publicSubject.slice(1, -1);
+                    if (!oldSubjectUALMap.has(publicSubjectParsed)) {
+                        // Didn't exist in previous public, check if it existed in private
+                        const publicSubjectHashed = ethers.solidityPackedSha256(
+                            ['string'],
+                            [publicSubjectParsed],
+                        );
+                        if (!oldSubjectHashUALMap.has(publicSubjectHashed)) {
+                            // It didn't exist in previous private it should be minted
+                            tokensToBeMinted += 1;
+                        } else {
+                            // If existed remove from the map so only those that don't exist in new assertion stay
+                            oldSubjectHashUALMap.delete(publicSubjectHashed);
+                        }
+                    } else {
+                        // If existed remove from the map so only those that don't exist in new assertion stay
+                        oldSubjectUALMap.delete(publicSubjectParsed);
+                    }
+                }
+            }
+
+            tokensToBeBurned = Array.from(
+                new Set([...oldSubjectHashUALMap.values(), ...oldSubjectUALMap.values()]),
+            ).map((ual) => ual.split('/').pop());
+
+            dataset.public = publicTriplesGrouped.flat();
+        } else {
+            // No private triples, just handle public
+            tokensCount += publicTriplesGrouped.length;
+            dataset.public = publicTriplesGrouped.flat();
+
+            // Determine tokens to mint or burn for public-only scenario no hashes will be present
+            for (const triples of publicTriplesGrouped) {
+                const [publicSubject] = triples[0].split(' ');
+                const publicSubjectParsed = publicSubject.slice(1, -1);
+                if (!oldSubjectUALMap.has(publicSubjectParsed)) {
+                    // Didn't exist in previous public, check if it existed in private
+                    const publicSubjectHashed = ethers.solidityPackedSha256(
+                        ['string'],
+                        [publicSubjectParsed],
+                    );
+                    if (!oldSubjectHashUALMap.has(publicSubjectHashed)) {
+                        // It didn't exist in previous private it should be minted
+                        tokensToBeMinted += 1;
+                    } else {
+                        // If existed before remove from the map so only those that don't exist in new assertion stay
+                        oldSubjectHashUALMap.delete(publicSubjectHashed);
+                    }
+                } else {
+                    oldSubjectUALMap.delete(publicSubjectParsed);
+                }
+            }
+
+            tokensToBeBurned = Array.from(
+                new Set([...oldSubjectHashUALMap.values(), ...oldSubjectUALMap.values()]),
+            ).map((ual) => ual.split('/').pop());
+        }
+
         const numberOfChunks = kcTools.calculateNumberOfChunks(dataset, CHUNK_BYTE_SIZE);
 
         const datasetSize = numberOfChunks * CHUNK_BYTE_SIZE;
@@ -994,7 +1200,7 @@ export default class AssetOperationsManager {
             return {
                 datasetRoot,
                 operation: {
-                    publish: getOperationStatusObject(updateOperationResult, updateOperationId),
+                    update: getOperationStatusObject(updateOperationResult, updateOperationId),
                 },
             };
         }
