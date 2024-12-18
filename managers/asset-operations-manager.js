@@ -514,6 +514,7 @@ export default class AssetOperationsManager {
             ({ knowledgeCollectionId, receipt: mintKnowledgeAssetReceipt } =
                 await this.blockchainService.createKnowledgeCollection(
                     {
+                        publishOperationId,
                         merkleRoot: datasetRoot,
                         knowledgeAssetsAmount: kcTools.countDistinctSubjects(dataset.public),
                         byteSize: datasetSize,
