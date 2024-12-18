@@ -998,4 +998,151 @@ export default class AssetOperationsManager {
             },
         };
     }
+
+    /**
+     * Retrieves a public or private assertion for a given UAL.
+     * @async
+     * @param {string} UAL - The Universal Asset Locator, representing asset or collection.
+     * @param {Object} [options={}] - Optional parameters for the asset get operation.
+     * @param {number} [options.state] - The state index of the asset. If omitted, the latest state will be used.
+     * @param {boolean} [options.includeMetadata] - If metadata should be included. Default is false.
+     * @param {string} [options.contentType] - The type of content to retrieve, either "public" or "all" (default)
+     * @param {boolean} [options.validate] - Whether to validate the retrieved assertion.
+     * @param {string} [options.outputFormat] - The format of the retrieved assertion output, either "n-quads" or "json-ld".
+     * @returns {Object} - The result of the asset get operation.
+     */
+    async get(UAL, options = {}) {
+        const {
+            blockchain,
+            endpoint,
+            port,
+            maxNumberOfRetries,
+            frequency,
+            state,
+            includeMetadata,
+            contentType,
+            validate,
+            outputFormat,
+            authToken,
+            hashFunctionId,
+            paranetUAL,
+            subjectUAL,
+        } = this.inputService.getAssetGetArguments(options);
+
+        this.validationService.validateAssetGet(
+            UAL,
+            blockchain,
+            endpoint,
+            port,
+            maxNumberOfRetries,
+            frequency,
+            state,
+            includeMetadata,
+            contentType,
+            hashFunctionId,
+            validate,
+            outputFormat,
+            authToken,
+            subjectUAL,
+        );
+
+        const getOperationId = await this.nodeApiService.get(
+            endpoint,
+            port,
+            authToken,
+            UAL,
+            state,
+            includeMetadata,
+            subjectUAL,
+            contentType,
+            hashFunctionId,
+            paranetUAL,
+        );
+
+        const getOperationResult = await this.nodeApiService.getOperationResult(
+            endpoint,
+            port,
+            authToken,
+            OPERATIONS.GET,
+            maxNumberOfRetries,
+            frequency,
+            getOperationId,
+        );
+        if (subjectUAL) {
+            if (getOperationResult.data?.length) {
+                return {
+                    operation: {
+                        get: getOperationStatusObject(getOperationResult, getOperationId),
+                    },
+                    subjectUALPairs: getOperationResult.data,
+                };
+            }
+            if (getOperationResult.status !== 'FAILED') {
+                getOperationResult.data = {
+                    errorType: 'DKG_CLIENT_ERROR',
+                    errorMessage: 'Unable to find assertion on the network!',
+                };
+                getOperationResult.status = 'FAILED';
+            }
+
+            return {
+                operation: {
+                    get: getOperationStatusObject(getOperationResult, getOperationId),
+                },
+            };
+        }
+        const { metadata } = getOperationResult.data;
+        let assertion = getOperationResult.data.assertion;
+
+        if (!assertion) {
+            if (getOperationResult.status !== 'FAILED') {
+                getOperationResult.data = {
+                    errorType: 'DKG_CLIENT_ERROR',
+                    errorMessage: 'Unable to find assertion on the network!',
+                };
+                getOperationResult.status = 'FAILED';
+            }
+
+            return {
+                operation: {
+                    get: getOperationStatusObject(getOperationResult, getOperationId),
+                },
+            };
+        }
+
+        if (validate === true) {
+            const isValid = true; // TODO: validate assertion
+            if (!isValid) {
+                getOperationResult.data = {
+                    errorType: 'DKG_CLIENT_ERROR',
+                    errorMessage: "Calculated root hashes don't match!",
+                };
+            }
+        }
+
+        let formattedAssertion = [...(assertion.public ?? []), ...(assertion.private ?? [])].join(
+            '\n',
+        );
+        let formattedMetadata;
+        if (outputFormat === GET_OUTPUT_FORMATS.JSON_LD) {
+            formattedAssertion = await toJSONLD(formattedAssertion);
+            if (includeMetadata) {
+                formattedMetadata = await toJSONLD(metadata.join('\n'));
+            }
+        }
+        if (outputFormat === GET_OUTPUT_FORMATS.N_QUADS) {
+            formattedAssertion = await toNQuads(formattedAssertion, 'application/n-quads');
+            if (includeMetadata) {
+                formattedMetadata = await toNQuads(metadata.join('\n'), 'application/n-quads');
+            }
+        }
+
+        return {
+            assertion: formattedAssertion,
+            ...(includeMetadata && metadata && { metadata: formattedMetadata }),
+            operation: {
+                get: getOperationStatusObject(getOperationResult, getOperationId),
+            },
+        };
+    }
 }
