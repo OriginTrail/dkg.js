@@ -4,7 +4,7 @@ const TerserPlugin = require('terser-webpack-plugin');
 
 module.exports = {
     mode: 'production',
-    entry: './index.js',
+    entry: './index.cjs',
     output: {
         path: path.resolve(__dirname, 'dist'),
         filename: 'dkg.min.js',
@@ -34,6 +34,7 @@ module.exports = {
             assert: require.resolve('assert'),
             os: require.resolve('os-browserify'),
             url: require.resolve('url'),
+            module: require.resolve('./fallback/module.cjs'),
         },
     },
     optimization: {
