@@ -54,7 +54,7 @@ export const BLOCKCHAINS = {
     testnet: {
         // This is V8 TESTNET HUB don't use this for V6
         'base:84532': {
-            hubContract: '0xCca0eA14540588A09c85cD6A6Fc53eA3A7010692',
+            hubContract: '0xCdC3945ed33941e359391574aAB16F274D53e641',
             rpc: 'https://sepolia.base.org',
         },
     },

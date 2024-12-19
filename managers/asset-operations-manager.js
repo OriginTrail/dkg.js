@@ -474,7 +474,9 @@ export default class AssetOperationsManager {
 
         const estimatedPublishingCost =
             tokenAmount ??
-            (await this.blockchainService.getStakeWeightedAverageAsk()) * epochsNum * datasetSize;
+            (await this.blockchainService.getStakeWeightedAverageAsk(blockchain)) *
+                epochsNum *
+                datasetSize;
 
         let knowledgeCollectionId;
         let mintKnowledgeAssetReceipt;
