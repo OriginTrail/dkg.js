@@ -12,7 +12,7 @@ var _documentCurrentScript = typeof document !== 'undefined' ? document.currentS
  * @constant {number} MAX_FILE_SIZE
  * - Max file size for publish
  */
-const MAX_FILE_SIZE = 524288000;
+const MAX_FILE_SIZE = 10000000;
 
 const PRIVATE_ASSERTION_PREDICATE =
     'https://ontology.origintrail.io/dkg/1.0#privateMerkleRoot';
@@ -39,7 +39,7 @@ const BLOCKCHAINS = {
     },
     devnet: {
         'base:84532': {
-            hubContract: '0x3e5dd82e7529F4e55AA64893D8f8879AE14BF87D',
+            hubContract: '0xE043daF4cC8ae2c720ef95fc82574a37a429c40A',
             rpc: 'https://sepolia.base.org',
         },
     },
@@ -118,10 +118,6 @@ const OPERATION_STATUSES = {
     PENDING: 'PENDING',
     COMPLETED: 'COMPLETED',
     FAILED: 'FAILED',
-};
-
-const OPERATION_DELAYS = {
-    FINALITY: 5000,
 };
 
 const CONTENT_TYPES = {
@@ -697,7 +693,6 @@ class AssetOperationsManager {
             immutable,
             tokenAmount,
             authToken,
-            paranetUAL,
             payer,
             minimumNumberOfFinalizationConfirmations,
             minimumNumberOfNodeReplications,
@@ -716,7 +711,6 @@ class AssetOperationsManager {
             immutable,
             tokenAmount,
             authToken,
-            paranetUAL,
             payer,
             minimumNumberOfFinalizationConfirmations,
             minimumNumberOfNodeReplications,
@@ -742,7 +736,6 @@ class AssetOperationsManager {
         }
 
         let publicTriplesGrouped = [];
-        let tokensCount = 0;
         // Assign IDs to blank nodes
 
         dataset.public = assertionTools.kcTools.generateMissingIdsForBlankNodes(dataset.public);
@@ -762,7 +755,6 @@ class AssetOperationsManager {
 
             // Group public triples by subject
             publicTriplesGrouped = assertionTools.kcTools.groupNquadsBySubject(dataset.public, true);
-            tokensCount += publicTriplesGrouped.length;
 
             // Create a map of public subject -> index for quick lookup
             const publicSubjectMap = new Map();
@@ -786,7 +778,7 @@ class AssetOperationsManager {
                     const publicIndex = publicSubjectMap.get(privateSubject);
                     this.insertTripleSorted(
                         publicTriplesGrouped[publicIndex],
-                        this.generatePrivateRepresentation(privateSubjectHash),
+                        `${privateSubject} <${PRIVATE_RESOURCE_PREDICATE}> <${assertionTools.kaTools.generateNamedNode()}> .`,
                     );
                 } else {
                     // If no public pair, maintain separate list, inserting sorted by hash
@@ -798,7 +790,6 @@ class AssetOperationsManager {
             }
 
             // Append any non-paired private subjects at the end
-            tokensCount += privateTripleSubjectHashesGroupedWithoutPublicPair.length;
             for (const triple of privateTripleSubjectHashesGroupedWithoutPublicPair) {
                 publicTriplesGrouped.push([triple]);
             }
@@ -807,7 +798,6 @@ class AssetOperationsManager {
         } else {
             // No private triples, just group and flatten public
             publicTriplesGrouped = assertionTools.kcTools.groupNquadsBySubject(dataset.public, true);
-            tokensCount += publicTriplesGrouped.length;
             dataset.public = publicTriplesGrouped.flat();
         }
 
@@ -880,57 +870,29 @@ class AssetOperationsManager {
         let knowledgeCollectionId;
         let mintKnowledgeAssetReceipt;
 
-        if (paranetUAL == null) {
-            ({ knowledgeCollectionId, receipt: mintKnowledgeAssetReceipt } =
-                await this.blockchainService.createKnowledgeCollection(
-                    {
-                        publishOperationId,
-                        merkleRoot: datasetRoot,
-                        knowledgeAssetsAmount: assertionTools.kcTools.countDistinctSubjects(dataset.public),
-                        byteSize: datasetSize,
-                        triplesAmount: assertionTools.kaTools.getAssertionTriplesNumber(dataset.public),
-                        chunksAmount: numberOfChunks,
-                        epochs: epochsNum,
-                        tokenAmount: estimatedPublishingCost,
-                        paymaster: payer,
-                        publisherNodeIdentityId,
-                        publisherNodeR,
-                        publisherNodeVS,
-                        identityIds,
-                        r,
-                        vs,
-                    },
-                    null,
-                    null,
-                    blockchain,
-                    stepHooks,
-                ));
-        } else {
-            const { contract: paranetKaContract, tokenId: paranetTokenId } = resolveUAL(paranetUAL);
-            ({ knowledgeCollectionId, receipt: mintKnowledgeAssetReceipt } =
-                await this.blockchainService.createKnowledgeCollection(
-                    {
-                        merkleRoot: datasetRoot,
-                        knowledgeAssetsAmount: assertionTools.kcTools.countDistinctSubjects(dataset.public),
-                        byteSize: datasetSize,
-                        triplesAmount: assertionTools.kaTools.getAssertionTriplesNumber(dataset.public),
-                        chunksAmount: numberOfChunks,
-                        epochs: epochsNum,
-                        tokenAmount: estimatedPublishingCost,
-                        paymaster: payer,
-                        publisherNodeIdentityId,
-                        publisherNodeR,
-                        publisherNodeVS,
-                        identityIds,
-                        r,
-                        vs,
-                    },
-                    paranetKaContract,
-                    paranetTokenId,
-                    blockchain,
-                    stepHooks,
-                ));
-        }
+        ({ knowledgeCollectionId, receipt: mintKnowledgeAssetReceipt } =
+            await this.blockchainService.createKnowledgeCollection(
+                {
+                    publishOperationId,
+                    merkleRoot: datasetRoot,
+                    knowledgeAssetsAmount: assertionTools.kcTools.countDistinctSubjects(dataset.public),
+                    byteSize: datasetSize,
+                    chunksAmount: numberOfChunks,
+                    epochs: epochsNum,
+                    tokenAmount: estimatedPublishingCost,
+                    paymaster: payer,
+                    publisherNodeIdentityId,
+                    publisherNodeR,
+                    publisherNodeVS,
+                    identityIds,
+                    r,
+                    vs,
+                },
+                null,
+                null,
+                blockchain,
+                stepHooks,
+            ));
 
         const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, knowledgeCollectionId);
 
@@ -1311,164 +1273,8 @@ class AssetOperationsManager {
      * @returns {Object} Object containing UAL, publicAssertionId and operation status.
      */
     async update(UAL, content, options = {}) {
-        this.validationService.validateJsonldOrNquads(content);
-
-        const {
-            blockchain,
-            endpoint,
-            port,
-            maxNumberOfRetries,
-            frequency,
-            hashFunctionId,
-            scoreFunctionId,
-            tokenAmount,
-            authToken,
-            payer,
-        } = this.inputService.getAssetUpdateArguments(options);
-
-        this.validationService.validateAssetUpdate(
-            content,
-            blockchain,
-            endpoint,
-            port,
-            maxNumberOfRetries,
-            frequency,
-            hashFunctionId,
-            scoreFunctionId,
-            tokenAmount,
-            authToken,
-            payer,
-        );
-
-        const { tokenId } = resolveUAL(UAL);
-
-        let dataset;
-
-        if (typeof content === 'string') {
-            dataset = content
-                .split('\n')
-                .map((line) => line.trimStart().trimEnd())
-                .filter((line) => line.trim() !== '');
-        } else {
-            dataset = await assertionTools.kcTools.formatDataset(content);
-        }
-
-        const numberOfChunks = assertionTools.kcTools.calculateNumberOfChunks(dataset, CHUNK_BYTE_SIZE);
-
-        const datasetSize = numberOfChunks * CHUNK_BYTE_SIZE;
-
-        this.validationService.validateAssertionSizeInBytes(datasetSize);
-        const datasetRoot = assertionTools.kcTools.calculateMerkleRoot(dataset);
-
-        const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
-            'ContentAssetStorage',
-            blockchain,
-        );
-
-        const updateOperationId = await this.nodeApiService.update(
-            endpoint,
-            port,
-            authToken,
-            datasetRoot,
-            dataset,
-            blockchain.name,
-            contentAssetStorageAddress,
-            tokenId,
-            hashFunctionId,
-        );
-        const updateOperationResult = await this.nodeApiService.getOperationResult(
-            endpoint,
-            port,
-            authToken,
-            OPERATIONS.UPDATE,
-            maxNumberOfRetries,
-            frequency,
-            updateOperationId,
-        );
-
-        if (updateOperationResult.status !== OPERATION_STATUSES.COMPLETED) {
-            return {
-                datasetRoot,
-                operation: {
-                    publish: getOperationStatusObject(updateOperationResult, updateOperationId),
-                },
-            };
-        }
-
-        let tokenAmountInWei;
-
-        if (tokenAmount != null) {
-            tokenAmountInWei = tokenAmount;
-        } else {
-            tokenAmountInWei = await this._getUpdateBidSuggestion(UAL, blockchain, datasetSize);
-        }
-
-        const updateKnowledgeAssetReceipt = await this.blockchainService.updateAsset(
-            tokenId,
-            datasetRoot,
-            datasetSize,
-            assertionTools.kaTools.getAssertionTriplesNumber(dataset),
-            assertionTools.kcTools.calculateNumberOfChunks(dataset),
-            tokenAmountInWei,
-            blockchain,
-        );
-
-        return {
-            UAL,
-            datasetRoot,
-            operation: {
-                updateKnowledgeAsset: updateKnowledgeAssetReceipt,
-                update: getOperationStatusObject(updateOperationResult, updateOperationId),
-            },
-        };
-    }
-}
-
-class BlockchainOperationsManager {
-    constructor(services) {
-        this.blockchainService = services.blockchainService;
-        this.inputService = services.inputService;
-    }
-
-    /**
-     * @async
-     * @param {Object} [options={}]  - Optional parameters for blockchain service.
-     * @returns {Promise<number>} - A promise that resolves to the chain id.
-     */
-    async getChainId(options = {}) {
-        const blockchain = this.inputService.getBlockchain(options);
-        return this.blockchainService.getChainId(blockchain);
-    }
-
-    /**
-     * Retrieve the current gas price.
-     * @async
-     * @param {Object} [options={}]  - Optional parameters for blockchain service.
-     * @returns {Promise<string>} - A promise that resolves to the current gas price.
-     */
-    async getGasPrice(options = {}) {
-        const blockchain = this.inputService.getBlockchain(options);
-        return this.blockchainService.getGasPrice(blockchain);
-    }
-
-    /**
-     * Retrieve the wallet balances.
-     * @async
-     * @param {Object} [options={}] - Optional parameters for blockchain service.
-     * @returns {Promise<Object>} - A promise that resolves to an object containing wallet balances.
-     */
-    async getWalletBalances(options = {}) {
-        const blockchain = this.inputService.getBlockchain(options);
-        return this.blockchainService.getWalletBalances(blockchain);
-    }
-}
-
-class GraphOperationsManager {
-    constructor(services) {
-        this.nodeApiService = services.nodeApiService;
-        this.validationService = services.validationService;
-        this.inputService = services.inputService;
-        this.blockchainService = services.blockchainService;
+        console.log('Update feature is currently unavailable in version 8.0.0, coming soon!');
+        return;
     }
 
     /**
@@ -1582,28 +1388,21 @@ class GraphOperationsManager {
             };
         }
 
-        let formattedAssertion;
+        let formattedAssertion = [...(assertion.public ?? []), ...(assertion.private ?? [])].join(
+            '\n',
+        );
         let formattedMetadata;
         if (outputFormat === GET_OUTPUT_FORMATS.JSON_LD) {
-            if (assertion.public || assertion.private) {
-                const tempAssertion = [];
-                if (assertion.public) {
-                    tempAssertion.push(...assertion.public);
-                }
-                if (assertion.private) {
-                    tempAssertion.push(...assertion.private);
-                }
-                assertion = tempAssertion;
-            }
-            formattedAssertion = await toJSONLD(assertion.join('\n'));
+            formattedAssertion = await toJSONLD(formattedAssertion);
+
             if (includeMetadata) {
                 formattedMetadata = await toJSONLD(metadata.join('\n'));
             }
         }
         if (outputFormat === GET_OUTPUT_FORMATS.N_QUADS) {
-            formattedAssertion = await toNQuads(assertion, 'application/n-quads');
+            formattedAssertion = await toNQuads(formattedAssertion, 'application/n-quads');
             if (includeMetadata) {
-                formattedMetadata = await toNQuads(metadata, 'application/n-quads');
+                formattedMetadata = await toNQuads(metadata.join('\n'), 'application/n-quads');
             }
         }
 
@@ -1615,6 +1414,54 @@ class GraphOperationsManager {
             },
         };
     }
+}
+
+class BlockchainOperationsManager {
+    constructor(services) {
+        this.blockchainService = services.blockchainService;
+        this.inputService = services.inputService;
+    }
+
+    /**
+     * @async
+     * @param {Object} [options={}]  - Optional parameters for blockchain service.
+     * @returns {Promise<number>} - A promise that resolves to the chain id.
+     */
+    async getChainId(options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        return this.blockchainService.getChainId(blockchain);
+    }
+
+    /**
+     * Retrieve the current gas price.
+     * @async
+     * @param {Object} [options={}]  - Optional parameters for blockchain service.
+     * @returns {Promise<string>} - A promise that resolves to the current gas price.
+     */
+    async getGasPrice(options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        return this.blockchainService.getGasPrice(blockchain);
+    }
+
+    /**
+     * Retrieve the wallet balances.
+     * @async
+     * @param {Object} [options={}] - Optional parameters for blockchain service.
+     * @returns {Promise<Object>} - A promise that resolves to an object containing wallet balances.
+     */
+    async getWalletBalances(options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        return this.blockchainService.getWalletBalances(blockchain);
+    }
+}
+
+class GraphOperationsManager {
+    constructor(services) {
+        this.nodeApiService = services.nodeApiService;
+        this.validationService = services.validationService;
+        this.inputService = services.inputService;
+        this.blockchainService = services.blockchainService;
+    }
 
     /**
      * An asynchronous function that executes a SPARQL query using an API endpoint and returns the query result.
@@ -1625,27 +1472,18 @@ class GraphOperationsManager {
      * @returns {Promise} A Promise that resolves to the query result.
      */
     async query(queryString, queryType, options = {}) {
-        const {
-            // graphLocation,
-            // graphState,
-            endpoint,
-            port,
-            maxNumberOfRetries,
-            frequency,
-            authToken,
-            paranetUAL,
-        } = this.inputService.getQueryArguments(options);
+        const { endpoint, port, maxNumberOfRetries, frequency, authToken, paranetUAL, repository } =
+            this.inputService.getQueryArguments(options);
 
         this.validationService.validateGraphQuery(
             queryString,
             queryType,
-            // graphLocation,
-            // graphState,
             endpoint,
             port,
             maxNumberOfRetries,
             frequency,
             authToken,
+            repository,
         );
 
         const operationId = await this.nodeApiService.query(
@@ -1654,9 +1492,8 @@ class GraphOperationsManager {
             authToken,
             queryString,
             queryType,
-            // graphState,
-            // graphLocation,
             paranetUAL,
+            repository,
         );
 
         return this.nodeApiService.getOperationResult(
@@ -1668,261 +1505,6 @@ class GraphOperationsManager {
             frequency,
             operationId,
         );
-    }
-
-    /**
-     * Creates a new knowledge collection.
-     * @async
-     * @param {Object} content - The content of the knowledge collection to be created, contains public, private or both keys.
-     * @param {Object} [options={}] - Additional options for knowledge collection creation.
-     * @param {Object} [stepHooks=emptyHooks] - Hooks to execute during knowledge collection creation.
-     * @returns {Object} Object containing UAL, publicAssertionId and operation status.
-     */
-    async create(content, options = {}, stepHooks = emptyHooks) {
-        this.validationService.validateJsonldOrNquads(content);
-        const {
-            blockchain,
-            endpoint,
-            port,
-            maxNumberOfRetries,
-            frequency,
-            epochsNum,
-            hashFunctionId,
-            scoreFunctionId,
-            immutable,
-            tokenAmount,
-            authToken,
-            paranetUAL,
-            payer,
-            minimumNumberOfFinalizationConfirmations,
-            minimumNumberOfNodeReplications,
-        } = this.inputService.getAssetCreateArguments(options);
-
-        this.validationService.validateAssetCreate(
-            content,
-            blockchain,
-            endpoint,
-            port,
-            maxNumberOfRetries,
-            frequency,
-            epochsNum,
-            hashFunctionId,
-            scoreFunctionId,
-            immutable,
-            tokenAmount,
-            authToken,
-            paranetUAL,
-            payer,
-            minimumNumberOfFinalizationConfirmations,
-            minimumNumberOfNodeReplications,
-        );
-
-        let dataset = {};
-        if (typeof content === 'string') {
-            dataset.public = this.processContent(content);
-        } else if (
-            typeof content.public === 'string' ||
-            (!content.public && content.private && typeof content.private === 'string')
-        ) {
-            if (content.public) {
-                dataset.public = this.processContent(content.public);
-            } else {
-                dataset.public = [];
-            }
-            if (content.private && typeof content.private === 'string') {
-                dataset.private = this.processContent(content.private);
-            }
-        } else {
-            dataset = await assertionTools.kcTools.formatDataset(content);
-        }
-
-        if (dataset.private?.length) {
-            dataset.private = assertionTools.kcTools.generateMissingIdsForBlankNodes(dataset.private);
-
-            const privateTriplesGrouped = assertionTools.kcTools.groupNquadsBySubject(dataset.private, true);
-            dataset.private = privateTriplesGrouped.flat();
-            const privateRoot = assertionTools.kcTools.calculateMerkleRoot(dataset.private);
-            dataset.public.push(
-                `<${assertionTools.kaTools.generateNamedNode()}> <${PRIVATE_ASSERTION_PREDICATE}> "${privateRoot}" .`,
-            );
-
-            if (dataset.public.length) {
-                dataset.public = assertionTools.kcTools.generateMissingIdsForBlankNodes(dataset.public);
-            }
-            let publicTriplesGrouped = assertionTools.kcTools.groupNquadsBySubject(dataset.public, true);
-
-            const mergedTriples = [];
-            let publicIndex = 0;
-            let privateIndex = 0;
-            const publicLength = publicTriplesGrouped.length;
-            const privateLength = privateTriplesGrouped.length;
-
-            // Merge public and private hashes triples in a single pass
-            while (publicIndex < publicLength && privateIndex < privateLength) {
-                const publicGroup = publicTriplesGrouped[publicIndex];
-                const [publicSubject] = publicGroup[0].split(' ');
-                const [privateSubject] = privateTriplesGrouped[privateIndex][0].split(' ');
-
-                const compare = publicSubject.localeCompare(privateSubject);
-                if (compare < 0) {
-                    // Public subject comes before private subject
-                    mergedTriples.push(publicGroup);
-                    publicIndex++;
-                } else if (compare > 0) {
-                    // Private subject comes before public subject
-                    mergedTriples.push([this.generatePrivateRepresentation(privateSubject)]);
-                    privateIndex++;
-                } else {
-                    // Subjects match, merge triples
-                    this.insertTripleSorted(
-                        publicGroup,
-                        this.generatePrivateRepresentation(privateSubject),
-                    );
-                    mergedTriples.push(publicGroup);
-                    publicIndex++;
-                    privateIndex++;
-                }
-            }
-
-            while (publicIndex < publicLength) {
-                mergedTriples.push(...publicTriplesGrouped[publicIndex]);
-                publicIndex++;
-            }
-
-            // Append any remaining private triples
-            while (privateIndex < privateLength) {
-                const [privateSubject] = privateTriplesGrouped[privateIndex][0].split(' ');
-                mergedTriples.push([this.generatePrivateRepresentation(privateSubject)]);
-                privateIndex++;
-            }
-            // Update the public dataset with the merged triples
-            dataset.public = mergedTriples.flat();
-        } else {
-            // If there's no private dataset, ensure public is grouped correctly
-            dataset.public = assertionTools.kcTools.groupNquadsBySubject(dataset.public, true).flat();
-        }
-
-        const numberOfChunks = assertionTools.kcTools.calculateNumberOfChunks(dataset.public, CHUNK_BYTE_SIZE);
-        const datasetSize = numberOfChunks * CHUNK_BYTE_SIZE;
-
-        this.validationService.validateAssertionSizeInBytes(datasetSize);
-        const datasetRoot = assertionTools.kcTools.calculateMerkleRoot(dataset.public);
-
-        const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
-            'ContentAssetStorage',
-            blockchain,
-        );
-
-        const publishOperationId = await this.nodeApiService.publish(
-            endpoint,
-            port,
-            authToken,
-            datasetRoot,
-            dataset,
-            blockchain.name,
-            hashFunctionId,
-            minimumNumberOfNodeReplications,
-        );
-
-        const publishOperationResult = await this.nodeApiService.getOperationResult(
-            endpoint,
-            port,
-            authToken,
-            OPERATIONS.PUBLISH,
-            maxNumberOfRetries,
-            frequency,
-            publishOperationId,
-        );
-
-        if (publishOperationResult.status !== OPERATION_STATUSES.COMPLETED) {
-            return {
-                datasetRoot,
-                operation: {
-                    publish: getOperationStatusObject(publishOperationResult, publishOperationId),
-                },
-            };
-        }
-
-        const estimatedPublishingCost =
-            tokenAmount ??
-            (await this.blockchainService.getStakeWeightedAverageAsk()) * epochsNum * datasetSize;
-
-        let tokenId;
-        let mintKnowledgeAssetReceipt;
-
-        if (paranetUAL == null) {
-            ({ tokenId, receipt: mintKnowledgeAssetReceipt } =
-                await this.blockchainService.createAsset(
-                    {
-                        publishOperationId,
-                        datasetRoot,
-                        datasetSize,
-                        triplesNumber: assertionTools.kaTools.getAssertionTriplesNumber(dataset.public), // todo
-                        chunksNumber: numberOfChunks,
-                        epochsNum,
-                        tokenAmount: estimatedPublishingCost,
-                        scoreFunctionId: scoreFunctionId ?? 1,
-                        immutable_: immutable,
-                        // payer: payer,
-                    },
-                    null,
-                    null,
-                    blockchain,
-                    stepHooks,
-                ));
-        } else {
-            const { contract: paranetKaContract, tokenId: paranetTokenId } = resolveUAL(paranetUAL);
-            ({ tokenId, receipt: mintKnowledgeAssetReceipt } =
-                await this.blockchainService.createAsset(
-                    {
-                        publishOperationId,
-                        datasetRoot,
-                        datasetSize,
-                        triplesNumber: assertionTools.kaTools.getAssertionTriplesNumber(dataset), // todo
-                        chunksNumber: assertionTools.kcTools.calculateNumberOfChunks(dataset),
-                        epochsNum,
-                        tokenAmount: estimatedPublishingCost,
-                        scoreFunctionId: scoreFunctionId ?? 1,
-                        immutable_: immutable,
-                        // payer: payer,
-                    },
-                    paranetKaContract,
-                    paranetTokenId,
-                    blockchain,
-                    stepHooks,
-                ));
-        }
-
-        const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, tokenId);
-
-        const finalitySleepDelay = OPERATION_DELAYS.FINALITY;
-
-        await sleepForMilliseconds(finalitySleepDelay);
-
-        const finalityStatusResult = await this.nodeApiService.finalityStatus(
-            endpoint,
-            port,
-            authToken,
-            UAL,
-        );
-
-        return {
-            UAL,
-            datasetRoot,
-            signatures: publishOperationResult.data,
-            operation: {
-                mintKnowledgeAsset: mintKnowledgeAssetReceipt,
-                publish: getOperationStatusObject(publishOperationResult, publishOperationId),
-                finality: {
-                    status:
-                        finalityStatusResult >= minimumNumberOfFinalizationConfirmations
-                            ? 'FINALIZED'
-                            : 'NOT FINALIZED',
-                },
-                numberOfConfirmations: finalityStatusResult,
-                requiredConfirmations: minimumNumberOfFinalizationConfirmations,
-            },
-        };
     }
 
     generatePrivateRepresentation(privateSubject) {
@@ -3132,16 +2714,14 @@ class HttpService {
         this.config = config;
 
         if (
-            !(
-                config.nodeApiVersion === '/' ||
-                config.nodeApiVersion === '/latest' ||
-                /^\/v\d+$/.test(config.nodeApiVersion)
-            )
+            config.nodeApiVersion === '/' ||
+            config.nodeApiVersion === '/latest' ||
+            /^\/v\d+$/.test(config.nodeApiVersion)
         ) {
-            throw Error(`Version must be '/latest', '/' or in '/v{digits}' format.`);
+            this.apiVersion = config.nodeApiVersion;
+        } else {
+            this.apiVersion = '/v1';
         }
-
-        this.apiVersion = config.nodeApiVersion ?? '/v1';
     }
 
     async info(endpoint, port, authToken) {
@@ -3306,12 +2886,12 @@ class HttpService {
         }
     }
 
-    async query(endpoint, port, authToken, query, type, /*graphState, graphLocation,*/ paranetUAL) {
+    async query(endpoint, port, authToken, query, type, paranetUAL, repository) {
         try {
             const response = await axios({
                 method: 'post',
                 url: `${this.getBaseUrl(endpoint, port)}/query`,
-                data: { query, type, /*graphState, graphLocation,*/ paranetUAL },
+                data: { query, type, repository, paranetUAL },
                 headers: this.prepareRequestConfig(authToken),
             });
             return response.data.operationId;
@@ -3352,30 +2932,30 @@ class HttpService {
         ual,
         requiredConfirmations,
         maxNumberOfRetries,
-        frequency
+        frequency,
     ) {
         let retries = 0;
         let finality = 0;
-    
+
         const axios_config = {
             method: 'get',
             url: `${this.getBaseUrl(endpoint, port)}/finality`,
             params: { ual },
             headers: this.prepareRequestConfig(authToken),
         };
-    
+
         do {
             if (retries > maxNumberOfRetries) {
                 throw Error(
-                    `Unable to achieve required confirmations. Max number of retries (${maxNumberOfRetries}) reached.`
+                    `Unable to achieve required confirmations. Max number of retries (${maxNumberOfRetries}) reached.`,
                 );
             }
-    
+
             retries += 1;
-    
+
             // eslint-disable-next-line no-await-in-loop
             await sleepForMilliseconds(frequency * 1000);
-    
+
             try {
                 // eslint-disable-next-line no-await-in-loop
                 const response = await axios(axios_config);
@@ -3384,7 +2964,7 @@ class HttpService {
                 finality = 0;
             }
         } while (finality < requiredConfirmations && retries <= maxNumberOfRetries);
-    
+
         return finality;
     }
 
@@ -3465,13 +3045,7 @@ var NodeApiInterface = {
 
 const require$1 = module$1.createRequire((typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : (_documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === 'SCRIPT' && _documentCurrentScript.src || new URL('index.cjs', document.baseURI).href)));
 
-const AssertionStorageAbi = require$1('dkg-evm-module/abi/AssertionStorage.json');
 const HubAbi = require$1('dkg-evm-module/abi/Hub.json');
-const ServiceAgreementV1Abi = require$1('dkg-evm-module/abi/ServiceAgreementV1.json');
-const ServiceAgreementStorageProxyAbi = require$1('dkg-evm-module/abi/ServiceAgreementStorageProxy.json');
-const ContentAssetStorageAbi = require$1('dkg-evm-module/abi/ContentAssetStorage.json');
-const UnfinalizedStateStorageAbi = require$1('dkg-evm-module/abi/UnfinalizedStateStorage.json');
-const ContentAssetAbi = require$1('dkg-evm-module/abi/ContentAssetV2.json');
 const TokenAbi = require$1('dkg-evm-module/abi/Token.json');
 const ParanetAbi = require$1('dkg-evm-module/abi/Paranet.json');
 const ParanetsRegistryAbi = require$1('dkg-evm-module/abi/ParanetsRegistry.json');
@@ -3489,13 +3063,13 @@ class BlockchainServiceBase {
         this.config = config;
         this.events = {};
         this.abis = {};
-        this.abis.AssertionStorage = AssertionStorageAbi;
+        // this.abis.AssertionStorage = AssertionStorageAbi;
         this.abis.Hub = HubAbi;
-        this.abis.ServiceAgreementV1 = ServiceAgreementV1Abi;
-        this.abis.ServiceAgreementStorageProxy = ServiceAgreementStorageProxyAbi;
-        this.abis.ContentAssetStorage = ContentAssetStorageAbi;
-        this.abis.UnfinalizedStateStorage = UnfinalizedStateStorageAbi;
-        this.abis.ContentAsset = ContentAssetAbi;
+        // this.abis.ServiceAgreementV1 = ServiceAgreementV1Abi;
+        // this.abis.ServiceAgreementStorageProxy = ServiceAgreementStorageProxyAbi;
+        // this.abis.ContentAssetStorage = ContentAssetStorageAbi;
+        // this.abis.UnfinalizedStateStorage = UnfinalizedStateStorageAbi;
+        // this.abis.ContentAsset = ContentAssetAbi;
         this.abis.Token = TokenAbi;
         this.abis.Paranet = ParanetAbi;
         this.abis.ParanetsRegistry = ParanetsRegistryAbi;
@@ -3814,41 +3388,6 @@ class BlockchainServiceBase {
         return this[blockchain.name].contracts[blockchain.hubContract][contractName];
     }
 
-    async increaseServiceAgreementV1Allowance(
-        sender,
-        serviceAgreementV1Address,
-        tokenAmount,
-        blockchain,
-    ) {
-        const allowance = await this.callContractFunction(
-            'Token',
-            'allowance',
-            [sender, serviceAgreementV1Address],
-            blockchain,
-        );
-
-        const allowanceGap = BigInt(tokenAmount) - BigInt(allowance);
-
-        if (allowanceGap > 0) {
-            await this.executeContractFunction(
-                'Token',
-                'increaseAllowance',
-                [serviceAgreementV1Address, allowanceGap],
-                blockchain,
-            );
-
-            return {
-                allowanceIncreased: true,
-                allowanceGap,
-            };
-        }
-
-        return {
-            allowanceIncreased: false,
-            allowanceGap,
-        };
-    }
-
     async increaseKnowledgeCollectionAllowance(sender, tokenAmount, blockchain) {
         const knowledgeCollectionAddress = await this.getContractAddress(
             'KnowledgeCollection',
@@ -3993,119 +3532,119 @@ class BlockchainServiceBase {
         return this.executeContractFunction('ContentAsset', 'burnAsset', [tokenId], blockchain);
     }
 
-    async extendAssetStoringPeriod(tokenId, epochsNumber, tokenAmount, blockchain) {
-        const sender = await this.getPublicKey(blockchain);
-        let serviceAgreementV1Address;
-        let allowanceIncreased = false;
-        let allowanceGap = 0;
+    // async extendAssetStoringPeriod(tokenId, epochsNumber, tokenAmount, blockchain) {
+    //     const sender = await this.getPublicKey(blockchain);
+    //     let serviceAgreementV1Address;
+    //     let allowanceIncreased = false;
+    //     let allowanceGap = 0;
 
-        try {
-            serviceAgreementV1Address = await this.getContractAddress(
-                'ServiceAgreementV1',
-                blockchain,
-            );
+    //     try {
+    //         serviceAgreementV1Address = await this.getContractAddress(
+    //             'ServiceAgreementV1',
+    //             blockchain,
+    //         );
 
-            ({ allowanceIncreased, allowanceGap } = await this.increaseServiceAgreementV1Allowance(
-                sender,
-                serviceAgreementV1Address,
-                tokenAmount,
-                blockchain,
-            ));
+    //         ({ allowanceIncreased, allowanceGap } = await this.increaseServiceAgreementV1Allowance(
+    //             sender,
+    //             serviceAgreementV1Address,
+    //             tokenAmount,
+    //             blockchain,
+    //         ));
 
-            return this.executeContractFunction(
-                'ContentAsset',
-                'extendAssetStoringPeriod',
-                [tokenId, epochsNumber, tokenAmount],
-                blockchain,
-            );
-        } catch (error) {
-            if (allowanceIncreased) {
-                await this.executeContractFunction(
-                    'Token',
-                    'decreaseAllowance',
-                    [serviceAgreementV1Address, allowanceGap],
-                    blockchain,
-                );
-            }
-            throw error;
-        }
-    }
+    //         return this.executeContractFunction(
+    //             'ContentAsset',
+    //             'extendAssetStoringPeriod',
+    //             [tokenId, epochsNumber, tokenAmount],
+    //             blockchain,
+    //         );
+    //     } catch (error) {
+    //         if (allowanceIncreased) {
+    //             await this.executeContractFunction(
+    //                 'Token',
+    //                 'decreaseAllowance',
+    //                 [serviceAgreementV1Address, allowanceGap],
+    //                 blockchain,
+    //             );
+    //         }
+    //         throw error;
+    //     }
+    // }
 
-    async addTokens(tokenId, tokenAmount, blockchain) {
-        const sender = await this.getPublicKey(blockchain);
-        let serviceAgreementV1Address;
-        let allowanceIncreased = false;
-        let allowanceGap = 0;
+    // async addTokens(tokenId, tokenAmount, blockchain) {
+    //     const sender = await this.getPublicKey(blockchain);
+    //     let serviceAgreementV1Address;
+    //     let allowanceIncreased = false;
+    //     let allowanceGap = 0;
 
-        try {
-            serviceAgreementV1Address = await this.getContractAddress(
-                'ServiceAgreementV1',
-                blockchain,
-            );
+    //     try {
+    //         serviceAgreementV1Address = await this.getContractAddress(
+    //             'ServiceAgreementV1',
+    //             blockchain,
+    //         );
 
-            ({ allowanceIncreased, allowanceGap } = await this.increaseServiceAgreementV1Allowance(
-                sender,
-                serviceAgreementV1Address,
-                tokenAmount,
-                blockchain,
-            ));
+    //         ({ allowanceIncreased, allowanceGap } = await this.increaseServiceAgreementV1Allowance(
+    //             sender,
+    //             serviceAgreementV1Address,
+    //             tokenAmount,
+    //             blockchain,
+    //         ));
 
-            return this.executeContractFunction(
-                'ContentAsset',
-                'increaseAssetTokenAmount',
-                [tokenId, tokenAmount],
-                blockchain,
-            );
-        } catch (error) {
-            if (allowanceIncreased) {
-                await this.executeContractFunction(
-                    'Token',
-                    'decreaseAllowance',
-                    [serviceAgreementV1Address, allowanceGap],
-                    blockchain,
-                );
-            }
-            throw error;
-        }
-    }
+    //         return this.executeContractFunction(
+    //             'ContentAsset',
+    //             'increaseAssetTokenAmount',
+    //             [tokenId, tokenAmount],
+    //             blockchain,
+    //         );
+    //     } catch (error) {
+    //         if (allowanceIncreased) {
+    //             await this.executeContractFunction(
+    //                 'Token',
+    //                 'decreaseAllowance',
+    //                 [serviceAgreementV1Address, allowanceGap],
+    //                 blockchain,
+    //             );
+    //         }
+    //         throw error;
+    //     }
+    // }
 
-    async addUpdateTokens(tokenId, tokenAmount, blockchain) {
-        const sender = await this.getPublicKey(blockchain);
-        let serviceAgreementV1Address;
-        let allowanceIncreased = false;
-        let allowanceGap = 0;
+    // async addUpdateTokens(tokenId, tokenAmount, blockchain) {
+    //     const sender = await this.getPublicKey(blockchain);
+    //     let serviceAgreementV1Address;
+    //     let allowanceIncreased = false;
+    //     let allowanceGap = 0;
 
-        try {
-            serviceAgreementV1Address = await this.getContractAddress(
-                'ServiceAgreementV1',
-                blockchain,
-            );
+    //     try {
+    //         serviceAgreementV1Address = await this.getContractAddress(
+    //             'ServiceAgreementV1',
+    //             blockchain,
+    //         );
 
-            ({ allowanceIncreased, allowanceGap } = await this.increaseServiceAgreementV1Allowance(
-                sender,
-                serviceAgreementV1Address,
-                tokenAmount,
-                blockchain,
-            ));
+    //         ({ allowanceIncreased, allowanceGap } = await this.increaseServiceAgreementV1Allowance(
+    //             sender,
+    //             serviceAgreementV1Address,
+    //             tokenAmount,
+    //             blockchain,
+    //         ));
 
-            return this.executeContractFunction(
-                'ContentAsset',
-                'increaseAssetUpdateTokenAmount',
-                [tokenId, tokenAmount],
-                blockchain,
-            );
-        } catch (error) {
-            if (allowanceIncreased) {
-                await this.executeContractFunction(
-                    'Token',
-                    'decreaseAllowance',
-                    [serviceAgreementV1Address, allowanceGap],
-                    blockchain,
-                );
-            }
-            throw error;
-        }
-    }
+    //         return this.executeContractFunction(
+    //             'ContentAsset',
+    //             'increaseAssetUpdateTokenAmount',
+    //             [tokenId, tokenAmount],
+    //             blockchain,
+    //         );
+    //     } catch (error) {
+    //         if (allowanceIncreased) {
+    //             await this.executeContractFunction(
+    //                 'Token',
+    //                 'decreaseAllowance',
+    //                 [serviceAgreementV1Address, allowanceGap],
+    //                 blockchain,
+    //             );
+    //         }
+    //         throw error;
+    //     }
+    // }
 
     async getAssertionIdByIndex(tokenId, index, blockchain) {
         return this.callContractFunction(
@@ -4566,14 +4105,12 @@ class BlockchainServiceBase {
     // Get ask operations
     // To get price, multiply with size in bytes and epochs
     async getStakeWeightedAverageAsk() {
-        return;
-        // Uncomment when contracts integrated
-        // return this.callContractFunction(
-        //     'ShardingTableStorage',
-        //     'getStakeWeightedAverageAsk',
-        //     [],
-        //     blockchain,
-        // );
+        return this.callContractFunction(
+            'ShardingTableStorage',
+            'getStakeWeightedAverageAsk',
+            [],
+            blockchain,
+        );
     }
 
     // Blockchain operations
@@ -4944,23 +4481,24 @@ class ValidationService {
     validateGraphQuery(
         queryString,
         queryType,
-        // graphLocation,
-        // graphState,
         endpoint,
         port,
         maxNumberOfRetries,
         frequency,
         authToken,
+        repository,
     ) {
         this.validateQueryString(queryString);
         this.validateQueryType(queryType);
-        // this.validateGraphLocation(graphLocation);
-        // this.validateGraphState(graphState);
         this.validateEndpoint(endpoint);
         this.validatePort(port);
         this.validateMaxNumberOfRetries(maxNumberOfRetries);
         this.validateFrequency(frequency);
         this.validateAuthToken(authToken);
+
+        if (repository) {
+            this.validateRepository(repository);
+        }
     }
 
     validateIsValidUAL(blockchain) {
@@ -4992,7 +4530,6 @@ class ValidationService {
         immutable,
         tokenAmount,
         authToken,
-        paranetUAL,
         payer,
         minimumNumberOfFinalizationConfirmations,
         minimumNumberOfNodeReplications,
@@ -5009,7 +4546,6 @@ class ValidationService {
         this.validateImmutable(immutable);
         this.validateTokenAmount(tokenAmount);
         this.validateAuthToken(authToken);
-        this.validateParanetUAL(paranetUAL);
         this.validatePayer(payer);
         this.validateMinimumNumberOfFinalizationConfirmations(
             minimumNumberOfFinalizationConfirmations,
@@ -5302,6 +4838,11 @@ class ValidationService {
     validateQueryString(queryString) {
         this.validateRequiredParam('queryString', queryString);
         this.validateParamType('queryString', queryString, 'string');
+    }
+
+    validateRepository(repository) {
+        this.validateRequiredParam('repository', repository);
+        this.validateParamType('repository', repository, 'string');
     }
 
     validateQueryType(queryType) {
@@ -5710,7 +5251,6 @@ class InputService {
             immutable: this.getImmutable(options),
             tokenAmount: this.getTokenAmount(options),
             authToken: this.getAuthToken(options),
-            paranetUAL: this.getParanetUAL(options),
             payer: this.getPayer(options),
             minimumNumberOfFinalizationConfirmations:
                 this.getMinimumNumberOfFinalizationConfirmations(options) ?? 3,
@@ -5781,6 +5321,7 @@ class InputService {
             frequency: this.getFrequency(options),
             authToken: this.getAuthToken(options),
             paranetUAL: this.getParanetUAL(options),
+            repository: this.getRepository(options),
         };
     }
 
@@ -6016,6 +5557,10 @@ class InputService {
         return options.paranetUAL ?? this.config.paranetUAL ?? null;
     }
 
+    getRepository(options) {
+        return options.repository ?? this.config.repository ?? null;
+    }
+
     getPayer(options) {
         return options.payer ?? this.config.payer ?? ZERO_ADDRESS;
     }
@@ -6158,7 +5703,8 @@ class DkgClient {
         this.paranet = new ParanetOperationsManager(services);
 
         // Backwards compatibility
-        this.asset.get = this.graph.get;
+        this.graph.get = this.asset.get.bind(this.asset);
+        this.graph.create = this.asset.create.bind(this.asset);
     }
 }
 
