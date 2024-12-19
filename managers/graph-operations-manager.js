@@ -37,7 +37,7 @@ export default class GraphOperationsManager {
      * @returns {Promise} A Promise that resolves to the query result.
      */
     async query(queryString, queryType, options = {}) {
-        const { endpoint, port, maxNumberOfRetries, frequency, authToken, paranetUAL, repository } =
+        const { endpoint, port, maxNumberOfRetries, frequency, authToken, paranetUAL, repository, nodeApiVersion } =
             this.inputService.getQueryArguments(options);
 
         this.validationService.validateGraphQuery(
@@ -49,6 +49,7 @@ export default class GraphOperationsManager {
             frequency,
             authToken,
             repository,
+            nodeApiVersion,
         );
 
         const operationId = await this.nodeApiService.query(
@@ -59,6 +60,7 @@ export default class GraphOperationsManager {
             queryType,
             paranetUAL,
             repository,
+            nodeApiVersion,
         );
 
         return this.nodeApiService.getOperationResult(
