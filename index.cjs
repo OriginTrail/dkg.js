@@ -58,7 +58,7 @@ const BLOCKCHAINS = {
     testnet: {
         // This is V8 TESTNET HUB don't use this for V6
         'base:84532': {
-            hubContract: '0xCca0eA14540588A09c85cD6A6Fc53eA3A7010692',
+            hubContract: '0xCdC3945ed33941e359391574aAB16F274D53e641',
             rpc: 'https://sepolia.base.org',
         },
     },
@@ -865,7 +865,9 @@ class AssetOperationsManager {
 
         const estimatedPublishingCost =
             tokenAmount ??
-            (await this.blockchainService.getStakeWeightedAverageAsk()) * epochsNum * datasetSize;
+            (await this.blockchainService.getStakeWeightedAverageAsk(blockchain)) *
+                epochsNum *
+                datasetSize;
 
         let knowledgeCollectionId;
         let mintKnowledgeAssetReceipt;
@@ -3055,8 +3057,7 @@ const ParanetKnowledgeMinersRegistryAbi = require$1('dkg-evm-module/abi/ParanetK
 const IdentityStorageAbi = require$1('dkg-evm-module/abi/IdentityStorage.json');
 const KnowledgeCollectionAbi = require$1('dkg-evm-module/abi/KnowledgeCollection.json');
 const KnowledgeCollectionStorageAbi = require$1('dkg-evm-module/abi/KnowledgeCollectionStorage.json');
-
-// const ShardingTableStorageAbi = require('dkg-evm-module/abi/ShardingTableStorage.sol.json');
+const AskAbi = require$1('dkg-evm-module/abi/Ask.json');
 
 class BlockchainServiceBase {
     constructor(config = {}) {
@@ -3079,7 +3080,7 @@ class BlockchainServiceBase {
         this.abis.IdentityStorage = IdentityStorageAbi;
         this.abis.KnowledgeCollection = KnowledgeCollectionAbi;
         this.abis.KnowledgeCollectionStorage = KnowledgeCollectionStorageAbi;
-        // this.abis.ShardingTableStorageAbi = ShardingTableStorageAbi;
+        this.abis.Ask = AskAbi;
 
         this.abis.KnowledgeCollectionStorage.filter((obj) => obj.type === 'event').forEach(
             (event) => {
@@ -4104,13 +4105,8 @@ class BlockchainServiceBase {
 
     // Get ask operations
     // To get price, multiply with size in bytes and epochs
-    async getStakeWeightedAverageAsk() {
-        return this.callContractFunction(
-            'ShardingTableStorage',
-            'getStakeWeightedAverageAsk',
-            [],
-            blockchain,
-        );
+    async getStakeWeightedAverageAsk(blockchain) {
+        return this.callContractFunction('Ask', 'getStakeWeightedAverageAsk', [], blockchain);
     }
 
     // Blockchain operations
