@@ -872,12 +872,22 @@ class AssetOperationsManager {
             vs.push(signature.vs);
         });
 
-        const estimatedPublishingCost =
-            tokenAmount ??
-            (await this.blockchainService.getStakeWeightedAverageAsk(blockchain)) *
-                epochsNum *
-                datasetSize;
-
+        let estimatedPublishingCost;
+        if (tokenAmount) {
+            estimatedPublishingCost = tokenAmount;
+        } else {
+            const timeUntilNextEpoch = await this.blockchainService.timeUntilNextEpoch(blockchain);
+            const epochLength = await this.blockchainService.epochLength(blockchain);
+            const stakeWeightedAverageAsk = await this.blockchainService.getStakeWeightedAverageAsk(
+                blockchain,
+            );
+            estimatedPublishingCost =
+                (BigInt(stakeWeightedAverageAsk) *
+                    (BigInt(epochsNum) * BigInt(1e18) +
+                        (BigInt(timeUntilNextEpoch) * BigInt(1e18)) / BigInt(epochLength)) *
+                    BigInt(datasetSize)) /
+                BigInt(1e18);
+        }
         let knowledgeCollectionId;
         let mintKnowledgeAssetReceipt;
 
@@ -890,7 +900,7 @@ class AssetOperationsManager {
                     byteSize: datasetSize,
                     chunksAmount: numberOfChunks,
                     epochs: epochsNum,
-                    tokenAmount: estimatedPublishingCost,
+                    tokenAmount: estimatedPublishingCost.toString(),
                     paymaster: payer,
                     publisherNodeIdentityId,
                     publisherNodeR,
@@ -3067,6 +3077,7 @@ const IdentityStorageAbi = require$1('dkg-evm-module/abi/IdentityStorage.json');
 const KnowledgeCollectionAbi = require$1('dkg-evm-module/abi/KnowledgeCollection.json');
 const KnowledgeCollectionStorageAbi = require$1('dkg-evm-module/abi/KnowledgeCollectionStorage.json');
 const AskAbi = require$1('dkg-evm-module/abi/Ask.json');
+const ChronosAbi = require$1('dkg-evm-module/abi/Chronos.json');
 
 class BlockchainServiceBase {
     constructor(config = {}) {
@@ -3090,6 +3101,7 @@ class BlockchainServiceBase {
         this.abis.KnowledgeCollection = KnowledgeCollectionAbi;
         this.abis.KnowledgeCollectionStorage = KnowledgeCollectionStorageAbi;
         this.abis.Ask = AskAbi;
+        this.abis.Chronos = ChronosAbi;
 
         this.abis.KnowledgeCollectionStorage.filter((obj) => obj.type === 'event').forEach(
             (event) => {
@@ -4196,6 +4208,14 @@ class BlockchainServiceBase {
         const blockNumber = await web3.eth.getBlockNumber();
 
         return web3.eth.getBlock(blockNumber);
+    }
+
+    async timeUntilNextEpoch(blockchain) {
+        return this.callContractFunction('Chronos', 'timeUntilNextEpoch', [], blockchain);
+    }
+
+    async epochLength(blockchain) {
+        return this.callContractFunction('Chronos', 'epochLength', [], blockchain);
     }
 
     convertToWei(ether) {
