@@ -20,6 +20,7 @@ const IdentityStorageAbi = require('dkg-evm-module/abi/IdentityStorage.json');
 const KnowledgeCollectionAbi = require('dkg-evm-module/abi/KnowledgeCollection.json');
 const KnowledgeCollectionStorageAbi = require('dkg-evm-module/abi/KnowledgeCollectionStorage.json');
 const AskAbi = require('dkg-evm-module/abi/Ask.json');
+const ChronosAbi = require('dkg-evm-module/abi/Chronos.json');
 
 export default class BlockchainServiceBase {
     constructor(config = {}) {
@@ -43,6 +44,7 @@ export default class BlockchainServiceBase {
         this.abis.KnowledgeCollection = KnowledgeCollectionAbi;
         this.abis.KnowledgeCollectionStorage = KnowledgeCollectionStorageAbi;
         this.abis.Ask = AskAbi;
+        this.abis.Chronos = ChronosAbi;
 
         this.abis.KnowledgeCollectionStorage.filter((obj) => obj.type === 'event').forEach(
             (event) => {
@@ -1160,6 +1162,14 @@ export default class BlockchainServiceBase {
         const blockNumber = await web3.eth.getBlockNumber();
 
         return web3.eth.getBlock(blockNumber);
+    }
+
+    async timeUntilNextEpoch(blockchain) {
+        return this.callContractFunction('Chronos', 'timeUntilNextEpoch', [], blockchain);
+    }
+
+    async epochLength(blockchain) {
+        return this.callContractFunction('Chronos', 'epochLength', [], blockchain);
     }
 
     convertToWei(ether) {

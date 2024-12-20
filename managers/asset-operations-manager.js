@@ -472,12 +472,22 @@ export default class AssetOperationsManager {
             vs.push(signature.vs);
         });
 
-        const estimatedPublishingCost =
-            tokenAmount ??
-            (await this.blockchainService.getStakeWeightedAverageAsk(blockchain)) *
-                epochsNum *
-                datasetSize;
-
+        let estimatedPublishingCost;
+        if (tokenAmount) {
+            estimatedPublishingCost = tokenAmount;
+        } else {
+            const timeUntilNextEpoch = await this.blockchainService.timeUntilNextEpoch(blockchain);
+            const epochLength = await this.blockchainService.epochLength(blockchain);
+            const stakeWeightedAverageAsk = await this.blockchainService.getStakeWeightedAverageAsk(
+                blockchain,
+            );
+            estimatedPublishingCost =
+                (BigInt(stakeWeightedAverageAsk) *
+                    (BigInt(epochsNum) * BigInt(1e18) +
+                        (BigInt(timeUntilNextEpoch) * BigInt(1e18)) / BigInt(epochLength)) *
+                    BigInt(datasetSize)) /
+                BigInt(1e18);
+        }
         let knowledgeCollectionId;
         let mintKnowledgeAssetReceipt;
 
@@ -490,7 +500,7 @@ export default class AssetOperationsManager {
                     byteSize: datasetSize,
                     chunksAmount: numberOfChunks,
                     epochs: epochsNum,
-                    tokenAmount: estimatedPublishingCost,
+                    tokenAmount: estimatedPublishingCost.toString(),
                     paymaster: payer,
                     publisherNodeIdentityId,
                     publisherNodeR,
