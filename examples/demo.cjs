@@ -1,5 +1,5 @@
-import jsonld from 'jsonld';
-import DKG from '../index.js';
+const jsonld = require('jsonld');
+const DKG = require('../index.cjs');
 
 const ENVIRONMENT = 'development';
 const OT_NODE_HOSTNAME = 'http://localhost';
@@ -29,56 +29,56 @@ function divider() {
 }
 
 (async () => {
-    const content = {
-        public: `<uuid:1> <http://schema.org/city> <uuid:nis> .
-        <uuid:2> <http://schema.org/company> "TL" .`,
-        private: `<uuid:2> <http://schema.org/city> <uuid:belgrade> .
-    <uuid:2> <http://schema.org/company> "OT" .
-    <uuid:2> <http://schema.org/user> <uuid:user:1> .
-    <uuid:4> <http://schema.org/user> <uuid:user:1> .
-
-    `,
-    };
     // const content = {
-    //     public: {
-    //         '@context': ['https://schema.org'],
-    //         '@id': 'uuid:1',
-    //         company: 'OT',
-    //         user: {
-    //             '@id': 'uuid:user:1',
-    //         },
-    //         city: {
-    //             '@id': 'uuid:belgrade',
-    //         },
-    //     },
-    //     private: {
-    //         '@context': ['https://schema.org'],
-    //         '@graph': [
-    //             {
-    //                 '@id': 'uuid:user:1',
-    //                 name: 'Adam',
-    //                 lastname: 'Smith',
-    //             },
-    //             {
-    //                 '@id': 'uuid:belgrade',
-    //                 title: 'Belgrade',
-    //                 postCode: '11000',
-    //             },
-    //             {
-    //                 problem: 'empty',
-    //             },
-    //             {
-    //                 solution: 'generate',
-    //             },
-    //         ],
-    //     },
+    //     public: `<uuid:1> <http://schema.org/city> <uuid:nis> .
+    //     <uuid:3> <http://schema.org/company> "TL" .`,
+    //     private: `<uuid:2> <http://schema.org/city> <uuid:belgrade> .
+    // <uuid:2> <http://schema.org/company> "OT" .
+    // <uuid:2> <http://schema.org/user> <uuid:user:1> .
+    // <uuid:3> <http://schema.org/user> <uuid:user:1> .
+
+    // `,
     // };
+    const content = {
+        public: {
+            '@context': ['https://schema.org'],
+            '@id': 'uuid:1',
+            company: 'OT',
+            user: {
+                '@id': 'uuid:user:1',
+            },
+            city: {
+                '@id': 'uuid:belgrade',
+            },
+        },
+        private: {
+            '@context': ['https://schema.org'],
+            '@graph': [
+                {
+                    '@id': 'uuid:user:1',
+                    name: 'Adam',
+                    lastname: 'Smith',
+                },
+                {
+                    '@id': 'uuid:belgrade',
+                    title: 'Belgrade',
+                    postCode: '11000',
+                },
+                {
+                    problem: 'empty',
+                },
+                {
+                    solution: 'generate',
+                },
+            ],
+        },
+    };
 
     // divider();
 
-    // const nodeInfo = await DkgClient.node.info();
-    // console.log('======================== NODE INFO RECEIVED');
-    // console.log(nodeInfo);
+    const nodeInfo = await DkgClient.node.info();
+    console.log('======================== NODE INFO RECEIVED');
+    console.log(nodeInfo);
 
     // divider();
 

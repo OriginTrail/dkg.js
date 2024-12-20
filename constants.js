@@ -2,7 +2,7 @@
  * @constant {number} MAX_FILE_SIZE
  * - Max file size for publish
  */
-export const MAX_FILE_SIZE = 524288000;
+export const MAX_FILE_SIZE = 10000000;
 
 /**
  * @constant {number} DID_PREFIX
@@ -35,7 +35,7 @@ export const BLOCKCHAINS = {
     },
     devnet: {
         'base:84532': {
-            hubContract: '0x3e5dd82e7529F4e55AA64893D8f8879AE14BF87D',
+            hubContract: '0xE043daF4cC8ae2c720ef95fc82574a37a429c40A',
             rpc: 'https://sepolia.base.org',
         },
     },
@@ -54,8 +54,17 @@ export const BLOCKCHAINS = {
     testnet: {
         // This is V8 TESTNET HUB don't use this for V6
         'base:84532': {
-            hubContract: '0xCca0eA14540588A09c85cD6A6Fc53eA3A7010692',
+            hubContract: '0xCdC3945ed33941e359391574aAB16F274D53e641',
             rpc: 'https://sepolia.base.org',
+        },
+        'otp:20430': {
+            hubContract: '0x881449B372eB0eA34d0bF450839182dcC15A1dcA',
+            rpc: 'https://lofar-testnet.origin-trail.network',
+        },
+        'gnosis:10200': {
+            hubContract: '0xae1b378Ad5418ca437AceF78EDc8b40607eb5A1b',
+            rpc: 'https://rpc.chiadochain.net',
+            gasPriceOracleLink: 'https://blockscout.chiadochain.net/api/v1/gas-price-oracle',
         },
     },
     mainnet: {},

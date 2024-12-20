@@ -6,6 +6,7 @@ import {
     LOW_BID_SUGGESTION,
     PARANET_NODES_ACCESS_POLICY,
     PARANET_MINERS_ACCESS_POLICY,
+    ZERO_ADDRESS,
 } from '../constants.js';
 
 export default class InputService {
@@ -26,7 +27,6 @@ export default class InputService {
             immutable: this.getImmutable(options),
             tokenAmount: this.getTokenAmount(options),
             authToken: this.getAuthToken(options),
-            paranetUAL: this.getParanetUAL(options),
             payer: this.getPayer(options),
             minimumNumberOfFinalizationConfirmations:
                 this.getMinimumNumberOfFinalizationConfirmations(options) ?? 3,
@@ -97,6 +97,7 @@ export default class InputService {
             frequency: this.getFrequency(options),
             authToken: this.getAuthToken(options),
             paranetUAL: this.getParanetUAL(options),
+            repository: this.getRepository(options),
         };
     }
 
@@ -332,8 +333,12 @@ export default class InputService {
         return options.paranetUAL ?? this.config.paranetUAL ?? null;
     }
 
+    getRepository(options) {
+        return options.repository ?? this.config.repository ?? null;
+    }
+
     getPayer(options) {
-        return options.payer ?? this.config.payer ?? null;
+        return options.payer ?? this.config.payer ?? ZERO_ADDRESS;
     }
 
     getMinimumNumberOfFinalizationConfirmations(options) {

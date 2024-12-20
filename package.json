@@ -1,14 +1,20 @@
 {
     "name": "dkg.js",
-    "version": "8.0.0-alpha.5",
+    "version": "8.0.0-sigma.5",
     "description": "Javascript library for interaction with the OriginTrail Decentralized Knowledge Graph",
     "main": "index.js",
+    "exports": {
+        "import": "./index.js",
+        "require": "./index.cjs"
+    },
     "type": "module",
     "scripts": {
         "compile-contracts": "cd ./node_modules/dkg-evm-module && npm run compile",
-        "build": "npx webpack --config webpack.config.js",
-        "watch": "npx webpack --config webpack.config.js --watch --progress",
-        "lint": "eslint ."
+        "build": "npm run cjs-compat && npx webpack --config webpack.config.cjs",
+        "watch": "npm run cjs-compat && npx webpack --config webpack.config.cjs --watch --progress",
+        "lint": "eslint .",
+        "cjs-compat": "npx rollup index.js --file index.cjs --format cjs",
+        "postinstall": "npm run cjs-compat"
     },
     "repository": {
         "type": "git",
@@ -30,9 +36,9 @@
     },
     "homepage": "https://github.com/OriginTrail/dkg.js/tree/main#readme",
     "dependencies": {
-        "assertion-tools": "^8.0.0-gamma.1",
+        "assertion-tools": "^8.0.0-gamma.2",
         "axios": "^0.27.2",
-        "dkg-evm-module": "^8.0.2-alpha.0",
+        "dkg-evm-module": "^8.0.0-sigma.0",
         "ethers": "^6.1.0",
         "jsonld": "^8.1.0",
         "web3": "^1.7.3"
@@ -47,6 +53,7 @@
         "https-browserify": "^1.0.0",
         "os-browserify": "^0.3.0",
         "prettier": "^2.7.1",
+        "rollup": "^4.28.1",
         "stream-browserify": "^3.0.0",
         "stream-http": "^3.2.0",
         "terser-webpack-plugin": "^5.3.6",
