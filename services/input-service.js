@@ -98,6 +98,7 @@ export default class InputService {
             authToken: this.getAuthToken(options),
             paranetUAL: this.getParanetUAL(options),
             repository: this.getRepository(options),
+            nodeApiVersion: this.getNodeApiVersion(options),
         };
     }
 
@@ -415,5 +416,8 @@ export default class InputService {
 
     getAssertionCachedLocally(options) {
         return options.assertionCachedLocally ?? false;
+    }
+    getNodeApiVersion(options) {
+        return options.ndeApiVersion ?? config.nodeApiVersion ?? '/v1'
     }
 }

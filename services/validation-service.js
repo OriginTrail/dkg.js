@@ -29,6 +29,7 @@ export default class ValidationService {
         frequency,
         authToken,
         repository,
+        nodeApiVersion,
     ) {
         this.validateQueryString(queryString);
         this.validateQueryType(queryType);
@@ -37,6 +38,7 @@ export default class ValidationService {
         this.validateMaxNumberOfRetries(maxNumberOfRetries);
         this.validateFrequency(frequency);
         this.validateAuthToken(authToken);
+        this.validateNodeApiVersion(nodeApiVersion);
 
         if (repository) {
             this.validateRepository(repository);
@@ -772,5 +774,9 @@ export default class ValidationService {
         this.validateMinimumNumberOfFinalizationConfirmations(
             minimumNumberOfFinalizationConfirmations,
         );
+    }
+
+    validateNodeApiVersion(nodeApiVersion) {
+        nodeApiVersion === '/v1' || nodeApiVersion === '/v0'
     }
 }
