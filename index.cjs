@@ -61,6 +61,15 @@ const BLOCKCHAINS = {
             hubContract: '0xCdC3945ed33941e359391574aAB16F274D53e641',
             rpc: 'https://sepolia.base.org',
         },
+        'otp:20430': {
+            hubContract: '0x881449B372eB0eA34d0bF450839182dcC15A1dcA',
+            rpc: 'https://lofar-testnet.origin-trail.network',
+        },
+        'gnosis:10200': {
+            hubContract: '0xae1b378Ad5418ca437AceF78EDc8b40607eb5A1b',
+            rpc: 'https://rpc.chiadochain.net',
+            gasPriceOracleLink: 'https://blockscout.chiadochain.net/api/v1/gas-price-oracle',
+        },
     },
     mainnet: {},
 };
