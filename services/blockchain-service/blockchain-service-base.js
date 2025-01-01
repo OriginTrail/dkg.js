@@ -232,80 +232,64 @@ class BlockchainServiceBase {
         };
     }
 
-    async waitForTransactionFinalization(initialReceipt, blockchain) {
-        await this.ensureBlockchainInfo(blockchain);
-        const web3Instance = await this.getWeb3Instance(blockchain);
+    async function waitForTransactionFinalization(initialReceipt, blockchain) {
+    const startTime = Date.now();
+    let reminingTime = 0;
+    let receipt = initialReceipt;
+    let finalized = false;
+    let retryCount = 0;
+    const maxRetries = 5; // Set a maximum number of retries
 
-        const startTime = Date.now();
-        let reminingTime = 0;
-        let receipt = initialReceipt;
-        let finalized = false;
-
+    while (
+        !finalized &&Date.now() - startTime + reminingTime < blockchain.transactionFinalityMaxWaitTime &&
+        retryCount < maxRetries // Add a retry count condition
+    ) {
         try {
-            while (
-                !finalized &&
-                Date.now() - startTime + reminingTime < blockchain.transactionFinalityMaxWaitTime
-            ) {
-                try {
-                    // Check if the block containing the transaction is finalized
-                    const finalizedBlockNumber = (await web3Instance.eth.getBlock('finalized'))
-                        .number;
-                    if (finalizedBlockNumber >= receipt.blockNumber) {
-                        finalized = true;
-                        break;
-                    } else {
-                        let currentReceipt = await web3Instance.eth.getTransactionReceipt(
-                            receipt.transactionHash,
-                        );
-                        if (currentReceipt && currentReceipt.blockNumber === receipt.blockNumber) {
-                            // Transaction is still in the same block, wait and check again
-                        } else if (
-                            currentReceipt &&
-                            currentReceipt.blockNumber !== receipt.blockNumber
-                        ) {
-                            // Transaction has been re-included in a different block
-                            receipt = currentReceipt; // Update the receipt with the new block information
-                        } else {
-                            // Transaction is no longer mined, wait for it to be mined again
-                            const reminingStartTime = Date.now();
-                            while (
-                                !currentReceipt &&
-                                Date.now() - reminingStartTime <
-                                    blockchain.transactionReminingMaxWaitTime
-                            ) {
-                                await sleepForMilliseconds(
-                                    blockchain.transactionReminingPollingInterval,
-                                );
-                                currentReceipt = await web3Instance.eth.getTransactionReceipt(
-                                    receipt.transactionHash,
-                                );
-                            }
-                            if (!currentReceipt) {
-                                throw new Error(
-                                    'Transaction was not re-mined within the expected time frame.',
-                                );
-                            }
-                            reminingTime = Date.now() - reminingStartTime;
-                            receipt = currentReceipt; // Update the receipt
-                        }
-                        // Wait before the next check
-                        await sleepForMilliseconds(blockchain.transactionFinalityPollingInterval);
+            // Check if the block containing the transaction is finalized
+            const finalizedBlockNumber = (await web3Instance.eth.getBlock('finalized')).number;
+            if (finalizedBlockNumber >= receipt.blockNumber) {
+                finalized = true;
+                break;
+            } else {
+                let currentReceipt = await web3Instance.eth.getTransactionReceipt(receipt.transactionHash);
+                if (currentReceipt && currentReceipt.blockNumber === receipt.blockNumber) {
+                    // Transaction is still in the same block, wait and check again
+                } else if (currentReceipt && currentReceipt.blockNumber !== receipt.blockNumber) {
+                    // Transaction has been re-included in a different block
+                    receipt = currentReceipt; // Update the receipt with the new block information
+                } else {
+                    // Transaction is no longer mined, wait for it to be mined again
+                    const reminingStartTime = Date.now();
+                    while (
+                        !currentReceipt &&
+                        Date.now() - reminingStartTime < blockchain.transactionReminingMaxWaitTime
+                    ) {
+                        await sleepForMilliseconds(blockchain.transactionReminingPollingInterval);
+                        currentReceipt = await web3Instance.eth.getTransactionReceipt(receipt.transactionHash);
                     }
-                } catch (error) {
-                    throw new Error(`Error during finality polling: ${error.message}`);
+                    if (!currentReceipt) {
+                        throw new Error('Transaction was not re-mined within the expected time frame.');
+                    }
+                    reminingTime = Date.now() - reminingStartTime;
+                    receipt = currentReceipt; // Update the receipt
                 }
+                // Wait before the next check
+                await sleepForMilliseconds(blockchain.transactionFinalityPollingInterval);
             }
-
-            if (!finalized) {
-                throw new Error('Transaction was not finalized within the expected time frame.');
-            }
-
-            return receipt;
         } catch (error) {
-            throw new Error(`Failed to wait for transaction finalization: ${error.message}`);
+            retryCount++; // Increment the retry count on error
+            if (retryCount >= maxRetries) {
+                throw new Error(`Transaction finalization failed after ${maxRetries} retries: ${error.message}`);
+            }
         }
     }
 
+    if (!finalized) {
+        throw new Error('Transaction was not finalized within the expected time frame.');
+    }
+
+    return receipt;
+}
     async getContractAddress(contractName, blockchain, force = false) {
         await this.ensureBlockchainInfo(blockchain);
 
