@@ -2,18 +2,18 @@ import jsonld from 'jsonld';
 import DKG from '../index.js';
 import { sleepForMilliseconds } from '../services/utilities.js';
 
-const ENVIRONMENT = 'development';
-const OT_NODE_HOSTNAME = 'http://localhost';
+const ENVIRONMENT = 'testnet';
+const OT_NODE_HOSTNAME = 'https://v6-pegasus-node-06.origin-trail.network';
 const OT_NODE_PORT = '8900';
-const PUBLIC_KEY = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
-const PRIVATE_KEY = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
+const PUBLIC_KEY = '';
+const PRIVATE_KEY = '';
 
 const DkgClient = new DKG({
     environment: ENVIRONMENT,
     endpoint: OT_NODE_HOSTNAME,
     port: OT_NODE_PORT,
     blockchain: {
-        name: 'hardhat1',
+        name: 'otp:20430',
         publicKey: PUBLIC_KEY,
         privateKey: PRIVATE_KEY,
     },
@@ -117,15 +117,15 @@ function divider() {
 
     // divider();
 
-    // console.time('Publish (5 replications, 5 finalizations)');
-    // const result3 = await DkgClient.asset.create(content, {
-    //     epochsNum: 2,
-    //     minimumNumberOfFinalizationConfirmations: 3,
-    //     minimumNumberOfNodeReplications: 3,
-    // });
-    // console.timeEnd('Publish (5 replications, 5 finalizations)');
+    console.time('Publish (5 replications, 5 finalizations)');
+    const result3 = await DkgClient.asset.create(content, {
+        epochsNum: 2,
+        minimumNumberOfFinalizationConfirmations: 3,
+        minimumNumberOfNodeReplications: 3,
+    });//payer in options
+    console.timeEnd('Publish (5 replications, 5 finalizations)');
 
-    // console.log(JSON.stringify(result3, null, 2));
+    console.log(JSON.stringify(result3, null, 2));
 
     // divider();
 

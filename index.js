@@ -6,6 +6,7 @@ import GraphOperationsManager from './managers/graph-operations-manager.js';
 import NetworkOperationsManager from './managers/network-operations-manager.js';
 import NodeOperationsManager from './managers/node-operations-manager.js';
 import ParanetOperationsManager from './managers/paranet-operations-manager.js';
+import PaymasterOperationsManager from './managers/paymaster-operations-manager.js';
 
 import BaseServiceManager from './services/base-service-manager.js';
 
@@ -21,6 +22,7 @@ export default class DkgClient {
         this.graph = new GraphOperationsManager(services);
         this.network = new NetworkOperationsManager(services);
         this.paranet = new ParanetOperationsManager(services);
+        this.paymaster = new PaymasterOperationsManager(services);
 
         // Backwards compatibility
         this.graph.get = this.asset.get.bind(this.asset);

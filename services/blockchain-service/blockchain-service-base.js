@@ -26,6 +26,8 @@ const KnowledgeCollectionAbi = require('dkg-evm-module/abi/KnowledgeCollection.j
 const KnowledgeCollectionStorageAbi = require('dkg-evm-module/abi/KnowledgeCollectionStorage.json');
 const AskStorageAbi = require('dkg-evm-module/abi/AskStorage.json');
 const ChronosAbi = require('dkg-evm-module/abi/Chronos.json');
+const PaymasterAbi = require('dkg-evm-module/abi/Paymaster.json');
+const PaymasterManagerAbi = require('dkg-evm-module/abi/PaymasterManager.json');
 
 export default class BlockchainServiceBase {
     constructor(config = {}) {
@@ -50,6 +52,8 @@ export default class BlockchainServiceBase {
         this.abis.KnowledgeCollectionStorage = KnowledgeCollectionStorageAbi;
         this.abis.AskStorage = AskStorageAbi;
         this.abis.Chronos = ChronosAbi;
+        this.abis.Paymaster = PaymasterAbi;
+        this.abis.PaymasterManager = PaymasterManagerAbi;
 
         this.abis.KnowledgeCollectionStorage.filter((obj) => obj.type === 'event').forEach(
             (event) => {
@@ -59,6 +63,18 @@ export default class BlockchainServiceBase {
                     hash: Web3.utils.keccak256(`${event.name}(${concatInputs})`),
                     inputs: event.inputs,
                 };
+            },
+        );
+
+        this.abis.PaymasterManager.filter((obj) => obj.type === 'event').forEach(
+            (event) => {
+                const concatInputs = event.inputs.map((input) => input.internalType);
+
+                this.events[event.name] = {
+                    hash: Web3.utils.keccak256(`${event.name}(${concatInputs})`),
+                    inputs: event.inputs,
+                };
+
             },
         );
     }
@@ -144,8 +160,8 @@ export default class BlockchainServiceBase {
                 blockchain.name.startsWith('otp')
                     ? DEFAULT_GAS_PRICE.OTP
                     : blockchain.name.startsWith('base')
-                    ? DEFAULT_GAS_PRICE.BASE
-                    : DEFAULT_GAS_PRICE.GNOSIS,
+                      ? DEFAULT_GAS_PRICE.BASE
+                      : DEFAULT_GAS_PRICE.GNOSIS,
                 'Gwei',
             );
         }
@@ -178,17 +194,123 @@ export default class BlockchainServiceBase {
         }
     }
 
+    async callContractFunctionPaymaster(paymasterAddress, contractName, functionName, args, blockchain) {
+        await this.ensureBlockchainInfo(blockchain);
+
+        const web3Instance = await this.getWeb3Instance(blockchain);
+        const publicKey = await this.getPublicKey(blockchain);
+
+        // const account = web3Instance.eth.accounts.privateKeyToAccount("8ae4f7c247ad422913c1c60187856091ad2bcb4e53fb2936d7633d7d02bd180a");
+
+        // web3Instance.eth.accounts.wallet.add(account); 
+        
+        let paymasterContractInstance = new web3Instance.eth.Contract(
+            this.abis[contractName],
+            paymasterAddress,
+            { from: publicKey },                     
+        )
+
+        try {
+            return await paymasterContractInstance.methods[functionName](...args).send({
+                from: publicKey,
+                gas: 100000,
+            });
+        
+        } catch (error) {
+            if (/revert|VM Exception/i.test(error.message)) {
+                let status;
+                try {
+                    status = await paymasterContractInstance.methods.status().call();
+                } catch (_) {
+                    status = false;
+                }
+
+                if (!status && contractName !== 'ParanetNeuroIncentivesPool') {
+                    await this.updateContractInstance(contractName, blockchain, true);
+                    let paymasterContractInstance = new web3Instance.eth.Contract(
+                        this.abis[contractName],
+                        this[blockchain.name].contractAddress[blockchain.hubContract][contractName],
+                        { from: blockchain.publicKey },
+                    )
+
+                    return paymasterContractInstance.methods[functionName](...args).call();
+                }
+            }
+
+            throw error;
+        }
+    }
+
+    async executeContractFunctionPaymaster(paymasterAddress, contractName, functionName, args, blockchain) {
+        await this.ensureBlockchainInfo(blockchain);
+        
+        const web3Instance = await this.getWeb3Instance(blockchain);
+        const publicKey = await this.getPublicKey(blockchain);
+
+        let paymasterContractInstance = new web3Instance.eth.Contract(
+            this.abis[contractName],
+            paymasterAddress,
+            { from: publicKey },                     
+        )
+
+       // let paymasterContractInstance = await this.getContractInstance(contractName, blockchain);
+        
+       let tx;
+
+        try {
+       
+            tx = await this.prepareTransaction(paymasterContractInstance, functionName, args, blockchain);
+        
+            let receipt = await paymasterContractInstance.methods[functionName](...args).send(tx);
+            if (blockchain.name.startsWith('otp') && blockchain.waitNeurowebTxFinalization) {
+                receipt = await this.waitForTransactionFinalization(receipt, blockchain);
+            }
+
+            console.log(receipt);
+            return receipt;
+        } catch (error) {
+            if (/revert|VM Exception/i.test(error.message)) {
+                let status;
+                try {
+                    status = await paymasterContractInstance.methods.status().call();
+                } catch (_) {
+                    status = false;
+                }
+
+                if (!status) {
+                    await this.updateContractInstance(contractName, blockchain, true);
+                    paymasterContractInstance = await this.getContractInstance(contractName, blockchain);
+                    const web3Instance = await this.getWeb3Instance(blockchain);
+
+                    await web3Instance.eth.call({
+                        to: paymasterContractInstance.options.address,
+                        data: tx.data,
+                        from: tx.from,
+                    });
+
+                    return paymasterContractInstance.methods[functionName](...args).send(tx);
+                }
+            }
+
+            throw error;
+        }
+    }
+
     async prepareTransaction(contractInstance, functionName, args, blockchain) {
         await this.ensureBlockchainInfo(blockchain);
         const web3Instance = await this.getWeb3Instance(blockchain);
         const publicKey = await this.getPublicKey(blockchain);
         const encodedABI = await contractInstance.methods[functionName](...args).encodeABI();
 
+        console.log(contractInstance.methods)
+
         let gasLimit = Number(
             await contractInstance.methods[functionName](...args).estimateGas({
                 from: publicKey,
             }),
         );
+
+        
         gasLimit = Math.round(gasLimit * blockchain.gasLimitMultiplier);
 
         let gasPrice;
@@ -406,7 +528,7 @@ export default class BlockchainServiceBase {
         blockchain,
         stepHooks = emptyHooks,
     ) {
-        const sender = await this.getPublicKey(blockchain);
+        const sender = await this.getPublicKey(blockchain); 
         let serviceAgreementV1Address;
         let allowanceIncreased = false;
         let allowanceGap = 0;
@@ -1144,8 +1266,8 @@ export default class BlockchainServiceBase {
                 blockchain.name.startsWith('otp')
                     ? DEFAULT_GAS_PRICE.OTP
                     : blockchain.name.startsWith('base')
-                    ? DEFAULT_GAS_PRICE.BASE
-                    : DEFAULT_GAS_PRICE.GNOSIS,
+                      ? DEFAULT_GAS_PRICE.BASE
+                      : DEFAULT_GAS_PRICE.GNOSIS,
                 'Gwei',
             );
         }
@@ -1204,4 +1326,60 @@ export default class BlockchainServiceBase {
     convertToWei(ether) {
         return Web3.utils.toWei(ether.toString(), 'ether');
     }
+
+    //Paymaster functions
+    async deployPaymasterContract(blockchain) {
+        const paymasterAddressContract = await this.executeContractFunction(
+            'PaymasterManager',
+            'deployPaymaster',
+            [],
+            blockchain,
+        );
+
+      
+        let { paymasterAddress } = await this.decodeEventLogs(paymasterAddressContract, 'PaymasterDeployed', blockchain); 
+
+        return paymasterAddress;
+    }
+
+    async addAllowedAddress(blockchain, paymasterAddress, public_adress) {
+        return this.executeContractFunctionPaymaster(
+            paymasterAddress,
+            'Paymaster',
+            'addAllowedAddress',
+            [public_adress],
+            blockchain,
+        );
+    }
+
+    async removeAllowedAddress(blockchain, paymasterAddress, public_adress) {
+        return this.executeContractFunctionPaymaster(
+            paymasterAddress,
+            'Paymaster',
+            'removeAllowedAddress',
+            [public_adress],
+            blockchain,
+        );
+    }
+
+    async fundPaymaster(blockchain, paymasterAddress, tokenAmount) {
+        return this.executeContractFunctionPaymaster(
+            paymasterAddress,
+            'Paymaster', 
+            'fundPaymaster', 
+            [tokenAmount], 
+            blockchain);
+    }
+
+    async withdrawPaymaster(blockchain, paymasterAddress, recipient, tokenAmount) {
+
+        return this.executeContractFunctionPaymaster(
+            paymasterAddress,
+            'Paymaster',
+            'withdraw',
+            [recipient, tokenAmount],
+            blockchain,
+        );
+    }
+
 }

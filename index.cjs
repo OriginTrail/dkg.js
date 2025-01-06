@@ -3124,6 +3124,8 @@ const KnowledgeCollectionAbi = require$1('dkg-evm-module/abi/KnowledgeCollection
 const KnowledgeCollectionStorageAbi = require$1('dkg-evm-module/abi/KnowledgeCollectionStorage.json');
 const AskStorageAbi = require$1('dkg-evm-module/abi/AskStorage.json');
 const ChronosAbi = require$1('dkg-evm-module/abi/Chronos.json');
+const PaymasterAbi = require$1('dkg-evm-module/abi/Paymaster.json');
+const PaymasterManagerAbi = require$1('dkg-evm-module/abi/PaymasterManager.json');
 
 class BlockchainServiceBase {
     constructor(config = {}) {
@@ -3148,6 +3150,8 @@ class BlockchainServiceBase {
         this.abis.KnowledgeCollectionStorage = KnowledgeCollectionStorageAbi;
         this.abis.AskStorage = AskStorageAbi;
         this.abis.Chronos = ChronosAbi;
+        this.abis.Paymaster = PaymasterAbi;
+        this.abis.PaymasterManager = PaymasterManagerAbi;
 
         this.abis.KnowledgeCollectionStorage.filter((obj) => obj.type === 'event').forEach(
             (event) => {
@@ -3242,8 +3246,8 @@ class BlockchainServiceBase {
                 blockchain.name.startsWith('otp')
                     ? DEFAULT_GAS_PRICE.OTP
                     : blockchain.name.startsWith('base')
-                    ? DEFAULT_GAS_PRICE.BASE
-                    : DEFAULT_GAS_PRICE.GNOSIS,
+                      ? DEFAULT_GAS_PRICE.BASE
+                      : DEFAULT_GAS_PRICE.GNOSIS,
                 'Gwei',
             );
         }
@@ -3502,9 +3506,10 @@ class BlockchainServiceBase {
         paranetKaContract,
         paranetTokenId,
         blockchain,
+        paymaster = null, 
         stepHooks = emptyHooks,
     ) {
-        const sender = await this.getPublicKey(blockchain);
+        const sender = paymaster || await this.getPublicKey(blockchain); 
 
         try {
             let allowanceIncreased, allowanceGap;
@@ -4231,8 +4236,8 @@ class BlockchainServiceBase {
                 blockchain.name.startsWith('otp')
                     ? DEFAULT_GAS_PRICE.OTP
                     : blockchain.name.startsWith('base')
-                    ? DEFAULT_GAS_PRICE.BASE
-                    : DEFAULT_GAS_PRICE.GNOSIS,
+                      ? DEFAULT_GAS_PRICE.BASE
+                      : DEFAULT_GAS_PRICE.GNOSIS,
                 'Gwei',
             );
         }
@@ -4290,6 +4295,55 @@ class BlockchainServiceBase {
 
     convertToWei(ether) {
         return Web3.utils.toWei(ether.toString(), 'ether');
+    }
+
+    //Paymaster functions
+    async deployPaymasterContract(blockchain) {
+        const paymasterAddressContract = await this.callContractFunction(
+            'PaymasterManager',
+            'constructor',
+            [],
+            blockchain,
+        );
+
+        let { paymasterAddress } = await this.decodeEventLogs(paymasterAddressContract, 'deployPaymaster', blockchain); 
+
+        return paymasterAddress;
+    }
+
+    async addAllowedAddress(blockchain, public_adress) {
+        return this.callContractFunction(
+            'Paymaster',
+            'addAllowedAddress',
+            [public_adress],
+            blockchain,
+        );
+    }
+
+    async removeAllowedAddress(blockchain, public_adress) {
+        return this.callContractFunction(
+            'Paymaster',
+            'removeAllowedAddress',
+            [public_adress],
+            blockchain,
+        );
+    }
+
+    async fundPaymaster(blockchain, tokenAmount) {
+        return this.callContractFunction('Paymaster', 'fundPaymaster', [tokenAmount], blockchain);
+    }
+
+    async withdrawPaymaster(blockchain, recipient, tokenAmount) {
+        return this.callContractFunction(
+            'Paymaster',
+            'withdraw',
+            [recipient, tokenAmount],
+            blockchain,
+        );
+    }
+
+    async coverCostPaymaster(blockchain, tokenAmount) {
+        return this.callContractFunction('Paymaster', 'coverCost', [tokenAmount], blockchain);
     }
 }
 
@@ -4433,7 +4487,7 @@ class NodeBlockchainService extends BlockchainServiceBase {
         this.abis.KnowledgeCollectionStorage.filter((obj) => obj.type === 'event').forEach(
             (event) => {
                 const concatInputs = event.inputs.map((input) => input.internalType);
-
+                
                 this.events[event.name] = {
                     hash: Web3.utils.keccak256(`${event.name}(${concatInputs})`),
                     inputs: event.inputs,
@@ -5326,6 +5380,26 @@ class ValidationService {
             minimumNumberOfFinalizationConfirmations,
         );
     }
+
+    //Paymaster validator
+
+    validatePaymasterAddress(blockchain, hubAddress) {
+        this.validateBlockchain(blockchain);
+        this.validateAddress(hubAddress);
+    }
+    
+    validatePaymasterToken(blockchain, tokenAmount) {
+        this.validateBlockchain(blockchain);
+        this.validateTokenAmount(tokenAmount);
+    }
+
+    validatePaymasterTokenAdress(blockchain, tokenAmount, recipient) {
+        this.validateBlockchain(blockchain);
+        this.validateTokenAmount(tokenAmount);
+        this.validateAddress(recipient);
+    }
+
+    
 }
 
 class InputService {

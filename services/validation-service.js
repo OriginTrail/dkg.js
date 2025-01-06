@@ -605,7 +605,6 @@ export default class ValidationService {
         this.validateTransactionPollingTimeout(blockchain.transactionPollingTimeout);
         if (nodeSupported()) {
             this.validateRequiredParam('blockchain rpc', blockchain.rpc);
-
             if (operation !== OPERATIONS.GET) {
                 this.validateRequiredParam('blockchain public key', blockchain.publicKey);
                 this.validateRequiredParam('blockchain private key', blockchain.privateKey);
@@ -773,4 +772,27 @@ export default class ValidationService {
             minimumNumberOfFinalizationConfirmations,
         );
     }
+
+    //Paymaster validator
+
+    validatePaymasterAddress(blockchain, paymasterAddress, hubAddress) {
+        this.validateBlockchain(blockchain);
+        this.validateAddress(paymasterAddress);
+        this.validateAddress(hubAddress);
+    }
+    
+    validatePaymasterToken(blockchain, paymasterAddress, tokenAmount) {
+        this.validateBlockchain(blockchain);
+        this.validateAddress(paymasterAddress);
+        this.validateTokenAmount(tokenAmount);
+    }
+
+    validatePaymasterTokenAdress(blockchain, paymasterAddress, tokenAmount, recipient) {
+        this.validateBlockchain(blockchain);
+        this.validateAddress(paymasterAddress);
+        this.validateTokenAmount(tokenAmount);
+        this.validateAddress(recipient);
+    }
+
+    
 }

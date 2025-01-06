@@ -20,6 +20,18 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
                 };
             },
         );
+
+        this.abis.PaymasterManager.filter((obj) => obj.type === 'event').forEach(
+            (event) => {
+                const concatInputs = event.inputs.map((input) => input.internalType);
+
+                this.events[event.name] = {
+                    hash: Web3.utils.keccak256(`${event.name}(${concatInputs})`),
+                    inputs: event.inputs,
+                };
+
+            },
+        );        
     }
 
     initializeWeb3(blockchainName, blockchainRpc, blockchainOptions) {
