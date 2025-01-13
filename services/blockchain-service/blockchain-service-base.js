@@ -377,12 +377,7 @@ export default class BlockchainServiceBase {
         );
     }
 
-    async increaseKnowledgeCollectionAllowance(
-        sender,
-        tokenAmount,
-        knowledgeCollectionAddress,
-        blockchain,
-    ) {
+    async increaseKnowledgeCollectionAllowance(sender, tokenAmount, blockchain) {
         const knowledgeCollectionAddress = await this.getContractAddress(
             'KnowledgeCollection',
             blockchain,
