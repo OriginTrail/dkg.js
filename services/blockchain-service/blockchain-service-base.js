@@ -363,12 +363,31 @@ export default class BlockchainServiceBase {
         return this[blockchain.name].contracts[blockchain.hubContract][contractName];
     }
 
+    async decreaseKnowledgeCollectionAllowance(allowanceGap, blockchain) {
+        const knowledgeCollectionAddress = await this.getContractAddress(
+            'KnowledgeCollection',
+            blockchain,
+        );
+
+        await this.executeContractFunction(
+            'Token',
+            'decreaseAllowance',
+            [knowledgeCollectionAddress, allowanceGap],
+            blockchain,
+        );
+    }
+
     async increaseKnowledgeCollectionAllowance(
         sender,
         tokenAmount,
         knowledgeCollectionAddress,
         blockchain,
     ) {
+        const knowledgeCollectionAddress = await this.getContractAddress(
+            'KnowledgeCollection',
+            blockchain,
+        );
+
         const allowance = await this.callContractFunction(
             'Token',
             'allowance',
@@ -408,10 +427,6 @@ export default class BlockchainServiceBase {
         stepHooks = emptyHooks,
     ) {
         const sender = await this.getPublicKey(blockchain);
-        const knowledgeCollectionAddress = await this.getContractAddress(
-            'KnowledgeCollection',
-            blockchain,
-        );
         let allowanceIncreased = false;
         let allowanceGap = 0;
 
@@ -423,7 +438,6 @@ export default class BlockchainServiceBase {
                     await this.increaseKnowledgeCollectionAllowance(
                         sender,
                         requestData.tokenAmount,
-                        knowledgeCollectionAddress,
                         blockchain,
                     ));
             }
@@ -465,12 +479,7 @@ export default class BlockchainServiceBase {
             return { knowledgeCollectionId: id, receipt };
         } catch (error) {
             if (allowanceIncreased) {
-                await this.executeContractFunction(
-                    'Token',
-                    'decreaseAllowance',
-                    [knowledgeCollectionAddress, allowanceGap],
-                    blockchain,
-                );
+                await this.decreaseKnowledgeCollectionAllowance(allowanceGap, blockchain);
             }
             throw error;
         }

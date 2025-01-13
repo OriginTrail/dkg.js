@@ -1,5 +1,5 @@
 import DKG from '../index.js';
-import { BlockchainIds, Environments } from '../constants.js';
+import { BLOCKCHAIN_IDS, Environments } from '../constants.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -14,7 +14,7 @@ const DkgClient = new DKG({
     endpoint: OT_NODE_HOSTNAME,
     port: OT_NODE_PORT,
     blockchain: {
-        name: BlockchainIds.BASE_TESTNET,
+        name: BLOCKCHAIN_IDS.BASE_TESTNET,
         publicKey: PUBLIC_KEY,
         privateKey: process.env.PRIVATE_KEY,
     },

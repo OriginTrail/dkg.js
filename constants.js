@@ -22,7 +22,7 @@ export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 export const LABEL_PREFIX = '<http://example.org/label>';
 
-export const BlockchainIds = {
+export const BLOCKCHAIN_IDS = {
     HARDHAT_1: 'hardhat1:31337',
     HARDHAT_2: 'hardhat2:31337',
     BASE_DEVNET: 'base:84532',
