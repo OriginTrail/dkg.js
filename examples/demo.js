@@ -1,10 +1,10 @@
 import DKG from '../index.js';
-import { BLOCKCHAIN_IDS, Environments } from '../constants.js';
+import { BLOCKCHAIN_IDS, ENVIRONMENTS } from '../constants.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-const ENVIRONMENT = Environments.DEVELOPMENT;
+const ENVIRONMENT = ENVIRONMENTS.DEVELOPMENT;
 const OT_NODE_HOSTNAME = 'http://localhost';
 const OT_NODE_PORT = '8900';
 const PUBLIC_KEY = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';

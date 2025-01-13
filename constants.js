@@ -35,7 +35,7 @@ export const BLOCKCHAIN_IDS = {
     GNOSIS_MAINNET: 'gnosis:100',
     NEUROWEB_MAINNET: 'otp:2043',
 };
-export const Environments = {
+export const ENVIRONMENTS = {
     MAINNET: 'mainnet',
     TESTNET: 'testnet',
     DEVNET: 'devnet',
