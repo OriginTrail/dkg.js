@@ -8,6 +8,7 @@ import {
     OPERATIONS_STEP_STATUS,
     DEFAULT_GAS_PRICE,
     DEFAULT_GAS_PRICE_WEI,
+    ZERO_ADDRESS,
 } from '../../constants.js';
 import emptyHooks from '../../util/empty-hooks.js';
 import { sleepForMilliseconds } from '../utilities.js';
@@ -362,6 +363,20 @@ export default class BlockchainServiceBase {
         return this[blockchain.name].contracts[blockchain.hubContract][contractName];
     }
 
+    async decreaseKnowledgeCollectionAllowance(allowanceGap, blockchain) {
+        const knowledgeCollectionAddress = await this.getContractAddress(
+            'KnowledgeCollection',
+            blockchain,
+        );
+
+        await this.executeContractFunction(
+            'Token',
+            'decreaseAllowance',
+            [knowledgeCollectionAddress, allowanceGap],
+            blockchain,
+        );
+    }
+
     async increaseKnowledgeCollectionAllowance(sender, tokenAmount, blockchain) {
         const knowledgeCollectionAddress = await this.getContractAddress(
             'KnowledgeCollection',
@@ -407,14 +422,11 @@ export default class BlockchainServiceBase {
         stepHooks = emptyHooks,
     ) {
         const sender = await this.getPublicKey(blockchain);
-        let serviceAgreementV1Address;
         let allowanceIncreased = false;
         let allowanceGap = 0;
 
         try {
-            let allowanceIncreased, allowanceGap;
-
-            if (requestData?.payer) {
+            if (requestData?.paymaster && requestData?.paymaster !== ZERO_ADDRESS) {
                 // Handle the case when payer is passed
             } else {
                 ({ allowanceIncreased, allowanceGap } =
@@ -462,12 +474,7 @@ export default class BlockchainServiceBase {
             return { knowledgeCollectionId: id, receipt };
         } catch (error) {
             if (allowanceIncreased) {
-                await this.executeContractFunction(
-                    'Token',
-                    'decreaseAllowance',
-                    [serviceAgreementV1Address, allowanceGap],
-                    blockchain,
-                );
+                await this.decreaseKnowledgeCollectionAllowance(allowanceGap, blockchain);
             }
             throw error;
         }
