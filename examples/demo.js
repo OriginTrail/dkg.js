@@ -1,11 +1,13 @@
 import DKG from '../index.js';
 import { BlockchainIds, Environments } from '../constants.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const ENVIRONMENT = Environments.DEVELOPMENT;
 const OT_NODE_HOSTNAME = 'http://localhost';
 const OT_NODE_PORT = '8900';
 const PUBLIC_KEY = '0x4770142BB92FbAF3fcBD4da7Dc2E08ACA0B84100';
-const PRIVATE_KEY = process.env.PRIVATE_KEY;
 
 const DkgClient = new DKG({
     environment: ENVIRONMENT,
@@ -14,7 +16,7 @@ const DkgClient = new DKG({
     blockchain: {
         name: BlockchainIds.BASE_TESTNET,
         publicKey: PUBLIC_KEY,
-        privateKey: PRIVATE_KEY,
+        privateKey: process.env.PRIVATE_KEY,
     },
     maxNumberOfRetries: 300,
     frequency: 2,
@@ -89,12 +91,13 @@ function divider() {
 
     const queryOperationResult = await DkgClient.graph.query(
         `
-            PREFIX SCHEMA: <http://schema.org/>
-            SELECT ?s ?stateName
-                WHERE {
-                    ?s schema:state ?stateName .
-                }
-            `,
+        PREFIX SCHEMA: <http://schema.org/>
+        SELECT ?s ?stateName
+            WHERE {
+                ?s schema:state ?stateName .
+            }
+        `,
+        'SELECT',
     );
     console.log('======================== ASSET QUERY');
     console.log(queryOperationResult);
