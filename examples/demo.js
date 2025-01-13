@@ -1,5 +1,5 @@
 import DKG from '../index.js';
-import { BlockchainNames, Environments } from '../constants.js';
+import { BlockchainIds, Environments } from '../constants.js';
 
 const ENVIRONMENT = Environments.DEVELOPMENT;
 const OT_NODE_HOSTNAME = 'http://localhost';
@@ -12,7 +12,7 @@ const DkgClient = new DKG({
     endpoint: OT_NODE_HOSTNAME,
     port: OT_NODE_PORT,
     blockchain: {
-        name: BlockchainNames.BASE_TESTNET,
+        name: BlockchainIds.BASE_TESTNET,
         publicKey: PUBLIC_KEY,
         privateKey: PRIVATE_KEY,
     },
