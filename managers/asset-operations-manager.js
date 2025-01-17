@@ -1183,4 +1183,52 @@ export default class AssetOperationsManager {
             },
         };
     }
+
+    /**
+     * Checks whether KA is finalized on the node.
+     * @async
+     * @param {string} UAL - The Universal Asset Locator, representing asset or collection.
+     */
+    async publishFinality(UAL, options = {}) {
+        const {
+            blockchain,
+            endpoint,
+            port,
+            maxNumberOfRetries,
+            frequency,
+            minimumNumberOfFinalizationConfirmations,
+            authToken,
+        } = this.inputService.getPublishFinalityArguments(options);
+
+        // blockchain not mandatory so it's not validated
+        this.validationService.validatePublishFinality(
+            endpoint,
+            port,
+            maxNumberOfRetries,
+            frequency,
+            minimumNumberOfFinalizationConfirmations,
+            authToken,
+        );
+
+        const finalityStatusResult = await this.nodeApiService.finalityStatus(
+            endpoint,
+            port,
+            authToken,
+            UAL,
+        );
+
+        if (finalityStatusResult >= minimumNumberOfFinalizationConfirmations) {
+            return {
+                status: 'FINALIZED',
+                numberOfConfirmations: finalityStatusResult,
+                requiredConfirmations: minimumNumberOfFinalizationConfirmations,
+            };
+        } else {
+            return {
+                status: 'NOT FINALIZED',
+                numberOfConfirmations: finalityStatusResult,
+                requiredConfirmations: minimumNumberOfFinalizationConfirmations,
+            };
+        }
+    }
 }
