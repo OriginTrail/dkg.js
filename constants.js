@@ -2,7 +2,7 @@
  * @constant {number} MAX_FILE_SIZE
  * - Max file size for publish
  */
-export const MAX_FILE_SIZE = 524288000;
+export const MAX_FILE_SIZE = 10000000;
 
 /**
  * @constant {number} DID_PREFIX
@@ -22,6 +22,25 @@ export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 export const LABEL_PREFIX = '<http://example.org/label>';
 
+export const BLOCKCHAIN_IDS = {
+    HARDHAT_1: 'hardhat1:31337',
+    HARDHAT_2: 'hardhat2:31337',
+    BASE_DEVNET: 'base:84532',
+    GNOSIS_DEVNET: 'gnosis:10200',
+    NEUROWEB_DEVNET: 'otp:2160',
+    BASE_TESTNET: 'base:84532',
+    GNOSIS_TESTNET: 'gnosis:10200',
+    NEUROWEB_TESTNET: 'otp:20430',
+    BASE_MAINNET: 'base:8453',
+    GNOSIS_MAINNET: 'gnosis:100',
+    NEUROWEB_MAINNET: 'otp:2043',
+};
+export const ENVIRONMENTS = {
+    MAINNET: 'mainnet',
+    TESTNET: 'testnet',
+    DEVNET: 'devnet',
+    DEVELOPMENT: 'development',
+};
 export const BLOCKCHAINS = {
     development: {
         'hardhat1:31337': {
@@ -35,7 +54,7 @@ export const BLOCKCHAINS = {
     },
     devnet: {
         'base:84532': {
-            hubContract: '0x3e5dd82e7529F4e55AA64893D8f8879AE14BF87D',
+            hubContract: '0xE043daF4cC8ae2c720ef95fc82574a37a429c40A',
             rpc: 'https://sepolia.base.org',
         },
     },
@@ -52,13 +71,35 @@ export const BLOCKCHAINS = {
         },
     },
     testnet: {
-        // This is V8 TESTNET HUB don't use this for V6
         'base:84532': {
-            hubContract: '0xCca0eA14540588A09c85cD6A6Fc53eA3A7010692',
+            hubContract: '0xf21CE8f8b01548D97DCFb36869f1ccB0814a4e05',
             rpc: 'https://sepolia.base.org',
         },
+        'otp:20430': {
+            hubContract: '0xd7d073b560412c6A7F33dD670d323D01061E5DEb',
+            rpc: 'https://lofar-testnet.origin-trail.network',
+        },
+        'gnosis:10200': {
+            hubContract: '0x2c08AC4B630c009F709521e56Ac385A6af70650f',
+            rpc: 'https://rpc.chiadochain.net',
+            gasPriceOracleLink: 'https://blockscout.chiadochain.net/api/v1/gas-price-oracle',
+        },
     },
-    mainnet: {},
+    mainnet: {
+        'base:8453': {
+            hubContract: '0x99Aa571fD5e681c2D27ee08A7b7989DB02541d13',
+            rpc: 'https://mainnet.base.org',
+        },
+        'otp:2043': {
+            hubContract: '0x0957e25BD33034948abc28204ddA54b6E1142D6F',
+            rpc: 'https://astrosat-parachain-rpc.origin-trail.network',
+        },
+        'gnosis:100': {
+            hubContract: '0x882D0BF07F956b1b94BBfe9E77F47c6fc7D4EC8f',
+            rpc: 'https://rpc.gnosischain.com/',
+            gasPriceOracleLink: 'https://blockscout.com/xdai/mainnet/api/v1/gas-price-oracle',
+        },
+    },
 };
 
 export const PARANET_NODES_ACCESS_POLICY = {
@@ -228,8 +269,13 @@ export const DEFAULT_PARAMETERS = {
 };
 
 export const DEFAULT_GAS_PRICE = {
-    GNOSIS: '20',
-    OTP: '1',
+    GNOSIS: '6',
+    OTP: '0.001',
+    BASE: '0.086',
+};
+
+export const DEFAULT_GAS_PRICE_WEI = {
+    GNOSIS: '6000000000',
 };
 
 export const LOW_BID_SUGGESTION = 'low';
