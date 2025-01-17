@@ -25,5 +25,6 @@ export default class DkgClient {
         // Backwards compatibility
         this.graph.get = this.asset.get.bind(this.asset);
         this.graph.create = this.asset.create.bind(this.asset);
+        this.graph.publishFinality = this.asset.publishFinality.bind(this.asset);
     }
 }
