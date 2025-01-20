@@ -178,7 +178,7 @@ export default class GraphOperationsManager {
             tokenAmount ??
             (await this.blockchainService.getStakeWeightedAverageAsk()) * epochsNum * datasetSize;
 
-        const { tokenId, receipt: mintKnowledgeAssetReceipt } =
+        const { tokenId, receipt: mintKnowledgeCollectionReceipt } =
             await this.blockchainService.createAsset(
                 {
                     localStoreOperationId,
@@ -216,7 +216,7 @@ export default class GraphOperationsManager {
             UAL,
             datasetRoot,
             operation: {
-                mintKnowledgeAsset: mintKnowledgeAssetReceipt,
+                mintKnowledgeCollection: mintKnowledgeCollectionReceipt,
                 localStore: getOperationStatusObject(
                     localStoreOperationResult,
                     localStoreOperationId,

@@ -517,9 +517,9 @@ export default class AssetOperationsManager {
                 BigInt(1e18);
         }
         let knowledgeCollectionId;
-        let mintKnowledgeAssetReceipt;
+        let mintKnowledgeCollectionReceipt;
 
-        ({ knowledgeCollectionId, receipt: mintKnowledgeAssetReceipt } =
+        ({ knowledgeCollectionId, receipt: mintKnowledgeCollectionReceipt } =
             await this.blockchainService.createKnowledgeCollection(
                 {
                     publishOperationId,
@@ -563,7 +563,7 @@ export default class AssetOperationsManager {
             datasetRoot,
             signatures: publishOperationResult.data.signatures,
             operation: {
-                mintKnowledgeAsset: mintKnowledgeAssetReceipt,
+                mintKnowledgeCollection: mintKnowledgeCollectionReceipt,
                 publish: getOperationStatusObject(publishOperationResult, publishOperationId),
                 finality: {
                     status:

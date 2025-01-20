@@ -452,7 +452,7 @@ export default class BlockchainServiceBase {
             } else {
                 receipt = await this.executeContractFunction(
                     'Paranet',
-                    'mintKnowledgeAsset',
+                    'mintKnowledgeCollection',
                     [paranetKaContract, paranetTokenId, Object.values(requestData)],
                     blockchain,
                 );
@@ -842,7 +842,7 @@ export default class BlockchainServiceBase {
     async submitToParanet(requestData, blockchain) {
         return this.executeContractFunction(
             'Paranet',
-            'submitKnowledgeAsset',
+            'submitKnowledgeCollection',
             Object.values(requestData),
             blockchain,
         );
@@ -860,7 +860,7 @@ export default class BlockchainServiceBase {
     async updateClaimableRewards(requestData, blockchain) {
         return this.executeContractFunction(
             'Paranet',
-            'processUpdatedKnowledgeAssetStatesMetadata',
+            'processUpdatedKnowledgeCollectionStatesMetadata',
             Object.values(requestData),
             blockchain,
         );

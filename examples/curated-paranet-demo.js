@@ -95,10 +95,10 @@ function divider() {
         paranetNodesAccessPolicy: PARANET_NODES_ACCESS_POLICY.CURATED,
         paranetMinersAccessPolicy: PARANET_MINERS_ACCESS_POLICY.CURATED,
     };
-    const paranetRegistered = await DkgClient.paranet.create(paranetAssetResult.UAL, paranetOptions);
-    console.log('======================== A CURATED PARANET REGISTERED');
-    console.log(paranetRegistered);
-    divider();
+    // const paranetRegistered = await DkgClient.paranet.create(paranetAssetResult.UAL, paranetOptions);
+    // console.log('======================== A CURATED PARANET REGISTERED');
+    // console.log(paranetRegistered);
+    // divider();
 
     const node1IdentityId = await DkgClient.node.getIdentityId(NODE1_KEYS.publicKey);
     const node2IdentityId = await DkgClient.node.getIdentityId(NODE2_KEYS.publicKey);

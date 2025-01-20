@@ -10,61 +10,7 @@ export default class ParanetOperationsManager {
         this.validationService = services.validationService;
     }
 
-    /**
-     * Creates a new Paranet.
-     * @async
-     * @param {string} UAL - Universal Asset Locator of the KA that is created for Paranet.
-     * @param {Object} [options={}] - Additional options for creating the Paranet.
-     * @param {string} options.paranetName - Name of the Paranet.
-     * @param {string} options.paranetDescription - Description of the Paranet.
-     * @param {number} paranetNodesAccessPolicy - Paranet's policy towards including nodes.
-     * @param {number} paranetMinersAccessPolicy - Paranet's policy towards including knowledge miners.
-     * @returns {Object} Object containing the Paranet UAL.
-     * @example
-     * await dkg.paranet.create(UAL, {
-     *     paranetName: 'MyParanet',
-     *     paranetDescription: 'A paranet for demonstration purposes.',
-     *     paranetNodesAccessPolicy: 0,
-     *     paranetMinersAccessPolicy: 0
-     * });
-     */
-    async create(UAL, options = {}) {
-        const {
-            blockchain,
-            paranetName,
-            paranetDescription,
-            paranetNodesAccessPolicy,
-            paranetMinersAccessPolicy
-        } = this.inputService.getParanetCreateArguments(options);
 
-        this.validationService.validateParanetCreate(
-            UAL,
-            blockchain,
-            paranetName,
-            paranetDescription,
-            paranetNodesAccessPolicy,
-            paranetMinersAccessPolicy
-        );
-
-        const { contract, tokenId } = resolveUAL(UAL);
-
-        const receipt = await this.blockchainService.registerParanet(
-            {
-                contract,
-                tokenId,
-                paranetName,
-                paranetDescription,
-                paranetNodesAccessPolicy,
-                paranetMinersAccessPolicy
-            },
-            blockchain,
-        );
-
-        return {
-            paranetUAL: UAL,
-            operation: receipt,
-        };
-    }
 
     /**
      * Adds nodes to a curated paranet.

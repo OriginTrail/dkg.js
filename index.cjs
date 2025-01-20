@@ -935,9 +935,9 @@ class AssetOperationsManager {
                 BigInt(1e18);
         }
         let knowledgeCollectionId;
-        let mintKnowledgeAssetReceipt;
+        let mintKnowledgeCollectionReceipt;
 
-        ({ knowledgeCollectionId, receipt: mintKnowledgeAssetReceipt } =
+        ({ knowledgeCollectionId, receipt: mintKnowledgeCollectionReceipt } =
             await this.blockchainService.createKnowledgeCollection(
                 {
                     publishOperationId,
@@ -981,7 +981,7 @@ class AssetOperationsManager {
             datasetRoot,
             signatures: publishOperationResult.data.signatures,
             operation: {
-                mintKnowledgeAsset: mintKnowledgeAssetReceipt,
+                mintKnowledgeCollection: mintKnowledgeCollectionReceipt,
                 publish: getOperationStatusObject(publishOperationResult, publishOperationId),
                 finality: {
                     status:
@@ -1680,7 +1680,7 @@ class GraphOperationsManager {
             tokenAmount ??
             (await this.blockchainService.getStakeWeightedAverageAsk()) * epochsNum * datasetSize;
 
-        const { tokenId, receipt: mintKnowledgeAssetReceipt } =
+        const { tokenId, receipt: mintKnowledgeCollectionReceipt } =
             await this.blockchainService.createAsset(
                 {
                     localStoreOperationId,
@@ -1718,7 +1718,7 @@ class GraphOperationsManager {
             UAL,
             datasetRoot,
             operation: {
-                mintKnowledgeAsset: mintKnowledgeAssetReceipt,
+                mintKnowledgeCollection: mintKnowledgeCollectionReceipt,
                 localStore: getOperationStatusObject(
                     localStoreOperationResult,
                     localStoreOperationId,
@@ -3535,7 +3535,7 @@ class BlockchainServiceBase {
             } else {
                 receipt = await this.executeContractFunction(
                     'Paranet',
-                    'mintKnowledgeAsset',
+                    'mintKnowledgeCollection',
                     [paranetKaContract, paranetTokenId, Object.values(requestData)],
                     blockchain,
                 );
@@ -3922,7 +3922,7 @@ class BlockchainServiceBase {
     async submitToParanet(requestData, blockchain) {
         return this.executeContractFunction(
             'Paranet',
-            'submitKnowledgeAsset',
+            'submitKnowledgeCollection',
             Object.values(requestData),
             blockchain,
         );
@@ -3940,7 +3940,7 @@ class BlockchainServiceBase {
     async updateClaimableRewards(requestData, blockchain) {
         return this.executeContractFunction(
             'Paranet',
-            'processUpdatedKnowledgeAssetStatesMetadata',
+            'processUpdatedKnowledgeCollectionStatesMetadata',
             Object.values(requestData),
             blockchain,
         );
