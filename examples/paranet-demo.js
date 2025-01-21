@@ -8,7 +8,7 @@ import {
     ENVIRONMENTS,
 } from '../constants.js';
 
-const ENVIRONMENT = 'development';
+const ENVIRONMENT = ENVIRONMENTS.DEVELOPMENT;
 const OT_NODE_HOSTNAME = 'http://localhost';
 const OT_NODE_PORT = '8900';
 const PUBLIC_KEY = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
@@ -117,29 +117,29 @@ function divider() {
         },
     };
 
-    // const createServiceKAResult = await DkgClient.asset.create(content, { epochsNum: 2 });
+    const createServiceKAResult = await DkgClient.asset.create(content, { epochsNum: 2 });
 
-    // const submitToParanet = await DkgClient.asset.submitToParanet(
-    //     createServiceKAResult.UAL,
-    //     paranetAssetResult.UAL,
-    // );
+    const submitToParanetResult = await DkgClient.asset.submitToParanet(
+        createServiceKAResult.UAL,
+        paranetAssetResult.UAL,
+    );
 
-    // const paranetServiceUAL = await DkgClient.paranet.createService(paranetAssetResult.UAL, {
-    //     paranetServiceName: 'FKPS',
-    //     paranetServiceDescription: 'Fast Knowledge Processing Service',
-    //     paranetServiceAddresses: [],
-    // });
+    const paranetServiceResult = await DkgClient.paranet.createService(createServiceKAResult.UAL, {
+        paranetServiceName: 'FKPS',
+        paranetServiceDescription: 'Fast Knowledge Processing Service',
+        paranetServiceAddresses: [],
+    });
 
-    // console.log('======================== PARANET SERVICE CREATED');
-    // console.log(paranetServiceUAL);
-    // divider();
+    console.log('======================== PARANET SERVICE CREATED');
+    console.log(paranetServiceResult);
+    divider();
 
-    // const addServiceToParanet = await DkgClient.paranet.addServices(submitToParanet.UAL, [
-    //     createServiceKAResult.UAL,
-    // ]);
-    // console.log('======================== SERVICE ADDED TO PARANET');
-    // console.log(addServiceToParanet);
-    // divider();
+    const addServiceToParanet = await DkgClient.paranet.addServices(paranetAssetResult.UAL, [
+        createServiceKAResult.UAL,
+    ]);
+    console.log('======================== SERVICE ADDED TO PARANET');
+    console.log(addServiceToParanet);
+    divider();
 
     content = {
         public: {
