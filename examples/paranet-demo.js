@@ -73,10 +73,11 @@ function divider() {
         paranetNodesAccessPolicy: PARANET_NODES_ACCESS_POLICY.OPEN,
         paranetMinersAccessPolicy: PARANET_MINERS_ACCESS_POLICY.OPEN,
     };
-    // const paranetRegistered = await DkgClient.paranet.create(paranetAssetResult.UAL, paranetOptions);
-    // console.log('======================== PARANET REGISTERED');
-    // console.log(paranetRegistered);
-    // divider();
+
+    const paranetRegistered = await DkgClient.paranet.create(paranetAssetResult.UAL, paranetOptions);
+    console.log('======================== PARANET REGISTERED');
+    console.log(paranetRegistered);
+    divider();
 
     const paranetDeployed = await DkgClient.paranet.deployIncentivesContract(paranetAssetResult.UAL, 'Neuroweb', paranetOptions);
     console.log('======================== PARANET INCENTIVES POOL DEPLOYED');
@@ -96,21 +97,25 @@ function divider() {
             },
         }
     };
-    // const createServiceKAResult = await DkgClient.asset.create(content, { epochsNum: 2 });
-    // console.log('======================== SERVICE KA CREATED');
-    // console.log(createServiceKAResult);
-    // divider();
 
-    // const paranetServiceUAL = await DkgClient.paranet.createService(createServiceKAResult.UAL, {
-    //     paranetServiceName: 'FKPS',
-    //     paranetServiceDescription: 'Fast Knowledge Processing Service',
-    //     paranetServiceAddresses: [],
-    // });
-    // console.log('======================== SERVICE KA CREATED');
-    // console.log(paranetServiceUAL);
-    // divider();
 
-    // const addServiceToParanet = await DkgClient.paranet.addServices(paranetAssetResult.UAL, [createServiceKAResult.UAL,]);
+    const createServiceKAResult = await DkgClient.asset.create(content, { epochsNum: 2 });
+
+
+    const submitToParanet = await DkgClient.asset.submitToParanet(createServiceKAResult.UAL, paranetAssetResult.UAL);
+
+
+    const paranetServiceUAL = await DkgClient.paranet.createService(submitToParanet.UAL, {
+        paranetServiceName: 'FKPS',
+        paranetServiceDescription: 'Fast Knowledge Processing Service',
+        paranetServiceAddresses: [],
+    });
+
+    console.log('======================== PARANET SERVICE CREATED');
+    console.log(paranetServiceUAL);
+    divider();
+
+    // const addServiceToParanet = await DkgClient.paranet.addServices(submitToParanet.UAL, [createServiceKAResult.UAL,]);
     // console.log('======================== SERVICE ADDED TO PARANET');
     // console.log(addServiceToParanet);
     // divider();
@@ -128,9 +133,14 @@ function divider() {
             },
         }
     };
-    const createAssetResult = await DkgClient.asset.create(content, { epochsNum: 2, paranetUAL: paranetAssetResult.UAL });
+    const createAssetResult = await DkgClient.asset.create(content, { epochsNum: 2 });
     console.log('======================== KNOWLEDGE ASSET CREATED TO PARANET');
     console.log(createAssetResult);
+    divider();
+
+    const submitToParanet2 = await DkgClient.asset.submitToParanet(createAssetResult.UAL, paranetRegistered.UAL);
+    console.log('======================== SECOND KA ADDED TO PARANET');
+    console.log(submitToParanet2);
     divider();
 
     content = {
