@@ -25,7 +25,6 @@ const PRIVATE_HASH_SUBJECT_PREFIX = 'https://ontology.origintrail.io/dkg/1.0#met
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 const LABEL_PREFIX = '<http://example.org/label>';
-
 const BLOCKCHAINS = {
     development: {
         'hardhat1:31337': {
@@ -1481,6 +1480,54 @@ class AssetOperationsManager {
             },
         };
     }
+
+    /**
+     * Checks whether KA is finalized on the node.
+     * @async
+     * @param {string} UAL - The Universal Asset Locator, representing asset or collection.
+     */
+    async publishFinality(UAL, options = {}) {
+        const {
+            blockchain,
+            endpoint,
+            port,
+            maxNumberOfRetries,
+            frequency,
+            minimumNumberOfFinalizationConfirmations,
+            authToken,
+        } = this.inputService.getPublishFinalityArguments(options);
+
+        // blockchain not mandatory so it's not validated
+        this.validationService.validatePublishFinality(
+            endpoint,
+            port,
+            maxNumberOfRetries,
+            frequency,
+            minimumNumberOfFinalizationConfirmations,
+            authToken,
+        );
+
+        const finalityStatusResult = await this.nodeApiService.finalityStatus(
+            endpoint,
+            port,
+            authToken,
+            UAL,
+        );
+
+        if (finalityStatusResult >= minimumNumberOfFinalizationConfirmations) {
+            return {
+                status: 'FINALIZED',
+                numberOfConfirmations: finalityStatusResult,
+                requiredConfirmations: minimumNumberOfFinalizationConfirmations,
+            };
+        } else {
+            return {
+                status: 'NOT FINALIZED',
+                numberOfConfirmations: finalityStatusResult,
+                requiredConfirmations: minimumNumberOfFinalizationConfirmations,
+            };
+        }
+    }
 }
 
 class BlockchainOperationsManager {
@@ -1725,81 +1772,6 @@ class GraphOperationsManager {
                 ),
             },
         };
-    }
-
-    /**
-     * Checks whether KA is finalized on the node.
-     * @async
-     * @param {string} UAL - The Universal Asset Locator, representing asset or collection.
-     */
-    async publishFinality(UAL, options = {}) {
-        const {
-            blockchain,
-            endpoint,
-            port,
-            maxNumberOfRetries,
-            frequency,
-            minimumNumberOfFinalizationConfirmations,
-            authToken,
-        } = this.inputService.getPublishFinalityArguments(options);
-
-        // blockchain not mandatory so it's not validated
-        this.validationService.validatePublishFinality(
-            endpoint,
-            port,
-            maxNumberOfRetries,
-            frequency,
-            minimumNumberOfFinalizationConfirmations,
-            authToken,
-        );
-
-        const finalityStatusResult = await this.nodeApiService.finalityStatus(
-            endpoint,
-            port,
-            authToken,
-            UAL,
-        );
-
-        if (finalityStatusResult === 0) {
-            const finalityOperationId = await this.nodeApiService.finality(
-                endpoint,
-                port,
-                authToken,
-                blockchain.name,
-                UAL,
-                minimumNumberOfFinalizationConfirmations,
-            );
-
-            try {
-                return this.nodeApiService.getOperationResult(
-                    endpoint,
-                    port,
-                    authToken,
-                    OPERATIONS.FINALITY,
-                    maxNumberOfRetries,
-                    frequency,
-                    finalityOperationId,
-                );
-            } catch (error) {
-                console.error(`Finality attempt failed:`, error.message);
-                return {
-                    status: 'NOT FINALIZED',
-                    error: error.message,
-                };
-            }
-        } else if (finalityStatusResult >= minimumNumberOfFinalizationConfirmations) {
-            return {
-                status: 'FINALIZED',
-                numberOfConfirmations: finalityStatusResult,
-                requiredConfirmations: minimumNumberOfFinalizationConfirmations,
-            };
-        } else {
-            return {
-                status: 'NOT FINALIZED',
-                numberOfConfirmations: finalityStatusResult,
-                requiredConfirmations: minimumNumberOfFinalizationConfirmations,
-            };
-        }
     }
 }
 
@@ -3460,6 +3432,20 @@ class BlockchainServiceBase {
         return this[blockchain.name].contracts[blockchain.hubContract][contractName];
     }
 
+    async decreaseKnowledgeCollectionAllowance(allowanceGap, blockchain) {
+        const knowledgeCollectionAddress = await this.getContractAddress(
+            'KnowledgeCollection',
+            blockchain,
+        );
+
+        await this.executeContractFunction(
+            'Token',
+            'decreaseAllowance',
+            [knowledgeCollectionAddress, allowanceGap],
+            blockchain,
+        );
+    }
+
     async increaseKnowledgeCollectionAllowance(sender, tokenAmount, blockchain) {
         const knowledgeCollectionAddress = await this.getContractAddress(
             'KnowledgeCollection',
@@ -3505,11 +3491,11 @@ class BlockchainServiceBase {
         stepHooks = emptyHooks,
     ) {
         const sender = await this.getPublicKey(blockchain);
+        let allowanceIncreased = false;
+        let allowanceGap = 0;
 
         try {
-            let allowanceIncreased, allowanceGap;
-
-            if (requestData?.payer) {
+            if (requestData?.paymaster && requestData?.paymaster !== ZERO_ADDRESS) {
                 // Handle the case when payer is passed
             } else {
                 ({ allowanceIncreased, allowanceGap } =
@@ -3556,6 +3542,9 @@ class BlockchainServiceBase {
 
             return { knowledgeCollectionId: id, receipt };
         } catch (error) {
+            if (allowanceIncreased) {
+                await this.decreaseKnowledgeCollectionAllowance(allowanceGap, blockchain);
+            }
             throw error;
         }
     }
@@ -3931,7 +3920,7 @@ class BlockchainServiceBase {
     async getUpdatingKnowledgeAssetStates(requestData, blockchain) {
         return this.callContractFunction(
             'ParanetKnowledgeMinersRegistry',
-            'getUpdatingKnowledgeAssetStates',
+            'getUpdatingKnowledgeCollectionStates',
             Object.values(requestData),
             blockchain,
         );
@@ -5800,6 +5789,7 @@ class DkgClient {
         // Backwards compatibility
         this.graph.get = this.asset.get.bind(this.asset);
         this.graph.create = this.asset.create.bind(this.asset);
+        this.graph.publishFinality = this.asset.publishFinality.bind(this.asset);
     }
 }
 
