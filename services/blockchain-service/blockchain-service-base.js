@@ -851,7 +851,7 @@ export default class BlockchainServiceBase {
     async getUpdatingKnowledgeAssetStates(requestData, blockchain) {
         return this.callContractFunction(
             'ParanetKnowledgeMinersRegistry',
-            'getUpdatingKnowledgeAssetStates',
+            'getUpdatingKnowledgeCollectionStates',
             Object.values(requestData),
             blockchain,
         );

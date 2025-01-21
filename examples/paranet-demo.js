@@ -115,10 +115,10 @@ function divider() {
     console.log(paranetServiceUAL);
     divider();
 
-    // const addServiceToParanet = await DkgClient.paranet.addServices(submitToParanet.UAL, [createServiceKAResult.UAL,]);
-    // console.log('======================== SERVICE ADDED TO PARANET');
-    // console.log(addServiceToParanet);
-    // divider();
+    const addServiceToParanet = await DkgClient.paranet.addServices(submitToParanet.UAL, [createServiceKAResult.UAL,]);
+    console.log('======================== SERVICE ADDED TO PARANET');
+    console.log(addServiceToParanet);
+    divider();
 
     content = {
         public: {
