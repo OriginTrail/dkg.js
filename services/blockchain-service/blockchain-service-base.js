@@ -875,11 +875,11 @@ export default class BlockchainServiceBase {
         );
     }
 
-    async getNeuroIncentivesPoolAddress(paranetId, blockchain) {
+    async getNeuroIncentivesPoolAddress(paranetId, incentivesPoolType, blockchain) {
         return this.getIncentivesPoolAddress(
             {
                 paranetId,
-                incentivesPoolType: 'Neuroweb',
+                incentivesPoolType,
             },
             blockchain,
         );

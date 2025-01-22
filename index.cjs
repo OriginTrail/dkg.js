@@ -98,6 +98,7 @@ const PARANET_MINERS_ACCESS_POLICY = {
 
 const INCENTIVE_TYPE = {
     NEUROWEB: 'Neuroweb',
+    NEUROWEB_ERC20: 'NeurowebERC20',
 };
 
 const BLOCKCHAINS_RENAME_PAIRS = {
@@ -1860,7 +1861,7 @@ class ParanetOperationsManager {
             paranetName,
             paranetDescription,
             paranetNodesAccessPolicy,
-            paranetMinersAccessPolicy
+            paranetMinersAccessPolicy,
         } = this.inputService.getParanetCreateArguments(options);
 
         this.validationService.validateParanetCreate(
@@ -1869,7 +1870,7 @@ class ParanetOperationsManager {
             paranetName,
             paranetDescription,
             paranetNodesAccessPolicy,
-            paranetMinersAccessPolicy
+            paranetMinersAccessPolicy,
         );
 
         const { contract, tokenId } = resolveUAL(UAL);
@@ -1881,7 +1882,7 @@ class ParanetOperationsManager {
                 paranetName,
                 paranetDescription,
                 paranetNodesAccessPolicy,
-                paranetMinersAccessPolicy
+                paranetMinersAccessPolicy,
             },
             blockchain,
         );
@@ -1896,7 +1897,7 @@ class ParanetOperationsManager {
      * Adds nodes to a curated paranet.
      * @async
      * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
-     * @param {Array<number>} identityIds - List of node Identity IDs. 
+     * @param {Array<number>} identityIds - List of node Identity IDs.
      * @param {Object} [options={}] - Additional options for adding curated nodes to a paranet.
      * @example
      * await dkg.paranet.addCuratedNodes(UAL, identityIds: [1, 2]);
@@ -1904,20 +1905,17 @@ class ParanetOperationsManager {
     async addCuratedNodes(paranetUAL, identityIds, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
 
-        this.validationService.validateParanetAddCuratedNodes(
-            paranetUAL,
-            blockchain,
-            identityIds
-        );
+        this.validationService.validateParanetAddCuratedNodes(paranetUAL, blockchain, identityIds);
 
         const { contract, tokenId } = resolveUAL(paranetUAL);
 
-        await this.blockchainService.addParanetCuratedNodes({
+        await this.blockchainService.addParanetCuratedNodes(
+            {
                 contract,
                 tokenId,
-                identityIds
+                identityIds,
             },
-            blockchain
+            blockchain,
         );
     }
 
@@ -1925,7 +1923,7 @@ class ParanetOperationsManager {
      * Removes nodes from a curated paranet.
      * @async
      * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
-     * @param {Array<number>} identityIds - List of node Identity IDs to be removed. 
+     * @param {Array<number>} identityIds - List of node Identity IDs to be removed.
      * @param {Object} [options={}] - Additional options for adding curated nodes to a paranet.
      * @example
      * await dkg.paranet.removeCuratedNodes(UAL, identityIds: [1, 2]);
@@ -1936,17 +1934,18 @@ class ParanetOperationsManager {
         this.validationService.validateParanetRemoveCuratedNodes(
             paranetUAL,
             blockchain,
-            identityIds
+            identityIds,
         );
 
         const { contract, tokenId } = resolveUAL(paranetUAL);
 
-        await this.blockchainService.removeParanetCuratedNodes({
+        await this.blockchainService.removeParanetCuratedNodes(
+            {
                 contract,
                 tokenId,
-                identityIds
+                identityIds,
             },
-            blockchain
+            blockchain,
         );
     }
 
@@ -1960,18 +1959,16 @@ class ParanetOperationsManager {
     async requestCuratedNodeAccess(paranetUAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
 
-        this.validationService.validateRequestParanetCuratedNodeAccess(
-            paranetUAL,
-            blockchain,
-        );
+        this.validationService.validateRequestParanetCuratedNodeAccess(paranetUAL, blockchain);
 
         const { contract, tokenId } = resolveUAL(paranetUAL);
 
-        await this.blockchainService.requestParanetCuratedNodeAccess({
+        await this.blockchainService.requestParanetCuratedNodeAccess(
+            {
                 contract,
                 tokenId,
             },
-            blockchain
+            blockchain,
         );
     }
 
@@ -1987,20 +1984,17 @@ class ParanetOperationsManager {
     async approveCuratedNode(paranetUAL, identityId, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
 
-        this.validationService.validateApproveCuratedNode(
-            paranetUAL,
-            blockchain,
-            identityId
-        );
+        this.validationService.validateApproveCuratedNode(paranetUAL, blockchain, identityId);
 
         const { contract, tokenId } = resolveUAL(paranetUAL);
 
-        await this.blockchainService.approveCuratedNode({
+        await this.blockchainService.approveCuratedNode(
+            {
                 contract,
                 tokenId,
-                identityId
+                identityId,
             },
-            blockchain
+            blockchain,
         );
     }
 
@@ -2016,20 +2010,17 @@ class ParanetOperationsManager {
     async rejectCuratedNode(paranetUAL, identityId, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
 
-        this.validationService.validateRejectCuratedNode(
-            paranetUAL,
-            blockchain,
-            identityId
-        );
+        this.validationService.validateRejectCuratedNode(paranetUAL, blockchain, identityId);
 
         const { contract, tokenId } = resolveUAL(paranetUAL);
 
-        await this.blockchainService.rejectCuratedNode({
+        await this.blockchainService.rejectCuratedNode(
+            {
                 contract,
                 tokenId,
-                identityId
+                identityId,
             },
-            blockchain
+            blockchain,
         );
     }
 
@@ -2044,17 +2035,17 @@ class ParanetOperationsManager {
     async getCuratedNodes(paranetUAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
 
-        this.validationService.validateGetCuratedNodes(
-            paranetUAL,
-            blockchain,
-        );
+        this.validationService.validateGetCuratedNodes(paranetUAL, blockchain);
 
         const { contract, tokenId } = resolveUAL(paranetUAL);
         const paranetId = ethers.ethers.keccak256(
             ethers.ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
         );
 
-        const curatedNodes = await this.blockchainService.getCuratedNodes({ paranetId }, blockchain);
+        const curatedNodes = await this.blockchainService.getCuratedNodes(
+            { paranetId },
+            blockchain,
+        );
 
         return curatedNodes;
     }
@@ -2063,7 +2054,7 @@ class ParanetOperationsManager {
      * Adds miners to a curated paranet.
      * @async
      * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
-     * @param {Array<string>} minerAddresses - List of miner addresses to be added. 
+     * @param {Array<string>} minerAddresses - List of miner addresses to be added.
      * @param {Object} [options={}] - Additional options for adding curated nodes to a paranet.
      * @example
      * await dkg.paranet.addCuratedMiners(UAL, minerAddresses: [0xminerAddress1, 0xminerAddress2]);
@@ -2074,17 +2065,18 @@ class ParanetOperationsManager {
         this.validationService.validateParanetAddCuratedMiners(
             paranetUAL,
             blockchain,
-            minerAddresses
+            minerAddresses,
         );
 
         const { contract, tokenId } = resolveUAL(paranetUAL);
 
-        await this.blockchainService.addParanetCuratedMiners({
+        await this.blockchainService.addParanetCuratedMiners(
+            {
                 contract,
                 tokenId,
-                minerAddresses
+                minerAddresses,
             },
-            blockchain
+            blockchain,
         );
     }
 
@@ -2103,17 +2095,18 @@ class ParanetOperationsManager {
         this.validationService.validateParanetRemoveCuratedMiners(
             paranetUAL,
             blockchain,
-            minerAddresses
+            minerAddresses,
         );
 
         const { contract, tokenId } = resolveUAL(paranetUAL);
 
-        await this.blockchainService.removeParanetCuratedMiners({
+        await this.blockchainService.removeParanetCuratedMiners(
+            {
                 contract,
                 tokenId,
-                minerAddresses
+                minerAddresses,
             },
-            blockchain
+            blockchain,
         );
     }
 
@@ -2127,18 +2120,16 @@ class ParanetOperationsManager {
     async requestCuratedMinerAccess(paranetUAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
 
-        this.validationService.validateRequestParanetCuratedMinerAccess(
-            paranetUAL,
-            blockchain,
-        );
+        this.validationService.validateRequestParanetCuratedMinerAccess(paranetUAL, blockchain);
 
         const { contract, tokenId } = resolveUAL(paranetUAL);
 
-        await this.blockchainService.requestParanetCuratedMinerAccess({
+        await this.blockchainService.requestParanetCuratedMinerAccess(
+            {
                 contract,
                 tokenId,
             },
-            blockchain
+            blockchain,
         );
     }
 
@@ -2154,20 +2145,17 @@ class ParanetOperationsManager {
     async approveCuratedMiner(paranetUAL, minerAddress, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
 
-        this.validationService.validateApproveCuratedMiner(
-            paranetUAL,
-            blockchain,
-            minerAddress
-        );
+        this.validationService.validateApproveCuratedMiner(paranetUAL, blockchain, minerAddress);
 
         const { contract, tokenId } = resolveUAL(paranetUAL);
 
-        await this.blockchainService.approveCuratedMiner({
+        await this.blockchainService.approveCuratedMiner(
+            {
                 contract,
                 tokenId,
-                minerAddress
+                minerAddress,
             },
-            blockchain
+            blockchain,
         );
     }
 
@@ -2183,20 +2171,17 @@ class ParanetOperationsManager {
     async rejectCuratedMiner(paranetUAL, minerAddress, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
 
-        this.validationService.validateRejectCuratedMiner(
-            paranetUAL,
-            blockchain,
-            minerAddress
-        );
+        this.validationService.validateRejectCuratedMiner(paranetUAL, blockchain, minerAddress);
 
         const { contract, tokenId } = resolveUAL(paranetUAL);
 
-        await this.blockchainService.rejectCuratedMiner({
+        await this.blockchainService.rejectCuratedMiner(
+            {
                 contract,
                 tokenId,
-                minerAddress
+                minerAddress,
             },
-            blockchain
+            blockchain,
         );
     }
 
@@ -2211,17 +2196,17 @@ class ParanetOperationsManager {
     async getKnowledgeMiners(paranetUAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
 
-        this.validationService.validateGetParanetKnowledgeMiners(
-            paranetUAL,
-            blockchain,
-        );
+        this.validationService.validateGetParanetKnowledgeMiners(paranetUAL, blockchain);
 
         const { contract, tokenId } = resolveUAL(paranetUAL);
         const paranetId = ethers.ethers.keccak256(
             ethers.ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
         );
 
-        const knowledgeMiners = await this.blockchainService.getKnowledgeMiners({ paranetId }, blockchain);
+        const knowledgeMiners = await this.blockchainService.getKnowledgeMiners(
+            { paranetId },
+            blockchain,
+        );
 
         return knowledgeMiners;
     }
@@ -2258,11 +2243,12 @@ class ParanetOperationsManager {
             operatorRewardPercentage,
             incentivizationProposalVotersRewardPercentage,
         );
-        if (incentiveType === INCENTIVE_TYPE.NEUROWEB) {
+        if (Object.values(INCENTIVE_TYPE).includes(incentiveType)) {
             const { contract, tokenId } = resolveUAL(paranetUAL);
 
             const receipt = await this.blockchainService.deployNeuroIncentivesPool(
                 {
+                    isNativeReward: incentiveType === INCENTIVE_TYPE.NEUROWEB ? true : false,
                     contract,
                     tokenId,
                     tracToNeuroEmissionMultiplier,
@@ -2277,7 +2263,11 @@ class ParanetOperationsManager {
             );
 
             const neuroIncentivesPoolAddress =
-                await this.blockchainService.getNeuroIncentivesPoolAddress(paranetId, blockchain);
+                await this.blockchainService.getNeuroIncentivesPoolAddress(
+                    paranetId,
+                    incentiveType,
+                    blockchain,
+                );
 
             return {
                 paranetUAL,
@@ -2302,7 +2292,7 @@ class ParanetOperationsManager {
      *     paranetServiceAddresses: ['0xServiceAddress1', '0xServiceAddress2'],
      * });
      */
-    async createService(UAL, options = {}) {
+    async createService(serviceUAL, options = {}) {
         const {
             blockchain,
             paranetServiceName,
@@ -2310,14 +2300,14 @@ class ParanetOperationsManager {
             paranetServiceAddresses,
         } = this.inputService.getParanetCreateServiceArguments(options);
         this.validationService.validateParanetCreateServiceArguments(
-            UAL,
+            serviceUAL,
             paranetServiceName,
             paranetServiceDescription,
             paranetServiceAddresses,
             blockchain,
         );
 
-        const { contract, tokenId } = resolveUAL(UAL);
+        const { contract, tokenId } = resolveUAL(serviceUAL);
 
         const receipt = await this.blockchainService.registerParanetService(
             {
@@ -2331,7 +2321,7 @@ class ParanetOperationsManager {
         );
 
         return {
-            serviceUAL: UAL,
+            serviceUAL,
             operation: receipt,
         };
     }
@@ -3944,11 +3934,11 @@ class BlockchainServiceBase {
         );
     }
 
-    async getNeuroIncentivesPoolAddress(paranetId, blockchain) {
+    async getNeuroIncentivesPoolAddress(paranetId, incentivesPoolType, blockchain) {
         return this.getIncentivesPoolAddress(
             {
                 paranetId,
-                incentivesPoolType: 'Neuroweb',
+                incentivesPoolType,
             },
             blockchain,
         );

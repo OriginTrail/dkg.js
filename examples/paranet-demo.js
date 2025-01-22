@@ -6,13 +6,13 @@ import {
     PARANET_MINERS_ACCESS_POLICY,
     BLOCKCHAIN_IDS,
     ENVIRONMENTS,
+    INCENTIVE_TYPE,
 } from '../constants.js';
 
 const ENVIRONMENT = ENVIRONMENTS.DEVELOPMENT;
 const OT_NODE_HOSTNAME = 'http://localhost';
 const OT_NODE_PORT = '8900';
 const PUBLIC_KEY = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
-const PRIVATE_KEY = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
 
 const DkgClient = new DKG({
     environment: ENVIRONMENT,
@@ -21,7 +21,7 @@ const DkgClient = new DKG({
     blockchain: {
         name: BLOCKCHAIN_IDS.HARDHAT_1,
         publicKey: PUBLIC_KEY,
-        privateKey: PRIVATE_KEY,
+        privateKey: process.env.PRIVATE_KEY,
     },
     maxNumberOfRetries: 30,
     frequency: 2,
@@ -71,7 +71,7 @@ function divider() {
     divider();
 
     const paranetCollectionResult = await DkgClient.asset.create(content, { epochsNum: 2 });
-    console.log('======================== PARANET KNOWLEDGE Collection CREATED');
+    console.log('======================== PARANET KNOWLEDGE COLLECTION CREATED');
     console.log(paranetCollectionResult);
 
     divider();
@@ -94,32 +94,42 @@ function divider() {
     console.log(paranetRegistered);
     divider();
 
-    // const paranetDeployed = await DkgClient.paranet.deployIncentivesContract(
-    //     paranetCollectionResult.UAL,
-    //     'Neuroweb',
-    //     paranetOptions,
-    // );
-    // console.log('======================== PARANET INCENTIVES POOL DEPLOYED');
-    // console.log(paranetDeployed);
-    // divider();
+    const paranetDeployed = await DkgClient.paranet.deployIncentivesContract(
+        paranetCollectionResult.UAL,
+        INCENTIVE_TYPE.NEUROWEB,
+        paranetOptions,
+    );
+    console.log('======================== PARANET INCENTIVES POOL DEPLOYED');
+    console.log(paranetDeployed);
+    divider();
 
     content = {
         public: {
-            '@context': ['https://schema.org'],
-            '@id': 'uuid:6',
-            company: 'ServiceExample',
-            user: {
-                '@id': 'uuid:user:6',
-            },
-            city: {
-                '@id': 'uuid:Ljubljana',
-            },
+            '@context': 'https://www.schema.org',
+            '@id': 'urn:us-cities:info:miami',
+            '@type': 'City',
+            name: 'Miami',
+            state: 'Florida',
+            population: '2,000,000',
+            area: '135.2 sq mi',
+        },
+        private: {
+            '@context': 'https://www.schema.org',
+            '@id': 'urn:us-cities:data:miami',
+            '@type': 'CityPrivateData',
+            crimeRate: 'Low',
+            averageIncome: '$100,998',
+            infrastructureScore: '7.5',
+            relatedCities: [
+                { '@id': 'urn:us-cities:info:austin', name: 'Austin' },
+                { '@id': 'urn:us-cities:info:seattle', name: 'Seattle' },
+            ],
         },
     };
 
     const createServiceKCResult = await DkgClient.asset.create(content, { epochsNum: 2 });
 
-    const submitToParanetResult = await DkgClient.asset.submitToParanet(
+    const submitServiceToParanetResult = await DkgClient.asset.submitToParanet(
         createServiceKCResult.UAL,
         paranetCollectionResult.UAL,
     );
@@ -143,117 +153,142 @@ function divider() {
 
     content = {
         public: {
-            '@context': ['https://schema.org'],
-            '@id': 'uuid:2',
-            company: 'KA-Company',
-            user: {
-                '@id': 'uuid:user:2',
-            },
-            city: {
-                '@id': 'uuid:budapest',
-            },
+            '@context': 'https://www.schema.org',
+            '@id': 'urn:us-cities:info:denver',
+            '@type': 'City',
+            name: 'Denver',
+            state: 'Colorado',
+            population: '700,000',
+            area: '153.3 sq mi',
+        },
+        private: {
+            '@context': 'https://www.schema.org',
+            '@id': 'urn:us-cities:data:denver',
+            '@type': 'CityPrivateData',
+            crimeRate: 'Low',
+            averageIncome: '$50,998',
+            infrastructureScore: '6.5',
+            relatedCities: [
+                { '@id': 'urn:us-cities:info:boston', name: 'Boston' },
+                { '@id': 'urn:us-cities:info:chicago', name: 'Chicago' },
+            ],
         },
     };
+
     const createCollectionResult = await DkgClient.asset.create(content, { epochsNum: 2 });
-    console.log('======================== KNOWLEDGE Collection CREATED TO PARANET');
+    console.log('======================== KNOWLEDGE COLLECTION CREATED TO PARANET');
     console.log(createCollectionResult);
     divider();
 
-    const submitToParanet2 = await DkgClient.asset.submitToParanet(
+    const submitToParanetResult = await DkgClient.asset.submitToParanet(
         createCollectionResult.UAL,
         paranetCollectionResult.UAL,
     );
-    console.log('======================== SECOND KC ADDED TO PARANET');
-    console.log(submitToParanet2);
+    console.log('======================== KNOWLEDGE COLLECTION ADDED TO PARANET');
+    console.log(submitToParanetResult);
     divider();
 
     content = {
         public: {
-            '@context': ['https://schema.org'],
-            '@id': 'uuid:3',
-            company: 'KA1-Company',
-            user: {
-                '@id': 'uuid:user:3',
-            },
-            city: {
-                '@id': 'uuid:Belgrade',
-            },
+            '@context': 'https://www.schema.org',
+            '@id': 'urn:us-cities:info:dallas',
+            '@type': 'City',
+            name: 'Dallas',
+            state: 'Texas',
+            population: '1,343,573',
+            area: '386.5 sq mi',
+        },
+        private: {
+            '@context': 'https://www.schema.org',
+            '@id': 'urn:us-cities:data:dallas',
+            '@type': 'CityPrivateData',
+            crimeRate: 'Low',
+            averageIncome: '$80,998',
+            infrastructureScore: '7.5',
+            relatedCities: [
+                { '@id': 'urn:us-cities:info:austin', name: 'Austin' },
+                { '@id': 'urn:us-cities:info:houston', name: 'Houston' },
+            ],
         },
     };
     const createSecondCollectionResult = await DkgClient.asset.create(content, { epochsNum: 2 });
-    console.log('======================== SECOND KNOWLEDGE Collection CREATED');
+    console.log('======================== SECOND KNOWLEDGE COLLECTION CREATED');
     console.log(createSecondCollectionResult);
     divider();
 
-    const submitResult = await DkgClient.asset.submitToParanet(
+    const submitToParanetResult2 = await DkgClient.asset.submitToParanet(
         createSecondCollectionResult.UAL,
         paranetCollectionResult.UAL,
     );
-    console.log('======================== SECOND KC ADDED TO PARANET');
-    console.log(submitResult);
+    console.log('======================== SECOND KNOWLEDGE COLLECTION ADDED TO PARANET');
+    console.log(submitToParanetResult2);
     divider();
 
-    console.log(
-        '======================== IS MINER : ',
-        await DkgClient.paranet.isKnowledgeMiner(paranetCollectionResult.UAL, {
-            roleAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
-        }),
-    );
-    console.log(
-        '======================== IS OPERATOR : ',
-        await DkgClient.paranet.isParanetOperator(paranetCollectionResult.UAL),
-    );
-    console.log(
-        '======================== IS VOTER : ',
-        await DkgClient.paranet.isProposalVoter(paranetCollectionResult.UAL, {
-            roleAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
-        }),
-    );
-    divider();
+    // console.log(
+    //     '======================== IS MINER : ',
+    //     await DkgClient.paranet.isKnowledgeMiner(paranetCollectionResult.UAL, {
+    //         roleAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+    //     }),
+    // );
+    // console.log(
+    //     '======================== IS OPERATOR : ',
+    //     await DkgClient.paranet.isParanetOperator(paranetCollectionResult.UAL),
+    // );
+    // console.log(
+    //     '======================== IS VOTER : ',
+    //     await DkgClient.paranet.isProposalVoter(paranetCollectionResult.UAL, {
+    //         roleAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+    //     }),
+    // );
+    // divider();
 
-    let claimable = await DkgClient.paranet.getClaimableMinerReward(paranetCollectionResult.UAL);
-    console.log('======================== KC MINER REWARD TO CLAIM');
-    console.log(claimable);
-    divider();
+    // let claimable = await DkgClient.paranet.getClaimableMinerReward(paranetCollectionResult.UAL);
+    // console.log('======================== KC MINER REWARD TO CLAIM');
+    // console.log(claimable);
+    // divider();
 
-    claimable = await DkgClient.paranet.getClaimableOperatorReward(paranetCollectionResult.UAL);
-    console.log('======================== OPERATOR REWARD TO CLAIM');
-    console.log(claimable);
-    divider();
+    // claimable = await DkgClient.paranet.getClaimableOperatorReward(paranetCollectionResult.UAL);
+    // console.log('======================== OPERATOR REWARD TO CLAIM');
+    // console.log(claimable);
+    // divider();
 
-    let claimedResult = await DkgClient.paranet.claimMinerReward(paranetCollectionResult.UAL);
-    console.log('======================== KC MINER REWARD CLAIMED');
-    console.log(claimedResult);
-    divider();
+    // let claimedResult = await DkgClient.paranet.claimMinerReward(paranetCollectionResult.UAL);
+    // console.log('======================== KC MINER REWARD CLAIMED');
+    // console.log(claimedResult);
+    // divider();
 
-    claimedResult = await DkgClient.paranet.claimOperatorReward(paranetCollectionResult.UAL);
-    console.log('======================== OPERATOR REWARD CLAIMED');
-    console.log(claimedResult);
-    divider();
+    // claimedResult = await DkgClient.paranet.claimOperatorReward(paranetCollectionResult.UAL);
+    // console.log('======================== OPERATOR REWARD CLAIMED');
+    // console.log(claimedResult);
+    // divider();
 
-    claimable = await DkgClient.paranet.getClaimableMinerReward(paranetCollectionResult.UAL);
-    console.log('======================== KC MINER REWARD TO CLAIM');
-    console.log(claimable);
-    divider();
+    // claimable = await DkgClient.paranet.getClaimableMinerReward(paranetCollectionResult.UAL);
+    // console.log('======================== KC MINER REWARD TO CLAIM');
+    // console.log(claimable);
+    // divider();
 
-    claimable = await DkgClient.paranet.getClaimableOperatorReward(paranetCollectionResult.UAL);
-    console.log('======================== OPERATOR REWARD TO CLAIM');
-    console.log(claimable);
-    divider();
+    // claimable = await DkgClient.paranet.getClaimableOperatorReward(paranetCollectionResult.UAL);
+    // console.log('======================== OPERATOR REWARD TO CLAIM');
+    // console.log(claimable);
+    // divider();
 
-    await DkgClient.asset.waitFinalization(createSecondCollectionResult.UAL);
-    console.log('======================== FINALIZATION COMPLETED');
-    divider();
+    // await DkgClient.asset.waitFinalization(createSecondCollectionResult.UAL);
+    // console.log('======================== FINALIZATION COMPLETED');
+    // divider();
 
-    const queryWhereMadrid = `PREFIX schema: <http://schema.org/>
-        SELECT DISTINCT ?graphName
-        WHERE {
-          GRAPH ?graphName {
-            ?s schema:city <uuid:uzice> .
-          }
-        }`;
+    // IMPORTANT: For queries to work, you need to add assetSync to your node's .origintrail_noderc file.
+    // How to: https://docs.origintrail.io/dkg-v6-previous-version/node-setup-instructions/sync-a-dkg-paranet
+    const queryWhereDenver = `
+    PREFIX schema: <http://schema.org/>
+    SELECT DISTINCT ?graphName
+    WHERE {
+      GRAPH ?graphName {
+        ?s schema:name "Denver" .
+      }
+    }
+    `;
 
-    let queryResult = await DkgClient.graph.query(queryWhereMadrid, 'SELECT', {
+    let queryResult = await DkgClient.graph.query(queryWhereDenver, 'SELECT', {
         paranetUAL: paranetCollectionResult.UAL,
     });
     console.log('======================== QUERY PARANET REPO RESULT');
@@ -262,19 +297,20 @@ function divider() {
 
     const federatedQuery = `
     PREFIX schema: <http://schema.org/>
-        SELECT DISTINCT ?s ?city1 ?user1 ?s2 ?city2 ?user2 ?company1
+        SELECT DISTINCT ?s ?state1 ?name1 ?s2 ?state2 ?name2 ?population1
         WHERE {
-          ?s schema:city ?city1 .
-          ?s schema:company ?company1 .
-          ?s schema:user ?user1;
+          ?s schema:state ?state1 .
+          ?s schema:name ?name1 .
+          ?s schema:population ?population1 .
         
-          SERVICE <${createSecondCollectionResult.UAL}> {
-            ?s2 schema:city <uuid:Belgrade> .
-            ?s2 schema:city ?city2 .
-            ?s2 schema:user ?user2;
+          SERVICE <${paranetCollectionResult.UAL}> {
+            ?s2 schema:state "Colorado" .
+            ?s2 schema:name "Denver" .
+            ?s2 schema:state ?state2 .
+            ?s2 schema:name ?name2 .
           }
         
-          filter(contains(str(?city2), "Belgrade"))
+          filter(contains(str(?name2), "Denver"))
         }
     `;
 

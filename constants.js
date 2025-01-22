@@ -114,6 +114,7 @@ export const PARANET_MINERS_ACCESS_POLICY = {
 
 export const INCENTIVE_TYPE = {
     NEUROWEB: 'Neuroweb',
+    NEUROWEB_ERC20: 'NeurowebERC20',
 };
 
 export const BLOCKCHAINS_RENAME_PAIRS = {
