@@ -2670,7 +2670,7 @@ class ParanetOperationsManager {
      * @example
      * const isOperator = await dkg.paranet.isParanetOperator('paranetUAL123', { roleAddress: '0xOperatorAddress' });
      */
-    async isParanetOperator(paranetUAL, options = {}) {
+    async isParanetOperator(paranetUAL, incentivesPoolType, options = {}) {
         // eslint-disable-next-line prefer-const
         let { blockchain, roleAddress } = this.inputService.getParanetRoleCheckArguments(options);
         if (roleAddress == null) {
@@ -2690,6 +2690,7 @@ class ParanetOperationsManager {
         const isParanetOperator = await this.blockchainService.isParanetOperator(
             roleAddress,
             paranetId,
+            incentivesPoolType,
             blockchain,
         );
 
@@ -3967,9 +3968,10 @@ class BlockchainServiceBase {
         }
     }
 
-    async claimKnowledgeMinerReward(paranetId, blockchain) {
+    async claimKnowledgeMinerReward(paranetId, incentivesPoolType, blockchain) {
         const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(
             paranetId,
+            incentivesPoolType,
             blockchain,
         );
 
@@ -3983,9 +3985,10 @@ class BlockchainServiceBase {
         );
     }
 
-    async claimVoterReward(paranetId, blockchain) {
+    async claimVoterReward(paranetId, incentivesPoolType, blockchain) {
         const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(
             paranetId,
+            incentivesPoolType,
             blockchain,
         );
 
@@ -3999,9 +4002,10 @@ class BlockchainServiceBase {
         );
     }
 
-    async claimOperatorReward(paranetId, blockchain) {
+    async claimOperatorReward(paranetId, incentivesPoolType, blockchain) {
         const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(
             paranetId,
+            incentivesPoolType,
             blockchain,
         );
 
@@ -4015,9 +4019,10 @@ class BlockchainServiceBase {
         );
     }
 
-    async getClaimableKnowledgeMinerReward(paranetId, blockchain) {
+    async getClaimableKnowledgeMinerReward(paranetId, incentivesPoolType, blockchain) {
         const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(
             paranetId,
+            incentivesPoolType,
             blockchain,
         );
 
@@ -4031,9 +4036,10 @@ class BlockchainServiceBase {
         );
     }
 
-    async getClaimableAllKnowledgeMinersReward(paranetId, blockchain) {
+    async getClaimableAllKnowledgeMinersReward(paranetId, incentivesPoolType, blockchain) {
         const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(
             paranetId,
+            incentivesPoolType,
             blockchain,
         );
 
@@ -4047,9 +4053,10 @@ class BlockchainServiceBase {
         );
     }
 
-    async getClaimableVoterReward(paranetId, blockchain) {
+    async getClaimableVoterReward(paranetId, incentivesPoolType, blockchain) {
         const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(
             paranetId,
+            incentivesPoolType,
             blockchain,
         );
 
@@ -4063,9 +4070,10 @@ class BlockchainServiceBase {
         );
     }
 
-    async getClaimableAllVotersReward(paranetId, blockchain) {
+    async getClaimableAllVotersReward(paranetId, incentivesPoolType, blockchain) {
         const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(
             paranetId,
+            incentivesPoolType,
             blockchain,
         );
 
@@ -4079,9 +4087,10 @@ class BlockchainServiceBase {
         );
     }
 
-    async getClaimableOperatorReward(paranetId, blockchain) {
+    async getClaimableOperatorReward(paranetId, incentivesPoolType, blockchain) {
         const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(
             paranetId,
+            incentivesPoolType,
             blockchain,
         );
 
@@ -4095,9 +4104,10 @@ class BlockchainServiceBase {
         );
     }
 
-    async isParanetKnowledgeMiner(address, paranetId, blockchain) {
+    async isParanetKnowledgeMiner(address, paranetId, incentivesPoolType, blockchain) {
         const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(
             paranetId,
+            incentivesPoolType,
             blockchain,
         );
 
@@ -4111,9 +4121,10 @@ class BlockchainServiceBase {
         );
     }
 
-    async isParanetOperator(address, paranetId, blockchain) {
+    async isParanetOperator(address, paranetId, incentivesPoolType, blockchain) {
         const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(
             paranetId,
+            incentivesPoolType,
             blockchain,
         );
 
@@ -4127,9 +4138,10 @@ class BlockchainServiceBase {
         );
     }
 
-    async isParanetProposalVoter(address, paranetId, blockchain) {
+    async isParanetProposalVoter(address, paranetId, incentivesPoolType, blockchain) {
         const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(
             paranetId,
+            incentivesPoolType,
             blockchain,
         );
 

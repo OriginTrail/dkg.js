@@ -1,5 +1,6 @@
 import jsonld from 'jsonld';
 import DKG from '../index.js';
+import 'dotenv/config';
 
 import {
     PARANET_NODES_ACCESS_POLICY,
@@ -13,7 +14,9 @@ const ENVIRONMENT = ENVIRONMENTS.DEVELOPMENT;
 const OT_NODE_HOSTNAME = 'http://localhost';
 const OT_NODE_PORT = '8900';
 const PUBLIC_KEY = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
+const INCENTIVE_POOL_TYPE = INCENTIVE_TYPE.NEUROWEB;
 
+// IMPORTANT: Don't forget to add your PRIVATE_KEY to the .env file.
 const DkgClient = new DKG({
     environment: ENVIRONMENT,
     endpoint: OT_NODE_HOSTNAME,
@@ -96,7 +99,7 @@ function divider() {
 
     const paranetDeployed = await DkgClient.paranet.deployIncentivesContract(
         paranetCollectionResult.UAL,
-        INCENTIVE_TYPE.NEUROWEB,
+        INCENTIVE_POOL_TYPE,
         paranetOptions,
     );
     console.log('======================== PARANET INCENTIVES POOL DEPLOYED');
@@ -224,56 +227,54 @@ function divider() {
     console.log(submitToParanetResult2);
     divider();
 
-    // console.log(
-    //     '======================== IS MINER : ',
-    //     await DkgClient.paranet.isKnowledgeMiner(paranetCollectionResult.UAL, {
-    //         roleAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
-    //     }),
-    // );
-    // console.log(
-    //     '======================== IS OPERATOR : ',
-    //     await DkgClient.paranet.isParanetOperator(paranetCollectionResult.UAL),
-    // );
-    // console.log(
-    //     '======================== IS VOTER : ',
-    //     await DkgClient.paranet.isProposalVoter(paranetCollectionResult.UAL, {
-    //         roleAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
-    //     }),
-    // );
-    // divider();
+    console.log(
+        '======================== IS MINER : ',
+        await DkgClient.paranet.isKnowledgeMiner(paranetCollectionResult.UAL, INCENTIVE_POOL_TYPE, {
+            roleAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+        }),
+    );
+    console.log(
+        '======================== IS OPERATOR : ',
+        await DkgClient.paranet.isParanetOperator(paranetCollectionResult.UAL, INCENTIVE_POOL_TYPE),
+    );
+    console.log(
+        '======================== IS VOTER : ',
+        await DkgClient.paranet.isProposalVoter(paranetCollectionResult.UAL, INCENTIVE_POOL_TYPE, {
+            roleAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+        }),
+    );
+    divider();
 
-    // let claimable = await DkgClient.paranet.getClaimableMinerReward(paranetCollectionResult.UAL);
-    // console.log('======================== KC MINER REWARD TO CLAIM');
-    // console.log(claimable);
-    // divider();
+    let claimable = await DkgClient.paranet.getClaimableMinerReward(
+        paranetCollectionResult.UAL,
+        INCENTIVE_POOL_TYPE,
+    );
+    console.log('======================== KC MINER REWARD TO CLAIM');
+    console.log(claimable);
+    divider();
 
-    // claimable = await DkgClient.paranet.getClaimableOperatorReward(paranetCollectionResult.UAL);
-    // console.log('======================== OPERATOR REWARD TO CLAIM');
-    // console.log(claimable);
-    // divider();
+    claimable = await DkgClient.paranet.getClaimableOperatorReward(
+        paranetCollectionResult.UAL,
+        INCENTIVE_POOL_TYPE,
+    );
+    console.log('======================== OPERATOR REWARD TO CLAIM');
+    console.log(claimable);
+    divider();
 
-    // let claimedResult = await DkgClient.paranet.claimMinerReward(paranetCollectionResult.UAL);
+    // let claimedResult = await DkgClient.paranet.claimMinerReward(
+    //     paranetCollectionResult.UAL,
+    //     INCENTIVE_POOL_TYPE,
+    // );
     // console.log('======================== KC MINER REWARD CLAIMED');
     // console.log(claimedResult);
     // divider();
 
-    // claimedResult = await DkgClient.paranet.claimOperatorReward(paranetCollectionResult.UAL);
+    // claimedResult = await DkgClient.paranet.claimOperatorReward(
+    //     paranetCollectionResult.UAL,
+    //     INCENTIVE_POOL_TYPE,
+    // );
     // console.log('======================== OPERATOR REWARD CLAIMED');
     // console.log(claimedResult);
-    // divider();
-
-    // claimable = await DkgClient.paranet.getClaimableMinerReward(paranetCollectionResult.UAL);
-    // console.log('======================== KC MINER REWARD TO CLAIM');
-    // console.log(claimable);
-    // divider();
-
-    // claimable = await DkgClient.paranet.getClaimableOperatorReward(paranetCollectionResult.UAL);
-    // console.log('======================== OPERATOR REWARD TO CLAIM');
-    // console.log(claimable);
-    // divider();
-
-    // await DkgClient.asset.waitFinalization(createSecondCollectionResult.UAL);
-    // console.log('======================== FINALIZATION COMPLETED');
     // divider();
 
     // IMPORTANT: For queries to work, you need to add assetSync to your node's .origintrail_noderc file.
@@ -302,14 +303,14 @@ function divider() {
           ?s schema:state ?state1 .
           ?s schema:name ?name1 .
           ?s schema:population ?population1 .
-        
+
           SERVICE <${paranetCollectionResult.UAL}> {
             ?s2 schema:state "Colorado" .
             ?s2 schema:name "Denver" .
             ?s2 schema:state ?state2 .
             ?s2 schema:name ?name2 .
           }
-        
+
           filter(contains(str(?name2), "Denver"))
         }
     `;

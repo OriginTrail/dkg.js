@@ -549,7 +549,7 @@ export default class ParanetOperationsManager {
      * @example
      * await dkg.paranet.claimMinerReward('paranetUAL123');
      */
-    async claimMinerReward(paranetUAL, options = {}) {
+    async claimMinerReward(paranetUAL, incentivesPoolType, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
         this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
@@ -560,6 +560,7 @@ export default class ParanetOperationsManager {
 
         const receipt = await this.blockchainService.claimKnowledgeMinerReward(
             paranetId,
+            incentivesPoolType,
             blockchain,
         );
 
@@ -606,7 +607,7 @@ export default class ParanetOperationsManager {
      * @example
      * await dkg.paranet.claimOperatorReward('paranetUAL123');
      */
-    async claimOperatorReward(paranetUAL, options = {}) {
+    async claimOperatorReward(paranetUAL, incentivesPoolType, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
         this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
@@ -615,7 +616,11 @@ export default class ParanetOperationsManager {
             ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
         );
 
-        const receipt = await this.blockchainService.claimOperatorReward(paranetId, blockchain);
+        const receipt = await this.blockchainService.claimOperatorReward(
+            paranetId,
+            incentivesPoolType,
+            blockchain,
+        );
 
         return {
             operation: receipt,
@@ -632,7 +637,7 @@ export default class ParanetOperationsManager {
      * @example
      * const reward = await dkg.paranet.getClaimableMinerReward(paranetUAL);
      */
-    async getClaimableMinerReward(paranetUAL, options = {}) {
+    async getClaimableMinerReward(paranetUAL, incentivesPoolType, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
         this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
@@ -643,6 +648,7 @@ export default class ParanetOperationsManager {
 
         const claimableValue = await this.blockchainService.getClaimableKnowledgeMinerReward(
             paranetId,
+            incentivesPoolType,
             blockchain,
         );
 
@@ -658,7 +664,7 @@ export default class ParanetOperationsManager {
      * @example
      * const reward = await dkg.paranet.getClaimableAllMinersReward(paranetUAL);
      */
-    async getClaimableAllMinersReward(paranetUAL, options = {}) {
+    async getClaimableAllMinersReward(paranetUAL, incentivesPoolType, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
         this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
@@ -669,6 +675,7 @@ export default class ParanetOperationsManager {
 
         const claimableValue = await this.blockchainService.getClaimableAllKnowledgeMinersReward(
             paranetId,
+            incentivesPoolType,
             blockchain,
         );
 
@@ -684,7 +691,7 @@ export default class ParanetOperationsManager {
      * @example
      * const reward = await dkg.paranet.getClaimableVoterReward(paranetUAL);
      */
-    async getClaimableVoterReward(paranetUAL, options = {}) {
+    async getClaimableVoterReward(paranetUAL, incentivesPoolType, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
         this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
@@ -695,6 +702,7 @@ export default class ParanetOperationsManager {
 
         const claimableValue = await this.blockchainService.getClaimableVoterReward(
             paranetId,
+            incentivesPoolType,
             blockchain,
         );
 
@@ -710,7 +718,7 @@ export default class ParanetOperationsManager {
      * @example
      * const reward = await dkg.paranet.getClaimableAllVotersReward(paranetUAL);
      */
-    async getClaimableAllVotersReward(paranetUAL, options = {}) {
+    async getClaimableAllVotersReward(paranetUAL, incentivesPoolType, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
         this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
@@ -721,6 +729,7 @@ export default class ParanetOperationsManager {
 
         const claimableValue = await this.blockchainService.getClaimableAllVotersReward(
             paranetId,
+            incentivesPoolType,
             blockchain,
         );
 
@@ -736,7 +745,7 @@ export default class ParanetOperationsManager {
      * @example
      * const reward = await dkg.paranet.getClaimableOperatorReward(paranetUAL);
      */
-    async getClaimableOperatorReward(paranetUAL, options = {}) {
+    async getClaimableOperatorReward(paranetUAL, incentivesPoolType, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
         this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
@@ -747,6 +756,7 @@ export default class ParanetOperationsManager {
 
         const claimableValue = await this.blockchainService.getClaimableOperatorReward(
             paranetId,
+            incentivesPoolType,
             blockchain,
         );
 
@@ -808,7 +818,7 @@ export default class ParanetOperationsManager {
      * @example
      * const isMiner = await dkg.paranet.isKnowledgeMiner('paranetUAL123', { roleAddress: '0xMinerAddress' });
      */
-    async isKnowledgeMiner(paranetUAL, options = {}) {
+    async isKnowledgeMiner(paranetUAL, incentivesPoolType, options = {}) {
         // eslint-disable-next-line prefer-const
         let { blockchain, roleAddress } = this.inputService.getParanetRoleCheckArguments(options);
         if (roleAddress == null) {
@@ -828,6 +838,7 @@ export default class ParanetOperationsManager {
         const isParanetKnowledgeMiner = await this.blockchainService.isParanetKnowledgeMiner(
             roleAddress,
             paranetId,
+            incentivesPoolType,
             blockchain,
         );
 
@@ -843,7 +854,7 @@ export default class ParanetOperationsManager {
      * @example
      * const isOperator = await dkg.paranet.isParanetOperator('paranetUAL123', { roleAddress: '0xOperatorAddress' });
      */
-    async isParanetOperator(paranetUAL, options = {}) {
+    async isParanetOperator(paranetUAL, incentivesPoolType, options = {}) {
         // eslint-disable-next-line prefer-const
         let { blockchain, roleAddress } = this.inputService.getParanetRoleCheckArguments(options);
         if (roleAddress == null) {
@@ -863,6 +874,7 @@ export default class ParanetOperationsManager {
         const isParanetOperator = await this.blockchainService.isParanetOperator(
             roleAddress,
             paranetId,
+            incentivesPoolType,
             blockchain,
         );
 
@@ -878,7 +890,7 @@ export default class ParanetOperationsManager {
      * @example
      * const isVoter = await dkg.paranet.isProposalVoter('paranetUAL123', { roleAddress: '0xVoterAddress' });
      */
-    async isProposalVoter(paranetUAL, options = {}) {
+    async isProposalVoter(paranetUAL, incentivesPoolType, options = {}) {
         // eslint-disable-next-line prefer-const
         let { blockchain, roleAddress } = this.inputService.getParanetRoleCheckArguments(options);
         if (roleAddress == null) {
@@ -898,6 +910,7 @@ export default class ParanetOperationsManager {
         const isProposalVoter = await this.blockchainService.isParanetProposalVoter(
             roleAddress,
             paranetId,
+            incentivesPoolType,
             blockchain,
         );
 
