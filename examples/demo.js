@@ -1,14 +1,13 @@
 import DKG from '../index.js';
 import { BLOCKCHAIN_IDS, ENVIRONMENTS } from '../constants.js';
-import dotenv from 'dotenv';
-
-dotenv.config();
+import 'dotenv/config';
 
 const ENVIRONMENT = ENVIRONMENTS.DEVELOPMENT;
 const OT_NODE_HOSTNAME = 'http://localhost';
 const OT_NODE_PORT = '8900';
 const PUBLIC_KEY = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
 
+// IMPORTANT: Don't forget to add your PRIVATE_KEY to the .env file.
 const DkgClient = new DKG({
     environment: ENVIRONMENT,
     endpoint: OT_NODE_HOSTNAME,
