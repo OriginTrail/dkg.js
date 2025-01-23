@@ -1,6 +1,5 @@
-class SocketService {
+export default class SocketService {
     publish() {}
 
     getOperationResult() {}
 }
-module.exports = SocketService;

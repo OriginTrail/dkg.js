@@ -1,14 +1,14 @@
 // interfaces
-const NodeApiInterface = require('./node-api-service/node-api-interface.js');
-const BlockchainInterface = require('./blockchain-service/blockchain-interface.js');
+import NodeApiInterface from './node-api-service/node-api-interface.js';
+import BlockchainInterface from './blockchain-service/blockchain-interface.js';
 // services
-const ValidationService = require('./validation-service.js');
-const Utilities = require('./utilities.js');
-const InputService = require('./input-service.js');
+import ValidationService from './validation-service.js';
+import { nodeSupported } from './utilities.js';
+import InputService from './input-service.js';
 
-const { BLOCKCHAINS_RENAME_PAIRS } = require('../constants');
+import { BLOCKCHAINS_RENAME_PAIRS  } from '../constants.js';
 
-class BaseServiceManager {
+export default class BaseServiceManager {
     constructor(config) {
         const blockchainName = config.blockchain?.name;
         const configWithNewBlockchainName = config;
@@ -41,14 +41,12 @@ class BaseServiceManager {
     }
 
     initializeBlockchainService(config) {
-        if (Utilities.nodeSupported()) {
+        if (nodeSupported()) {
             return new BlockchainInterface.Node(config);
         }
-        if (!Utilities.nodeSupported() && !window.ethereum && config.blockchain?.privateKey) {
+        if (!nodeSupported() && !window.ethereum && config.blockchain?.privateKey) {
             return new BlockchainInterface.Node(config);
         }
         return new BlockchainInterface.Browser(config);
     }
 }
-
-module.exports = BaseServiceManager;

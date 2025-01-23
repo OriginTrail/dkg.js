@@ -1,4 +1,4 @@
-class BlockchainOperationsManager {
+export default class BlockchainOperationsManager {
     constructor(services) {
         this.blockchainService = services.blockchainService;
         this.inputService = services.inputService;
@@ -36,5 +36,3 @@ class BlockchainOperationsManager {
         return this.blockchainService.getWalletBalances(blockchain);
     }
 }
-
-module.exports = BlockchainOperationsManager;
