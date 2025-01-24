@@ -1,9 +1,6 @@
 import jsonld from 'jsonld';
-import {
-    GRAPH_LOCATIONS,
-    GRAPH_STATES,
-    OT_NODE_TRIPLE_STORE_REPOSITORIES,
-} from '../constants.js';
+import { GRAPH_LOCATIONS, GRAPH_STATES, OT_NODE_TRIPLE_STORE_REPOSITORIES } from '../constants.js';
+import { ethers } from 'ethers';
 
 export function isEmptyObject(obj) {
     return Object.keys(obj).length === 0 && obj.constructor === Object;
@@ -17,24 +14,36 @@ export function toNumber(hex) {
     return parseInt(hex.slice(2), 16);
 }
 
-export function deriveUAL(blockchain, contract, tokenId) {
-    return `did:dkg:${blockchain.toLowerCase()}/${contract.toLowerCase()}/${tokenId}`;
+export function deriveUAL(blockchain, contract, kcTokenId, kaTokenId) {
+    const ual = `did:dkg:${blockchain.toLowerCase()}/${contract.toLowerCase()}/${kcTokenId}`;
+    return kaTokenId ? `${ual}/${kaTokenId}` : ual;
 }
 
 export function resolveUAL(ual) {
-    const segments = ual.split(':');
-    const argsString = segments.length === 3 ? segments[2] : `${segments[2]}:${segments[3]}`;
-    const args = argsString.split('/');
-
-    if (args.length !== 3) {
-        throw new Error(`UAL doesn't have correct format: ${ual}`);
+    if (!ual.startsWith('did:dkg:')) {
+        throw new Error(`Invalid UAL: ${ual}. UAL should start with did:dkg:`);
     }
 
-    return {
-        blockchain: args[0],
-        contract: args[1],
-        tokenId: parseInt(args[2], 10),
-    };
+    const args = ual.replace('did:dkg:', '').split('/');
+
+    if (args.length === 4) {
+        return {
+            blockchain: args[0],
+            contract: args[1],
+            kcTokenId: parseInt(args[2], 10),
+            kaTokenId: parseInt(args[3], 10),
+        };
+    }
+
+    if (args.length === 3) {
+        return {
+            blockchain: args[0],
+            contract: args[1],
+            kcTokenId: parseInt(args[2], 10),
+        };
+    }
+
+    throw new Error(`Invalid UAL: ${ual}. UAL should have 3 or 4 segments.`);
 }
 
 export function deriveRepository(graphLocation, graphState) {
@@ -87,9 +96,19 @@ export async function toNQuads(content, inputFormat) {
     return canonized.split('\n').filter((x) => x !== '');
 }
 
-export async function  toJSONLD(nquads) {
+export async function toJSONLD(nquads) {
     return jsonld.fromRDF(nquads, {
         algorithm: 'URDNA2015',
         format: 'application/n-quads',
     });
+}
+
+export function getParanetId(paranetUAL) {
+    const { contract, kcTokenId, kaTokenId } = resolveUAL(paranetUAL);
+    if (!kaTokenId) {
+        throw new Error('Invalid paranet UAL! Knowledge asset token id is required!');
+    }
+    return ethers.keccak256(
+        ethers.solidityPacked(['address', 'uint256', 'uint256'], [contract, kcTokenId, kaTokenId]),
+    );
 }

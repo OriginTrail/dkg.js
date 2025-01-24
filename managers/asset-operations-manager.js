@@ -894,15 +894,24 @@ export default class AssetOperationsManager {
 
         this.validationService.validateSubmitToParanet(UAL, paranetUAL, blockchain);
 
-        const { contract, tokenId } = resolveUAL(UAL);
-        const { contract: paranetContract, tokenId: paranetTokenId } = resolveUAL(paranetUAL);
+        const { contract, kcTokenId } = resolveUAL(UAL);
+        const {
+            contract: paranetContract,
+            kcTokenId: paranetKCTokenId,
+            kaTokenId: paranetKATokenId,
+        } = resolveUAL(paranetUAL);
+
+        if (!paranetKATokenId) {
+            throw new Error('Invalid paranet UAL! Knowledge asset token id is required!');
+        }
 
         const receipt = await this.blockchainService.submitToParanet(
             {
                 paranetContract,
-                paranetTokenId,
+                paranetKCTokenId,
+                paranetKATokenId,
                 contract,
-                tokenId,
+                kcTokenId,
             },
             blockchain,
         );

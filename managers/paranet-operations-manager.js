@@ -1,5 +1,5 @@
 import { ethers } from 'ethers';
-import { resolveUAL } from '../services/utilities.js';
+import { resolveUAL, getParanetId } from '../services/utilities.js';
 import { INCENTIVE_TYPE } from '../constants.js';
 
 export default class ParanetOperationsManager {
@@ -46,12 +46,17 @@ export default class ParanetOperationsManager {
             paranetMinersAccessPolicy,
         );
 
-        const { contract, tokenId } = resolveUAL(UAL);
+        const { contract, kcTokenId, kaTokenId } = resolveUAL(UAL);
+
+        if (!kaTokenId) {
+            throw new Error('Invalid paranet UAL! Knowledge asset token id is required!');
+        }
 
         const receipt = await this.blockchainService.registerParanet(
             {
                 contract,
-                tokenId,
+                kcTokenId,
+                kaTokenId,
                 paranetName,
                 paranetDescription,
                 paranetNodesAccessPolicy,
@@ -80,12 +85,17 @@ export default class ParanetOperationsManager {
 
         this.validationService.validateParanetAddCuratedNodes(paranetUAL, blockchain, identityIds);
 
-        const { contract, tokenId } = resolveUAL(paranetUAL);
+        const { contract, kcTokenId, kaTokenId } = resolveUAL(paranetUAL);
+
+        if (!kaTokenId) {
+            throw new Error('Invalid paranet UAL! Knowledge asset token id is required!');
+        }
 
         await this.blockchainService.addParanetCuratedNodes(
             {
                 contract,
-                tokenId,
+                kcTokenId,
+                kaTokenId,
                 identityIds,
             },
             blockchain,
@@ -110,12 +120,17 @@ export default class ParanetOperationsManager {
             identityIds,
         );
 
-        const { contract, tokenId } = resolveUAL(paranetUAL);
+        const { contract, kcTokenId, kaTokenId } = resolveUAL(paranetUAL);
+
+        if (!kaTokenId) {
+            throw new Error('Invalid paranet UAL! Knowledge asset token id is required!');
+        }
 
         await this.blockchainService.removeParanetCuratedNodes(
             {
                 contract,
-                tokenId,
+                kcTokenId,
+                kaTokenId,
                 identityIds,
             },
             blockchain,
@@ -134,12 +149,17 @@ export default class ParanetOperationsManager {
 
         this.validationService.validateRequestParanetCuratedNodeAccess(paranetUAL, blockchain);
 
-        const { contract, tokenId } = resolveUAL(paranetUAL);
+        const { contract, kcTokenId, kaTokenId } = resolveUAL(paranetUAL);
+
+        if (!kaTokenId) {
+            throw new Error('Invalid paranet UAL! Knowledge asset token id is required!');
+        }
 
         await this.blockchainService.requestParanetCuratedNodeAccess(
             {
                 contract,
-                tokenId,
+                kcTokenId,
+                kaTokenId,
             },
             blockchain,
         );
@@ -159,12 +179,17 @@ export default class ParanetOperationsManager {
 
         this.validationService.validateApproveCuratedNode(paranetUAL, blockchain, identityId);
 
-        const { contract, tokenId } = resolveUAL(paranetUAL);
+        const { contract, kcTokenId, kaTokenId } = resolveUAL(paranetUAL);
+
+        if (!kaTokenId) {
+            throw new Error('Invalid paranet UAL! Knowledge asset token id is required!');
+        }
 
         await this.blockchainService.approveCuratedNode(
             {
                 contract,
-                tokenId,
+                kcTokenId,
+                kaTokenId,
                 identityId,
             },
             blockchain,
@@ -185,12 +210,17 @@ export default class ParanetOperationsManager {
 
         this.validationService.validateRejectCuratedNode(paranetUAL, blockchain, identityId);
 
-        const { contract, tokenId } = resolveUAL(paranetUAL);
+        const { contract, kcTokenId, kaTokenId } = resolveUAL(paranetUAL);
+
+        if (!kaTokenId) {
+            throw new Error('Invalid paranet UAL! Knowledge asset token id is required!');
+        }
 
         await this.blockchainService.rejectCuratedNode(
             {
                 contract,
-                tokenId,
+                kcTokenId,
+                kaTokenId,
                 identityId,
             },
             blockchain,
@@ -210,10 +240,7 @@ export default class ParanetOperationsManager {
 
         this.validationService.validateGetCuratedNodes(paranetUAL, blockchain);
 
-        const { contract, tokenId } = resolveUAL(paranetUAL);
-        const paranetId = ethers.keccak256(
-            ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
-        );
+        const paranetId = getParanetId(paranetUAL);
 
         const curatedNodes = await this.blockchainService.getCuratedNodes(
             { paranetId },
@@ -241,12 +268,17 @@ export default class ParanetOperationsManager {
             minerAddresses,
         );
 
-        const { contract, tokenId } = resolveUAL(paranetUAL);
+        const { contract, kcTokenId, kaTokenId } = resolveUAL(paranetUAL);
+
+        if (!kaTokenId) {
+            throw new Error('Invalid paranet UAL! Knowledge asset token id is required!');
+        }
 
         await this.blockchainService.addParanetCuratedMiners(
             {
                 contract,
-                tokenId,
+                kcTokenId,
+                kaTokenId,
                 minerAddresses,
             },
             blockchain,
@@ -271,12 +303,17 @@ export default class ParanetOperationsManager {
             minerAddresses,
         );
 
-        const { contract, tokenId } = resolveUAL(paranetUAL);
+        const { contract, kcTokenId, kaTokenId } = resolveUAL(paranetUAL);
+
+        if (!kaTokenId) {
+            throw new Error('Invalid paranet UAL! Knowledge asset token id is required!');
+        }
 
         await this.blockchainService.removeParanetCuratedMiners(
             {
                 contract,
-                tokenId,
+                kcTokenId,
+                kaTokenId,
                 minerAddresses,
             },
             blockchain,
@@ -295,12 +332,17 @@ export default class ParanetOperationsManager {
 
         this.validationService.validateRequestParanetCuratedMinerAccess(paranetUAL, blockchain);
 
-        const { contract, tokenId } = resolveUAL(paranetUAL);
+        const { contract, kcTokenId, kaTokenId } = resolveUAL(paranetUAL);
+
+        if (!kaTokenId) {
+            throw new Error('Invalid paranet UAL! Knowledge asset token id is required!');
+        }
 
         await this.blockchainService.requestParanetCuratedMinerAccess(
             {
                 contract,
-                tokenId,
+                kcTokenId,
+                kaTokenId,
             },
             blockchain,
         );
@@ -320,12 +362,17 @@ export default class ParanetOperationsManager {
 
         this.validationService.validateApproveCuratedMiner(paranetUAL, blockchain, minerAddress);
 
-        const { contract, tokenId } = resolveUAL(paranetUAL);
+        const { contract, kcTokenId, kaTokenId } = resolveUAL(paranetUAL);
+
+        if (!kaTokenId) {
+            throw new Error('Invalid paranet UAL! Knowledge asset token id is required!');
+        }
 
         await this.blockchainService.approveCuratedMiner(
             {
                 contract,
-                tokenId,
+                kcTokenId,
+                kaTokenId,
                 minerAddress,
             },
             blockchain,
@@ -346,12 +393,17 @@ export default class ParanetOperationsManager {
 
         this.validationService.validateRejectCuratedMiner(paranetUAL, blockchain, minerAddress);
 
-        const { contract, tokenId } = resolveUAL(paranetUAL);
+        const { contract, kcTokenId, kaTokenId } = resolveUAL(paranetUAL);
+
+        if (!kaTokenId) {
+            throw new Error('Invalid paranet UAL! Knowledge asset token id is required!');
+        }
 
         await this.blockchainService.rejectCuratedMiner(
             {
                 contract,
-                tokenId,
+                kcTokenId,
+                kaTokenId,
                 minerAddress,
             },
             blockchain,
@@ -371,10 +423,7 @@ export default class ParanetOperationsManager {
 
         this.validationService.validateGetParanetKnowledgeMiners(paranetUAL, blockchain);
 
-        const { contract, tokenId } = resolveUAL(paranetUAL);
-        const paranetId = ethers.keccak256(
-            ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
-        );
+        const paranetId = getParanetId(paranetUAL);
 
         const knowledgeMiners = await this.blockchainService.getKnowledgeMiners(
             { paranetId },
@@ -417,13 +466,18 @@ export default class ParanetOperationsManager {
             incentivizationProposalVotersRewardPercentage,
         );
         if (Object.values(INCENTIVE_TYPE).includes(incentiveType)) {
-            const { contract, tokenId } = resolveUAL(paranetUAL);
+            const { contract, kcTokenId, kaTokenId } = resolveUAL(paranetUAL);
+
+            if (!kaTokenId) {
+                throw new Error('Invalid paranet UAL! Knowledge asset token id is required!');
+            }
 
             const receipt = await this.blockchainService.deployNeuroIncentivesPool(
                 {
                     isNativeReward: incentiveType === INCENTIVE_TYPE.NEUROWEB ? true : false,
                     contract,
-                    tokenId,
+                    kcTokenId,
+                    kaTokenId,
                     tracToNeuroEmissionMultiplier,
                     operatorRewardPercentage,
                     incentivizationProposalVotersRewardPercentage,
@@ -431,9 +485,7 @@ export default class ParanetOperationsManager {
                 blockchain,
             );
 
-            const paranetId = ethers.keccak256(
-                ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
-            );
+            const paranetId = getParanetId(paranetUAL);
 
             const neuroIncentivesPoolAddress =
                 await this.blockchainService.getNeuroIncentivesPoolAddress(
@@ -480,12 +532,17 @@ export default class ParanetOperationsManager {
             blockchain,
         );
 
-        const { contract, tokenId } = resolveUAL(serviceUAL);
+        const { contract, kcTokenId, kaTokenId } = resolveUAL(serviceUAL);
+
+        if (!kaTokenId) {
+            throw new Error('Invalid paranet UAL! Knowledge asset token id is required!');
+        }
 
         const receipt = await this.blockchainService.registerParanetService(
             {
                 contract,
-                tokenId,
+                kcTokenId,
+                kaTokenId,
                 paranetServiceName,
                 paranetServiceDescription,
                 paranetServiceAddresses,
@@ -516,18 +573,26 @@ export default class ParanetOperationsManager {
             paranetServiceUALs,
             blockchain,
         );
-        const { contract, tokenId } = resolveUAL(paranetUAL);
+        const { contract, kcTokenId, kaTokenId } = resolveUAL(paranetUAL);
+        if (!kaTokenId) {
+            throw new Error('Invalid paranet UAL! Knowledge asset token id is required!');
+        }
 
         const processedServicesArray = [];
         for (const serviceUAL of paranetServiceUALs) {
-            const { contract: serviceContract, tokenId: serviceTokenId } = resolveUAL(serviceUAL);
-            processedServicesArray.push([serviceContract, serviceTokenId]);
+            const {
+                contract: serviceContract,
+                kcTokenId: serviceKCTokenId,
+                kaTokenId: serviceKATokenId,
+            } = resolveUAL(serviceUAL);
+            processedServicesArray.push([serviceContract, serviceKCTokenId, serviceKATokenId]);
         }
 
         const receipt = await this.blockchainService.addParanetServices(
             {
                 contract,
-                tokenId,
+                kcTokenId,
+                kaTokenId,
                 processedServicesArray,
             },
             blockchain,
@@ -553,10 +618,7 @@ export default class ParanetOperationsManager {
         const blockchain = this.inputService.getBlockchain(options);
         this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
-        const { contract, tokenId } = resolveUAL(paranetUAL);
-        const paranetId = ethers.keccak256(
-            ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
-        );
+        const paranetId = getParanetId(paranetUAL);
 
         const receipt = await this.blockchainService.claimKnowledgeMinerReward(
             paranetId,
@@ -584,10 +646,7 @@ export default class ParanetOperationsManager {
         const blockchain = this.inputService.getBlockchain(options);
         this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
-        const { contract, tokenId } = resolveUAL(paranetUAL);
-        const paranetId = ethers.keccak256(
-            ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
-        );
+        const paranetId = getParanetId(paranetUAL);
 
         const receipt = await this.blockchainService.claimVoterReward(paranetId, blockchain);
 
@@ -611,10 +670,7 @@ export default class ParanetOperationsManager {
         const blockchain = this.inputService.getBlockchain(options);
         this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
-        const { contract, tokenId } = resolveUAL(paranetUAL);
-        const paranetId = ethers.keccak256(
-            ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
-        );
+        const paranetId = getParanetId(paranetUAL);
 
         const receipt = await this.blockchainService.claimOperatorReward(
             paranetId,
@@ -641,10 +697,7 @@ export default class ParanetOperationsManager {
         const blockchain = this.inputService.getBlockchain(options);
         this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
-        const { contract, tokenId } = resolveUAL(paranetUAL);
-        const paranetId = ethers.keccak256(
-            ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
-        );
+        const paranetId = getParanetId(paranetUAL);
 
         const claimableValue = await this.blockchainService.getClaimableKnowledgeMinerReward(
             paranetId,
@@ -668,10 +721,7 @@ export default class ParanetOperationsManager {
         const blockchain = this.inputService.getBlockchain(options);
         this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
-        const { contract, tokenId } = resolveUAL(paranetUAL);
-        const paranetId = ethers.keccak256(
-            ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
-        );
+        const paranetId = getParanetId(paranetUAL);
 
         const claimableValue = await this.blockchainService.getClaimableAllKnowledgeMinersReward(
             paranetId,
@@ -695,10 +745,7 @@ export default class ParanetOperationsManager {
         const blockchain = this.inputService.getBlockchain(options);
         this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
-        const { contract, tokenId } = resolveUAL(paranetUAL);
-        const paranetId = ethers.keccak256(
-            ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
-        );
+        const paranetId = getParanetId(paranetUAL);
 
         const claimableValue = await this.blockchainService.getClaimableVoterReward(
             paranetId,
@@ -722,10 +769,7 @@ export default class ParanetOperationsManager {
         const blockchain = this.inputService.getBlockchain(options);
         this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
-        const { contract, tokenId } = resolveUAL(paranetUAL);
-        const paranetId = ethers.keccak256(
-            ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
-        );
+        const paranetId = getParanetId(paranetUAL);
 
         const claimableValue = await this.blockchainService.getClaimableAllVotersReward(
             paranetId,
@@ -749,10 +793,7 @@ export default class ParanetOperationsManager {
         const blockchain = this.inputService.getBlockchain(options);
         this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
-        const { contract, tokenId } = resolveUAL(paranetUAL);
-        const paranetId = ethers.keccak256(
-            ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
-        );
+        const paranetId = getParanetId(paranetUAL);
 
         const claimableValue = await this.blockchainService.getClaimableOperatorReward(
             paranetId,
@@ -776,10 +817,11 @@ export default class ParanetOperationsManager {
         const blockchain = this.inputService.getBlockchain(options);
         this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
-        const { contract, tokenId } = resolveUAL(paranetUAL);
-        const paranetId = ethers.keccak256(
-            ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
-        );
+        const { contract, kcTokenId, kaTokenId } = resolveUAL(paranetUAL);
+        if (!kaTokenId) {
+            throw new Error('Invalid paranet UAL! Knowledge asset token id is required!');
+        }
+        const paranetId = getParanetId(paranetUAL);
 
         const updatingKnowledgeAssetStates =
             await this.blockchainService.getUpdatingKnowledgeAssetStates(
@@ -790,7 +832,8 @@ export default class ParanetOperationsManager {
             const receipt = await this.blockchainService.updateClaimableRewards(
                 {
                     contract,
-                    tokenId,
+                    kcTokenId,
+                    kaTokenId,
                     start: 0,
                     end: updatingKnowledgeAssetStates.length,
                 },
@@ -830,10 +873,7 @@ export default class ParanetOperationsManager {
             blockchain,
         );
 
-        const { contract, tokenId } = resolveUAL(paranetUAL);
-        const paranetId = ethers.keccak256(
-            ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
-        );
+        const paranetId = getParanetId(paranetUAL);
 
         const isParanetKnowledgeMiner = await this.blockchainService.isParanetKnowledgeMiner(
             roleAddress,
@@ -866,10 +906,7 @@ export default class ParanetOperationsManager {
             blockchain,
         );
 
-        const { contract, tokenId } = resolveUAL(paranetUAL);
-        const paranetId = ethers.keccak256(
-            ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
-        );
+        const paranetId = getParanetId(paranetUAL);
 
         const isParanetOperator = await this.blockchainService.isParanetOperator(
             roleAddress,
@@ -902,10 +939,7 @@ export default class ParanetOperationsManager {
             blockchain,
         );
 
-        const { contract, tokenId } = resolveUAL(paranetUAL);
-        const paranetId = ethers.keccak256(
-            ethers.solidityPacked(['address', 'uint256'], [contract, tokenId]),
-        );
+        const paranetId = getParanetId(paranetUAL);
 
         const isProposalVoter = await this.blockchainService.isParanetProposalVoter(
             roleAddress,

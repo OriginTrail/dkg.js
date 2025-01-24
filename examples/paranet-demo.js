@@ -79,6 +79,8 @@ function divider() {
 
     divider();
 
+    // Paranet UAL is a Knowledge Asset UAL (combination of Knowledge Collection UAL and Knowledge Asset token id)
+    const paranet_ual = `${paranetCollectionResult.UAL}/1`;
     const paranetOptions = {
         paranetName: 'FirstParanet',
         paranetDescription: 'First ever paranet on DKG!',
@@ -89,16 +91,13 @@ function divider() {
         paranetMinersAccessPolicy: PARANET_MINERS_ACCESS_POLICY.OPEN,
     };
 
-    const paranetRegistered = await DkgClient.paranet.create(
-        paranetCollectionResult.UAL,
-        paranetOptions,
-    );
+    const paranetRegistered = await DkgClient.paranet.create(paranet_ual, paranetOptions);
     console.log('======================== PARANET REGISTERED');
     console.log(paranetRegistered);
     divider();
 
     const paranetDeployed = await DkgClient.paranet.deployIncentivesContract(
-        paranetCollectionResult.UAL,
+        paranet_ual,
         INCENTIVE_POOL_TYPE,
         paranetOptions,
     );
@@ -134,7 +133,7 @@ function divider() {
 
     const submitServiceToParanetResult = await DkgClient.asset.submitToParanet(
         createServiceKCResult.UAL,
-        paranetCollectionResult.UAL,
+        paranet_ual,
     );
 
     const paranetServiceResult = await DkgClient.paranet.createService(createServiceKCResult.UAL, {
@@ -147,7 +146,7 @@ function divider() {
     console.log(paranetServiceResult);
     divider();
 
-    const addServiceToParanet = await DkgClient.paranet.addServices(paranetCollectionResult.UAL, [
+    const addServiceToParanet = await DkgClient.paranet.addServices(paranet_ual, [
         createServiceKCResult.UAL,
     ]);
     console.log('======================== SERVICE ADDED TO PARANET');
@@ -185,7 +184,7 @@ function divider() {
 
     const submitToParanetResult = await DkgClient.asset.submitToParanet(
         createCollectionResult.UAL,
-        paranetCollectionResult.UAL,
+        paranet_ual,
     );
     console.log('======================== KNOWLEDGE COLLECTION ADDED TO PARANET');
     console.log(submitToParanetResult);
@@ -221,7 +220,7 @@ function divider() {
 
     const submitToParanetResult2 = await DkgClient.asset.submitToParanet(
         createSecondCollectionResult.UAL,
-        paranetCollectionResult.UAL,
+        paranet_ual,
     );
     console.log('======================== SECOND KNOWLEDGE COLLECTION ADDED TO PARANET');
     console.log(submitToParanetResult2);
@@ -229,24 +228,24 @@ function divider() {
 
     console.log(
         '======================== IS MINER : ',
-        await DkgClient.paranet.isKnowledgeMiner(paranetCollectionResult.UAL, INCENTIVE_POOL_TYPE, {
+        await DkgClient.paranet.isKnowledgeMiner(paranet_ual, INCENTIVE_POOL_TYPE, {
             roleAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
         }),
     );
     console.log(
         '======================== IS OPERATOR : ',
-        await DkgClient.paranet.isParanetOperator(paranetCollectionResult.UAL, INCENTIVE_POOL_TYPE),
+        await DkgClient.paranet.isParanetOperator(paranet_ual, INCENTIVE_POOL_TYPE),
     );
     console.log(
         '======================== IS VOTER : ',
-        await DkgClient.paranet.isProposalVoter(paranetCollectionResult.UAL, INCENTIVE_POOL_TYPE, {
+        await DkgClient.paranet.isProposalVoter(paranet_ual, INCENTIVE_POOL_TYPE, {
             roleAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
         }),
     );
     divider();
 
     let claimable = await DkgClient.paranet.getClaimableMinerReward(
-        paranetCollectionResult.UAL,
+        paranet_ual,
         INCENTIVE_POOL_TYPE,
     );
     console.log('======================== KC MINER REWARD TO CLAIM');
@@ -254,7 +253,7 @@ function divider() {
     divider();
 
     claimable = await DkgClient.paranet.getClaimableOperatorReward(
-        paranetCollectionResult.UAL,
+        paranet_ual,
         INCENTIVE_POOL_TYPE,
     );
     console.log('======================== OPERATOR REWARD TO CLAIM');
@@ -262,7 +261,7 @@ function divider() {
     divider();
 
     // let claimedResult = await DkgClient.paranet.claimMinerReward(
-    //     paranetCollectionResult.UAL,
+    //     paranet_ual,
     //     INCENTIVE_POOL_TYPE,
     // );
     // console.log('======================== KC MINER REWARD CLAIMED');
@@ -270,7 +269,7 @@ function divider() {
     // divider();
 
     // claimedResult = await DkgClient.paranet.claimOperatorReward(
-    //     paranetCollectionResult.UAL,
+    //     paranet_ual,
     //     INCENTIVE_POOL_TYPE,
     // );
     // console.log('======================== OPERATOR REWARD CLAIMED');
@@ -290,7 +289,7 @@ function divider() {
     `;
 
     let queryResult = await DkgClient.graph.query(queryWhereDenver, 'SELECT', {
-        paranetUAL: paranetCollectionResult.UAL,
+        paranetUAL: paranet_ual,
     });
     console.log('======================== QUERY PARANET REPO RESULT');
     console.log(queryResult.data);
@@ -304,7 +303,7 @@ function divider() {
           ?s schema:name ?name1 .
           ?s schema:population ?population1 .
 
-          SERVICE <${paranetCollectionResult.UAL}> {
+          SERVICE <${paranet_ual}> {
             ?s2 schema:state "Colorado" .
             ?s2 schema:name "Denver" .
             ?s2 schema:state ?state2 .
@@ -316,7 +315,7 @@ function divider() {
     `;
 
     queryResult = await DkgClient.graph.query(federatedQuery, 'SELECT', {
-        graphLocation: paranetCollectionResult.UAL,
+        graphLocation: paranet_ual,
     });
     console.log('======================== FEDERATED QUERY RESULT');
     console.log(queryResult.data);
