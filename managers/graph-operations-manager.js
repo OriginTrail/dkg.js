@@ -39,7 +39,10 @@ export default class GraphOperationsManager {
     async query(queryString, queryType, options = {}) {
         const { endpoint, port, maxNumberOfRetries, frequency, authToken, paranetUAL, repository } =
             this.inputService.getQueryArguments(options);
-
+        if (paranetUAL) {
+            console.log('Paranets feature is currently unavailable in version 8.0.0, coming soon!');
+            return;
+        }
         this.validationService.validateGraphQuery(
             queryString,
             queryType,
@@ -104,7 +107,10 @@ export default class GraphOperationsManager {
             authToken,
             paranetUAL,
         } = this.inputService.getAssetLocalStoreArguments(options);
-
+        if (paranetUAL) {
+            console.log('Paranets feature is currently unavailable in version 8.0.0, coming soon!');
+            return;
+        }
         this.validationService.validateAssetCreate(
             content,
             blockchain,

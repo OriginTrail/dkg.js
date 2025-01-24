@@ -890,6 +890,8 @@ export default class AssetOperationsManager {
      * @returns {Object} An object containing the UAL and operation status.
      */
     async submitToParanet(UAL, paranetUAL, options = {}) {
+        console.log('Paranets feature is currently unavailable in version 8.0.0, coming soon!');
+        return;
         const blockchain = this.inputService.getBlockchain(options);
 
         this.validationService.validateSubmitToParanet(UAL, paranetUAL, blockchain);
@@ -1066,6 +1068,10 @@ export default class AssetOperationsManager {
             subjectUAL,
         } = this.inputService.getAssetGetArguments(options);
 
+        if (paranetUAL) {
+            console.log('Paranets feature is currently unavailable in version 8.0.0, coming soon!');
+            return;
+        }
         this.validationService.validateAssetGet(
             UAL,
             blockchain,
