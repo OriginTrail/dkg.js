@@ -179,11 +179,11 @@ export default class HttpService {
         }
     }
 
-    async query(endpoint, port, authToken, query, type, paranetUAL, repository) {
+    async query(endpoint, port, authToken, query, type, paranetUAL, repository, nodeApiVersion) {
         try {
             const response = await axios({
                 method: 'post',
-                url: `${this.getBaseUrl(endpoint, port)}/query`,
+                url: `${this.getBaseUrl(endpoint, port, nodeApiVersion)}/query`,
                 data: { query, type, repository, paranetUAL },
                 headers: this.prepareRequestConfig(authToken),
             });
@@ -316,7 +316,7 @@ export default class HttpService {
         return {};
     }
 
-    getBaseUrl(endpoint, port) {
-        return `${endpoint}:${port}${this.apiVersion}`;
+    getBaseUrl(endpoint, port, apiVersion = null) {
+        return `${endpoint}:${port}${apiVersion ?? this.apiVersion}`;
     }
 }
