@@ -43,10 +43,6 @@ export default class ValidationService {
         }
     }
 
-    validateIsValidUAL(blockchain) {
-        this.validateBlockchain(blockchain);
-    }
-
     validateSetAllowance(blockchain) {
         this.validateBlockchain(blockchain);
     }

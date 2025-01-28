@@ -94,37 +94,37 @@ export default class HttpService {
         }
     }
 
-    async update(
-        endpoint,
-        port,
-        authToken,
-        assertionId,
-        assertion,
-        blockchain,
-        contract,
-        tokenId,
-        hashFunctionId,
-    ) {
-        try {
-            const response = await axios({
-                method: 'post',
-                url: `${this.getBaseUrl(endpoint, port)}/update`,
-                data: {
-                    assertionId,
-                    assertion,
-                    blockchain,
-                    contract,
-                    tokenId,
-                    hashFunctionId,
-                },
-                headers: this.prepareRequestConfig(authToken),
-            });
+    // async update(
+    //     endpoint,
+    //     port,
+    //     authToken,
+    //     assertionId,
+    //     assertion,
+    //     blockchain,
+    //     contract,
+    //     tokenId,
+    //     hashFunctionId,
+    // ) {
+    //     try {
+    //         const response = await axios({
+    //             method: 'post',
+    //             url: `${this.getBaseUrl(endpoint, port)}/update`,
+    //             data: {
+    //                 assertionId,
+    //                 assertion,
+    //                 blockchain,
+    //                 contract,
+    //                 tokenId,
+    //                 hashFunctionId,
+    //             },
+    //             headers: this.prepareRequestConfig(authToken),
+    //         });
 
-            return response.data.operationId;
-        } catch (error) {
-            throw Error(`Unable to update: ${error.message}`);
-        }
-    }
+    //         return response.data.operationId;
+    //     } catch (error) {
+    //         throw Error(`Unable to update: ${error.message}`);
+    //     }
+    // }
 
     async query(endpoint, port, authToken, query, type, paranetUAL, repository) {
         try {
