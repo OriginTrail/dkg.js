@@ -7,7 +7,6 @@ import {
     OPERATIONS,
     GET_OUTPUT_FORMATS,
     QUERY_TYPES,
-    BID_SUGGESTION_RANGE_ENUM,
     PARANET_NODES_ACCESS_POLICY,
     PARANET_MINERS_ACCESS_POLICY,
 } from '../constants.js';
@@ -613,14 +612,6 @@ export default class ValidationService {
     validateNewOwner(newOwner) {
         this.validateRequiredParam('newOwner', newOwner);
         this.validateParamType('newOwner', newOwner, 'string');
-    }
-
-    validateBidSuggestionRange(bidSuggestionRange) {
-        if (!BID_SUGGESTION_RANGE_ENUM.includes(bidSuggestionRange)) {
-            throw Error(
-                `Invalid bidSuggestionRange parametar: supported parametars ${BID_SUGGESTION_RANGE_ENUM}`,
-            );
-        }
     }
 
     validateParanetName(paranetName) {

@@ -20,8 +20,6 @@ export const PRIVATE_HASH_SUBJECT_PREFIX = 'https://ontology.origintrail.io/dkg/
 
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
-export const LABEL_PREFIX = '<http://example.org/label>';
-
 export const BLOCKCHAIN_IDS = {
     HARDHAT_1: 'hardhat1:31337',
     HARDHAT_2: 'hardhat2:31337',
@@ -124,8 +122,6 @@ export const BLOCKCHAINS_RENAME_PAIRS = {
     'otp::mainnet': 'otp:2043',
 };
 
-export const MAX_BLOCKCHAIN_CALL_RETRIES = 3;
-
 export const TRANSACTION_RETRY_ERRORS = [
     'transaction was not mined',
     'already known',
@@ -159,15 +155,6 @@ export const OPERATION_STATUSES = {
     FAILED: 'FAILED',
 };
 
-export const OPERATION_DELAYS = {
-    FINALITY: 5000,
-};
-
-export const ASSERTION_STATES = {
-    LATEST: 'latest',
-    LATEST_FINALIZED: 'latest_finalized',
-};
-
 export const CONTENT_TYPES = {
     PRIVATE: 'private',
     PUBLIC: 'public',
@@ -177,12 +164,6 @@ export const CONTENT_TYPES = {
 export const GET_OUTPUT_FORMATS = {
     N_QUADS: 'n-quads',
     JSON_LD: 'json-ld',
-};
-
-export const STORE_TYPES = {
-    TRIPLE: 'TRIPLE',
-    TRIPLE_PARANET: 'TRIPLE_PARANET',
-    PENDING: 'PENDING',
 };
 
 export const GRAPH_LOCATIONS = {
@@ -212,8 +193,6 @@ export const OPERATIONS_STEP_STATUS = {
     CREATE_ASSET_COMPLETED: 'CREATE_ASSET_COMPLETED',
     NETWORK_PUBLISH_COMPLETED: 'NETWORK_PUBLISH_COMPLETED',
 };
-
-export const DEFAULT_GET_LOCAL_STORE_RESULT_FREQUENCY = 0.5;
 
 export const DEFAULT_PROXIMITY_SCORE_FUNCTIONS_PAIR_IDS = {
     development: { 'hardhat1:31337': 2, 'hardhat2:31337': 2, 'otp:2043': 2 },
@@ -277,17 +256,6 @@ export const DEFAULT_GAS_PRICE = {
 export const DEFAULT_GAS_PRICE_WEI = {
     GNOSIS: '6000000000',
 };
-
-export const LOW_BID_SUGGESTION = 'low';
-export const MED_BID_SUGGESTION = 'med';
-export const HIGH_BID_SUGGESTION = 'high';
-export const ALL_BID_SUGGESTION = 'all';
-export const BID_SUGGESTION_RANGE_ENUM = [
-    LOW_BID_SUGGESTION,
-    MED_BID_SUGGESTION,
-    HIGH_BID_SUGGESTION,
-    ALL_BID_SUGGESTION,
-];
 
 export const PARANET_KNOWLEDGE_ASSET_ACCESS_POLICY = {
     OPEN: 0,

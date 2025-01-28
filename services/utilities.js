@@ -1,5 +1,4 @@
 import jsonld from 'jsonld';
-import { GRAPH_LOCATIONS, GRAPH_STATES, OT_NODE_TRIPLE_STORE_REPOSITORIES } from '../constants.js';
 
 export function isEmptyObject(obj) {
     return Object.keys(obj).length === 0 && obj.constructor === Object;
@@ -32,21 +31,6 @@ export function resolveUAL(ual) {
         contract: args[1],
         tokenId: parseInt(args[2], 10),
     };
-}
-
-export function deriveRepository(graphLocation, graphState) {
-    switch (graphLocation + graphState) {
-        case GRAPH_LOCATIONS.PUBLIC_KG + GRAPH_STATES.CURRENT:
-            return OT_NODE_TRIPLE_STORE_REPOSITORIES.PUBLIC_CURRENT;
-        case GRAPH_LOCATIONS.PUBLIC_KG + GRAPH_STATES.HISTORICAL:
-            return OT_NODE_TRIPLE_STORE_REPOSITORIES.PUBLIC_HISTORY;
-        case GRAPH_LOCATIONS.LOCAL_KG + GRAPH_STATES.CURRENT:
-            return OT_NODE_TRIPLE_STORE_REPOSITORIES.PRIVATE_CURRENT;
-        case GRAPH_LOCATIONS.LOCAL_KG + GRAPH_STATES.HISTORICAL:
-            return OT_NODE_TRIPLE_STORE_REPOSITORIES.PRIVATE_HISTORY;
-        default:
-            return graphLocation;
-    }
 }
 
 export async function sleepForMilliseconds(milliseconds) {
