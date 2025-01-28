@@ -2,22 +2,12 @@ import { kaTools, kcTools } from 'assertion-tools';
 import { ethers } from 'ethers';
 import {
     OPERATIONS,
-    GET_OUTPUT_FORMATS,
     CHUNK_BYTE_SIZE,
     OPERATION_STATUSES,
-    OPERATION_DELAYS,
     PRIVATE_RESOURCE_PREDICATE,
     PRIVATE_HASH_SUBJECT_PREFIX,
-    PRIVATE_ASSERTION_PREDICATE,
 } from '../constants.js';
-import {
-    getOperationStatusObject,
-    resolveUAL,
-    deriveUAL,
-    sleepForMilliseconds,
-    toNQuads,
-    toJSONLD,
-} from '../services/utilities.js';
+import { getOperationStatusObject, deriveUAL } from '../services/utilities.js';
 import emptyHooks from '../util/empty-hooks.js';
 
 export default class GraphOperationsManager {
@@ -70,158 +60,5 @@ export default class GraphOperationsManager {
             frequency,
             operationId,
         );
-    }
-
-    generatePrivateRepresentation(privateSubject) {
-        return `${`<${PRIVATE_HASH_SUBJECT_PREFIX}${ethers.solidityPackedSha256(
-            ['string'],
-            [privateSubject.slice(1, -1)],
-        )}>`} <${PRIVATE_RESOURCE_PREDICATE}> <${kaTools.generateNamedNode()}> .`;
-    }
-
-    /**
-     * Creates a new asset and stores it locally on the node.
-     * @async
-     * @param {Object} content - The content of the asset to be created, contains public, private or both keys.
-     * @param {Object} [options={}] - Additional options for asset creation.
-     * @param {Object} [stepHooks=emptyHooks] - Hooks to execute during asset creation.
-     * @returns {Object} Object containing UAL, publicAssertionId and operation status.
-     */
-    async localStore(content, options = {}, stepHooks = emptyHooks) {
-        this.validationService.validateJsonldOrNquads(content);
-
-        const {
-            blockchain,
-            endpoint,
-            port,
-            maxNumberOfRetries,
-            frequency,
-            epochsNum,
-            hashFunctionId,
-            scoreFunctionId,
-            immutable,
-            tokenAmount,
-            authToken,
-            paranetUAL,
-        } = this.inputService.getAssetLocalStoreArguments(options);
-
-        this.validationService.validateAssetCreate(
-            content,
-            blockchain,
-            endpoint,
-            port,
-            maxNumberOfRetries,
-            frequency,
-            epochsNum,
-            hashFunctionId,
-            scoreFunctionId,
-            immutable,
-            tokenAmount,
-            authToken,
-            paranetUAL,
-        );
-
-        let dataset;
-
-        if (typeof content === 'string') {
-            dataset = content
-                .split('\n')
-                .map((line) => line.trimStart().trimEnd())
-                .filter((line) => line.trim() !== '');
-        } else {
-            dataset = await kcTools.formatDataset(content);
-        }
-
-        const numberOfChunks = kcTools.calculateNumberOfChunks(dataset, CHUNK_BYTE_SIZE);
-
-        const datasetSize = numberOfChunks * CHUNK_BYTE_SIZE;
-
-        this.validationService.validateAssertionSizeInBytes(datasetSize);
-        const datasetRoot = kcTools.calculateMerkleRoot(dataset);
-
-        const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
-            'ContentAssetStorage',
-            blockchain,
-        );
-
-        const localStoreOperationId = await this.nodeApiService.localStore(
-            endpoint,
-            port,
-            authToken,
-            dataset,
-            null, // full path to cached assertions
-        );
-
-        const localStoreOperationResult = await this.nodeApiService.getOperationResult(
-            endpoint,
-            port,
-            authToken,
-            OPERATIONS.LOCAL_STORE,
-            maxNumberOfRetries,
-            frequency,
-            localStoreOperationId,
-        );
-
-        if (localStoreOperationResult.status !== OPERATION_STATUSES.COMPLETED) {
-            return {
-                datasetRoot,
-                operation: {
-                    publish: getOperationStatusObject(
-                        localStoreOperationResult,
-                        localStoreOperationId,
-                    ),
-                },
-            };
-        }
-
-        const estimatedPublishingCost =
-            tokenAmount ??
-            (await this.blockchainService.getStakeWeightedAverageAsk()) * epochsNum * datasetSize;
-
-        const { tokenId, receipt: mintKnowledgeAssetReceipt } =
-            await this.blockchainService.createAsset(
-                {
-                    localStoreOperationId,
-                    datasetRoot,
-                    assertionSize: datasetSize,
-                    triplesNumber: kaTools.getAssertionTriplesNumber(dataset), // todo
-                    chunksNumber: numberOfChunks,
-                    epochsNum,
-                    tokenAmount: estimatedPublishingCost,
-                    scoreFunctionId: scoreFunctionId ?? 1,
-                    immutable_: immutable,
-                    // payer: payer,
-                },
-                null,
-                null,
-                blockchain,
-                stepHooks,
-            );
-
-        const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, tokenId);
-        // let fullPathToCachedAssertion = null;
-        // if (assertionCachedLocally) {
-        //     const absolutePath = path.resolve('.');
-        //     const directory = 'local-store-cache';
-        //     await mkdir(directory, { recursive: true });
-        //     fullPathToCachedAssertion = path.join(
-        //         absolutePath,
-        //         directory,
-        //         assertions[0].assertionId,
-        //     );
-        //     await writeFile(fullPathToCachedAssertion, JSON.stringify(assertions));
-        // }
-
-        return {
-            UAL,
-            datasetRoot,
-            operation: {
-                mintKnowledgeAsset: mintKnowledgeAssetReceipt,
-                localStore: getOperationStatusObject(
-                    localStoreOperationResult,
-                    localStoreOperationId,
-                ),
-            },
-        };
     }
 }

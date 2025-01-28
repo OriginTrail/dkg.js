@@ -128,6 +128,7 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
         return receipt;
     }
 
+    // TODO: Fix this
     async transferAsset(tokenId, to, blockchain) {
         return this.executeContractFunction(
             'ContentAssetStorage',

@@ -31,23 +31,6 @@ export default class HttpService {
         }
     }
 
-    async localStore(endpoint, port, authToken, assertions, fullPathToCachedAssertion) {
-        try {
-            const response = await axios({
-                method: 'post',
-                url: `${this.getBaseUrl(endpoint, port)}/local-store`,
-                data: fullPathToCachedAssertion
-                    ? { filePath: fullPathToCachedAssertion }
-                    : assertions,
-                headers: this.prepareRequestConfig(authToken),
-            });
-
-            return response.data.operationId;
-        } catch (error) {
-            throw Error(`Unable to store locally: ${error.message}`);
-        }
-    }
-
     async publish(
         endpoint,
         port,
@@ -68,42 +51,6 @@ export default class HttpService {
                     blockchain,
                     hashFunctionId,
                     minimumNumberOfNodeReplications,
-                },
-                headers: this.prepareRequestConfig(authToken),
-            });
-
-            return response.data.operationId;
-        } catch (error) {
-            throw Error(`Unable to publish: ${error.message}`);
-        }
-    }
-
-    async publishParanet(
-        endpoint,
-        port,
-        authToken,
-        assertions,
-        blockchain,
-        contract,
-        tokenId,
-        hashFunctionId,
-        paranetUAL,
-        sender,
-        txHash,
-    ) {
-        try {
-            const response = await axios({
-                method: 'post',
-                url: `${this.getBaseUrl(endpoint, port)}/publish-paranet`,
-                data: {
-                    assertions,
-                    blockchain,
-                    contract,
-                    tokenId,
-                    hashFunctionId,
-                    paranetUAL,
-                    sender,
-                    txHash,
                 },
                 headers: this.prepareRequestConfig(authToken),
             });

@@ -1,9 +1,5 @@
 import jsonld from 'jsonld';
-import {
-    GRAPH_LOCATIONS,
-    GRAPH_STATES,
-    OT_NODE_TRIPLE_STORE_REPOSITORIES,
-} from '../constants.js';
+import { GRAPH_LOCATIONS, GRAPH_STATES, OT_NODE_TRIPLE_STORE_REPOSITORIES } from '../constants.js';
 
 export function isEmptyObject(obj) {
     return Object.keys(obj).length === 0 && obj.constructor === Object;
@@ -21,6 +17,7 @@ export function deriveUAL(blockchain, contract, tokenId) {
     return `did:dkg:${blockchain.toLowerCase()}/${contract.toLowerCase()}/${tokenId}`;
 }
 
+// TODO: Fix this to work with KC & KA UAL
 export function resolveUAL(ual) {
     const segments = ual.split(':');
     const argsString = segments.length === 3 ? segments[2] : `${segments[2]}:${segments[3]}`;
@@ -87,7 +84,7 @@ export async function toNQuads(content, inputFormat) {
     return canonized.split('\n').filter((x) => x !== '');
 }
 
-export async function  toJSONLD(nquads) {
+export async function toJSONLD(nquads) {
     return jsonld.fromRDF(nquads, {
         algorithm: 'URDNA2015',
         format: 'application/n-quads',
