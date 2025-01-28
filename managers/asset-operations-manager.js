@@ -10,7 +10,6 @@ import {
 import {
     OPERATIONS,
     OPERATION_STATUSES,
-    ZERO_ADDRESS,
     CHUNK_BYTE_SIZE,
     PRIVATE_RESOURCE_PREDICATE,
     PRIVATE_HASH_SUBJECT_PREFIX,
@@ -294,7 +293,7 @@ export default class AssetOperationsManager {
 
             // Create a map of public subject -> index for quick lookup
             const publicSubjectMap = new Map();
-            for (let i = 0; i < publicTriplesGrouped.length; i++) {
+            for (let i = 0; i < publicTriplesGrouped.length; i += 1) {
                 const [publicSubject] = publicTriplesGrouped[i][0].split(' ');
                 publicSubjectMap.set(publicSubject, i);
             }
@@ -399,18 +398,20 @@ export default class AssetOperationsManager {
                         signature,
                     );
 
-                    let keyIsOperationalWallet;
-                    keyIsOperationalWallet = await this.blockchainService.keyIsOperationalWallet(
-                        blockchain,
-                        signature.identityId,
-                        signerAddress,
-                    );
+                    const keyIsOperationalWallet =
+                        await this.blockchainService.keyIsOperationalWallet(
+                            blockchain,
+                            signature.identityId,
+                            signerAddress,
+                        );
                     if (keyIsOperationalWallet) {
                         identityIds.push(signature.identityId);
                         r.push(signature.r);
                         vs.push(signature.vs);
                     }
-                } catch {}
+                } catch {
+                    // If error happened continue
+                }
             }),
         );
 
@@ -431,10 +432,7 @@ export default class AssetOperationsManager {
                 BigInt(1024) /
                 BigInt(1e18);
         }
-        let knowledgeCollectionId;
-        let mintKnowledgeAssetReceipt;
-
-        ({ knowledgeCollectionId, receipt: mintKnowledgeAssetReceipt } =
+        const { knowledgeCollectionId, receipt: mintKnowledgeAssetReceipt } =
             await this.blockchainService.createKnowledgeCollection(
                 {
                     publishOperationId,
@@ -456,7 +454,7 @@ export default class AssetOperationsManager {
                 null,
                 blockchain,
                 stepHooks,
-            ));
+            );
 
         const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, knowledgeCollectionId);
 
@@ -550,42 +548,43 @@ export default class AssetOperationsManager {
      */
 
     // TOOO: Update for v8
-    async extendStoringPeriod(UAL, epochsNumber, options = {}) {
-        const blockchain = this.inputService.getBlockchain(options);
-        const tokenAmount = this.inputService.getTokenAmount(options);
+    // async extendStoringPeriod(UAL, epochsNumber, options = {}) {
+    //     const blockchain = this.inputService.getBlockchain(options);
+    //     const tokenAmount = this.inputService.getTokenAmount(options);
 
-        this.validationService.validateExtendAssetStoringPeriod(
-            UAL,
-            epochsNumber,
-            tokenAmount,
-            blockchain,
-        );
+    //     this.validationService.validateExtendAssetStoringPeriod(
+    //         UAL,
+    //         epochsNumber,
+    //         tokenAmount,
+    //         blockchain,
+    //     );
 
-        const { tokenId } = resolveUAL(UAL);
+    //     const { tokenId } = resolveUAL(UAL);
+    //     // const datasetSize = await this.blockchainService.getDatasetSize()
 
-        let tokenAmountInWei;
+    //     let tokenAmountInWei;
 
-        if (tokenAmount != null) {
-            tokenAmountInWei = tokenAmount;
-        } else {
-            tokenAmountInWei =
-                (await this.blockchainService.getStakeWeightedAverageAsk()) *
-                epochsNumber *
-                datasetSize; // need to get dataset size somewhere
-        }
+    //     if (tokenAmount != null) {
+    //         tokenAmountInWei = tokenAmount;
+    //     } else {
+    //         tokenAmountInWei =
+    //             (await this.blockchainService.getStakeWeightedAverageAsk()) *
+    //             epochsNumber *
+    //             datasetSize; // need to get dataset size somewhere
+    //     }
 
-        const receipt = await this.blockchainService.extendAssetStoringPeriod(
-            tokenId,
-            epochsNumber,
-            tokenAmountInWei,
-            blockchain,
-        );
+    //     const receipt = await this.blockchainService.extendAssetStoringPeriod(
+    //         tokenId,
+    //         epochsNumber,
+    //         tokenAmountInWei,
+    //         blockchain,
+    //     );
 
-        return {
-            UAL,
-            operation: receipt,
-        };
-    }
+    //     return {
+    //         UAL,
+    //         operation: receipt,
+    //     };
+    // }
 
     /**
      * Add tokens for an asset on the specified blockchain to a ongoing publishing operation.
@@ -596,63 +595,63 @@ export default class AssetOperationsManager {
      */
 
     // TODO: Update for v8
-    async addTokens(UAL, options = {}) {
-        const blockchain = this.inputService.getBlockchain(options);
-        const tokenAmount = this.inputService.getTokenAmount(options);
+    // async addTokens(UAL, options = {}) {
+    //     const blockchain = this.inputService.getBlockchain(options);
+    //     const tokenAmount = this.inputService.getTokenAmount(options);
 
-        this.validationService.validateAddTokens(UAL, tokenAmount, blockchain);
+    //     this.validationService.validateAddTokens(UAL, tokenAmount, blockchain);
 
-        const { tokenId } = resolveUAL(UAL);
+    //     const { tokenId } = resolveUAL(UAL);
 
-        let tokenAmountInWei;
+    //     let tokenAmountInWei;
 
-        if (tokenAmount != null) {
-            tokenAmountInWei = tokenAmount;
-        } else {
-            const endpoint = this.inputService.getEndpoint(options);
-            const port = this.inputService.getPort(options);
-            const authToken = this.inputService.getAuthToken(options);
-            const hashFunctionId = this.inputService.getHashFunctionId(options);
+    //     if (tokenAmount != null) {
+    //         tokenAmountInWei = tokenAmount;
+    //     } else {
+    //         const endpoint = this.inputService.getEndpoint(options);
+    //         const port = this.inputService.getPort(options);
+    //         const authToken = this.inputService.getAuthToken(options);
+    //         const hashFunctionId = this.inputService.getHashFunctionId(options);
 
-            const latestFinalizedState = await this.blockchainService.getLatestAssertionId(
-                tokenId,
-                blockchain,
-            );
+    //         const latestFinalizedState = await this.blockchainService.getLatestAssertionId(
+    //             tokenId,
+    //             blockchain,
+    //         );
 
-            const latestFinalizedStateSize = await this.blockchainService.getAssertionSize(
-                latestFinalizedState,
-                blockchain,
-            );
+    //         const latestFinalizedStateSize = await this.blockchainService.getAssertionSize(
+    //             latestFinalizedState,
+    //             blockchain,
+    //         );
 
-            tokenAmountInWei = await this._getUpdateBidSuggestion(
-                UAL,
-                blockchain,
-                endpoint,
-                port,
-                authToken,
-                latestFinalizedState,
-                latestFinalizedStateSize,
-                hashFunctionId,
-            );
+    //         tokenAmountInWei = await this._getUpdateBidSuggestion(
+    //             UAL,
+    //             blockchain,
+    //             endpoint,
+    //             port,
+    //             authToken,
+    //             latestFinalizedState,
+    //             latestFinalizedStateSize,
+    //             hashFunctionId,
+    //         );
 
-            if (tokenAmountInWei <= 0) {
-                throw new Error(
-                    `Token amount is bigger than default suggested amount, please specify exact tokenAmount if you still want to add more tokens!`,
-                );
-            }
-        }
+    //         if (tokenAmountInWei <= 0) {
+    //             throw new Error(
+    //                 `Token amount is bigger than default suggested amount, please specify exact tokenAmount if you still want to add more tokens!`,
+    //             );
+    //         }
+    //     }
 
-        const receipt = await this.blockchainService.addTokens(
-            tokenId,
-            tokenAmountInWei,
-            blockchain,
-        );
+    //     const receipt = await this.blockchainService.addTokens(
+    //         tokenId,
+    //         tokenAmountInWei,
+    //         blockchain,
+    //     );
 
-        return {
-            UAL,
-            operation: receipt,
-        };
-    }
+    //     return {
+    //         UAL,
+    //         operation: receipt,
+    //     };
+    // }
 
     /**
      * Add knowledge asset to a paranet.
@@ -779,7 +778,7 @@ export default class AssetOperationsManager {
             };
         }
         const { metadata } = getOperationResult.data;
-        let assertion = getOperationResult.data.assertion;
+        const { assertion } = getOperationResult.data;
 
         if (!assertion) {
             if (getOperationResult.status !== 'FAILED') {

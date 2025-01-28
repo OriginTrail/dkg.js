@@ -1,5 +1,4 @@
 import { kaTools, kcTools } from 'assertion-tools';
-import { LABEL_PREFIX } from '../constants.js';
 
 export default class AssertionOperationsManager {
     constructor(services) {

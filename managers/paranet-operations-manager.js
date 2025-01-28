@@ -1,6 +1,5 @@
 import { ethers } from 'ethers';
 import { resolveUAL } from '../services/utilities.js';
-import { INCENTIVE_TYPE } from '../constants.js';
 
 export default class ParanetOperationsManager {
     constructor(services) {

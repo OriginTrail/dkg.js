@@ -446,6 +446,7 @@ export default class ValidationService {
             'Content must be either a valid JSON-LD object or a N-Quads/N-Triples string.',
         );
     }
+
     validateContent(content) {
         this.validateRequiredParam('content', content);
     }
