@@ -16,20 +16,20 @@ export function deriveUAL(blockchain, contract, tokenId) {
     return `did:dkg:${blockchain.toLowerCase()}/${contract.toLowerCase()}/${tokenId}`;
 }
 
-// TODO: Fix this to work with KC & KA UAL
 export function resolveUAL(ual) {
     const segments = ual.split(':');
     const argsString = segments.length === 3 ? segments[2] : `${segments[2]}:${segments[3]}`;
     const args = argsString.split('/');
 
-    if (args.length !== 3) {
+    if (!(args.length === 3 || args.length === 4)) {
         throw new Error(`UAL doesn't have correct format: ${ual}`);
     }
 
     return {
         blockchain: args[0],
         contract: args[1],
-        tokenId: parseInt(args[2], 10),
+        knowledgeCollectionId: parseInt(args[2], 10),
+        tokenId: parseInt(args[3], 10),
     };
 }
 

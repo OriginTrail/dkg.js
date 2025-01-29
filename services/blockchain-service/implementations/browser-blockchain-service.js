@@ -119,12 +119,11 @@ export default class BrowserBlockchainService extends BlockchainServiceBase {
         return this.account;
     }
 
-    // TODO: Update this for V8
     async transferAsset(tokenId, to, blockchain) {
         return this.executeContractFunction(
-            'ContentAssetStorage',
-            'transferFrom',
-            [await this.getAccount(), to, tokenId],
+            'KnowledgeCollectionStorage',
+            'safeTransferFrom',
+            [await this.getAccount(), to, tokenId, 1, '0x'],
             blockchain,
         );
     }

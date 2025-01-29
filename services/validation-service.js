@@ -149,7 +149,7 @@ export default class ValidationService {
     }
 
     validateAssetTransfer(UAL, newOwner, blockchain) {
-        this.validateUAL(UAL);
+        this.validateKAUAL(UAL);
         this.validateNewOwner(newOwner);
         this.validateBlockchain(blockchain);
     }
@@ -412,6 +412,17 @@ export default class ValidationService {
         const argsString = segments.length === 3 ? segments[2] : `${segments[2]}:${segments[3]}`;
         const args = argsString.split('/');
         if (!(args?.length === 3 || args?.length === 4)) throw Error('Invalid UAL.');
+        return true;
+    }
+
+    validateKAUAL(ual) {
+        this.validateRequiredParam('UAL', ual);
+        this.validateParamType('UAL', ual, 'string');
+
+        const segments = ual.split(':');
+        const argsString = segments.length === 3 ? segments[2] : `${segments[2]}:${segments[3]}`;
+        const args = argsString.split('/');
+        if (args?.length !== 4) throw Error('Invalid UAL.');
         return true;
     }
 

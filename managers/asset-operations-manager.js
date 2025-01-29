@@ -498,19 +498,18 @@ export default class AssetOperationsManager {
      * @param {Object} [options={}] - Additional options for asset transfer.
      * @returns {Object} Object containing UAL, owner's address and operation status.
      */
-    // TODO: Update this for v8
     async transfer(UAL, newOwner, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
 
         this.validationService.validateAssetTransfer(UAL, newOwner, blockchain);
 
-        const { tokenId } = resolveUAL(UAL);
-        const receipt = await this.blockchainService.transferAsset(tokenId, newOwner, blockchain);
-        const owner = await this.blockchainService.getAssetOwner(tokenId, blockchain);
+        const { knowledgeCollectionId, tokenId } = resolveUAL(UAL);
+        const assetId = (knowledgeCollectionId - 1) * 1_000_000 + tokenId;
+        const receipt = await this.blockchainService.transferAsset(assetId, newOwner, blockchain);
+        // const owner = await this.blockchainService.getAssetOwner(tokenId, blockchain);
 
         return {
             UAL,
-            owner,
             operation: receipt,
         };
     }
