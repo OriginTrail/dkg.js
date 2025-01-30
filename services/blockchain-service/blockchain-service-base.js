@@ -483,30 +483,30 @@ export default class BlockchainServiceBase {
     }
 
     // TODO: Fix this
-    async burnAsset(tokenId, blockchain) {
-        return this.executeContractFunction('ContentAsset', 'burnAsset', [tokenId], blockchain);
-    }
+    // async burnAsset(tokenId, blockchain) {
+    //     return this.executeContractFunction('ContentAsset', 'burnAsset', [tokenId], blockchain);
+    // }
 
     // TODO: Fix this
-    async getAssertionSize(assertionId, blockchain) {
-        return this.callContractFunction(
-            'AssertionStorage',
-            'getAssertionSize',
-            [assertionId],
-            blockchain,
-        );
-    }
+    // async getAssertionSize(assertionId, blockchain) {
+    //     return this.callContractFunction(
+    //         'AssertionStorage',
+    //         'getAssertionSize',
+    //         [assertionId],
+    //         blockchain,
+    //     );
+    // }
 
     // Paranets operations
 
-    async registerParanet(requestData, blockchain) {
-        return this.executeContractFunction(
-            'Paranet',
-            'registerParanet',
-            Object.values(requestData),
-            blockchain,
-        );
-    }
+    // async registerParanet(requestData, blockchain) {
+    //     return this.executeContractFunction(
+    //         'Paranet',
+    //         'registerParanet',
+    //         Object.values(requestData),
+    //         blockchain,
+    //     );
+    // }
 
     // async addParanetCuratedNodes(requestData, blockchain) {
     //     return this.executeContractFunction(
