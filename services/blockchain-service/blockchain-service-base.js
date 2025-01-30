@@ -9,6 +9,8 @@ import {
     DEFAULT_GAS_PRICE,
     DEFAULT_GAS_PRICE_WEI,
     ZERO_ADDRESS,
+    INCENTIVE_TYPE,
+    NEUROWEB_INCENTIVE_TYPE_CHAINS,
 } from '../../constants.js';
 import emptyHooks from '../../util/empty-hooks.js';
 import { sleepForMilliseconds } from '../utilities.js';
@@ -875,11 +877,13 @@ export default class BlockchainServiceBase {
         );
     }
 
-    async getNeuroIncentivesPoolAddress(paranetId, incentivesPoolType, blockchain) {
+    async getNeuroIncentivesPoolAddress(paranetId, blockchain) {
         return this.getIncentivesPoolAddress(
             {
                 paranetId,
-                incentivesPoolType,
+                incentivesPoolType: NEUROWEB_INCENTIVE_TYPE_CHAINS.includes(blockchain.name)
+                    ? INCENTIVE_TYPE.NEUROWEB
+                    : INCENTIVE_TYPE.NEUROWEB_ERC20,
             },
             blockchain,
         );

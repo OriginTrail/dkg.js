@@ -117,6 +117,19 @@ export const INCENTIVE_TYPE = {
     NEUROWEB_ERC20: 'NeurowebERC20',
 };
 
+export const INCENTIVE_MULTIPLIER = {
+    Neuroweb: 10n ** 12n,
+    NeurowebERC20: 10n ** 18n,
+};
+
+export const NEUROWEB_INCENTIVE_TYPE_CHAINS = [
+    BLOCKCHAIN_IDS.NEUROWEB_DEVNET,
+    BLOCKCHAIN_IDS.NEUROWEB_TESTNET,
+    BLOCKCHAIN_IDS.NEUROWEB_MAINNET,
+    BLOCKCHAIN_IDS.HARDHAT_1,
+    BLOCKCHAIN_IDS.HARDHAT_2,
+];
+
 export const BLOCKCHAINS_RENAME_PAIRS = {
     hardhat1: 'hardhat1:31337',
     hardhat2: 'hardhat2:31337',

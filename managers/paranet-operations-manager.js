@@ -1,6 +1,10 @@
 import { ethers } from 'ethers';
 import { resolveUAL, getParanetId } from '../services/utilities.js';
-import { INCENTIVE_TYPE } from '../constants.js';
+import {
+    INCENTIVE_TYPE,
+    INCENTIVE_MULTIPLIER,
+    NEUROWEB_INCENTIVE_TYPE_CHAINS,
+} from '../constants.js';
 
 export default class ParanetOperationsManager {
     constructor(services) {
@@ -8,6 +12,11 @@ export default class ParanetOperationsManager {
         this.inputService = services.inputService;
         this.nodeApiService = services.nodeApiService;
         this.validationService = services.validationService;
+        this.incentiveType = NEUROWEB_INCENTIVE_TYPE_CHAINS.includes(
+            this.blockchainService.config.blockchain.name,
+        )
+            ? INCENTIVE_TYPE.NEUROWEB
+            : INCENTIVE_TYPE.NEUROWEB_ERC20;
     }
 
     /**
@@ -437,7 +446,6 @@ export default class ParanetOperationsManager {
      * Deploys an incentives contract for a Paranet.
      * @async
      * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
-     * @param {string} incentiveType - Type of incentives to deploy (only option 'Neuroweb').
      * @param {Object} [options={}] - Additional options for the incentives contract.
      * @param {string} options.tracToNeuroEmissionMultiplier - How much NEURO is emission per 1 TRAC.
      * @param {string} options.operatorRewardPercentage - Percentage of the emissions as a paranet operator fee.
@@ -450,7 +458,7 @@ export default class ParanetOperationsManager {
      *     incentivizationProposalVotersRewardPercentage: 10,
      * });
      */
-    async deployIncentivesContract(paranetUAL, incentiveType, options = {}) {
+    async deployIncentivesContract(paranetUAL, options = {}) {
         const {
             blockchain,
             tracToNeuroEmissionMultiplier,
@@ -465,20 +473,23 @@ export default class ParanetOperationsManager {
             operatorRewardPercentage,
             incentivizationProposalVotersRewardPercentage,
         );
-        if (Object.values(INCENTIVE_TYPE).includes(incentiveType)) {
+        if (Object.values(INCENTIVE_TYPE).includes(this.incentiveType)) {
             const { contract, kcTokenId, kaTokenId } = resolveUAL(paranetUAL);
 
             if (!kaTokenId) {
                 throw new Error('Invalid paranet UAL! Knowledge asset token id is required!');
             }
 
+            const emissionMultiplier =
+                BigInt(tracToNeuroEmissionMultiplier) * INCENTIVE_MULTIPLIER[incentiveType];
+
             const receipt = await this.blockchainService.deployNeuroIncentivesPool(
                 {
-                    isNativeReward: incentiveType === INCENTIVE_TYPE.NEUROWEB ? true : false,
+                    isNativeReward: this.incentiveType === INCENTIVE_TYPE.NEUROWEB ? true : false,
                     contract,
                     kcTokenId,
                     kaTokenId,
-                    tracToNeuroEmissionMultiplier,
+                    tracToNeuroEmissionMultiplier: emissionMultiplier,
                     operatorRewardPercentage,
                     incentivizationProposalVotersRewardPercentage,
                 },
@@ -488,11 +499,7 @@ export default class ParanetOperationsManager {
             const paranetId = getParanetId(paranetUAL);
 
             const neuroIncentivesPoolAddress =
-                await this.blockchainService.getNeuroIncentivesPoolAddress(
-                    paranetId,
-                    incentiveType,
-                    blockchain,
-                );
+                await this.blockchainService.getNeuroIncentivesPoolAddress(paranetId, blockchain);
 
             return {
                 paranetUAL,
@@ -501,7 +508,7 @@ export default class ParanetOperationsManager {
             };
         }
 
-        throw Error(`Unsupported incentive type: ${incentiveType}.`);
+        throw Error(`Unsupported incentive type: ${this.incentiveType}.`);
     }
 
     /**
@@ -614,7 +621,7 @@ export default class ParanetOperationsManager {
      * @example
      * await dkg.paranet.claimMinerReward('paranetUAL123');
      */
-    async claimMinerReward(paranetUAL, incentivesPoolType, options = {}) {
+    async claimMinerReward(paranetUAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
         this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
@@ -622,7 +629,7 @@ export default class ParanetOperationsManager {
 
         const receipt = await this.blockchainService.claimKnowledgeMinerReward(
             paranetId,
-            incentivesPoolType,
+            this.incentiveType,
             blockchain,
         );
 
@@ -666,7 +673,7 @@ export default class ParanetOperationsManager {
      * @example
      * await dkg.paranet.claimOperatorReward('paranetUAL123');
      */
-    async claimOperatorReward(paranetUAL, incentivesPoolType, options = {}) {
+    async claimOperatorReward(paranetUAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
         this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
@@ -674,7 +681,7 @@ export default class ParanetOperationsManager {
 
         const receipt = await this.blockchainService.claimOperatorReward(
             paranetId,
-            incentivesPoolType,
+            this.incentiveType,
             blockchain,
         );
 
@@ -693,7 +700,7 @@ export default class ParanetOperationsManager {
      * @example
      * const reward = await dkg.paranet.getClaimableMinerReward(paranetUAL);
      */
-    async getClaimableMinerReward(paranetUAL, incentivesPoolType, options = {}) {
+    async getClaimableMinerReward(paranetUAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
         this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
@@ -701,7 +708,7 @@ export default class ParanetOperationsManager {
 
         const claimableValue = await this.blockchainService.getClaimableKnowledgeMinerReward(
             paranetId,
-            incentivesPoolType,
+            this.incentiveType,
             blockchain,
         );
 
@@ -717,7 +724,7 @@ export default class ParanetOperationsManager {
      * @example
      * const reward = await dkg.paranet.getClaimableAllMinersReward(paranetUAL);
      */
-    async getClaimableAllMinersReward(paranetUAL, incentivesPoolType, options = {}) {
+    async getClaimableAllMinersReward(paranetUAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
         this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
@@ -725,7 +732,7 @@ export default class ParanetOperationsManager {
 
         const claimableValue = await this.blockchainService.getClaimableAllKnowledgeMinersReward(
             paranetId,
-            incentivesPoolType,
+            this.incentiveType,
             blockchain,
         );
 
@@ -741,7 +748,7 @@ export default class ParanetOperationsManager {
      * @example
      * const reward = await dkg.paranet.getClaimableVoterReward(paranetUAL);
      */
-    async getClaimableVoterReward(paranetUAL, incentivesPoolType, options = {}) {
+    async getClaimableVoterReward(paranetUAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
         this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
@@ -749,7 +756,7 @@ export default class ParanetOperationsManager {
 
         const claimableValue = await this.blockchainService.getClaimableVoterReward(
             paranetId,
-            incentivesPoolType,
+            this.incentiveType,
             blockchain,
         );
 
@@ -765,7 +772,7 @@ export default class ParanetOperationsManager {
      * @example
      * const reward = await dkg.paranet.getClaimableAllVotersReward(paranetUAL);
      */
-    async getClaimableAllVotersReward(paranetUAL, incentivesPoolType, options = {}) {
+    async getClaimableAllVotersReward(paranetUAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
         this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
@@ -773,7 +780,7 @@ export default class ParanetOperationsManager {
 
         const claimableValue = await this.blockchainService.getClaimableAllVotersReward(
             paranetId,
-            incentivesPoolType,
+            this.incentiveType,
             blockchain,
         );
 
@@ -789,7 +796,7 @@ export default class ParanetOperationsManager {
      * @example
      * const reward = await dkg.paranet.getClaimableOperatorReward(paranetUAL);
      */
-    async getClaimableOperatorReward(paranetUAL, incentivesPoolType, options = {}) {
+    async getClaimableOperatorReward(paranetUAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
         this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
@@ -797,7 +804,7 @@ export default class ParanetOperationsManager {
 
         const claimableValue = await this.blockchainService.getClaimableOperatorReward(
             paranetId,
-            incentivesPoolType,
+            this.incentiveType,
             blockchain,
         );
 
@@ -861,7 +868,7 @@ export default class ParanetOperationsManager {
      * @example
      * const isMiner = await dkg.paranet.isKnowledgeMiner('paranetUAL123', { roleAddress: '0xMinerAddress' });
      */
-    async isKnowledgeMiner(paranetUAL, incentivesPoolType, options = {}) {
+    async isKnowledgeMiner(paranetUAL, options = {}) {
         // eslint-disable-next-line prefer-const
         let { blockchain, roleAddress } = this.inputService.getParanetRoleCheckArguments(options);
         if (roleAddress == null) {
@@ -878,7 +885,7 @@ export default class ParanetOperationsManager {
         const isParanetKnowledgeMiner = await this.blockchainService.isParanetKnowledgeMiner(
             roleAddress,
             paranetId,
-            incentivesPoolType,
+            this.incentiveType,
             blockchain,
         );
 
@@ -894,7 +901,7 @@ export default class ParanetOperationsManager {
      * @example
      * const isOperator = await dkg.paranet.isParanetOperator('paranetUAL123', { roleAddress: '0xOperatorAddress' });
      */
-    async isParanetOperator(paranetUAL, incentivesPoolType, options = {}) {
+    async isParanetOperator(paranetUAL, options = {}) {
         // eslint-disable-next-line prefer-const
         let { blockchain, roleAddress } = this.inputService.getParanetRoleCheckArguments(options);
         if (roleAddress == null) {
@@ -911,7 +918,7 @@ export default class ParanetOperationsManager {
         const isParanetOperator = await this.blockchainService.isParanetOperator(
             roleAddress,
             paranetId,
-            incentivesPoolType,
+            this.incentiveType,
             blockchain,
         );
 
@@ -927,7 +934,7 @@ export default class ParanetOperationsManager {
      * @example
      * const isVoter = await dkg.paranet.isProposalVoter('paranetUAL123', { roleAddress: '0xVoterAddress' });
      */
-    async isProposalVoter(paranetUAL, incentivesPoolType, options = {}) {
+    async isProposalVoter(paranetUAL, options = {}) {
         // eslint-disable-next-line prefer-const
         let { blockchain, roleAddress } = this.inputService.getParanetRoleCheckArguments(options);
         if (roleAddress == null) {
@@ -944,7 +951,7 @@ export default class ParanetOperationsManager {
         const isProposalVoter = await this.blockchainService.isParanetProposalVoter(
             roleAddress,
             paranetId,
-            incentivesPoolType,
+            this.incentiveType,
             blockchain,
         );
 
