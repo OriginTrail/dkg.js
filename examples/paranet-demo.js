@@ -14,7 +14,6 @@ const ENVIRONMENT = ENVIRONMENTS.DEVELOPMENT;
 const OT_NODE_HOSTNAME = 'http://localhost';
 const OT_NODE_PORT = '8900';
 const PUBLIC_KEY = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
-const INCENTIVE_POOL_TYPE = INCENTIVE_TYPE.NEUROWEB;
 
 // IMPORTANT: Don't forget to add your PRIVATE_KEY to the .env file.
 const DkgClient = new DKG({
@@ -80,7 +79,7 @@ function divider() {
     divider();
 
     // Paranet UAL is a Knowledge Asset UAL (combination of Knowledge Collection UAL and Knowledge Asset token id)
-    const paranet_ual = `${paranetCollectionResult.UAL}/1`;
+    const paranetUAL = `${paranetCollectionResult.UAL}/1`;
     const paranetOptions = {
         paranetName: 'FirstParanet',
         paranetDescription: 'First ever paranet on DKG!',
@@ -91,14 +90,13 @@ function divider() {
         paranetMinersAccessPolicy: PARANET_MINERS_ACCESS_POLICY.OPEN,
     };
 
-    const paranetRegistered = await DkgClient.paranet.create(paranet_ual, paranetOptions);
+    const paranetRegistered = await DkgClient.paranet.create(paranetUAL, paranetOptions);
     console.log('======================== PARANET REGISTERED');
     console.log(paranetRegistered);
     divider();
 
     const paranetDeployed = await DkgClient.paranet.deployIncentivesContract(
-        paranet_ual,
-        INCENTIVE_POOL_TYPE,
+        paranetUAL,
         paranetOptions,
     );
     console.log('======================== PARANET INCENTIVES POOL DEPLOYED');
@@ -131,12 +129,15 @@ function divider() {
 
     const createServiceKCResult = await DkgClient.asset.create(content, { epochsNum: 2 });
 
+    // Paranet service UAL is a Knowledge Asset UAL (combination of Knowledge Collection UAL and Knowledge Asset token id)
+    const paranetServiceUal = `${createServiceKCResult.UAL}/1`;
+
     const submitServiceToParanetResult = await DkgClient.asset.submitToParanet(
-        createServiceKCResult.UAL,
-        paranet_ual,
+        paranetServiceUal,
+        paranetUAL,
     );
 
-    const paranetServiceResult = await DkgClient.paranet.createService(createServiceKCResult.UAL, {
+    const paranetServiceResult = await DkgClient.paranet.createService(paranetServiceUal, {
         paranetServiceName: 'FKPS',
         paranetServiceDescription: 'Fast Knowledge Processing Service',
         paranetServiceAddresses: [],
@@ -146,8 +147,8 @@ function divider() {
     console.log(paranetServiceResult);
     divider();
 
-    const addServiceToParanet = await DkgClient.paranet.addServices(paranet_ual, [
-        createServiceKCResult.UAL,
+    const addServiceToParanet = await DkgClient.paranet.addServices(paranetUAL, [
+        paranetServiceUal,
     ]);
     console.log('======================== SERVICE ADDED TO PARANET');
     console.log(addServiceToParanet);
@@ -184,7 +185,7 @@ function divider() {
 
     const submitToParanetResult = await DkgClient.asset.submitToParanet(
         createCollectionResult.UAL,
-        paranet_ual,
+        paranetUAL,
     );
     console.log('======================== KNOWLEDGE COLLECTION ADDED TO PARANET');
     console.log(submitToParanetResult);
@@ -220,7 +221,7 @@ function divider() {
 
     const submitToParanetResult2 = await DkgClient.asset.submitToParanet(
         createSecondCollectionResult.UAL,
-        paranet_ual,
+        paranetUAL,
     );
     console.log('======================== SECOND KNOWLEDGE COLLECTION ADDED TO PARANET');
     console.log(submitToParanetResult2);
@@ -228,49 +229,41 @@ function divider() {
 
     console.log(
         '======================== IS MINER : ',
-        await DkgClient.paranet.isKnowledgeMiner(paranet_ual, INCENTIVE_POOL_TYPE, {
+        await DkgClient.paranet.isKnowledgeMiner(paranetUAL, {
             roleAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
         }),
     );
     console.log(
         '======================== IS OPERATOR : ',
-        await DkgClient.paranet.isParanetOperator(paranet_ual, INCENTIVE_POOL_TYPE),
+        await DkgClient.paranet.isParanetOperator(paranetUAL),
     );
     console.log(
         '======================== IS VOTER : ',
-        await DkgClient.paranet.isProposalVoter(paranet_ual, INCENTIVE_POOL_TYPE, {
+        await DkgClient.paranet.isProposalVoter(paranetUAL, {
             roleAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
         }),
     );
     divider();
 
-    let claimable = await DkgClient.paranet.getClaimableMinerReward(
-        paranet_ual,
-        INCENTIVE_POOL_TYPE,
-    );
+    let claimable = await DkgClient.paranet.getClaimableMinerReward(paranetUAL);
     console.log('======================== KC MINER REWARD TO CLAIM');
     console.log(claimable);
     divider();
 
-    claimable = await DkgClient.paranet.getClaimableOperatorReward(
-        paranet_ual,
-        INCENTIVE_POOL_TYPE,
-    );
+    claimable = await DkgClient.paranet.getClaimableOperatorReward(paranetUAL);
     console.log('======================== OPERATOR REWARD TO CLAIM');
     console.log(claimable);
     divider();
 
     // let claimedResult = await DkgClient.paranet.claimMinerReward(
-    //     paranet_ual,
-    //     INCENTIVE_POOL_TYPE,
+    //     paranetUAL,
     // );
     // console.log('======================== KC MINER REWARD CLAIMED');
     // console.log(claimedResult);
     // divider();
 
     // claimedResult = await DkgClient.paranet.claimOperatorReward(
-    //     paranet_ual,
-    //     INCENTIVE_POOL_TYPE,
+    //     paranetUAL,
     // );
     // console.log('======================== OPERATOR REWARD CLAIMED');
     // console.log(claimedResult);
@@ -289,7 +282,7 @@ function divider() {
     `;
 
     let queryResult = await DkgClient.graph.query(queryWhereDenver, 'SELECT', {
-        paranetUAL: paranet_ual,
+        paranetUAL: paranetUAL,
     });
     console.log('======================== QUERY PARANET REPO RESULT');
     console.log(queryResult.data);
@@ -303,7 +296,7 @@ function divider() {
           ?s schema:name ?name1 .
           ?s schema:population ?population1 .
 
-          SERVICE <${paranet_ual}> {
+          SERVICE <${paranetUAL}> {
             ?s2 schema:state "Colorado" .
             ?s2 schema:name "Denver" .
             ?s2 schema:state ?state2 .
@@ -315,7 +308,7 @@ function divider() {
     `;
 
     queryResult = await DkgClient.graph.query(federatedQuery, 'SELECT', {
-        graphLocation: paranet_ual,
+        graphLocation: paranetUAL,
     });
     console.log('======================== FEDERATED QUERY RESULT');
     console.log(queryResult.data);
