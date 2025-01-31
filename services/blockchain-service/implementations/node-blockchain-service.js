@@ -130,9 +130,9 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
 
     async transferAsset(tokenId, to, blockchain) {
         return this.executeContractFunction(
-            'ContentAssetStorage',
-            'transferFrom',
-            [blockchain.publicKey, to, tokenId],
+            'KnowledgeCollectionStorage',
+            'safeTransferFrom',
+            [blockchain.publicKey, to, tokenId, 1, '0x'],
             blockchain,
         );
     }

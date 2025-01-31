@@ -1,9 +1,4 @@
 import jsonld from 'jsonld';
-import {
-    GRAPH_LOCATIONS,
-    GRAPH_STATES,
-    OT_NODE_TRIPLE_STORE_REPOSITORIES,
-} from '../constants.js';
 
 export function isEmptyObject(obj) {
     return Object.keys(obj).length === 0 && obj.constructor === Object;
@@ -26,30 +21,16 @@ export function resolveUAL(ual) {
     const argsString = segments.length === 3 ? segments[2] : `${segments[2]}:${segments[3]}`;
     const args = argsString.split('/');
 
-    if (args.length !== 3) {
+    if (!(args.length === 3 || args.length === 4)) {
         throw new Error(`UAL doesn't have correct format: ${ual}`);
     }
 
     return {
         blockchain: args[0],
         contract: args[1],
-        tokenId: parseInt(args[2], 10),
+        knowledgeCollectionId: parseInt(args[2], 10),
+        tokenId: parseInt(args[3], 10),
     };
-}
-
-export function deriveRepository(graphLocation, graphState) {
-    switch (graphLocation + graphState) {
-        case GRAPH_LOCATIONS.PUBLIC_KG + GRAPH_STATES.CURRENT:
-            return OT_NODE_TRIPLE_STORE_REPOSITORIES.PUBLIC_CURRENT;
-        case GRAPH_LOCATIONS.PUBLIC_KG + GRAPH_STATES.HISTORICAL:
-            return OT_NODE_TRIPLE_STORE_REPOSITORIES.PUBLIC_HISTORY;
-        case GRAPH_LOCATIONS.LOCAL_KG + GRAPH_STATES.CURRENT:
-            return OT_NODE_TRIPLE_STORE_REPOSITORIES.PRIVATE_CURRENT;
-        case GRAPH_LOCATIONS.LOCAL_KG + GRAPH_STATES.HISTORICAL:
-            return OT_NODE_TRIPLE_STORE_REPOSITORIES.PRIVATE_HISTORY;
-        default:
-            return graphLocation;
-    }
 }
 
 export async function sleepForMilliseconds(milliseconds) {
@@ -87,7 +68,7 @@ export async function toNQuads(content, inputFormat) {
     return canonized.split('\n').filter((x) => x !== '');
 }
 
-export async function  toJSONLD(nquads) {
+export async function toJSONLD(nquads) {
     return jsonld.fromRDF(nquads, {
         algorithm: 'URDNA2015',
         format: 'application/n-quads',
