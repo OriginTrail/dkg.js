@@ -11,7 +11,15 @@ export default class ParanetOperationsManager {
         this.inputService = services.inputService;
         this.nodeApiService = services.nodeApiService;
         this.validationService = services.validationService;
-        this.incentiveType = this.#initializeIncentiveType();
+        this._incentiveType = null;
+    }
+
+    // Lazy initialization of incentive type due to index.cjs
+    get incentiveType() {
+        if (this._incentiveType === null) {
+            this._incentiveType = this.#initializeIncentiveType();
+        }
+        return this._incentiveType;
     }
 
     #initializeIncentiveType() {
