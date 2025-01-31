@@ -1,4 +1,3 @@
-import { ethers } from 'ethers';
 import { resolveUAL, getParanetId } from '../services/utilities.js';
 import {
     INCENTIVE_TYPE,
@@ -485,7 +484,7 @@ export default class ParanetOperationsManager {
 
             const receipt = await this.blockchainService.deployNeuroIncentivesPool(
                 {
-                    isNativeReward: this.incentiveType === INCENTIVE_TYPE.NEUROWEB ? true : false,
+                    isNativeReward: this.incentiveType === INCENTIVE_TYPE.NEUROWEB,
                     contract,
                     kcTokenId,
                     kaTokenId,

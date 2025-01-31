@@ -2,22 +2,12 @@ import { kaTools, kcTools } from 'assertion-tools';
 import { ethers } from 'ethers';
 import {
     OPERATIONS,
-    GET_OUTPUT_FORMATS,
     CHUNK_BYTE_SIZE,
     OPERATION_STATUSES,
-    OPERATION_DELAYS,
     PRIVATE_RESOURCE_PREDICATE,
     PRIVATE_HASH_SUBJECT_PREFIX,
-    PRIVATE_ASSERTION_PREDICATE,
 } from '../constants.js';
-import {
-    getOperationStatusObject,
-    resolveUAL,
-    deriveUAL,
-    sleepForMilliseconds,
-    toNQuads,
-    toJSONLD,
-} from '../services/utilities.js';
+import { getOperationStatusObject, deriveUAL } from '../services/utilities.js';
 import emptyHooks from '../util/empty-hooks.js';
 
 export default class GraphOperationsManager {
