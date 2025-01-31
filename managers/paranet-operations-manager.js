@@ -11,11 +11,23 @@ export default class ParanetOperationsManager {
         this.inputService = services.inputService;
         this.nodeApiService = services.nodeApiService;
         this.validationService = services.validationService;
-        this.incentiveType = NEUROWEB_INCENTIVE_TYPE_CHAINS.includes(
-            this.blockchainService.config.blockchain.name,
-        )
-            ? INCENTIVE_TYPE.NEUROWEB
-            : INCENTIVE_TYPE.NEUROWEB_ERC20;
+        this.incentiveType = this.#initializeIncentiveType();
+    }
+
+    #initializeIncentiveType() {
+        const blockchainName = this.blockchainService?.config?.blockchain?.name;
+
+        if (!blockchainName) {
+            throw new Error(
+                'Blockchain configuration is missing or invalid. Cannot determine incentive type.',
+            );
+        }
+
+        if (blockchainName && NEUROWEB_INCENTIVE_TYPE_CHAINS.includes(blockchainName)) {
+            return INCENTIVE_TYPE.NEUROWEB;
+        }
+
+        return INCENTIVE_TYPE.NEUROWEB_ERC20;
     }
 
     /**
