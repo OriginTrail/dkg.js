@@ -481,7 +481,7 @@ export default class ParanetOperationsManager {
             }
 
             const emissionMultiplier =
-                BigInt(tracToNeuroEmissionMultiplier) * INCENTIVE_MULTIPLIER[incentiveType];
+                BigInt(tracToNeuroEmissionMultiplier) * INCENTIVE_MULTIPLIER[this.incentiveType];
 
             const receipt = await this.blockchainService.deployNeuroIncentivesPool(
                 {
