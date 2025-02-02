@@ -29,7 +29,7 @@ export default class GraphOperationsManager {
             repository,
         );
 
-        const result = await this.nodeApiService.query(
+        return this.nodeApiService.query(
             endpoint,
             port,
             authToken,
@@ -38,7 +38,5 @@ export default class GraphOperationsManager {
             paranetUAL,
             repository,
         );
-
-        return result;
     }
 }
