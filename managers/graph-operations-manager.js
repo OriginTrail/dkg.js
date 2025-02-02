@@ -1,5 +1,3 @@
-import { OPERATIONS } from '../constants.js';
-
 export default class GraphOperationsManager {
     constructor(services) {
         this.nodeApiService = services.nodeApiService;
@@ -31,7 +29,7 @@ export default class GraphOperationsManager {
             repository,
         );
 
-        const operationId = await this.nodeApiService.query(
+        const result = await this.nodeApiService.query(
             endpoint,
             port,
             authToken,
@@ -41,14 +39,6 @@ export default class GraphOperationsManager {
             repository,
         );
 
-        return this.nodeApiService.getOperationResult(
-            endpoint,
-            port,
-            authToken,
-            OPERATIONS.QUERY,
-            maxNumberOfRetries,
-            frequency,
-            operationId,
-        );
+        return result;
     }
 }

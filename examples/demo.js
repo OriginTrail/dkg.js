@@ -61,44 +61,45 @@ function divider() {
 
     divider();
 
-    console.time('Publish (1 replication, 3 finalizations)');
-    const create_result = await DkgClient.asset.create(content, {
-        epochsNum: 2,
-        minimumNumberOfFinalizationConfirmations: 3,
-        minimumNumberOfNodeReplications: 1,
-    });
-    console.timeEnd('Publish (1 replication, 3 finalizations)');
+    // console.time('Publish (1 replication, 3 finalizations)');
+    // const create_result = await DkgClient.asset.create(content, {
+    //     epochsNum: 2,
+    //     minimumNumberOfFinalizationConfirmations: 3,
+    //     minimumNumberOfNodeReplications: 1,
+    // });
+    // console.timeEnd('Publish (1 replication, 3 finalizations)');
 
-    console.log(JSON.stringify(create_result));
+    // console.log(JSON.stringify(create_result));
 
-    divider();
+    // divider();
 
-    console.time('get');
-    const get_result = await DkgClient.asset.get(create_result.UAL, {
-        contentType: 'all',
-    });
-    console.log('======================== ASSET GET');
-    console.log(get_result);
-    console.timeEnd('get');
+    // console.time('get');
+    // const get_result = await DkgClient.asset.get(create_result.UAL, {
+    //     contentType: 'all',
+    // });
+    // console.log('======================== ASSET GET');
+    // console.log(get_result);
+    // console.timeEnd('get');
 
-    divider();
+    // divider();
 
-    const publishFinalityResult = await DkgClient.graph.publishFinality(create_result.UAL);
-    console.log('======================== ASSET FINALITY');
-    console.log(publishFinalityResult);
+    // const publishFinalityResult = await DkgClient.graph.publishFinality(create_result.UAL);
+    // console.log('======================== ASSET FINALITY');
+    // console.log(publishFinalityResult);
 
-    divider();
-
+    // divider();
+    console.time('query');
     const queryOperationResult = await DkgClient.graph.query(
         `
         PREFIX SCHEMA: <http://schema.org/>
         SELECT ?s ?stateName
-            WHERE {
-                ?s schema:state ?stateName .
+        WHERE {
+            ?s schema:state ?stateName .
             }
-        `,
+            `,
         'SELECT',
     );
+    console.timeEnd('query');
     console.log('======================== ASSET QUERY');
     console.log(queryOperationResult);
 })();
