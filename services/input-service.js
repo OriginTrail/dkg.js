@@ -29,9 +29,8 @@ export default class InputService {
             payer: this.getPayer(options),
             minimumNumberOfFinalizationConfirmations:
                 this.getMinimumNumberOfFinalizationConfirmations(options) ?? 3,
-            minimumNumberOfNodeRoptionseplications:
-                this.getMinimumNumberOfNodeReplications(options),
-            localStore: this.getLocalStore(),
+            minimumNumberOfNodeReplications: this.getMinimumNumberOfNodeReplications(options),
+            localStore: this.getLocalStore(options),
         };
     }
 

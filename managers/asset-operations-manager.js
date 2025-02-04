@@ -471,9 +471,9 @@ export default class AssetOperationsManager {
                 frequency,
             );
         }
+        let localStoreResult;
         if (localStore) {
             let retry = 0;
-            let localStoreResult;
             do {
                 // eslint-disable-next-line no-await-in-loop
                 localStoreResult = await this.nodeApiService.localStore(
@@ -504,6 +504,7 @@ export default class AssetOperationsManager {
                 },
                 numberOfConfirmations: finalityStatusResult,
                 requiredConfirmations: minimumNumberOfFinalizationConfirmations,
+                ...(localStore && { localStore: localStoreResult }),
             },
         };
     }
