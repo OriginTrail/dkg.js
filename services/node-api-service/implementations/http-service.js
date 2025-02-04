@@ -61,6 +61,26 @@ export default class HttpService {
         }
     }
 
+    async localStore(endpoint, port, authToken, datasetRoot, dataset, blockchain, UAL) {
+        try {
+            const response = await axios({
+                method: 'post',
+                url: `${this.getBaseUrl(endpoint, port)}/local-store`,
+                data: {
+                    datasetRoot,
+                    dataset,
+                    blockchain,
+                    UAL,
+                },
+                headers: this.prepareRequestConfig(authToken),
+            });
+
+            return response.data;
+        } catch (error) {
+            throw Error(`Unable to local store: ${error.message}`);
+        }
+    }
+
     async get(
         endpoint,
         port,

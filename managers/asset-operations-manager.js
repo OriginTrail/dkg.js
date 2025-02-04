@@ -231,6 +231,7 @@ export default class AssetOperationsManager {
             payer,
             minimumNumberOfFinalizationConfirmations,
             minimumNumberOfNodeReplications,
+            localStore,
         } = this.inputService.getAssetCreateArguments(options);
 
         this.validationService.validateAssetCreate(
@@ -469,6 +470,23 @@ export default class AssetOperationsManager {
                 maxNumberOfRetries,
                 frequency,
             );
+        }
+        if (localStore) {
+            let retry = 0;
+            let localStoreResult;
+            do {
+                // eslint-disable-next-line no-await-in-loop
+                localStoreResult = await this.nodeApiService.localStore(
+                    endpoint,
+                    port,
+                    authToken,
+                    datasetRoot,
+                    dataset,
+                    blockchain.name,
+                    UAL,
+                );
+                retry += 1;
+            } while (!localStoreResult?.status && retry < 6);
         }
 
         return {

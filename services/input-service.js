@@ -29,7 +29,9 @@ export default class InputService {
             payer: this.getPayer(options),
             minimumNumberOfFinalizationConfirmations:
                 this.getMinimumNumberOfFinalizationConfirmations(options) ?? 3,
-            minimumNumberOfNodeReplications: this.getMinimumNumberOfNodeReplications(options),
+            minimumNumberOfNodeRoptionseplications:
+                this.getMinimumNumberOfNodeReplications(options),
+            localStore: this.getLocalStore(),
         };
     }
 
@@ -414,5 +416,9 @@ export default class InputService {
 
     getAssertionCachedLocally(options) {
         return options.assertionCachedLocally ?? false;
+    }
+
+    getLocalStore(options) {
+        return options.localStore ?? false;
     }
 }

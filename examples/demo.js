@@ -66,6 +66,7 @@ function divider() {
         epochsNum: 2,
         minimumNumberOfFinalizationConfirmations: 3,
         minimumNumberOfNodeReplications: 1,
+        localStore: true,
     });
     console.timeEnd('Publish (1 replication, 3 finalizations)');
 
