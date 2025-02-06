@@ -83,20 +83,20 @@ function deriveUAL(blockchain, contract, tokenId) {
     return `did:dkg:${blockchain.toLowerCase()}/${contract.toLowerCase()}/${tokenId}`;
 }
 
-// TODO: Fix this to work with KC & KA UAL
 function resolveUAL(ual) {
     const segments = ual.split(':');
     const argsString = segments.length === 3 ? segments[2] : `${segments[2]}:${segments[3]}`;
     const args = argsString.split('/');
 
-    if (args.length !== 3) {
+    if (!(args.length === 3 || args.length === 4)) {
         throw new Error(`UAL doesn't have correct format: ${ual}`);
     }
 
     return {
         blockchain: args[0],
         contract: args[1],
-        tokenId: parseInt(args[2], 10),
+        knowledgeCollectionId: parseInt(args[2], 10),
+        tokenId: parseInt(args[3], 10),
     };
 }
 
@@ -853,19 +853,18 @@ class AssetOperationsManager {
      * @param {Object} [options={}] - Additional options for asset transfer.
      * @returns {Object} Object containing UAL, owner's address and operation status.
      */
-    // TODO: Update this for v8
     async transfer(UAL, newOwner, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
 
         this.validationService.validateAssetTransfer(UAL, newOwner, blockchain);
 
-        const { tokenId } = resolveUAL(UAL);
-        const receipt = await this.blockchainService.transferAsset(tokenId, newOwner, blockchain);
-        const owner = await this.blockchainService.getAssetOwner(tokenId, blockchain);
+        const { knowledgeCollectionId, tokenId } = resolveUAL(UAL);
+        const assetId = (knowledgeCollectionId - 1) * 1_000_000 + tokenId;
+        const receipt = await this.blockchainService.transferAsset(assetId, newOwner, blockchain);
+        // const owner = await this.blockchainService.getAssetOwner(tokenId, blockchain);
 
         return {
             UAL,
-            owner,
             operation: receipt,
         };
     }
@@ -3041,30 +3040,30 @@ class BlockchainServiceBase {
     }
 
     // TODO: Fix this
-    async burnAsset(tokenId, blockchain) {
-        return this.executeContractFunction('ContentAsset', 'burnAsset', [tokenId], blockchain);
-    }
+    // async burnAsset(tokenId, blockchain) {
+    //     return this.executeContractFunction('ContentAsset', 'burnAsset', [tokenId], blockchain);
+    // }
 
     // TODO: Fix this
-    async getAssertionSize(assertionId, blockchain) {
-        return this.callContractFunction(
-            'AssertionStorage',
-            'getAssertionSize',
-            [assertionId],
-            blockchain,
-        );
-    }
+    // async getAssertionSize(assertionId, blockchain) {
+    //     return this.callContractFunction(
+    //         'AssertionStorage',
+    //         'getAssertionSize',
+    //         [assertionId],
+    //         blockchain,
+    //     );
+    // }
 
     // Paranets operations
 
-    async registerParanet(requestData, blockchain) {
-        return this.executeContractFunction(
-            'Paranet',
-            'registerParanet',
-            Object.values(requestData),
-            blockchain,
-        );
-    }
+    // async registerParanet(requestData, blockchain) {
+    //     return this.executeContractFunction(
+    //         'Paranet',
+    //         'registerParanet',
+    //         Object.values(requestData),
+    //         blockchain,
+    //     );
+    // }
 
     // async addParanetCuratedNodes(requestData, blockchain) {
     //     return this.executeContractFunction(
@@ -3696,12 +3695,11 @@ class BrowserBlockchainService extends BlockchainServiceBase {
         return this.account;
     }
 
-    // TODO: Update this for V8
     async transferAsset(tokenId, to, blockchain) {
         return this.executeContractFunction(
-            'ContentAssetStorage',
-            'transferFrom',
-            [await this.getAccount(), to, tokenId],
+            'KnowledgeCollectionStorage',
+            'safeTransferFrom',
+            [await this.getAccount(), to, tokenId, 1, '0x'],
             blockchain,
         );
     }
@@ -3834,12 +3832,11 @@ class NodeBlockchainService extends BlockchainServiceBase {
         return receipt;
     }
 
-    // TODO: Fix this
     async transferAsset(tokenId, to, blockchain) {
         return this.executeContractFunction(
-            'ContentAssetStorage',
-            'transferFrom',
-            [blockchain.publicKey, to, tokenId],
+            'KnowledgeCollectionStorage',
+            'safeTransferFrom',
+            [blockchain.publicKey, to, tokenId, 1, '0x'],
             blockchain,
         );
     }
@@ -3990,7 +3987,7 @@ class ValidationService {
     }
 
     validateAssetTransfer(UAL, newOwner, blockchain) {
-        this.validateUAL(UAL);
+        this.validateKAUAL(UAL);
         this.validateNewOwner(newOwner);
         this.validateBlockchain(blockchain);
     }
@@ -4253,6 +4250,17 @@ class ValidationService {
         const argsString = segments.length === 3 ? segments[2] : `${segments[2]}:${segments[3]}`;
         const args = argsString.split('/');
         if (!(args?.length === 3 || args?.length === 4)) throw Error('Invalid UAL.');
+        return true;
+    }
+
+    validateKAUAL(ual) {
+        this.validateRequiredParam('UAL', ual);
+        this.validateParamType('UAL', ual, 'string');
+
+        const segments = ual.split(':');
+        const argsString = segments.length === 3 ? segments[2] : `${segments[2]}:${segments[3]}`;
+        const args = argsString.split('/');
+        if (args?.length !== 4) throw Error('Invalid UAL.');
         return true;
     }
 
