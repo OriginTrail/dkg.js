@@ -96,7 +96,7 @@ function resolveUAL(ual) {
         blockchain: args[0],
         contract: args[1],
         knowledgeCollectionId: parseInt(args[2], 10),
-        tokenId: parseInt(args[3], 10),
+        ...(args[3] !== undefined ? { tokenId: parseInt(args[3], 10) } : {}),
     };
 }
 
