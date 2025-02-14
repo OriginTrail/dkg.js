@@ -29,14 +29,8 @@ const LABEL_PREFIX = '<http://example.org/label>';
 const BLOCKCHAIN_IDS = {
     HARDHAT_1: 'hardhat1:31337',
     HARDHAT_2: 'hardhat2:31337',
-    BASE_DEVNET: 'base:84532',
-    GNOSIS_DEVNET: 'gnosis:10200',
     NEUROWEB_DEVNET: 'otp:2160',
-    BASE_TESTNET: 'base:84532',
-    GNOSIS_TESTNET: 'gnosis:10200',
     NEUROWEB_TESTNET: 'otp:20430',
-    BASE_MAINNET: 'base:8453',
-    GNOSIS_MAINNET: 'gnosis:100',
     NEUROWEB_MAINNET: 'otp:2043',
 };
 const BLOCKCHAINS = {
@@ -102,12 +96,17 @@ const BLOCKCHAINS = {
 
 const PARANET_NODES_ACCESS_POLICY = {
     OPEN: 0,
-    CURATED: 1,
+    PERMISSIONED: 1,
 };
 
 const PARANET_MINERS_ACCESS_POLICY = {
     OPEN: 0,
-    CURATED: 1,
+    PERMISSIONED: 1,
+};
+
+const PARANET_KC_SUBMISSION_POLICY = {
+    OPEN: 0,
+    PERMISSIONED: 1,
 };
 
 const INCENTIVE_TYPE = {
@@ -158,10 +157,7 @@ const OPERATIONS = {
     PUBLISH: 'publish',
     GET: 'get',
     LOCAL_STORE: 'local-store',
-    QUERY: 'query',
-    PUBLISH_PARANET: 'publishParanet',
-    FINALITY: 'finality',
-};
+    QUERY: 'query'};
 
 const OPERATION_STATUSES = {
     PENDING: 'PENDING',
@@ -1945,6 +1941,7 @@ class ParanetOperationsManager {
             paranetDescription,
             paranetNodesAccessPolicy,
             paranetMinersAccessPolicy,
+            paranetKCSubmissionPolicy,
         } = this.inputService.getParanetCreateArguments(options);
 
         this.validationService.validateParanetCreate(
@@ -1954,6 +1951,7 @@ class ParanetOperationsManager {
             paranetDescription,
             paranetNodesAccessPolicy,
             paranetMinersAccessPolicy,
+            paranetKCSubmissionPolicy,
         );
 
         const { contract, kcTokenId, kaTokenId } = resolveUAL(UAL);
@@ -1971,6 +1969,7 @@ class ParanetOperationsManager {
                 paranetDescription,
                 paranetNodesAccessPolicy,
                 paranetMinersAccessPolicy,
+                paranetKCSubmissionPolicy,
             },
             blockchain,
         );
@@ -2393,6 +2392,52 @@ class ParanetOperationsManager {
                     tracToNeuroEmissionMultiplier: emissionMultiplier,
                     operatorRewardPercentage,
                     incentivizationProposalVotersRewardPercentage,
+                },
+                blockchain,
+            );
+
+            const paranetId = getParanetId(paranetUAL);
+
+            const neuroIncentivesPoolAddress =
+                await this.blockchainService.getNeuroIncentivesPoolAddress(paranetId, blockchain);
+
+            return {
+                paranetUAL,
+                incentivesPoolContractAddress: neuroIncentivesPoolAddress,
+                operation: receipt,
+            };
+        }
+
+        throw Error(`Unsupported incentive type: ${this.incentiveType}.`);
+    }
+
+    /**
+     * Redeploys an incentives contract for a Paranet.
+     * @async
+     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+     * @param {Object} [options={}] - Additional options for the incentives contract.
+     * @returns {Object} Object containing the Paranet UAL and incentives pool contract address.
+     * @example
+     * await dkg.paranet.redeployIncentivesContract('paranetUAL123');
+     */
+    async redeployIncentivesContract(paranetUAL, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+
+        this.validationService.validateRedeployIncentivesContract(paranetUAL, blockchain);
+
+        if (Object.values(INCENTIVE_TYPE).includes(this.incentiveType)) {
+            const { contract, kcTokenId, kaTokenId } = resolveUAL(paranetUAL);
+
+            if (!kaTokenId) {
+                throw new Error('Invalid paranet UAL! Knowledge asset token id is required!');
+            }
+
+            const receipt = await this.blockchainService.redeployNeuroIncentivesPool(
+                {
+                    isNativeReward: this.incentiveType === INCENTIVE_TYPE.NEUROWEB,
+                    contract,
+                    kcTokenId,
+                    kaTokenId,
                 },
                 blockchain,
             );
@@ -4008,6 +4053,15 @@ class BlockchainServiceBase {
         );
     }
 
+    async redeployNeuroIncentivesPool(requestData, blockchain) {
+        return this.executeContractFunction(
+            'ParanetIncentivesPoolFactory',
+            'redeployNeuroIncentivesPool',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
+
     async registerParanetService(requestData, blockchain) {
         return this.executeContractFunction(
             'Paranet',
@@ -4977,6 +5031,11 @@ class ValidationService {
         );
     }
 
+    validateRedeployIncentivesContract(UAL, blockchain) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+    }
+
     validateParanetRewardArguments(UAL, blockchain) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
@@ -5316,6 +5375,15 @@ class ValidationService {
             );
     }
 
+    validateParanetKCSubmissionPolicy(paranetKCSubmissionPolicy) {
+        this.validateRequiredParam('paranetKCSubmissionPolicy', paranetKCSubmissionPolicy);
+        this.validateParamType('paranetKCSubmissionPolicy', paranetKCSubmissionPolicy, 'number');
+        if (!Object.values(PARANET_KC_SUBMISSION_POLICY).includes(paranetKCSubmissionPolicy))
+            throw Error(
+                `Invalid paranet KC submission policy: ${paranetKCSubmissionPolicy}. Should be 0 for OPEN or 1 for CURATED`,
+            );
+    }
+
     validateTracToNeuroEmissionMultiplier(tracToNeuroEmissionMultiplier) {
         this.validateRequiredParam('tracToNeuroEmissionMultiplier', tracToNeuroEmissionMultiplier);
         this.validateParamType(
@@ -5536,6 +5604,7 @@ class InputService {
             paranetDescription: this.getParanetDescription(options),
             paranetNodesAccessPolicy: this.getParanetNodesAccessPolicy(options),
             paranetMinersAccessPolicy: this.getParanetMinersAccessPolicy(options),
+            paranetKCSubmissionPolicy: this.getParanetKCSubmissionPolicy(options),
         };
     }
 
@@ -5807,6 +5876,10 @@ class InputService {
 
     getParanetMinersAccessPolicy(options) {
         return options.paranetMinersAccessPolicy ?? PARANET_MINERS_ACCESS_POLICY.OPEN;
+    }
+
+    getParanetKCSubmissionPolicy(options) {
+        return options.paranetKCSubmissionPolicy ?? PARANET_KC_SUBMISSION_POLICY.OPEN;
     }
 
     getTracToNeuroEmissionMultiplier(options) {
