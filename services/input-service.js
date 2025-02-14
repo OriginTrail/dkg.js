@@ -3,9 +3,9 @@ import {
     DEFAULT_PARAMETERS,
     DEFAULT_PROXIMITY_SCORE_FUNCTIONS_PAIR_IDS,
     BLOCKCHAINS,
-    LOW_BID_SUGGESTION,
     PARANET_NODES_ACCESS_POLICY,
     PARANET_MINERS_ACCESS_POLICY,
+    PARANET_KC_SUBMISSION_POLICY,
     ZERO_ADDRESS,
 } from '../constants.js';
 
@@ -108,6 +108,7 @@ export default class InputService {
             paranetDescription: this.getParanetDescription(options),
             paranetNodesAccessPolicy: this.getParanetNodesAccessPolicy(options),
             paranetMinersAccessPolicy: this.getParanetMinersAccessPolicy(options),
+            paranetKCSubmissionPolicy: this.getParanetKCSubmissionPolicy(options),
         };
     }
 
@@ -379,6 +380,10 @@ export default class InputService {
 
     getParanetMinersAccessPolicy(options) {
         return options.paranetMinersAccessPolicy ?? PARANET_MINERS_ACCESS_POLICY.OPEN;
+    }
+
+    getParanetKCSubmissionPolicy(options) {
+        return options.paranetKCSubmissionPolicy ?? PARANET_KC_SUBMISSION_POLICY.OPEN;
     }
 
     getTracToNeuroEmissionMultiplier(options) {

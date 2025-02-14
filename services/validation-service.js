@@ -10,6 +10,7 @@ import {
     BID_SUGGESTION_RANGE_ENUM,
     PARANET_NODES_ACCESS_POLICY,
     PARANET_MINERS_ACCESS_POLICY,
+    PARANET_KC_SUBMISSION_POLICY,
 } from '../constants.js';
 import { nodeSupported } from './utilities.js';
 
@@ -313,6 +314,11 @@ export default class ValidationService {
         this.validateIncentivizationProposalVotersRewardPercentage(
             incentivizationProposalVotersRewardPercentage,
         );
+    }
+
+    validateRedeployIncentivesContract(UAL, blockchain) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
     }
 
     validateParanetRewardArguments(UAL, blockchain) {
@@ -651,6 +657,15 @@ export default class ValidationService {
         if (!Object.values(PARANET_MINERS_ACCESS_POLICY).includes(paranetMinersAccessPolicy))
             throw Error(
                 `Invalid miners access policy: ${paranetMinersAccessPolicy}. Should be 0 for OPEN or 1 for CURATED`,
+            );
+    }
+
+    validateParanetKCSubmissionPolicy(paranetKCSubmissionPolicy) {
+        this.validateRequiredParam('paranetKCSubmissionPolicy', paranetKCSubmissionPolicy);
+        this.validateParamType('paranetKCSubmissionPolicy', paranetKCSubmissionPolicy, 'number');
+        if (!Object.values(PARANET_KC_SUBMISSION_POLICY).includes(paranetKCSubmissionPolicy))
+            throw Error(
+                `Invalid paranet KC submission policy: ${paranetKCSubmissionPolicy}. Should be 0 for OPEN or 1 for CURATED`,
             );
     }
 
