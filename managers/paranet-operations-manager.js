@@ -63,6 +63,7 @@ export default class ParanetOperationsManager {
             paranetDescription,
             paranetNodesAccessPolicy,
             paranetMinersAccessPolicy,
+            paranetKCSubmissionPolicy,
         } = this.inputService.getParanetCreateArguments(options);
 
         this.validationService.validateParanetCreate(
@@ -72,6 +73,7 @@ export default class ParanetOperationsManager {
             paranetDescription,
             paranetNodesAccessPolicy,
             paranetMinersAccessPolicy,
+            paranetKCSubmissionPolicy,
         );
 
         const { contract, kcTokenId, kaTokenId } = resolveUAL(UAL);
@@ -89,6 +91,7 @@ export default class ParanetOperationsManager {
                 paranetDescription,
                 paranetNodesAccessPolicy,
                 paranetMinersAccessPolicy,
+                paranetKCSubmissionPolicy,
             },
             blockchain,
         );
@@ -511,6 +514,52 @@ export default class ParanetOperationsManager {
                     tracToNeuroEmissionMultiplier: emissionMultiplier,
                     operatorRewardPercentage,
                     incentivizationProposalVotersRewardPercentage,
+                },
+                blockchain,
+            );
+
+            const paranetId = getParanetId(paranetUAL);
+
+            const neuroIncentivesPoolAddress =
+                await this.blockchainService.getNeuroIncentivesPoolAddress(paranetId, blockchain);
+
+            return {
+                paranetUAL,
+                incentivesPoolContractAddress: neuroIncentivesPoolAddress,
+                operation: receipt,
+            };
+        }
+
+        throw Error(`Unsupported incentive type: ${this.incentiveType}.`);
+    }
+
+    /**
+     * Redeploys an incentives contract for a Paranet.
+     * @async
+     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+     * @param {Object} [options={}] - Additional options for the incentives contract.
+     * @returns {Object} Object containing the Paranet UAL and incentives pool contract address.
+     * @example
+     * await dkg.paranet.redeployIncentivesContract('paranetUAL123');
+     */
+    async redeployIncentivesContract(paranetUAL, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+
+        this.validationService.validateRedeployIncentivesContract(paranetUAL, blockchain);
+
+        if (Object.values(INCENTIVE_TYPE).includes(this.incentiveType)) {
+            const { contract, kcTokenId, kaTokenId } = resolveUAL(paranetUAL);
+
+            if (!kaTokenId) {
+                throw new Error('Invalid paranet UAL! Knowledge asset token id is required!');
+            }
+
+            const receipt = await this.blockchainService.redeployNeuroIncentivesPool(
+                {
+                    isNativeReward: this.incentiveType === INCENTIVE_TYPE.NEUROWEB,
+                    contract,
+                    kcTokenId,
+                    kaTokenId,
                 },
                 blockchain,
             );
