@@ -22,7 +22,7 @@ const TokenAbi = require('dkg-evm-module/abi/Token.json');
 const ParanetAbi = require('dkg-evm-module/abi/Paranet.json');
 const ParanetsRegistryAbi = require('dkg-evm-module/abi/ParanetsRegistry.json');
 const ParanetIncentivesPoolFactoryAbi = require('dkg-evm-module/abi/ParanetIncentivesPoolFactory.json');
-const ParanetNeuroIncentivesPoolAbi = require('dkg-evm-module/abi/ParanetNeuroIncentivesPool.json');
+const ParanetIncentivesPoolAbi = require('dkg-evm-module/abi/ParanetIncentivesPool.json');
 const ParanetKnowledgeMinersRegistryAbi = require('dkg-evm-module/abi/ParanetKnowledgeMinersRegistry.json');
 const IdentityStorageAbi = require('dkg-evm-module/abi/IdentityStorage.json');
 const KnowledgeCollectionAbi = require('dkg-evm-module/abi/KnowledgeCollection.json');
@@ -46,7 +46,7 @@ export default class BlockchainServiceBase {
         this.abis.Paranet = ParanetAbi;
         this.abis.ParanetsRegistry = ParanetsRegistryAbi;
         this.abis.ParanetIncentivesPoolFactory = ParanetIncentivesPoolFactoryAbi;
-        this.abis.ParanetNeuroIncentivesPool = ParanetNeuroIncentivesPoolAbi;
+        this.abis.ParanetIncentivesPool = ParanetIncentivesPoolAbi;
         this.abis.ParanetKnowledgeMinersRegistry = ParanetKnowledgeMinersRegistryAbi;
         this.abis.IdentityStorage = IdentityStorageAbi;
         this.abis.KnowledgeCollection = KnowledgeCollectionAbi;
@@ -169,7 +169,7 @@ export default class BlockchainServiceBase {
                     status = false;
                 }
 
-                if (!status && contractName !== 'ParanetNeuroIncentivesPool') {
+                if (!status && contractName !== 'ParanetIncentivesPool') {
                     await this.updateContractInstance(contractName, blockchain, true);
                     contractInstance = await this.getContractInstance(contractName, blockchain);
 
@@ -823,6 +823,15 @@ export default class BlockchainServiceBase {
         );
     }
 
+    async redeployNeuroIncentivesPool(requestData, blockchain) {
+        return this.executeContractFunction(
+            'ParanetIncentivesPoolFactory',
+            'redeployNeuroIncentivesPool',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
+
     async registerParanetService(requestData, blockchain) {
         return this.executeContractFunction(
             'Paranet',
@@ -894,18 +903,18 @@ export default class BlockchainServiceBase {
 
         if (
             this[blockchain.name].contractAddresses[blockchain.hubContract][
-                'ParanetNeuroIncentivesPool'
+                'ParanetIncentivesPool'
             ] !== contractAddress
         ) {
             this[blockchain.name].contractAddresses[blockchain.hubContract][
-                'ParanetNeuroIncentivesPool'
+                'ParanetIncentivesPool'
             ] = contractAddress;
             const web3Instance = await this.getWeb3Instance(blockchain);
-            this[blockchain.name].contracts[blockchain.hubContract]['ParanetNeuroIncentivesPool'] =
+            this[blockchain.name].contracts[blockchain.hubContract]['ParanetIncentivesPool'] =
                 await new web3Instance.eth.Contract(
-                    this.abis['ParanetNeuroIncentivesPool'],
+                    this.abis['ParanetIncentivesPool'],
                     this[blockchain.name].contractAddresses[blockchain.hubContract][
-                        'ParanetNeuroIncentivesPool'
+                        'ParanetIncentivesPool'
                     ],
                     { from: blockchain.publicKey },
                 );
@@ -921,7 +930,7 @@ export default class BlockchainServiceBase {
         await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
 
         return this.executeContractFunction(
-            'ParanetNeuroIncentivesPool',
+            'ParanetIncentivesPool',
             'claimKnowledgeMinerReward',
             [],
             blockchain,
@@ -937,7 +946,7 @@ export default class BlockchainServiceBase {
         await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
 
         return this.executeContractFunction(
-            'ParanetNeuroIncentivesPool',
+            'ParanetIncentivesPool',
             'claimIncentivizationProposalVoterReward',
             [],
             blockchain,
@@ -953,7 +962,7 @@ export default class BlockchainServiceBase {
         await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
 
         return this.executeContractFunction(
-            'ParanetNeuroIncentivesPool',
+            'ParanetIncentivesPool',
             'claimParanetOperatorReward',
             [],
             blockchain,
@@ -969,7 +978,7 @@ export default class BlockchainServiceBase {
         await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
 
         return this.callContractFunction(
-            'ParanetNeuroIncentivesPool',
+            'ParanetIncentivesPool',
             'getClaimableKnowledgeMinerRewardAmount',
             [],
             blockchain,
@@ -985,7 +994,7 @@ export default class BlockchainServiceBase {
         await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
 
         return this.callContractFunction(
-            'ParanetNeuroIncentivesPool',
+            'ParanetIncentivesPool',
             'getClaimableAllKnowledgeMinersRewardAmount',
             [],
             blockchain,
@@ -1001,7 +1010,7 @@ export default class BlockchainServiceBase {
         await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
 
         return this.callContractFunction(
-            'ParanetNeuroIncentivesPool',
+            'ParanetIncentivesPool',
             'getClaimableProposalVoterRewardAmount',
             [],
             blockchain,
@@ -1017,7 +1026,7 @@ export default class BlockchainServiceBase {
         await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
 
         return this.callContractFunction(
-            'ParanetNeuroIncentivesPool',
+            'ParanetIncentivesPool',
             'getClaimableAllProposalVotersRewardAmount',
             [],
             blockchain,
@@ -1033,7 +1042,7 @@ export default class BlockchainServiceBase {
         await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
 
         return this.callContractFunction(
-            'ParanetNeuroIncentivesPool',
+            'ParanetIncentivesPool',
             'getClaimableParanetOperatorRewardAmount',
             [],
             blockchain,
@@ -1049,7 +1058,7 @@ export default class BlockchainServiceBase {
         await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
 
         return this.callContractFunction(
-            'ParanetNeuroIncentivesPool',
+            'ParanetIncentivesPool',
             'isKnowledgeMiner',
             [address],
             blockchain,
@@ -1065,7 +1074,7 @@ export default class BlockchainServiceBase {
         await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
 
         return this.callContractFunction(
-            'ParanetNeuroIncentivesPool',
+            'ParanetIncentivesPool',
             'isParanetOperator',
             [address],
             blockchain,
@@ -1081,7 +1090,7 @@ export default class BlockchainServiceBase {
         await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
 
         return this.callContractFunction(
-            'ParanetNeuroIncentivesPool',
+            'ParanetIncentivesPool',
             'isProposalVoter',
             [address],
             blockchain,

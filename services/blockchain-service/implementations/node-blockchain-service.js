@@ -111,7 +111,7 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
                         status = false;
                     }
 
-                    if (!status && contractName !== 'ParanetNeuroIncentivesPool') {
+                    if (!status && contractName !== 'ParanetIncentivesPool') {
                         await this.updateContractInstance(contractName, blockchain, true);
                         contractInstance = await this.getContractInstance(contractName, blockchain);
                         transactionRetried = true;
