@@ -116,7 +116,7 @@ export default class InputService {
         return {
             blockchain: this.getBlockchain(options),
             incentiveType: this.getIncentiveType(options),
-            tracToNeuroEmissionMultiplier: this.getTracToNeuroEmissionMultiplier(options),
+            tracToTokenEmissionMultiplier: this.getTracToTokenEmissionMultiplier(options),
             operatorRewardPercentage: this.getOperatorRewardPercentage(options),
             incentivizationProposalVotersRewardPercentage:
                 this.getIncentivizationProposalVotersRewardPercentage(options),
@@ -386,8 +386,8 @@ export default class InputService {
         return options.paranetKCSubmissionPolicy ?? PARANET_KC_SUBMISSION_POLICY.OPEN;
     }
 
-    getTracToNeuroEmissionMultiplier(options) {
-        return options.tracToNeuroEmissionMultiplier ?? null;
+    getTracToTokenEmissionMultiplier(options) {
+        return options.tracToTokenEmissionMultiplier ?? null;
     }
 
     getIncentivizationProposalVotersRewardPercentage(options) {

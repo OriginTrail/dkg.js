@@ -303,13 +303,13 @@ export default class ValidationService {
     validateDeployIncentivesContract(
         UAL,
         blockchain,
-        tracToNeuroEmissionMultiplier,
+        tracToTokenEmissionMultiplier,
         operatorRewardPercentage,
         incentivizationProposalVotersRewardPercentage,
     ) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
-        this.validateTracToNeuroEmissionMultiplier(tracToNeuroEmissionMultiplier);
+        this.validateTracToTokenEmissionMultiplier(tracToTokenEmissionMultiplier);
         this.validateOperatorRewardPercentage(operatorRewardPercentage);
         this.validateIncentivizationProposalVotersRewardPercentage(
             incentivizationProposalVotersRewardPercentage,
@@ -669,11 +669,11 @@ export default class ValidationService {
             );
     }
 
-    validateTracToNeuroEmissionMultiplier(tracToNeuroEmissionMultiplier) {
-        this.validateRequiredParam('tracToNeuroEmissionMultiplier', tracToNeuroEmissionMultiplier);
+    validateTracToTokenEmissionMultiplier(tracToTokenEmissionMultiplier) {
+        this.validateRequiredParam('tracToTokenEmissionMultiplier', tracToTokenEmissionMultiplier);
         this.validateParamType(
-            'tracToNeuroEmissionMultiplier',
-            tracToNeuroEmissionMultiplier,
+            'tracToTokenEmissionMultiplier',
+            tracToTokenEmissionMultiplier,
             'number',
         );
     }

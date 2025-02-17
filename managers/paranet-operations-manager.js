@@ -469,13 +469,13 @@ export default class ParanetOperationsManager {
      * @async
      * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
      * @param {Object} [options={}] - Additional options for the incentives contract.
-     * @param {string} options.tracToNeuroEmissionMultiplier - How much NEURO is emission per 1 TRAC.
+     * @param {string} options.tracToTokenEmissionMultiplier - How much incentive token is emissioned per 1 TRAC.
      * @param {string} options.operatorRewardPercentage - Percentage of the emissions as a paranet operator fee.
      * @param {string} options.incentivizationProposalVotersRewardPercentage - Percentage of the emissions that will be shared with NEURO holders supporting the proposal.
      * @returns {Object} Object containing the Paranet UAL and incentives pool contract address.
      * @example
      * await dkg.paranet.deployIncentivesContract('paranetUAL123', 'Neuroweb', {
-     *     tracToNeuroEmissionMultiplier: 1.5,
+     *     tracToTokenEmissionMultiplier: 1.5,
      *     operatorRewardPercentage: 20,
      *     incentivizationProposalVotersRewardPercentage: 10,
      * });
@@ -483,7 +483,7 @@ export default class ParanetOperationsManager {
     async deployIncentivesContract(paranetUAL, options = {}) {
         const {
             blockchain,
-            tracToNeuroEmissionMultiplier,
+            tracToTokenEmissionMultiplier,
             operatorRewardPercentage,
             incentivizationProposalVotersRewardPercentage,
         } = this.inputService.getParanetDeployIncentivesContractArguments(options);
@@ -491,7 +491,7 @@ export default class ParanetOperationsManager {
         this.validationService.validateDeployIncentivesContract(
             paranetUAL,
             blockchain,
-            tracToNeuroEmissionMultiplier,
+            tracToTokenEmissionMultiplier,
             operatorRewardPercentage,
             incentivizationProposalVotersRewardPercentage,
         );
@@ -503,15 +503,15 @@ export default class ParanetOperationsManager {
             }
 
             const emissionMultiplier =
-                BigInt(tracToNeuroEmissionMultiplier) * INCENTIVE_MULTIPLIER[this.incentiveType];
+                BigInt(tracToTokenEmissionMultiplier) * INCENTIVE_MULTIPLIER[this.incentiveType];
 
-            const receipt = await this.blockchainService.deployNeuroIncentivesPool(
+            const receipt = await this.blockchainService.deployIncentivesPool(
                 {
                     isNativeReward: this.incentiveType === INCENTIVE_TYPE.NEUROWEB,
                     contract,
                     kcTokenId,
                     kaTokenId,
-                    tracToNeuroEmissionMultiplier: emissionMultiplier,
+                    tracToTokenEmissionMultiplier: emissionMultiplier,
                     operatorRewardPercentage,
                     incentivizationProposalVotersRewardPercentage,
                 },
@@ -520,12 +520,14 @@ export default class ParanetOperationsManager {
 
             const paranetId = getParanetId(paranetUAL);
 
-            const neuroIncentivesPoolAddress =
-                await this.blockchainService.getNeuroIncentivesPoolAddress(paranetId, blockchain);
+            const incentivesPoolAddress = await this.blockchainService.getIncentivesPoolAddress(
+                paranetId,
+                blockchain,
+            );
 
             return {
                 paranetUAL,
-                incentivesPoolContractAddress: neuroIncentivesPoolAddress,
+                incentivesPoolContractAddress: incentivesPoolAddress,
                 operation: receipt,
             };
         }
@@ -554,7 +556,7 @@ export default class ParanetOperationsManager {
                 throw new Error('Invalid paranet UAL! Knowledge asset token id is required!');
             }
 
-            const receipt = await this.blockchainService.redeployNeuroIncentivesPool(
+            const receipt = await this.blockchainService.redeployIncentivesPool(
                 {
                     isNativeReward: this.incentiveType === INCENTIVE_TYPE.NEUROWEB,
                     contract,
@@ -566,12 +568,14 @@ export default class ParanetOperationsManager {
 
             const paranetId = getParanetId(paranetUAL);
 
-            const neuroIncentivesPoolAddress =
-                await this.blockchainService.getNeuroIncentivesPoolAddress(paranetId, blockchain);
+            const incentivesPoolAddress = await this.blockchainService.getIncentivesPoolAddress(
+                paranetId,
+                blockchain,
+            );
 
             return {
                 paranetUAL,
-                incentivesPoolContractAddress: neuroIncentivesPoolAddress,
+                incentivesPoolContractAddress: incentivesPoolAddress,
                 operation: receipt,
             };
         }
