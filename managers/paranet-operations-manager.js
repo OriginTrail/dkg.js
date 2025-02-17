@@ -103,6 +103,43 @@ export default class ParanetOperationsManager {
     }
 
     /**
+     * Adds a Knowledge Collection curator to a Paranet.
+     * @async
+     * @param {string} UAL - Universal Asset Locator of the KA that is created for Paranet.
+     * @param {string} curatorAddress - Address of the curator to be added.
+     * @param {Object} [options={}] - Additional options for adding a curator to a paranet.
+     * @returns {Object} Object containing the Paranet UAL and operation receipt.
+     * @example
+     * await dkg.paranet.addCurator(paranetUAL, curatorAddress);
+     */
+    async addCurator(paranetUAL, curatorAddress, options = {}) {
+        const { blockchain } = this.inputService.getBlockchain(options);
+
+        this.validationService.validateParanetAddCurator(paranetUAL, curatorAddress, blockchain);
+
+        const { contract: kcStorageContract, kcTokenId, kaTokenId } = resolveUAL(paranetUAL);
+
+        if (!kaTokenId) {
+            throw new Error('Invalid paranet UAL! Knowledge asset token id is required!');
+        }
+
+        const receipt = await this.blockchainService.addCurator(
+            {
+                kcStorageContract,
+                kcTokenId,
+                kaTokenId,
+                curatorAddress,
+            },
+            blockchain,
+        );
+
+        return {
+            paranetUAL,
+            operation: receipt,
+        };
+    }
+
+    /**
      * Adds nodes to a curated paranet.
      * @async
      * @param {string} paranetUAL - Universal Asset Locator of the Paranet.

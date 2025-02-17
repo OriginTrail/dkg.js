@@ -706,6 +706,15 @@ export default class BlockchainServiceBase {
         );
     }
 
+    async addCurator(requestData, blockchain) {
+        return this.executeContractFunction(
+            'Paranet',
+            'addCurator',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
+
     async addParanetCuratedNodes(requestData, blockchain) {
         return this.executeContractFunction(
             'Paranet',
