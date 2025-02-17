@@ -868,14 +868,14 @@ export default class BlockchainServiceBase {
         );
     }
 
-    async updateClaimableRewards(requestData, blockchain) {
-        return this.executeContractFunction(
-            'Paranet',
-            'processUpdatedKnowledgeCollectionStatesMetadata',
-            Object.values(requestData),
-            blockchain,
-        );
-    }
+    // async updateClaimableRewards(requestData, blockchain) {
+    //     return this.executeContractFunction(
+    //         'Paranet',
+    //         'processUpdatedKnowledgeCollectionStatesMetadata',
+    //         Object.values(requestData),
+    //         blockchain,
+    //     );
+    // }
 
     async getIncentivesPoolAddress(requestData, blockchain) {
         return this.callContractFunction(
@@ -921,7 +921,7 @@ export default class BlockchainServiceBase {
         }
     }
 
-    async claimKnowledgeMinerReward(paranetId, incentivesPoolType, blockchain) {
+    async claimKnowledgeMinerReward(paranetId, amount, blockchain) {
         const incentivesPoolAddress = await this.getIncentivesPoolAddress(paranetId, blockchain);
 
         await this.setIncentivesPool(incentivesPoolAddress, blockchain);
@@ -929,12 +929,12 @@ export default class BlockchainServiceBase {
         return this.executeContractFunction(
             'ParanetIncentivesPool',
             'claimKnowledgeMinerReward',
-            [],
+            [amount],
             blockchain,
         );
     }
 
-    async claimVoterReward(paranetId, incentivesPoolType, blockchain) {
+    async claimVoterReward(paranetId, blockchain) {
         const incentivesPoolAddress = await this.getIncentivesPoolAddress(paranetId, blockchain);
 
         await this.setIncentivesPool(incentivesPoolAddress, blockchain);
@@ -947,7 +947,7 @@ export default class BlockchainServiceBase {
         );
     }
 
-    async claimOperatorReward(paranetId, incentivesPoolType, blockchain) {
+    async claimOperatorReward(paranetId, blockchain) {
         const incentivesPoolAddress = await this.getIncentivesPoolAddress(paranetId, blockchain);
 
         await this.setIncentivesPool(incentivesPoolAddress, blockchain);
@@ -960,7 +960,7 @@ export default class BlockchainServiceBase {
         );
     }
 
-    async getClaimableKnowledgeMinerReward(paranetId, incentivesPoolType, blockchain) {
+    async getClaimableKnowledgeMinerReward(paranetId, blockchain) {
         const incentivesPoolAddress = await this.getIncentivesPoolAddress(paranetId, blockchain);
 
         await this.setIncentivesPool(incentivesPoolAddress, blockchain);
@@ -973,7 +973,7 @@ export default class BlockchainServiceBase {
         );
     }
 
-    async getClaimableAllKnowledgeMinersReward(paranetId, incentivesPoolType, blockchain) {
+    async getClaimableAllKnowledgeMinersReward(paranetId, blockchain) {
         const incentivesPoolAddress = await this.getIncentivesPoolAddress(paranetId, blockchain);
 
         await this.setIncentivesPool(incentivesPoolAddress, blockchain);
@@ -986,7 +986,7 @@ export default class BlockchainServiceBase {
         );
     }
 
-    async getClaimableVoterReward(paranetId, incentivesPoolType, blockchain) {
+    async getClaimableVoterReward(paranetId, blockchain) {
         const incentivesPoolAddress = await this.getIncentivesPoolAddress(paranetId, blockchain);
 
         await this.setIncentivesPool(incentivesPoolAddress, blockchain);
@@ -999,7 +999,7 @@ export default class BlockchainServiceBase {
         );
     }
 
-    async getClaimableAllVotersReward(paranetId, incentivesPoolType, blockchain) {
+    async getClaimableAllVotersReward(paranetId, blockchain) {
         const incentivesPoolAddress = await this.getIncentivesPoolAddress(paranetId, blockchain);
 
         await this.setIncentivesPool(incentivesPoolAddress, blockchain);
@@ -1012,7 +1012,7 @@ export default class BlockchainServiceBase {
         );
     }
 
-    async getClaimableOperatorReward(paranetId, incentivesPoolType, blockchain) {
+    async getClaimableOperatorReward(paranetId, blockchain) {
         const incentivesPoolAddress = await this.getIncentivesPoolAddress(paranetId, blockchain);
 
         await this.setIncentivesPool(incentivesPoolAddress, blockchain);
@@ -1025,7 +1025,7 @@ export default class BlockchainServiceBase {
         );
     }
 
-    async isParanetKnowledgeMiner(address, paranetId, incentivesPoolType, blockchain) {
+    async isParanetKnowledgeMiner(address, paranetId, blockchain) {
         const incentivesPoolAddress = await this.getIncentivesPoolAddress(paranetId, blockchain);
 
         await this.setIncentivesPool(incentivesPoolAddress, blockchain);
@@ -1038,7 +1038,7 @@ export default class BlockchainServiceBase {
         );
     }
 
-    async isParanetOperator(address, paranetId, incentivesPoolType, blockchain) {
+    async isParanetOperator(address, paranetId, blockchain) {
         const incentivesPoolAddress = await this.getIncentivesPoolAddress(paranetId, blockchain);
 
         await this.setIncentivesPool(incentivesPoolAddress, blockchain);
@@ -1051,7 +1051,7 @@ export default class BlockchainServiceBase {
         );
     }
 
-    async isParanetProposalVoter(address, paranetId, incentivesPoolType, blockchain) {
+    async isParanetProposalVoter(address, paranetId, blockchain) {
         const incentivesPoolAddress = await this.getIncentivesPoolAddress(paranetId, blockchain);
 
         await this.setIncentivesPool(incentivesPoolAddress, blockchain);
