@@ -154,11 +154,6 @@ function divider() {
     console.log(addServiceToParanet);
     divider();
 
-    const addCuratorToParanet = await DkgClient.paranet.addCurator(paranetUAL, PUBLIC_KEY);
-    console.log('======================== CURATOR ADDED TO PARANET');
-    console.log(addCuratorToParanet);
-    divider();
-
     content = {
         public: {
             '@context': 'https://www.schema.org',
