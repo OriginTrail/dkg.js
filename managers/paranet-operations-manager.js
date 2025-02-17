@@ -140,6 +140,43 @@ export default class ParanetOperationsManager {
     }
 
     /**
+     * Removes a Knowledge Collection curator from a Paranet. Can only be done by the paranet operator.
+     * @async
+     * @param {string} UAL - Universal Asset Locator of the KA that is created for Paranet.
+     * @param {string} curatorAddress - Address of the curator to be removed.
+     * @param {Object} [options={}] - Additional options for removing a curator from a paranet.
+     * @returns {Object} Object containing the Paranet UAL and operation receipt.
+     * @example
+     * await dkg.paranet.removeCurator(paranetUAL, curatorAddress);
+     */
+    async removeCurator(paranetUAL, curatorAddress, options = {}) {
+        const { blockchain } = this.inputService.getBlockchain(options);
+
+        this.validationService.validateParanetRemoveCurator(paranetUAL, curatorAddress, blockchain);
+
+        const { contract: kcStorageContract, kcTokenId, kaTokenId } = resolveUAL(paranetUAL);
+
+        if (!kaTokenId) {
+            throw new Error('Invalid paranet UAL! Knowledge asset token id is required!');
+        }
+
+        const receipt = await this.blockchainService.removeCurator(
+            {
+                kcStorageContract,
+                kcTokenId,
+                kaTokenId,
+                curatorAddress,
+            },
+            blockchain,
+        );
+
+        return {
+            paranetUAL,
+            operation: receipt,
+        };
+    }
+
+    /**
      * Adds nodes to a curated paranet.
      * @async
      * @param {string} paranetUAL - Universal Asset Locator of the Paranet.

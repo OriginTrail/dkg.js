@@ -226,6 +226,12 @@ export default class ValidationService {
         this.validateBlockchain(blockchain);
     }
 
+    validateParanetRemoveCurator(paranetUAL, curatorAddress, blockchain) {
+        this.validateUAL(paranetUAL);
+        this.validateAddress(curatorAddress);
+        this.validateBlockchain(blockchain);
+    }
+
     validateParanetAddCuratedNodes(UAL, blockchain, identityIds) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
