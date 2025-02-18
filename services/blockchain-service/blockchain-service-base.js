@@ -733,6 +733,15 @@ export default class BlockchainServiceBase {
         );
     }
 
+    async isKnowledgeCollectionStaged(requestData, blockchain) {
+        return this.callContractFunction(
+            'Paranet',
+            'isKnowledgeCollectionStaged',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
+
     async removeCurator(requestData, blockchain) {
         return this.executeContractFunction(
             'Paranet',

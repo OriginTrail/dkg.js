@@ -1,4 +1,4 @@
-import { resolveUAL, getParanetId } from '../services/utilities.js';
+import { resolveUAL, getParanetId, getKnowledgeCollectionId } from '../services/utilities.js';
 import {
     INCENTIVE_TYPE,
     INCENTIVE_MULTIPLIER,
@@ -190,8 +190,8 @@ export default class ParanetOperationsManager {
         const { blockchain } = this.inputService.getBlockchain(options);
 
         this.validationService.validateParanetStageKnowledgeCollection(
-            paranetUAL,
             kcUAL,
+            paranetUAL,
             blockchain,
         );
 
@@ -219,8 +219,8 @@ export default class ParanetOperationsManager {
         );
 
         return {
-            paranetUAL,
             kcUAL,
+            paranetUAL,
             operation: receipt,
         };
     }
@@ -240,8 +240,8 @@ export default class ParanetOperationsManager {
         const { blockchain } = this.inputService.getBlockchain(options);
 
         this.validationService.validateParanetReviewKnowledgeCollection(
-            paranetUAL,
             kcUAL,
+            paranetUAL,
             accepted,
             blockchain,
         );
@@ -271,9 +271,47 @@ export default class ParanetOperationsManager {
         );
 
         return {
-            paranetUAL,
             kcUAL,
+            paranetUAL,
             operation: receipt,
+        };
+    }
+
+    /**
+     * Checks if a Knowledge Collection is staged to a Paranet.
+     * @async
+     * @param {string} UAL - Universal Asset Locator of the KA that is created for Paranet.
+     * @param {string} kcUAL - Universal Asset Locator of the KC to be checked.
+     * @param {Object} [options={}] - Additional options for checking if a KC is staged.
+     * @returns {Object} Object containing the Paranet UAL and operation receipt.
+     * @example
+     * await dkg.paranet.isKnowledgeCollectionStaged(paranetUAL, kcUAL);
+     */
+    async isKnowledgeCollectionStaged(kcUAL, paranetUAL, options = {}) {
+        const { blockchain } = this.inputService.getBlockchain(options);
+
+        this.validationService.validateParanetIsKnowledgeCollectionStaged(
+            kcUAL,
+            paranetUAL,
+            blockchain,
+        );
+
+        const paranetId = getParanetId(paranetUAL);
+
+        const knowledgeCollectionId = getKnowledgeCollectionId(kcUAL);
+
+        const isStagedToParanet = await this.blockchainService.isKnowledgeCollectionStaged(
+            {
+                paranetId,
+                knowledgeCollectionId,
+            },
+            blockchain,
+        );
+
+        return {
+            kcUAL,
+            paranetUAL,
+            isStagedToParanet,
         };
     }
 

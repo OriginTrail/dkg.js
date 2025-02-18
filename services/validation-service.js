@@ -232,16 +232,22 @@ export default class ValidationService {
         this.validateBlockchain(blockchain);
     }
 
-    validateParanetReviewKnowledgeCollection(paranetUAL, kcUAL, accepted, blockchain) {
-        this.validateUAL(paranetUAL);
+    validateParanetReviewKnowledgeCollection(kcUAL, paranetUAL, accepted, blockchain) {
         this.validateUAL(kcUAL);
+        this.validateUAL(paranetUAL);
         this.validateAccepted(accepted);
         this.validateBlockchain(blockchain);
     }
 
-    validateParanetStageKnowledgeCollection(paranetUAL, kcUAL, blockchain) {
-        this.validateUAL(paranetUAL);
+    validateParanetStageKnowledgeCollection(kcUAL, paranetUAL, blockchain) {
         this.validateUAL(kcUAL);
+        this.validateUAL(paranetUAL);
+        this.validateBlockchain(blockchain);
+    }
+
+    validateParanetIsKnowledgeCollectionStaged(kcUAL, paranetUAL, blockchain) {
+        this.validateUAL(kcUAL);
+        this.validateUAL(paranetUAL);
         this.validateBlockchain(blockchain);
     }
 
