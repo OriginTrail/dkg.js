@@ -165,11 +165,11 @@ function divider() {
     console.log(createSecondCollectionResult);
     divider();
 
-    let submitToParanetResult2 = await DkgClient.asset.submitToParanet(
+    let submitToParanetResult2 = await DkgClient.asset.stageKnowledgeCollection(
         createSecondCollectionResult.UAL,
         paranetUAL,
     );
-    console.log('======================== KNOWLEDGE COLLECTION #2 SUBMITTED TO PARANET');
+    console.log('======================== KNOWLEDGE COLLECTION #2 STAGED TO PARANET');
     console.log(submitToParanetResult2);
     divider();
 
@@ -177,8 +177,8 @@ function divider() {
 
     // REVIEW SUBMITTED KNOWLEDGE COLLECTION - REJECT
     const reviewKnowledgeCollectionResult = await DkgClient.paranet.reviewKnowledgeCollection(
-        paranetUAL,
         createSecondCollectionResult.UAL,
+        paranetUAL,
         false,
     );
     console.log('======================== KNOWLEDGE COLLECTION #2 REVIEWED');
@@ -188,7 +188,7 @@ function divider() {
     // GET TO CONFIRM THE NEWLY CREATED KNOWLEDGE COLLECTION IS NOT IN PARANET
 
     // SUBMIT THE KNOWLEDGE COLLECTION AGAIN
-    submitToParanetResult2 = await DkgClient.asset.submitToParanet(
+    submitToParanetResult2 = await DkgClient.asset.stageKnowledgeCollection(
         createSecondCollectionResult.UAL,
         paranetUAL,
     );

@@ -715,6 +715,15 @@ export default class BlockchainServiceBase {
         );
     }
 
+    async stageKnowledgeCollection(requestData, blockchain) {
+        return this.executeContractFunction(
+            'Paranet',
+            'stageKnowledgeCollection',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
+
     async reviewKnowledgeCollection(requestData, blockchain) {
         return this.executeContractFunction(
             'Paranet',

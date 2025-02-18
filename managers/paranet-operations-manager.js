@@ -177,7 +177,56 @@ export default class ParanetOperationsManager {
     }
 
     /**
-     * Removes a Knowledge Collection curator from a Paranet. Can only be done by the paranet operator.
+     * Stages a Knowledge Collection to a Paranet.
+     * @async
+     * @param {string} UAL - Universal Asset Locator of the KA that is created for Paranet.
+     * @param {string} kcUAL - Universal Asset Locator of the KC to be staged.
+     * @param {Object} [options={}] - Additional options for staging a KC.
+     * @returns {Object} Object containing the Paranet UAL and operation receipt.
+     * @example
+     * await dkg.paranet.stageKnowledgeCollection(paranetUAL, kcUAL);
+     */
+    async stageKnowledgeCollection(kcUAL, paranetUAL, options = {}) {
+        const { blockchain } = this.inputService.getBlockchain(options);
+
+        this.validationService.validateParanetStageKnowledgeCollection(
+            paranetUAL,
+            kcUAL,
+            blockchain,
+        );
+
+        const {
+            contract: paranetKcStorageContract,
+            paranetKcTokenId,
+            paranetKaTokenId,
+        } = resolveUAL(paranetUAL);
+
+        if (!paranetKaTokenId) {
+            throw new Error('Invalid paranet UAL! Knowledge asset token id is required!');
+        }
+
+        const { contract: kcStorageContract, kcTokenId } = resolveUAL(kcUAL);
+
+        const receipt = await this.blockchainService.stageKnowledgeCollection(
+            {
+                paranetKcStorageContract,
+                paranetKcTokenId,
+                paranetKaTokenId,
+                kcStorageContract,
+                kcTokenId,
+            },
+            blockchain,
+        );
+
+        return {
+            paranetUAL,
+            kcUAL,
+            operation: receipt,
+        };
+    }
+
+    /**
+     * Reviews a Knowledge Collection submitted to paranet which is in the staging phase.
      * @async
      * @param {string} UAL - Universal Asset Locator of the KA that is created for Paranet.
      * @param {string} kcUAL - Universal Asset Locator of the KC to be reviewed.
@@ -187,7 +236,7 @@ export default class ParanetOperationsManager {
      * @example
      * await dkg.paranet.reviewKnowledgeCollection(paranetUAL, kcUAL, accepted);
      */
-    async reviewKnowledgeCollection(paranetUAL, kcUAL, accepted, options = {}) {
+    async reviewKnowledgeCollection(kcUAL, paranetUAL, accepted, options = {}) {
         const { blockchain } = this.inputService.getBlockchain(options);
 
         this.validationService.validateParanetReviewKnowledgeCollection(

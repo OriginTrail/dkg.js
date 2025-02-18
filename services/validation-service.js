@@ -239,6 +239,12 @@ export default class ValidationService {
         this.validateBlockchain(blockchain);
     }
 
+    validateParanetStageKnowledgeCollection(paranetUAL, kcUAL, blockchain) {
+        this.validateUAL(paranetUAL);
+        this.validateUAL(kcUAL);
+        this.validateBlockchain(blockchain);
+    }
+
     validateParanetAddCuratedNodes(UAL, blockchain, identityIds) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
