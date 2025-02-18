@@ -354,6 +354,45 @@ export default class ParanetOperationsManager {
     }
 
     /**
+     * Gets the approval status of a Knowledge Collection to a Paranet.
+     * @async
+     * @param {string} UAL - Universal Asset Locator of the KA that is created for Paranet.
+     * @param {string} kcUAL - Universal Asset Locator of the KC to be checked.
+     * @param {Object} [options={}] - Additional options for checking if a KC is approved.
+     * @returns {Object} Object containing the Paranet UAL and operation receipt.
+     * @example
+     * await dkg.paranet.getKnowledgeCollectionApprovalStatus(paranetUAL, kcUAL);
+     */
+    async getKnowledgeCollectionApprovalStatus(kcUAL, paranetUAL, options = {}) {
+        const { blockchain } = this.inputService.getBlockchain(options);
+
+        this.validationService.validateParanetGetKnowledgeCollectionApprovalStatus(
+            kcUAL,
+            paranetUAL,
+            blockchain,
+        );
+
+        const paranetId = getParanetId(paranetUAL);
+
+        const knowledgeCollectionId = getKnowledgeCollectionId(kcUAL);
+
+        const kcParanetApprovalStatus =
+            await this.blockchainService.getKnowledgeCollectionApprovalStatus(
+                {
+                    paranetId,
+                    knowledgeCollectionId,
+                },
+                blockchain,
+            );
+
+        return {
+            kcUAL,
+            paranetUAL,
+            kcParanetApprovalStatus,
+        };
+    }
+
+    /**
      * Adds nodes to a curated paranet.
      * @async
      * @param {string} paranetUAL - Universal Asset Locator of the Paranet.

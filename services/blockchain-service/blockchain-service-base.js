@@ -751,6 +751,15 @@ export default class BlockchainServiceBase {
         );
     }
 
+    async getKnowledgeCollectionApprovalStatus(requestData, blockchain) {
+        return this.callContractFunction(
+            'ParanetStagingRegistry',
+            'getKnowledgeCollectionStatus',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
+
     async removeCurator(requestData, blockchain) {
         return this.executeContractFunction(
             'Paranet',
