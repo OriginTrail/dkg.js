@@ -7,7 +7,7 @@ import {
     PARANET_MINERS_ACCESS_POLICY,
     BLOCKCHAIN_IDS,
     ENVIRONMENTS,
-    INCENTIVE_TYPE,
+    PARANET_KC_SUBMISSION_POLICY,
 } from '../constants.js';
 
 const ENVIRONMENT = ENVIRONMENTS.DEVELOPMENT;
@@ -88,6 +88,7 @@ function divider() {
         operatorRewardPercentage: 10.0,
         paranetNodesAccessPolicy: PARANET_NODES_ACCESS_POLICY.OPEN,
         paranetMinersAccessPolicy: PARANET_MINERS_ACCESS_POLICY.OPEN,
+        paranetKcSubmissionPolicy: PARANET_KC_SUBMISSION_POLICY.OPEN,
     };
 
     const paranetRegistered = await DkgClient.paranet.create(paranetUAL, paranetOptions);

@@ -63,7 +63,7 @@ export default class ParanetOperationsManager {
             paranetDescription,
             paranetNodesAccessPolicy,
             paranetMinersAccessPolicy,
-            paranetKCSubmissionPolicy,
+            paranetKcSubmissionPolicy,
         } = this.inputService.getParanetCreateArguments(options);
 
         this.validationService.validateParanetCreate(
@@ -73,7 +73,7 @@ export default class ParanetOperationsManager {
             paranetDescription,
             paranetNodesAccessPolicy,
             paranetMinersAccessPolicy,
-            paranetKCSubmissionPolicy,
+            paranetKcSubmissionPolicy,
         );
 
         const { contract, kcTokenId, kaTokenId } = resolveUAL(UAL);

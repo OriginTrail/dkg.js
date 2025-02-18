@@ -211,6 +211,7 @@ export default class ValidationService {
         paranetDescription,
         paranetNodesAccessPolicy,
         paranetMinersAccessPolicy,
+        paranetKcSubmissionPolicy,
     ) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
@@ -218,6 +219,7 @@ export default class ValidationService {
         this.validateParanetDescription(paranetDescription);
         this.validateParanetNodesAccessPolicy(paranetNodesAccessPolicy);
         this.validateParanetMinersAccessPolicy(paranetMinersAccessPolicy);
+        this.validateParanetKcSubmissionPolicy(paranetKcSubmissionPolicy);
     }
 
     validateParanetAddCurator(paranetUAL, curatorAddress, blockchain) {
@@ -703,12 +705,12 @@ export default class ValidationService {
             );
     }
 
-    validateParanetKCSubmissionPolicy(paranetKCSubmissionPolicy) {
-        this.validateRequiredParam('paranetKCSubmissionPolicy', paranetKCSubmissionPolicy);
-        this.validateParamType('paranetKCSubmissionPolicy', paranetKCSubmissionPolicy, 'number');
-        if (!Object.values(PARANET_KC_SUBMISSION_POLICY).includes(paranetKCSubmissionPolicy))
+    validateParanetKcSubmissionPolicy(paranetKcSubmissionPolicy) {
+        this.validateRequiredParam('paranetKcSubmissionPolicy', paranetKcSubmissionPolicy);
+        this.validateParamType('paranetKcSubmissionPolicy', paranetKcSubmissionPolicy, 'number');
+        if (!Object.values(PARANET_KC_SUBMISSION_POLICY).includes(paranetKcSubmissionPolicy))
             throw Error(
-                `Invalid paranet KC submission policy: ${paranetKCSubmissionPolicy}. Should be 0 for OPEN or 1 for CURATED`,
+                `Invalid paranet KC submission policy: ${paranetKcSubmissionPolicy}. Should be 0 for OPEN or 1 for CURATED`,
             );
     }
 

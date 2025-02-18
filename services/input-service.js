@@ -108,7 +108,7 @@ export default class InputService {
             paranetDescription: this.getParanetDescription(options),
             paranetNodesAccessPolicy: this.getParanetNodesAccessPolicy(options),
             paranetMinersAccessPolicy: this.getParanetMinersAccessPolicy(options),
-            paranetKCSubmissionPolicy: this.getParanetKCSubmissionPolicy(options),
+            paranetKcSubmissionPolicy: this.getParanetKcSubmissionPolicy(options),
         };
     }
 
@@ -382,8 +382,8 @@ export default class InputService {
         return options.paranetMinersAccessPolicy ?? PARANET_MINERS_ACCESS_POLICY.OPEN;
     }
 
-    getParanetKCSubmissionPolicy(options) {
-        return options.paranetKCSubmissionPolicy ?? PARANET_KC_SUBMISSION_POLICY.OPEN;
+    getParanetKcSubmissionPolicy(options) {
+        return options.paranetKcSubmissionPolicy ?? PARANET_KC_SUBMISSION_POLICY.OPEN;
     }
 
     getTracToTokenEmissionMultiplier(options) {
