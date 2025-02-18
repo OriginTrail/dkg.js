@@ -222,6 +222,12 @@ export default class ValidationService {
         this.validateParanetKcSubmissionPolicy(paranetKcSubmissionPolicy);
     }
 
+    validateParanetIsKnowledgeCollectionRegistered(kcUAL, paranetUAL, blockchain) {
+        this.validateUAL(kcUAL);
+        this.validateUAL(paranetUAL);
+        this.validateBlockchain(blockchain);
+    }
+
     validateParanetAddCurator(paranetUAL, curatorAddress, blockchain) {
         this.validateUAL(paranetUAL);
         this.validateAddress(curatorAddress);

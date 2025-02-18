@@ -104,6 +104,38 @@ export default class ParanetOperationsManager {
     }
 
     /**
+     * Check if a Knowledge Collection is registered to a Paranet.
+     * @async
+     * @param {string} kcUAL - Universal Asset Locator of the KC to be checked.
+     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+     * @param {Object} [options={}] - Additional options for checking if a KC is registered.
+     * @returns {Object} Object containing the Paranet UAL and knowledge collections.
+     * @example
+     * await dkg.paranet.isKnowledgeCollectionRegistered(paranetUAL, kcUAL);
+     */
+    async isKnowledgeCollectionRegistered(kcUAL, paranetUAL, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+
+        this.validationService.validateParanetIsKnowledgeCollectionRegistered(
+            kcUAL,
+            paranetUAL,
+            blockchain,
+        );
+
+        const paranetId = getParanetId(paranetUAL);
+
+        const knowledgeCollectionId = getKnowledgeCollectionId(kcUAL);
+
+        const isKcRegisteredToParanet =
+            await this.blockchainService.isKnowledgeCollectionRegistered(
+                { paranetId, knowledgeCollectionId },
+                blockchain,
+            );
+
+        return { paranetUAL, isKcRegisteredToParanet };
+    }
+
+    /**
      * Adds a Knowledge Collection curator to a Paranet.
      * @async
      * @param {string} UAL - Universal Asset Locator of the KA that is created for Paranet.
