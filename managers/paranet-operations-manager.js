@@ -3,6 +3,7 @@ import {
     INCENTIVE_TYPE,
     INCENTIVE_MULTIPLIER,
     NEUROWEB_INCENTIVE_TYPE_CHAINS,
+    PARANET_KNOWLEDGE_COLLECTION_STATUS,
 } from '../constants.js';
 
 export default class ParanetOperationsManager {
@@ -91,7 +92,7 @@ export default class ParanetOperationsManager {
                 paranetDescription,
                 paranetNodesAccessPolicy,
                 paranetMinersAccessPolicy,
-                paranetKCSubmissionPolicy,
+                paranetKcSubmissionPolicy,
             },
             blockchain,
         );
@@ -113,7 +114,7 @@ export default class ParanetOperationsManager {
      * await dkg.paranet.addCurator(paranetUAL, curatorAddress);
      */
     async addCurator(paranetUAL, curatorAddress, options = {}) {
-        const { blockchain } = this.inputService.getBlockchain(options);
+        const blockchain = this.inputService.getBlockchain(options);
 
         this.validationService.validateParanetAddCurator(paranetUAL, curatorAddress, blockchain);
 
@@ -150,7 +151,7 @@ export default class ParanetOperationsManager {
      * await dkg.paranet.removeCurator(paranetUAL, curatorAddress);
      */
     async removeCurator(paranetUAL, curatorAddress, options = {}) {
-        const { blockchain } = this.inputService.getBlockchain(options);
+        const blockchain = this.inputService.getBlockchain(options);
 
         this.validationService.validateParanetRemoveCurator(paranetUAL, curatorAddress, blockchain);
 
@@ -187,7 +188,7 @@ export default class ParanetOperationsManager {
      * await dkg.paranet.stageKnowledgeCollection(paranetUAL, kcUAL);
      */
     async stageKnowledgeCollection(kcUAL, paranetUAL, options = {}) {
-        const { blockchain } = this.inputService.getBlockchain(options);
+        const blockchain = this.inputService.getBlockchain(options);
 
         this.validationService.validateParanetStageKnowledgeCollection(
             kcUAL,
@@ -197,8 +198,8 @@ export default class ParanetOperationsManager {
 
         const {
             contract: paranetKcStorageContract,
-            paranetKcTokenId,
-            paranetKaTokenId,
+            kcTokenId: paranetKcTokenId,
+            kaTokenId: paranetKaTokenId,
         } = resolveUAL(paranetUAL);
 
         if (!paranetKaTokenId) {
@@ -237,7 +238,7 @@ export default class ParanetOperationsManager {
      * await dkg.paranet.reviewKnowledgeCollection(paranetUAL, kcUAL, accepted);
      */
     async reviewKnowledgeCollection(kcUAL, paranetUAL, accepted, options = {}) {
-        const { blockchain } = this.inputService.getBlockchain(options);
+        const blockchain = this.inputService.getBlockchain(options);
 
         this.validationService.validateParanetReviewKnowledgeCollection(
             kcUAL,
@@ -248,8 +249,8 @@ export default class ParanetOperationsManager {
 
         const {
             contract: paranetKcStorageContract,
-            paranetKcTokenId,
-            paranetKaTokenId,
+            kcTokenId: paranetKcTokenId,
+            kaTokenId: paranetKaTokenId,
         } = resolveUAL(paranetUAL);
 
         if (!paranetKaTokenId) {
@@ -288,7 +289,7 @@ export default class ParanetOperationsManager {
      * await dkg.paranet.isKnowledgeCollectionStaged(paranetUAL, kcUAL);
      */
     async isKnowledgeCollectionStaged(kcUAL, paranetUAL, options = {}) {
-        const { blockchain } = this.inputService.getBlockchain(options);
+        const blockchain = this.inputService.getBlockchain(options);
 
         this.validationService.validateParanetIsKnowledgeCollectionStaged(
             kcUAL,
@@ -326,7 +327,7 @@ export default class ParanetOperationsManager {
      * await dkg.paranet.isKnowledgeCollectionApproved(paranetUAL, kcUAL);
      */
     async isKnowledgeCollectionApproved(kcUAL, paranetUAL, options = {}) {
-        const { blockchain } = this.inputService.getBlockchain(options);
+        const blockchain = this.inputService.getBlockchain(options);
 
         this.validationService.validateParanetIsKnowledgeCollectionApproved(
             kcUAL,
@@ -364,7 +365,7 @@ export default class ParanetOperationsManager {
      * await dkg.paranet.getKnowledgeCollectionApprovalStatus(paranetUAL, kcUAL);
      */
     async getKnowledgeCollectionApprovalStatus(kcUAL, paranetUAL, options = {}) {
-        const { blockchain } = this.inputService.getBlockchain(options);
+        const blockchain = this.inputService.getBlockchain(options);
 
         this.validationService.validateParanetGetKnowledgeCollectionApprovalStatus(
             kcUAL,
@@ -388,7 +389,7 @@ export default class ParanetOperationsManager {
         return {
             kcUAL,
             paranetUAL,
-            kcParanetApprovalStatus,
+            kcParanetApprovalStatus: PARANET_KNOWLEDGE_COLLECTION_STATUS[kcParanetApprovalStatus],
         };
     }
 

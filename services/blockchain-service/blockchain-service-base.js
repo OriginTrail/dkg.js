@@ -24,6 +24,7 @@ const ParanetsRegistryAbi = require('dkg-evm-module/abi/ParanetsRegistry.json');
 const ParanetIncentivesPoolFactoryAbi = require('dkg-evm-module/abi/ParanetIncentivesPoolFactory.json');
 const ParanetIncentivesPoolAbi = require('dkg-evm-module/abi/ParanetIncentivesPool.json');
 const ParanetKnowledgeMinersRegistryAbi = require('dkg-evm-module/abi/ParanetKnowledgeMinersRegistry.json');
+const ParanetStagingRegistryAbi = require('dkg-evm-module/abi/ParanetStagingRegistry.json');
 const IdentityStorageAbi = require('dkg-evm-module/abi/IdentityStorage.json');
 const KnowledgeCollectionAbi = require('dkg-evm-module/abi/KnowledgeCollection.json');
 const KnowledgeCollectionStorageAbi = require('dkg-evm-module/abi/KnowledgeCollectionStorage.json');
@@ -53,7 +54,7 @@ export default class BlockchainServiceBase {
         this.abis.KnowledgeCollectionStorage = KnowledgeCollectionStorageAbi;
         this.abis.AskStorage = AskStorageAbi;
         this.abis.Chronos = ChronosAbi;
-
+        this.abis.ParanetStagingRegistry = ParanetStagingRegistryAbi;
         this.abis.KnowledgeCollectionStorage.filter((obj) => obj.type === 'event').forEach(
             (event) => {
                 const concatInputs = event.inputs.map((input) => input.internalType);

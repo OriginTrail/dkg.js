@@ -117,6 +117,13 @@ export const PARANET_KC_SUBMISSION_POLICY = {
     PERMISSIONED: 1,
 };
 
+export const PARANET_KNOWLEDGE_COLLECTION_STATUS = {
+    0: 'NONE',
+    1: 'PENDING',
+    2: 'APPROVED',
+    3: 'REJECTED',
+};
+
 export const INCENTIVE_TYPE = {
     NEUROWEB: 'Neuroweb',
     NEUROWEB_ERC20: 'NeurowebERC20',
