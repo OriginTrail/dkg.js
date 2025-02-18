@@ -6,6 +6,7 @@ import {
     PARANET_MINERS_ACCESS_POLICY,
     BLOCKCHAIN_IDS,
     ENVIRONMENTS,
+    PARANET_KC_SUBMISSION_POLICY,
 } from '../constants.js';
 
 const ENVIRONMENT = ENVIRONMENTS.DEVELOPMENT;
@@ -70,14 +71,14 @@ function divider() {
 
     divider();
 
-    const paranetCollectionResult = await DkgClient.asset.create(content, { epochsNum: 2 });
+    const paranetKcResult = await DkgClient.asset.create(content, { epochsNum: 2 });
     console.log('======================== PARANET KNOWLEDGE COLLECTION CREATED');
-    console.log(paranetCollectionResult);
+    console.log(paranetKcResult);
 
     divider();
 
     // Paranet UAL is a Knowledge Asset UAL (combination of Knowledge Collection UAL and Knowledge Asset token id)
-    const paranetUAL = `${paranetCollectionResult.UAL}/1`;
+    const paranetUAL = `${paranetKcResult.UAL}/1`;
     const paranetOptions = {
         paranetName: 'FirstParanet',
         paranetDescription: 'First ever paranet on DKG!',
@@ -86,49 +87,14 @@ function divider() {
         operatorRewardPercentage: 10.0,
         paranetNodesAccessPolicy: PARANET_NODES_ACCESS_POLICY.OPEN,
         paranetMinersAccessPolicy: PARANET_MINERS_ACCESS_POLICY.OPEN,
+        paranetKcSubmissionPolicy: PARANET_KC_SUBMISSION_POLICY.PERMISSIONED, // Set up to be permissioned
     };
 
     const paranetRegistered = await DkgClient.paranet.create(paranetUAL, paranetOptions);
-    console.log('======================== PARANET REGISTERED');
-    console.log(paranetRegistered);
-    divider();
-
-    // OPEN SUBMISSION POLICY
-    content = {
-        public: {
-            '@context': 'https://www.schema.org',
-            '@id': 'urn:us-cities:info:denver',
-            '@type': 'City',
-            name: 'Denver',
-            state: 'Colorado',
-            population: '700,000',
-            area: '153.3 sq mi',
-        },
-        private: {
-            '@context': 'https://www.schema.org',
-            '@id': 'urn:us-cities:data:denver',
-            '@type': 'CityPrivateData',
-            crimeRate: 'Low',
-            averageIncome: '$50,998',
-            infrastructureScore: '6.5',
-            relatedCities: [
-                { '@id': 'urn:us-cities:info:boston', name: 'Boston' },
-                { '@id': 'urn:us-cities:info:chicago', name: 'Chicago' },
-            ],
-        },
-    };
-
-    const createCollectionResult = await DkgClient.asset.create(content, { epochsNum: 2 });
-    console.log('======================== KNOWLEDGE COLLECTION CREATED');
-    console.log(createCollectionResult);
-    divider();
-
-    const submitToParanetResult = await DkgClient.asset.submitToParanet(
-        createCollectionResult.UAL,
-        paranetUAL,
+    console.log(
+        '======================== PARANET WITH PERMISSIONED KC SUBMISSION POLICY REGISTERED',
     );
-    console.log('======================== KNOWLEDGE COLLECTION SUBMITTED TO PARANET');
-    console.log(submitToParanetResult);
+    console.log(paranetRegistered);
     divider();
 
     // ADD CURATOR TO PARANET
@@ -160,55 +126,106 @@ function divider() {
             ],
         },
     };
-    const createSecondCollectionResult = await DkgClient.asset.create(content, { epochsNum: 2 });
-    console.log('======================== KNOWLEDGE COLLECTION #2 CREATED');
-    console.log(createSecondCollectionResult);
+    const createKcResult = await DkgClient.asset.create(content, { epochsNum: 2 });
+    console.log('======================== KNOWLEDGE COLLECTION CREATED');
+    console.log(createKcResult);
     divider();
 
-    let submitToParanetResult2 = await DkgClient.asset.stageKnowledgeCollection(
-        createSecondCollectionResult.UAL,
+    // STAGE KNOWLEDGE COLLECTION TO PARANET
+    let stageToParanetResult = await DkgClient.paranet.stageKnowledgeCollection(
+        createKcResult.UAL,
         paranetUAL,
     );
-    console.log('======================== KNOWLEDGE COLLECTION #2 STAGED TO PARANET');
-    console.log(submitToParanetResult2);
+    console.log('======================== KNOWLEDGE COLLECTION STAGED TO PARANET');
+    console.log(stageToParanetResult);
     divider();
 
-    // GET TO CONFIRM THE NEWLY CREATED KNOWLEDGE COLLECTION IS NOT IN PARANET - UNDER REVIEW
+    // CHECK IF KNOWLEDGE COLLECTION IS STAGED TO PARANET AND GET APPROVAL STATUS
+    console.log(
+        '======================== IS KNOWLEDGE COLLECTION STAGED TO PARANET: ',
+        await DkgClient.paranet.isKnowledgeCollectionStaged(createKcResult.UAL, paranetUAL),
+    );
+    console.log(
+        '======================== KNOWLEDGE COLLECTION PARANET APPROVAL STATUS: ',
+        await DkgClient.paranet.getKnowledgeCollectionApprovalStatus(
+            createKcResult.UAL,
+            paranetUAL,
+        ),
+    );
+    divider();
 
     // REVIEW SUBMITTED KNOWLEDGE COLLECTION - REJECT
-    const reviewKnowledgeCollectionResult = await DkgClient.paranet.reviewKnowledgeCollection(
-        createSecondCollectionResult.UAL,
+    let reviewKnowledgeCollectionResult = await DkgClient.paranet.reviewKnowledgeCollection(
+        createKcResult.UAL,
         paranetUAL,
         false,
     );
-    console.log('======================== KNOWLEDGE COLLECTION #2 REVIEWED');
+    console.log('======================== KNOWLEDGE COLLECTION REVIEWED AND REJECTED');
     console.log(reviewKnowledgeCollectionResult);
     divider();
 
-    // GET TO CONFIRM THE NEWLY CREATED KNOWLEDGE COLLECTION IS NOT IN PARANET
+    // CHECK IF KNOWLEDGE COLLECTION IS APPROVED AND GET APPROVAL STATUS
+    console.log(
+        '======================== IS KNOWLEDGE COLLECTION APPROVED: ',
+        await DkgClient.paranet.isKnowledgeCollectionApproved(createKcResult.UAL, paranetUAL),
+    );
+    console.log(
+        '======================== KNOWLEDGE COLLECTION PARANET APPROVAL STATUS: ',
+        await DkgClient.paranet.getKnowledgeCollectionApprovalStatus(
+            createKcResult.UAL,
+            paranetUAL,
+        ),
+    );
+    divider();
+
+    // CHECK IF KNOWLEDGE COLLECTION IS REGISTERED TO PARANET - SHOULD RETURN FALSE
+    console.log(
+        '======================== IS KNOWLEDGE COLLECTION REGISTERED TO PARANET: ',
+        await DkgClient.paranet.isKnowledgeCollectionRegistered(createKcResult.UAL, paranetUAL),
+    );
+    divider();
 
     // SUBMIT THE KNOWLEDGE COLLECTION AGAIN
-    submitToParanetResult2 = await DkgClient.asset.stageKnowledgeCollection(
-        createSecondCollectionResult.UAL,
+    stageToParanetResult = await DkgClient.paranet.stageKnowledgeCollection(
+        createKcResult.UAL,
         paranetUAL,
     );
     console.log(
-        '======================== KNOWLEDGE COLLECTION #2 SUBMITTED TO PARANET FOR THE SECOND TIME',
+        '======================== KNOWLEDGE COLLECTION SUBMITTED TO PARANET FOR THE SECOND TIME',
     );
-    console.log(submitToParanetResult2);
+    console.log(stageToParanetResult);
     divider();
 
     // REVIEW SUBMITTED KNOWLEDGE COLLECTION - ACCEPT
     reviewKnowledgeCollectionResult = await DkgClient.paranet.reviewKnowledgeCollection(
+        createKcResult.UAL,
         paranetUAL,
-        createSecondCollectionResult.UAL,
         true,
     );
-    console.log('======================== KNOWLEDGE COLLECTION IS IN PARANET');
+    console.log('======================== KNOWLEDGE COLLECTION REVIEWED AGAIN AND ACCEPTED');
     console.log(reviewKnowledgeCollectionResult);
     divider();
 
-    // GET TO CONFIRM THE NEWLY CREATED KNOWLEDGE COLLECTION IS IN PARANET
+    // CHECK IF KNOWLEDGE COLLECTION IS APPROVED AND GET APPROVAL STATUS
+    console.log(
+        '======================== IS KNOWLEDGE COLLECTION APPROVED: ',
+        await DkgClient.paranet.isKnowledgeCollectionApproved(createKcResult.UAL, paranetUAL),
+    );
+    console.log(
+        '======================== KNOWLEDGE COLLECTION PARANET APPROVAL STATUS: ',
+        await DkgClient.paranet.getKnowledgeCollectionApprovalStatus(
+            createKcResult.UAL,
+            paranetUAL,
+        ),
+    );
+    divider();
+
+    // CHECK IF KNOWLEDGE COLLECTION IS REGISTERED TO PARANET - SHOULD RETURN TRUE
+    console.log(
+        '======================== IS KNOWLEDGE COLLECTION REGISTERED TO PARANET: ',
+        await DkgClient.paranet.isKnowledgeCollectionRegistered(createKcResult.UAL, paranetUAL),
+    );
+    divider();
 
     // REMOVE CURATOR
     const removeCuratorResult = await DkgClient.paranet.removeCurator(paranetUAL, PUBLIC_KEY);
