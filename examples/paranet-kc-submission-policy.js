@@ -176,6 +176,14 @@ function divider() {
     // GET TO CONFIRM THE NEWLY CREATED KNOWLEDGE COLLECTION IS NOT IN PARANET - UNDER REVIEW
 
     // REVIEW SUBMITTED KNOWLEDGE COLLECTION - REJECT
+    const reviewKnowledgeCollectionResult = await DkgClient.paranet.reviewKnowledgeCollection(
+        paranetUAL,
+        createSecondCollectionResult.UAL,
+        false,
+    );
+    console.log('======================== KNOWLEDGE COLLECTION #2 REVIEWED');
+    console.log(reviewKnowledgeCollectionResult);
+    divider();
 
     // GET TO CONFIRM THE NEWLY CREATED KNOWLEDGE COLLECTION IS NOT IN PARANET
 
@@ -191,6 +199,14 @@ function divider() {
     divider();
 
     // REVIEW SUBMITTED KNOWLEDGE COLLECTION - ACCEPT
+    reviewKnowledgeCollectionResult = await DkgClient.paranet.reviewKnowledgeCollection(
+        paranetUAL,
+        createSecondCollectionResult.UAL,
+        true,
+    );
+    console.log('======================== KNOWLEDGE COLLECTION IS IN PARANET');
+    console.log(reviewKnowledgeCollectionResult);
+    divider();
 
     // GET TO CONFIRM THE NEWLY CREATED KNOWLEDGE COLLECTION IS IN PARANET
 

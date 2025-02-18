@@ -232,6 +232,13 @@ export default class ValidationService {
         this.validateBlockchain(blockchain);
     }
 
+    validateParanetReviewKnowledgeCollection(paranetUAL, kcUAL, accepted, blockchain) {
+        this.validateUAL(paranetUAL);
+        this.validateUAL(kcUAL);
+        this.validateAccepted(accepted);
+        this.validateBlockchain(blockchain);
+    }
+
     validateParanetAddCuratedNodes(UAL, blockchain, identityIds) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
@@ -799,5 +806,10 @@ export default class ValidationService {
         this.validateMinimumNumberOfFinalizationConfirmations(
             minimumNumberOfFinalizationConfirmations,
         );
+    }
+
+    validateAccepted(accepted) {
+        this.validateRequiredParam('accepted', accepted);
+        this.validateParamType('accepted', accepted, 'boolean');
     }
 }
