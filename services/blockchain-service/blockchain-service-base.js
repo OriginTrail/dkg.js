@@ -735,8 +735,17 @@ export default class BlockchainServiceBase {
 
     async isKnowledgeCollectionStaged(requestData, blockchain) {
         return this.callContractFunction(
-            'Paranet',
+            'ParanetStagingRegistry',
             'isKnowledgeCollectionStaged',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
+
+    async isKnowledgeCollectionApproved(requestData, blockchain) {
+        return this.callContractFunction(
+            'ParanetStagingRegistry',
+            'isKnowledgeCollectionApproved',
             Object.values(requestData),
             blockchain,
         );
