@@ -83,9 +83,6 @@ function divider() {
     const paranetOptions = {
         paranetName: 'FirstParanet',
         paranetDescription: 'First ever paranet on DKG!',
-        tracToTokenEmissionMultiplier: 5,
-        incentivizationProposalVotersRewardPercentage: 12.0,
-        operatorRewardPercentage: 10.0,
         paranetNodesAccessPolicy: PARANET_NODES_ACCESS_POLICY.OPEN,
         paranetMinersAccessPolicy: PARANET_MINERS_ACCESS_POLICY.OPEN,
         paranetKcSubmissionPolicy: PARANET_KC_SUBMISSION_POLICY.OPEN,
@@ -96,12 +93,25 @@ function divider() {
     console.log(paranetRegistered);
     divider();
 
+    const incentivesPoolOptions = {
+        tracToTokenEmissionMultiplier: 5,
+        operatorRewardPercentage: 10.0,
+        incentivizationProposalVotersRewardPercentage: 12.0,
+        incentivesPoolName: 'FirstParanetIncentivesPool',
+        rewardTokenAddress: '0x0000000000000000000000000000000000000000',
+    };
+
     const paranetDeployed = await DkgClient.paranet.deployIncentivesContract(
         paranetUAL,
-        paranetOptions,
+        incentivesPoolOptions,
     );
     console.log('======================== PARANET INCENTIVES POOL DEPLOYED');
     console.log(paranetDeployed);
+    divider();
+
+    const allIncentivesPools = await DkgClient.paranet.getAllIncentivesPools(paranetUAL);
+    console.log('======================== ALL PARANET INCENTIVES POOLS');
+    console.log(allIncentivesPools);
     divider();
 
     content = {
@@ -232,32 +242,43 @@ function divider() {
         '======================== IS MINER : ',
         await DkgClient.paranet.isKnowledgeMiner(paranetUAL, {
             roleAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+            incentivesPoolName: incentivesPoolOptions.incentivesPoolName,
         }),
     );
     console.log(
         '======================== IS OPERATOR : ',
-        await DkgClient.paranet.isParanetOperator(paranetUAL),
+        await DkgClient.paranet.isParanetOperator(paranetUAL, {
+            incentivesPoolName: incentivesPoolOptions.incentivesPoolName,
+        }),
     );
     console.log(
         '======================== IS VOTER : ',
         await DkgClient.paranet.isProposalVoter(paranetUAL, {
             roleAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+            incentivesPoolName: incentivesPoolOptions.incentivesPoolName,
         }),
     );
     divider();
 
-    let claimable = await DkgClient.paranet.getClaimableMinerReward(paranetUAL);
+    let claimable = await DkgClient.paranet.getClaimableMinerReward(paranetUAL, {
+        incentivesPoolName: incentivesPoolOptions.incentivesPoolName,
+    });
     console.log('======================== KC MINER REWARD TO CLAIM');
     console.log(claimable);
     divider();
 
-    claimable = await DkgClient.paranet.getClaimableOperatorReward(paranetUAL);
+    claimable = await DkgClient.paranet.getClaimableOperatorReward(paranetUAL, {
+        incentivesPoolName: incentivesPoolOptions.incentivesPoolName,
+    });
     console.log('======================== OPERATOR REWARD TO CLAIM');
     console.log(claimable);
     divider();
 
     // let claimedResult = await DkgClient.paranet.claimMinerReward(
     //     paranetUAL,
+    //     {
+    //         incentivesPoolName: incentivesPoolOptions.incentivesPoolName,
+    //     },
     // );
     // console.log('======================== KC MINER REWARD CLAIMED');
     // console.log(claimedResult);
@@ -265,6 +286,9 @@ function divider() {
 
     // claimedResult = await DkgClient.paranet.claimOperatorReward(
     //     paranetUAL,
+    //     {
+    //         incentivesPoolName: incentivesPoolOptions.incentivesPoolName,
+    //     },
     // );
     // console.log('======================== OPERATOR REWARD CLAIMED');
     // console.log(claimedResult);
