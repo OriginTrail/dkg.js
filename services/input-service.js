@@ -115,11 +115,12 @@ export default class InputService {
     getParanetDeployIncentivesContractArguments(options) {
         return {
             blockchain: this.getBlockchain(options),
-            incentiveType: this.getIncentiveType(options),
             tracToTokenEmissionMultiplier: this.getTracToTokenEmissionMultiplier(options),
             operatorRewardPercentage: this.getOperatorRewardPercentage(options),
             incentivizationProposalVotersRewardPercentage:
                 this.getIncentivizationProposalVotersRewardPercentage(options),
+            incentivesPoolName: this.getIncentivesPoolName(options),
+            rewardTokenAddress: this.getRewardTokenAddress(options),
         };
     }
 
@@ -398,10 +399,6 @@ export default class InputService {
         return options.operatorRewardPercentage * 100 ?? null;
     }
 
-    getIncentiveType(options) {
-        return options.incentiveType ?? null;
-    }
-
     getParanetServiceName(options) {
         return options.paranetServiceName ?? null;
     }
@@ -420,5 +417,13 @@ export default class InputService {
 
     getAssertionCachedLocally(options) {
         return options.assertionCachedLocally ?? false;
+    }
+
+    getIncentivesPoolName(options) {
+        return options.incentivesPoolName ?? null;
+    }
+
+    getRewardTokenAddress(options) {
+        return options.rewardTokenAddress ?? ZERO_ADDRESS;
     }
 }

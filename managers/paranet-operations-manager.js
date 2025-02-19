@@ -1,10 +1,5 @@
 import { resolveUAL, getParanetId, getKnowledgeCollectionId } from '../services/utilities.js';
-import {
-    INCENTIVE_TYPE,
-    INCENTIVE_MULTIPLIER,
-    NEUROWEB_INCENTIVE_TYPE_CHAINS,
-    PARANET_KNOWLEDGE_COLLECTION_STATUS,
-} from '../constants.js';
+import { PARANET_KNOWLEDGE_COLLECTION_STATUS } from '../constants.js';
 
 export default class ParanetOperationsManager {
     constructor(services) {
@@ -12,31 +7,6 @@ export default class ParanetOperationsManager {
         this.inputService = services.inputService;
         this.nodeApiService = services.nodeApiService;
         this.validationService = services.validationService;
-        this._incentiveType = null;
-    }
-
-    // Lazy initialization of incentive type due to index.cjs
-    get incentiveType() {
-        if (this._incentiveType === null) {
-            this._incentiveType = this.#initializeIncentiveType();
-        }
-        return this._incentiveType;
-    }
-
-    #initializeIncentiveType() {
-        const blockchainName = this.blockchainService?.config?.blockchain?.name;
-
-        if (!blockchainName) {
-            throw new Error(
-                'Blockchain configuration is missing or invalid. Cannot determine incentive type.',
-            );
-        }
-
-        if (blockchainName && NEUROWEB_INCENTIVE_TYPE_CHAINS.includes(blockchainName)) {
-            return INCENTIVE_TYPE.NEUROWEB;
-        }
-
-        return INCENTIVE_TYPE.NEUROWEB_ERC20;
     }
 
     /**
@@ -809,6 +779,8 @@ export default class ParanetOperationsManager {
             tracToTokenEmissionMultiplier,
             operatorRewardPercentage,
             incentivizationProposalVotersRewardPercentage,
+            incentivesPoolName,
+            rewardTokenAddress,
         } = this.inputService.getParanetDeployIncentivesContractArguments(options);
 
         this.validationService.validateDeployIncentivesContract(
@@ -817,43 +789,51 @@ export default class ParanetOperationsManager {
             tracToTokenEmissionMultiplier,
             operatorRewardPercentage,
             incentivizationProposalVotersRewardPercentage,
+            incentivesPoolName,
+            rewardTokenAddress,
         );
-        if (Object.values(INCENTIVE_TYPE).includes(this.incentiveType)) {
-            const { contract: kcStorageContract, kcTokenId, kaTokenId } = resolveUAL(paranetUAL);
 
-            if (!kaTokenId) {
-                throw new Error('Invalid paranet UAL! Knowledge asset token id is required!');
-            }
+        const { contract: kcStorageContract, kcTokenId, kaTokenId } = resolveUAL(paranetUAL);
 
-            const emissionMultiplier =
-                BigInt(tracToTokenEmissionMultiplier) * INCENTIVE_MULTIPLIER[this.incentiveType];
-
-            const receipt = await this.blockchainService.deployIncentivesPool(
-                {
-                    isNativeReward: this.incentiveType === INCENTIVE_TYPE.NEUROWEB,
-                    kcStorageContract,
-                    kcTokenId,
-                    kaTokenId,
-                    tracToTokenEmissionMultiplier: emissionMultiplier,
-                    operatorRewardPercentage,
-                    incentivizationProposalVotersRewardPercentage,
-                },
-                blockchain,
-            );
-
-            const paranetId = getParanetId(paranetUAL);
-
-            const incentivesPoolAddress = await this.blockchainService.getIncentivesPoolAddress(
-                paranetId,
-                blockchain,
-            );
-
-            return {
-                paranetUAL,
-                incentivesPoolContractAddress: incentivesPoolAddress,
-                operation: receipt,
-            };
+        if (!kaTokenId) {
+            throw new Error('Invalid paranet UAL! Knowledge asset token id is required!');
         }
+
+        const adjustedEmissionMultiplier = await this.blockchainService.adjustEmissionMultiplier(
+            rewardTokenAddress,
+            tracToTokenEmissionMultiplier,
+            blockchain,
+        );
+
+        const receipt = await this.blockchainService.deployIncentivesPool(
+            {
+                kcStorageContract,
+                kcTokenId,
+                kaTokenId,
+                tracToTokenEmissionMultiplier: adjustedEmissionMultiplier,
+                operatorRewardPercentage,
+                incentivizationProposalVotersRewardPercentage,
+                incentivesPoolName,
+                rewardTokenAddress,
+            },
+            blockchain,
+        );
+
+        const paranetId = getParanetId(paranetUAL);
+
+        const incentivesPoolAddress = await this.blockchainService.getIncentivesPoolAddress(
+            paranetId,
+            blockchain,
+            {
+                incentivesPoolName,
+            },
+        );
+
+        return {
+            paranetUAL,
+            incentivesPoolContractAddress: incentivesPoolAddress,
+            operation: receipt,
+        };
 
         throw Error(`Unsupported incentive type: ${this.incentiveType}.`);
     }
@@ -867,43 +847,70 @@ export default class ParanetOperationsManager {
      * @example
      * await dkg.paranet.redeployIncentivesContract('paranetUAL123');
      */
-    async redeployIncentivesContract(paranetUAL, options = {}) {
+    async redeployIncentivesContract(paranetUAL, poolStorageAddress, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
 
-        this.validationService.validateRedeployIncentivesContract(paranetUAL, blockchain);
+        this.validationService.validateRedeployIncentivesContract(
+            paranetUAL,
+            poolStorageAddress,
+            blockchain,
+        );
 
-        if (Object.values(INCENTIVE_TYPE).includes(this.incentiveType)) {
-            const { contract, kcTokenId, kaTokenId } = resolveUAL(paranetUAL);
+        const { contract, kcTokenId, kaTokenId } = resolveUAL(paranetUAL);
 
-            if (!kaTokenId) {
-                throw new Error('Invalid paranet UAL! Knowledge asset token id is required!');
-            }
-
-            const receipt = await this.blockchainService.redeployIncentivesPool(
-                {
-                    isNativeReward: this.incentiveType === INCENTIVE_TYPE.NEUROWEB,
-                    contract,
-                    kcTokenId,
-                    kaTokenId,
-                },
-                blockchain,
-            );
-
-            const paranetId = getParanetId(paranetUAL);
-
-            const incentivesPoolAddress = await this.blockchainService.getIncentivesPoolAddress(
-                paranetId,
-                blockchain,
-            );
-
-            return {
-                paranetUAL,
-                incentivesPoolContractAddress: incentivesPoolAddress,
-                operation: receipt,
-            };
+        if (!kaTokenId) {
+            throw new Error('Invalid paranet UAL! Knowledge asset token id is required!');
         }
 
-        throw Error(`Unsupported incentive type: ${this.incentiveType}.`);
+        const receipt = await this.blockchainService.redeployIncentivesPool(
+            {
+                contract,
+                kcTokenId,
+                kaTokenId,
+                poolStorageAddress,
+            },
+            blockchain,
+        );
+
+        const paranetId = getParanetId(paranetUAL);
+
+        const incentivesPoolAddress = await this.blockchainService.getIncentivesPoolAddress(
+            paranetId,
+            blockchain,
+            {
+                incentivesPoolStorageAddress: poolStorageAddress,
+            },
+        );
+
+        return {
+            paranetUAL,
+            incentivesPoolContractAddress: incentivesPoolAddress,
+            operation: receipt,
+        };
+    }
+
+    /**
+     * Get all paranet incentives pools.
+     * @async
+     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+     * @param {Object} [options={}] - Additional options for the incentives contract.
+     * @returns {Object} Object containing the Paranet UAL and incentives pool contract address.
+     * @example
+     * await dkg.paranet.getAllIncentivesPools('paranetUAL123');
+     */
+    async getAllIncentivesPools(paranetUAL, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+
+        this.validationService.validateGetAllIncentivesPools(paranetUAL, blockchain);
+
+        const paranetId = getParanetId(paranetUAL);
+
+        const incentivesPools = await this.blockchainService.getAllIncentivesPools(
+            { paranetId },
+            blockchain,
+        );
+
+        return { paranetUAL, incentivesPools };
     }
 
     /**
@@ -1027,6 +1034,10 @@ export default class ParanetOperationsManager {
             paranetId,
             amount,
             blockchain,
+            {
+                incentivesPoolName: options.incentivesPoolName,
+                incentivesPoolStorageAddress: options.incentivesPoolStorageAddress,
+            },
         );
 
         return {
@@ -1051,8 +1062,10 @@ export default class ParanetOperationsManager {
 
         const paranetId = getParanetId(paranetUAL);
 
-        const receipt = await this.blockchainService.claimVoterReward(paranetId, blockchain);
-
+        const receipt = await this.blockchainService.claimVoterReward(paranetId, blockchain, {
+            incentivesPoolName: options.incentivesPoolName,
+            incentivesPoolStorageAddress: options.incentivesPoolStorageAddress,
+        });
         return {
             operation: receipt,
             transactionHash: receipt.transactionHash,
@@ -1075,11 +1088,10 @@ export default class ParanetOperationsManager {
 
         const paranetId = getParanetId(paranetUAL);
 
-        const receipt = await this.blockchainService.claimOperatorReward(
-            paranetId,
-            this.incentiveType,
-            blockchain,
-        );
+        const receipt = await this.blockchainService.claimOperatorReward(paranetId, blockchain, {
+            incentivesPoolName: options.incentivesPoolName,
+            incentivesPoolStorageAddress: options.incentivesPoolStorageAddress,
+        });
 
         return {
             operation: receipt,
@@ -1104,8 +1116,11 @@ export default class ParanetOperationsManager {
 
         const claimableValue = await this.blockchainService.getClaimableKnowledgeMinerReward(
             paranetId,
-            this.incentiveType,
             blockchain,
+            {
+                incentivesPoolName: options.incentivesPoolName,
+                incentivesPoolStorageAddress: options.incentivesPoolStorageAddress,
+            },
         );
 
         return claimableValue;
@@ -1128,8 +1143,11 @@ export default class ParanetOperationsManager {
 
         const claimableValue = await this.blockchainService.getClaimableAllKnowledgeMinersReward(
             paranetId,
-            this.incentiveType,
             blockchain,
+            {
+                incentivesPoolName: options.incentivesPoolName,
+                incentivesPoolStorageAddress: options.incentivesPoolStorageAddress,
+            },
         );
 
         return claimableValue;
@@ -1152,8 +1170,11 @@ export default class ParanetOperationsManager {
 
         const claimableValue = await this.blockchainService.getClaimableVoterReward(
             paranetId,
-            this.incentiveType,
             blockchain,
+            {
+                incentivesPoolName: options.incentivesPoolName,
+                incentivesPoolStorageAddress: options.incentivesPoolStorageAddress,
+            },
         );
 
         return claimableValue;
@@ -1176,8 +1197,11 @@ export default class ParanetOperationsManager {
 
         const claimableValue = await this.blockchainService.getClaimableAllVotersReward(
             paranetId,
-            this.incentiveType,
             blockchain,
+            {
+                incentivesPoolName: options.incentivesPoolName,
+                incentivesPoolStorageAddress: options.incentivesPoolStorageAddress,
+            },
         );
 
         return claimableValue;
@@ -1200,8 +1224,11 @@ export default class ParanetOperationsManager {
 
         const claimableValue = await this.blockchainService.getClaimableOperatorReward(
             paranetId,
-            this.incentiveType,
             blockchain,
+            {
+                incentivesPoolName: options.incentivesPoolName,
+                incentivesPoolStorageAddress: options.incentivesPoolStorageAddress,
+            },
         );
 
         return claimableValue;
@@ -1281,8 +1308,11 @@ export default class ParanetOperationsManager {
         const isParanetKnowledgeMiner = await this.blockchainService.isParanetKnowledgeMiner(
             roleAddress,
             paranetId,
-            this.incentiveType,
             blockchain,
+            {
+                incentivesPoolName: options.incentivesPoolName,
+                incentivesPoolStorageAddress: options.incentivesPoolStorageAddress,
+            },
         );
 
         return isParanetKnowledgeMiner;
@@ -1299,6 +1329,7 @@ export default class ParanetOperationsManager {
      */
     async isParanetOperator(paranetUAL, options = {}) {
         // eslint-disable-next-line prefer-const
+        // TODO: Add incentivesPoolName and incentivesPoolStorageAddress to the options
         let { blockchain, roleAddress } = this.inputService.getParanetRoleCheckArguments(options);
         if (roleAddress == null) {
             roleAddress = blockchain.publicKey;
@@ -1314,8 +1345,11 @@ export default class ParanetOperationsManager {
         const isParanetOperator = await this.blockchainService.isParanetOperator(
             roleAddress,
             paranetId,
-            this.incentiveType,
             blockchain,
+            {
+                incentivesPoolName: options.incentivesPoolName,
+                incentivesPoolStorageAddress: options.incentivesPoolStorageAddress,
+            },
         );
 
         return isParanetOperator;
@@ -1347,8 +1381,11 @@ export default class ParanetOperationsManager {
         const isProposalVoter = await this.blockchainService.isParanetProposalVoter(
             roleAddress,
             paranetId,
-            this.incentiveType,
             blockchain,
+            {
+                incentivesPoolName: options.incentivesPoolName,
+                incentivesPoolStorageAddress: options.incentivesPoolStorageAddress,
+            },
         );
 
         return isProposalVoter;

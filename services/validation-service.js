@@ -357,6 +357,8 @@ export default class ValidationService {
         tracToTokenEmissionMultiplier,
         operatorRewardPercentage,
         incentivizationProposalVotersRewardPercentage,
+        incentivesPoolName,
+        rewardTokenAddress,
     ) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
@@ -365,9 +367,17 @@ export default class ValidationService {
         this.validateIncentivizationProposalVotersRewardPercentage(
             incentivizationProposalVotersRewardPercentage,
         );
+        this.validateIncentivesPoolName(incentivesPoolName);
+        this.validateAddress(rewardTokenAddress);
     }
 
-    validateRedeployIncentivesContract(UAL, blockchain) {
+    validateRedeployIncentivesContract(UAL, poolStorageAddress, blockchain) {
+        this.validateUAL(UAL);
+        this.validateAddress(poolStorageAddress);
+        this.validateBlockchain(blockchain);
+    }
+
+    validateGetAllIncentivesPools(UAL, blockchain) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
     }
@@ -747,6 +757,11 @@ export default class ValidationService {
             incentivizationProposalVotersRewardPercentage < 0
         )
             throw Error('Invalid percentage value for incentivization proposal voters reward.');
+    }
+
+    validateIncentivesPoolName(incentivesPoolName) {
+        this.validateRequiredParam('incentivesPoolName', incentivesPoolName);
+        this.validateParamType('incentivesPoolName', incentivesPoolName, 'string');
     }
 
     validateOperatorRewardPercentage(operatorRewardPercentage) {
