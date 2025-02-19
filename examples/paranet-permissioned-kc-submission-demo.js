@@ -82,9 +82,6 @@ function divider() {
     const paranetOptions = {
         paranetName: 'FirstParanet',
         paranetDescription: 'First ever paranet on DKG!',
-        tracToTokenEmissionMultiplier: 5,
-        incentivizationProposalVotersRewardPercentage: 12.0,
-        operatorRewardPercentage: 10.0,
         paranetNodesAccessPolicy: PARANET_NODES_ACCESS_POLICY.OPEN,
         paranetMinersAccessPolicy: PARANET_MINERS_ACCESS_POLICY.OPEN,
         paranetKcSubmissionPolicy: PARANET_KC_SUBMISSION_POLICY.PERMISSIONED, // Set up to be permissioned
