@@ -124,11 +124,6 @@ export const PARANET_KNOWLEDGE_COLLECTION_STATUS = {
     3: 'REJECTED',
 };
 
-export const INCENTIVE_TYPE = {
-    NEUROWEB: 'Neuroweb',
-    NEUROWEB_ERC20: 'NeurowebERC20',
-};
-
 export const INCENTIVE_MULTIPLIER = {
     Neuroweb: 10n ** 12n,
     NeurowebERC20: 10n ** 18n,
