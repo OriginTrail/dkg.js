@@ -382,6 +382,30 @@ export default class ValidationService {
         this.validateBlockchain(blockchain);
     }
 
+    validateGetIncentivesPoolStorageAddress(
+        UAL,
+        incentivesPoolName,
+        incentivesPoolAddress,
+        blockchain,
+    ) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+
+        if (incentivesPoolName) {
+            this.validateIncentivesPoolName(incentivesPoolName);
+        }
+
+        if (incentivesPoolAddress) {
+            this.validateAddress(incentivesPoolAddress);
+        }
+
+        if (!incentivesPoolName && !incentivesPoolAddress) {
+            throw new Error(
+                'Either incentives pool name or address is required for this operation!',
+            );
+        }
+    }
+
     validateParanetRewardArguments(UAL, blockchain) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);

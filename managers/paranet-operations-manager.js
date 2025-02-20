@@ -914,6 +914,37 @@ export default class ParanetOperationsManager {
     }
 
     /**
+     * Get paranet incentives pool storage address.
+     * @async
+     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+     * @param {Object} [options={}] - Additional options for the incentives contract.
+     * @returns {Object} Object containing the Paranet UAL and incentives pool storage address.
+     * @example
+     * await dkg.paranet.getIncentivesPoolStorageAddress('paranetUAL123');
+     */
+    async getIncentivesPoolStorageAddress(paranetUAL, options = {}) {
+        const { blockchain, incentivesPoolName, incentivesPoolAddress } =
+            this.inputService.getIncentivesPoolStorageAddressArguments(options);
+
+        this.validationService.validateGetIncentivesPoolStorageAddress(
+            paranetUAL,
+            incentivesPoolName,
+            incentivesPoolAddress,
+            blockchain,
+        );
+
+        const paranetId = getParanetId(paranetUAL);
+
+        const incentivesPoolStorageAddress =
+            await this.blockchainService.getIncentivesPoolStorageAddress(paranetId, blockchain, {
+                incentivesPoolName,
+                incentivesPoolAddress,
+            });
+
+        return { paranetUAL, incentivesPoolStorageAddress };
+    }
+
+    /**
      * Creates a new service for a Paranet.
      * @async
      * @param {string} UAL - Universal Asset Locator of the KA created for Service.

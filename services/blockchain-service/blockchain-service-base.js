@@ -1057,6 +1057,28 @@ export default class BlockchainServiceBase {
         }
     }
 
+    async getIncentivesPoolStorageAddress(paranetId, blockchain, options = {}) {
+        let { incentivesPoolAddress } = options;
+        const { incentivesPoolName } = options;
+
+        if (!incentivesPoolAddress) {
+            const incentivesPool = await this.getIncentivesPoolByPoolName(
+                { paranetId, incentivesPoolName },
+                blockchain,
+            );
+            return incentivesPool.storageAddr;
+        }
+
+        await this.setIncentivesPool(incentivesPoolAddress, blockchain);
+
+        return this.executeContractFunction(
+            'ParanetIncentivesPool',
+            'paranetIncentivesPoolStorage',
+            [],
+            blockchain,
+        );
+    }
+
     async claimKnowledgeMinerReward(paranetId, amount, blockchain, options = {}) {
         const incentivesPoolAddress = await this.getIncentivesPoolAddress(paranetId, blockchain, {
             incentivesPoolName: options.incentivesPoolName,

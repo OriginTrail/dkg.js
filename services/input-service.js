@@ -124,6 +124,14 @@ export default class InputService {
         };
     }
 
+    getIncentivesPoolStorageAddressArguments(options) {
+        return {
+            incentivesPoolName: this.getIncentivesPoolName(options),
+            incentivesPoolAddress: this.getIncentivesPoolAddress(options),
+            blockchain: this.getBlockchain(options),
+        };
+    }
+
     getParanetCreateServiceArguments(options) {
         return {
             blockchain: this.getBlockchain(options),
@@ -421,6 +429,10 @@ export default class InputService {
 
     getIncentivesPoolName(options) {
         return options.incentivesPoolName ?? null;
+    }
+
+    getIncentivesPoolAddress(options) {
+        return options.incentivesPoolAddress ?? null;
     }
 
     getRewardTokenAddress(options) {
