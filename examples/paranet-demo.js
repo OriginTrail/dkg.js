@@ -48,25 +48,10 @@ function divider() {
 
     let content = {
         public: {
-            '@context': 'https://www.schema.org',
-            '@id': 'urn:us-cities:info:new-york',
-            '@type': 'City',
-            name: 'New York',
-            state: 'New York',
-            population: '8,336,817',
-            area: '468.9 sq mi',
-        },
-        private: {
-            '@context': 'https://www.schema.org',
-            '@id': 'urn:us-cities:data:new-york',
-            '@type': 'CityPrivateData',
-            crimeRate: 'Low',
-            averageIncome: '$63,998',
-            infrastructureScore: '8.5',
-            relatedCities: [
-                { '@id': 'urn:us-cities:info:los-angeles', name: 'Los Angeles' },
-                { '@id': 'urn:us-cities:info:chicago', name: 'Chicago' },
-            ],
+            '@context': 'http://www.schema.org',
+            '@id': 'urn:paranet:01',
+            '@type': 'Paranet',
+            name: 'Paranet test',
         },
     };
 
@@ -98,7 +83,7 @@ function divider() {
         operatorRewardPercentage: 10.0,
         incentivizationProposalVotersRewardPercentage: 12.0,
         incentivesPoolName: 'FirstParanetIncentivesPool',
-        rewardTokenAddress: '0x0000000000000000000000000000000000000000',
+        rewardTokenAddress: '0x0000000000000000000000000000000000000000', // the gas token for the chosen network
     };
 
     const paranetDeployed = await DkgClient.paranet.deployIncentivesContract(
