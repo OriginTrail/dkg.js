@@ -68,7 +68,7 @@ function divider() {
         paranetDescription: 'First ever paranet on DKG!',
         paranetNodesAccessPolicy: PARANET_NODES_ACCESS_POLICY.OPEN,
         paranetMinersAccessPolicy: PARANET_MINERS_ACCESS_POLICY.OPEN,
-        paranetKcSubmissionPolicy: PARANET_KC_SUBMISSION_POLICY.PERMISSIONED, // Set up to be permissioned
+        paranetKcSubmissionPolicy: PARANET_KC_SUBMISSION_POLICY.STAGING, // Set up to be staging
     };
 
     const paranetRegistered = await DkgClient.paranet.create(paranetUAL, paranetOptions);
