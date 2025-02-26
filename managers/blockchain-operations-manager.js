@@ -35,4 +35,15 @@ export default class BlockchainOperationsManager {
         const blockchain = this.inputService.getBlockchain(options);
         return this.blockchainService.getWalletBalances(blockchain);
     }
+
+    /**
+     * Retrieve the web3 instance.
+     * @async
+     * @param {Object} [options={}] - Optional parameters for blockchain service.
+     * @returns {Promise<Object>} - A promise that resolves to the web3 instance.
+     */
+    async getWeb3Instance(options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        return this.blockchainService.getWeb3Instance(blockchain);
+    }
 }

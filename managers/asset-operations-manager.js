@@ -432,7 +432,10 @@ export default class AssetOperationsManager {
                 BigInt(1024) /
                 BigInt(1e18);
         }
-        const { knowledgeCollectionId, receipt: mintKnowledgeAssetReceipt } =
+        let knowledgeCollectionId;
+        let mintKnowledgeCollectionReceipt;
+
+        ({ knowledgeCollectionId, receipt: mintKnowledgeCollectionReceipt } =
             await this.blockchainService.createKnowledgeCollection(
                 {
                     publishOperationId,
@@ -454,7 +457,7 @@ export default class AssetOperationsManager {
                 null,
                 blockchain,
                 stepHooks,
-            );
+            ));
 
         const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, knowledgeCollectionId);
 
@@ -476,7 +479,7 @@ export default class AssetOperationsManager {
             datasetRoot,
             signatures: publishOperationResult.data.signatures,
             operation: {
-                mintKnowledgeAsset: mintKnowledgeAssetReceipt,
+                mintKnowledgeCollection: mintKnowledgeCollectionReceipt,
                 publish: getOperationStatusObject(publishOperationResult, publishOperationId),
                 finality: {
                     status:
@@ -665,15 +668,24 @@ export default class AssetOperationsManager {
 
         this.validationService.validateSubmitToParanet(UAL, paranetUAL, blockchain);
 
-        const { contract, tokenId } = resolveUAL(UAL);
-        const { contract: paranetContract, tokenId: paranetTokenId } = resolveUAL(paranetUAL);
+        const { contract: kcStorageContract, kcTokenId } = resolveUAL(UAL);
+        const {
+            contract: paranetKCStorageContract,
+            kcTokenId: paranetKCTokenId,
+            kaTokenId: paranetKATokenId,
+        } = resolveUAL(paranetUAL);
+
+        if (!paranetKATokenId) {
+            throw new Error('Invalid paranet UAL! Knowledge asset token id is required!');
+        }
 
         const receipt = await this.blockchainService.submitToParanet(
             {
-                paranetContract,
-                paranetTokenId,
-                contract,
-                tokenId,
+                paranetKCStorageContract,
+                paranetKCTokenId,
+                paranetKATokenId,
+                kcStorageContract,
+                kcTokenId,
             },
             blockchain,
         );

@@ -9,6 +9,7 @@ import {
     DEFAULT_GAS_PRICE,
     DEFAULT_GAS_PRICE_WEI,
     ZERO_ADDRESS,
+    NEUROWEB_INCENTIVE_TYPE_CHAINS,
 } from '../../constants.js';
 import emptyHooks from '../../util/empty-hooks.js';
 import { sleepForMilliseconds } from '../utilities.js';
@@ -20,8 +21,10 @@ const TokenAbi = require('dkg-evm-module/abi/Token.json');
 const ParanetAbi = require('dkg-evm-module/abi/Paranet.json');
 const ParanetsRegistryAbi = require('dkg-evm-module/abi/ParanetsRegistry.json');
 const ParanetIncentivesPoolFactoryAbi = require('dkg-evm-module/abi/ParanetIncentivesPoolFactory.json');
-const ParanetNeuroIncentivesPoolAbi = require('dkg-evm-module/abi/ParanetNeuroIncentivesPool.json');
+const ParanetIncentivesPoolAbi = require('dkg-evm-module/abi/ParanetIncentivesPool.json');
+const ParanetIncentivesPoolStorageAbi = require('dkg-evm-module/abi/ParanetIncentivesPoolStorage.json');
 const ParanetKnowledgeMinersRegistryAbi = require('dkg-evm-module/abi/ParanetKnowledgeMinersRegistry.json');
+const ParanetStagingRegistryAbi = require('dkg-evm-module/abi/ParanetStagingRegistry.json');
 const IdentityStorageAbi = require('dkg-evm-module/abi/IdentityStorage.json');
 const KnowledgeCollectionAbi = require('dkg-evm-module/abi/KnowledgeCollection.json');
 const KnowledgeCollectionStorageAbi = require('dkg-evm-module/abi/KnowledgeCollectionStorage.json');
@@ -38,14 +41,15 @@ export default class BlockchainServiceBase {
         this.abis.Paranet = ParanetAbi;
         this.abis.ParanetsRegistry = ParanetsRegistryAbi;
         this.abis.ParanetIncentivesPoolFactory = ParanetIncentivesPoolFactoryAbi;
-        this.abis.ParanetNeuroIncentivesPool = ParanetNeuroIncentivesPoolAbi;
+        this.abis.ParanetIncentivesPool = ParanetIncentivesPoolAbi;
+        this.abis.ParanetIncentivesPoolStorage = ParanetIncentivesPoolStorageAbi;
         this.abis.ParanetKnowledgeMinersRegistry = ParanetKnowledgeMinersRegistryAbi;
         this.abis.IdentityStorage = IdentityStorageAbi;
         this.abis.KnowledgeCollection = KnowledgeCollectionAbi;
         this.abis.KnowledgeCollectionStorage = KnowledgeCollectionStorageAbi;
         this.abis.AskStorage = AskStorageAbi;
         this.abis.Chronos = ChronosAbi;
-
+        this.abis.ParanetStagingRegistry = ParanetStagingRegistryAbi;
         this.abis.KnowledgeCollectionStorage.filter((obj) => obj.type === 'event').forEach(
             (event) => {
                 const concatInputs = event.inputs.map((input) => input.internalType);
@@ -169,7 +173,7 @@ export default class BlockchainServiceBase {
                     status = false;
                 }
 
-                if (!status && contractName !== 'ParanetNeuroIncentivesPool') {
+                if (!status && contractName !== 'ParanetIncentivesPool') {
                     await this.updateContractInstance(contractName, blockchain, true);
                     contractInstance = await this.getContractInstance(contractName, blockchain);
 
@@ -454,7 +458,7 @@ export default class BlockchainServiceBase {
             } else {
                 receipt = await this.executeContractFunction(
                     'Paranet',
-                    'mintKnowledgeAsset',
+                    'mintKnowledgeCollection',
                     [paranetKaContract, paranetTokenId, Object.values(requestData)],
                     blockchain,
                 );
@@ -482,31 +486,301 @@ export default class BlockchainServiceBase {
         }
     }
 
-    // TODO: Fix this
-    // async burnAsset(tokenId, blockchain) {
-    //     return this.executeContractFunction('ContentAsset', 'burnAsset', [tokenId], blockchain);
+    async hasPendingUpdate(tokenId, blockchain) {
+        return this.callContractFunction(
+            'UnfinalizedStateStorage',
+            'hasPendingUpdate',
+            [tokenId],
+            blockchain,
+        );
+    }
+
+    async cancelAssetUpdate(tokenId, blockchain) {
+        return this.executeContractFunction(
+            'ContentAsset',
+            'cancelAssetStateUpdate',
+            [tokenId],
+            blockchain,
+        );
+    }
+
+    async getLatestAssertionId(tokenId, blockchain) {
+        return this.callContractFunction(
+            'ContentAssetStorage',
+            'getLatestAssertionId',
+            [tokenId],
+            blockchain,
+        );
+    }
+
+    async getUnfinalizedState(tokenId, blockchain) {
+        return this.callContractFunction(
+            'UnfinalizedStateStorage',
+            'getUnfinalizedState',
+            [tokenId],
+            blockchain,
+        );
+    }
+
+    async getAssetOwner(tokenId, blockchain) {
+        return this.callContractFunction('ContentAssetStorage', 'ownerOf', [tokenId], blockchain);
+    }
+
+    async burnAsset(tokenId, blockchain) {
+        return this.executeContractFunction('ContentAsset', 'burnAsset', [tokenId], blockchain);
+    }
+
+    // async extendAssetStoringPeriod(tokenId, epochsNumber, tokenAmount, blockchain) {
+    //     const sender = await this.getPublicKey(blockchain);
+    //     let serviceAgreementV1Address;
+    //     let allowanceIncreased = false;
+    //     let allowanceGap = 0;
+
+    //     try {
+    //         serviceAgreementV1Address = await this.getContractAddress(
+    //             'ServiceAgreementV1',
+    //             blockchain,
+    //         );
+
+    //         ({ allowanceIncreased, allowanceGap } = await this.increaseServiceAgreementV1Allowance(
+    //             sender,
+    //             serviceAgreementV1Address,
+    //             tokenAmount,
+    //             blockchain,
+    //         ));
+
+    //         return this.executeContractFunction(
+    //             'ContentAsset',
+    //             'extendAssetStoringPeriod',
+    //             [tokenId, epochsNumber, tokenAmount],
+    //             blockchain,
+    //         );
+    //     } catch (error) {
+    //         if (allowanceIncreased) {
+    //             await this.executeContractFunction(
+    //                 'Token',
+    //                 'decreaseAllowance',
+    //                 [serviceAgreementV1Address, allowanceGap],
+    //                 blockchain,
+    //             );
+    //         }
+    //         throw error;
+    //     }
     // }
 
-    // TODO: Fix this
-    // async getAssertionSize(assertionId, blockchain) {
-    //     return this.callContractFunction(
-    //         'AssertionStorage',
-    //         'getAssertionSize',
-    //         [assertionId],
-    //         blockchain,
-    //     );
+    // async addTokens(tokenId, tokenAmount, blockchain) {
+    //     const sender = await this.getPublicKey(blockchain);
+    //     let serviceAgreementV1Address;
+    //     let allowanceIncreased = false;
+    //     let allowanceGap = 0;
+
+    //     try {
+    //         serviceAgreementV1Address = await this.getContractAddress(
+    //             'ServiceAgreementV1',
+    //             blockchain,
+    //         );
+
+    //         ({ allowanceIncreased, allowanceGap } = await this.increaseServiceAgreementV1Allowance(
+    //             sender,
+    //             serviceAgreementV1Address,
+    //             tokenAmount,
+    //             blockchain,
+    //         ));
+
+    //         return this.executeContractFunction(
+    //             'ContentAsset',
+    //             'increaseAssetTokenAmount',
+    //             [tokenId, tokenAmount],
+    //             blockchain,
+    //         );
+    //     } catch (error) {
+    //         if (allowanceIncreased) {
+    //             await this.executeContractFunction(
+    //                 'Token',
+    //                 'decreaseAllowance',
+    //                 [serviceAgreementV1Address, allowanceGap],
+    //                 blockchain,
+    //             );
+    //         }
+    //         throw error;
+    //     }
     // }
+
+    // async addUpdateTokens(tokenId, tokenAmount, blockchain) {
+    //     const sender = await this.getPublicKey(blockchain);
+    //     let serviceAgreementV1Address;
+    //     let allowanceIncreased = false;
+    //     let allowanceGap = 0;
+
+    //     try {
+    //         serviceAgreementV1Address = await this.getContractAddress(
+    //             'ServiceAgreementV1',
+    //             blockchain,
+    //         );
+
+    //         ({ allowanceIncreased, allowanceGap } = await this.increaseServiceAgreementV1Allowance(
+    //             sender,
+    //             serviceAgreementV1Address,
+    //             tokenAmount,
+    //             blockchain,
+    //         ));
+
+    //         return this.executeContractFunction(
+    //             'ContentAsset',
+    //             'increaseAssetUpdateTokenAmount',
+    //             [tokenId, tokenAmount],
+    //             blockchain,
+    //         );
+    //     } catch (error) {
+    //         if (allowanceIncreased) {
+    //             await this.executeContractFunction(
+    //                 'Token',
+    //                 'decreaseAllowance',
+    //                 [serviceAgreementV1Address, allowanceGap],
+    //                 blockchain,
+    //             );
+    //         }
+    //         throw error;
+    //     }
+    // }
+
+    async getAssertionIdByIndex(tokenId, index, blockchain) {
+        return this.callContractFunction(
+            'ContentAssetStorage',
+            'getAssertionIdByIndex',
+            [tokenId, index],
+            blockchain,
+        );
+    }
+
+    async getAssertionIds(tokenId, blockchain) {
+        return this.callContractFunction(
+            'ContentAssetStorage',
+            'getAssertionIds',
+            [tokenId],
+            blockchain,
+        );
+    }
+
+    async getAssertionIssuer(tokenId, assertionId, assertionIndex, blockchain) {
+        return this.callContractFunction(
+            'ContentAssetStorage',
+            'getAssertionIssuer',
+            [tokenId, assertionId, assertionIndex],
+            blockchain,
+        );
+    }
+
+    async getAgreementData(agreementId, blockchain) {
+        const result = await this.callContractFunction(
+            'ServiceAgreementStorageProxy',
+            'getAgreementData',
+            [agreementId],
+            blockchain,
+        );
+
+        return {
+            startTime: Number(result['0']),
+            epochsNumber: Number(result['1']),
+            epochLength: Number(result['2']),
+            tokenAmount: result['3'][0],
+            addedTokenAmount: result['3'][1],
+            scoreFunctionId: result['4'][0],
+            proofWindowOffsetPerc: result['4'][1],
+        };
+    }
+
+    async getAssertionSize(assertionId, blockchain) {
+        return this.callContractFunction(
+            'AssertionStorage',
+            'getAssertionSize',
+            [assertionId],
+            blockchain,
+        );
+    }
 
     // Paranets operations
 
-    // async registerParanet(requestData, blockchain) {
-    //     return this.executeContractFunction(
-    //         'Paranet',
-    //         'registerParanet',
-    //         Object.values(requestData),
-    //         blockchain,
-    //     );
-    // }
+    async registerParanet(requestData, blockchain) {
+        return this.executeContractFunction(
+            'Paranet',
+            'registerParanet',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
+
+    async isKnowledgeCollectionRegistered(requestData, blockchain) {
+        return this.callContractFunction(
+            'ParanetsRegistry',
+            'isKnowledgeCollectionRegistered',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
+
+    async addCurator(requestData, blockchain) {
+        return this.executeContractFunction(
+            'Paranet',
+            'addCurator',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
+
+    async stageKnowledgeCollection(requestData, blockchain) {
+        return this.executeContractFunction(
+            'Paranet',
+            'stageKnowledgeCollection',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
+
+    async reviewKnowledgeCollection(requestData, blockchain) {
+        return this.executeContractFunction(
+            'Paranet',
+            'reviewKnowledgeCollection',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
+
+    async isKnowledgeCollectionStaged(requestData, blockchain) {
+        return this.callContractFunction(
+            'ParanetStagingRegistry',
+            'isKnowledgeCollectionStaged',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
+
+    async isKnowledgeCollectionApproved(requestData, blockchain) {
+        return this.callContractFunction(
+            'ParanetStagingRegistry',
+            'isKnowledgeCollectionApproved',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
+
+    async getKnowledgeCollectionApprovalStatus(requestData, blockchain) {
+        return this.callContractFunction(
+            'ParanetStagingRegistry',
+            'getKnowledgeCollectionStatus',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
+
+    async removeCurator(requestData, blockchain) {
+        return this.executeContractFunction(
+            'Paranet',
+            'removeCurator',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
 
     // async addParanetCuratedNodes(requestData, blockchain) {
     //     return this.executeContractFunction(
@@ -616,277 +890,382 @@ export default class BlockchainServiceBase {
     //     );
     // }
 
-    // async deployNeuroIncentivesPool(requestData, blockchain) {
-    //     return this.executeContractFunction(
-    //         'ParanetIncentivesPoolFactory',
-    //         'deployNeuroIncentivesPool',
-    //         Object.values(requestData),
-    //         blockchain,
-    //     );
-    // }
+    async deployIncentivesPool(requestData, blockchain) {
+        return this.executeContractFunction(
+            'ParanetIncentivesPoolFactory',
+            'deployIncentivesPool',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
 
-    // async registerParanetService(requestData, blockchain) {
-    //     return this.executeContractFunction(
-    //         'Paranet',
-    //         'registerParanetService',
-    //         Object.values(requestData),
-    //         blockchain,
-    //     );
-    // }
+    async redeployIncentivesPool(requestData, blockchain) {
+        return this.executeContractFunction(
+            'ParanetIncentivesPoolFactory',
+            'redeployIncentivesPool',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
 
-    // async addParanetServices(requestData, blockchain) {
-    //     return this.executeContractFunction(
-    //         'Paranet',
-    //         'addParanetServices',
-    //         Object.values(requestData),
-    //         blockchain,
-    //     );
-    // }
+    async registerParanetService(requestData, blockchain) {
+        return this.executeContractFunction(
+            'Paranet',
+            'registerParanetService',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
 
-    // async submitToParanet(requestData, blockchain) {
-    //     return this.executeContractFunction(
-    //         'Paranet',
-    //         'submitKnowledgeAsset',
-    //         Object.values(requestData),
-    //         blockchain,
-    //     );
-    // }
+    async addParanetServices(requestData, blockchain) {
+        return this.executeContractFunction(
+            'Paranet',
+            'addParanetServices',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
 
-    // async getUpdatingKnowledgeAssetStates(requestData, blockchain) {
-    //     return this.callContractFunction(
-    //         'ParanetKnowledgeMinersRegistry',
-    //         'getUpdatingKnowledgeAssetStates',
-    //         Object.values(requestData),
-    //         blockchain,
-    //     );
-    // }
+    async submitToParanet(requestData, blockchain) {
+        return this.executeContractFunction(
+            'Paranet',
+            'submitKnowledgeCollection',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
+
+    async getUpdatingKnowledgeAssetStates(requestData, blockchain) {
+        return this.callContractFunction(
+            'ParanetKnowledgeMinersRegistry',
+            'getUpdatingKnowledgeCollectionStates',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
 
     // async updateClaimableRewards(requestData, blockchain) {
     //     return this.executeContractFunction(
     //         'Paranet',
-    //         'processUpdatedKnowledgeAssetStatesMetadata',
+    //         'processUpdatedKnowledgeCollectionStatesMetadata',
     //         Object.values(requestData),
     //         blockchain,
     //     );
     // }
 
-    // async getIncentivesPoolAddress(requestData, blockchain) {
-    //     return this.callContractFunction(
-    //         'ParanetsRegistry',
-    //         'getIncentivesPoolAddress',
-    //         Object.values(requestData),
-    //         blockchain,
-    //     );
-    // }
+    async getParanetIncentivesPoolAddress(blockchain) {
+        return this.callContractFunction(
+            'ParanetIncentivesPoolStorage',
+            'paranetIncentivesPoolAddress',
+            [],
+            blockchain,
+        );
+    }
 
-    // async getNeuroIncentivesPoolAddress(paranetId, blockchain) {
-    //     return this.getIncentivesPoolAddress(
-    //         {
-    //             paranetId,
-    //             incentivesPoolType: 'Neuroweb',
-    //         },
-    //         blockchain,
-    //     );
-    // }
+    async getIncentivesPoolByPoolName(requestData, blockchain) {
+        return this.callContractFunction(
+            'ParanetsRegistry',
+            'getIncentivesPoolByPoolName',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
 
-    // async setIncentivesPool(contractAddress, blockchain) {
-    //     await this.ensureBlockchainInfo(blockchain);
+    async getIncentivesPoolByStorageAddress(requestData, blockchain) {
+        return this.callContractFunction(
+            'ParanetsRegistry',
+            'getIncentivesPoolByStorageAddress',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
 
-    //     if (
-    //         this[blockchain.name].contractAddresses[blockchain.hubContract][
-    //             'ParanetNeuroIncentivesPool'
-    //         ] !== contractAddress
-    //     ) {
-    //         this[blockchain.name].contractAddresses[blockchain.hubContract][
-    //             'ParanetNeuroIncentivesPool'
-    //         ] = contractAddress;
-    //         const web3Instance = await this.getWeb3Instance(blockchain);
-    //         this[blockchain.name].contracts[blockchain.hubContract]['ParanetNeuroIncentivesPool'] =
-    //             await new web3Instance.eth.Contract(
-    //                 this.abis['ParanetNeuroIncentivesPool'],
-    //                 this[blockchain.name].contractAddresses[blockchain.hubContract][
-    //                     'ParanetNeuroIncentivesPool'
-    //                 ],
-    //                 { from: blockchain.publicKey },
-    //             );
-    //     }
-    // }
+    async getAllIncentivesPools(requestData, blockchain) {
+        return this.callContractFunction(
+            'ParanetsRegistry',
+            'getAllIncentivesPools',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
 
-    // async claimKnowledgeMinerReward(paranetId, blockchain) {
-    //     const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(
-    //         paranetId,
-    //         blockchain,
-    //     );
+    async setIncentivesPoolStorage(contractAddress, blockchain) {
+        await this.ensureBlockchainInfo(blockchain);
 
-    //     await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
+        if (
+            this[blockchain.name].contractAddresses[blockchain.hubContract][
+                'ParanetIncentivesPoolStorage'
+            ] !== contractAddress
+        ) {
+            this[blockchain.name].contractAddresses[blockchain.hubContract][
+                'ParanetIncentivesPoolStorage'
+            ] = contractAddress;
+            const web3Instance = await this.getWeb3Instance(blockchain);
+            this[blockchain.name].contracts[blockchain.hubContract][
+                'ParanetIncentivesPoolStorage'
+            ] = await new web3Instance.eth.Contract(
+                this.abis['ParanetIncentivesPoolStorage'],
+                this[blockchain.name].contractAddresses[blockchain.hubContract][
+                    'ParanetIncentivesPoolStorage'
+                ],
+                { from: blockchain.publicKey },
+            );
+        }
+    }
 
-    //     return this.executeContractFunction(
-    //         'ParanetNeuroIncentivesPool',
-    //         'claimKnowledgeMinerReward',
-    //         [],
-    //         blockchain,
-    //     );
-    // }
+    async getIncentivesPoolAddress(paranetId, blockchain, options = {}) {
+        const { incentivesPoolName } = options;
+        let { incentivesPoolStorageAddress } = options;
 
-    // async claimVoterReward(paranetId, blockchain) {
-    //     const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(
-    //         paranetId,
-    //         blockchain,
-    //     );
+        if (!incentivesPoolStorageAddress && !incentivesPoolName) {
+            throw new Error(
+                'Either incentivesPoolName or incentivesPoolStorageAddress must be provided to get the incentives pool address.',
+            );
+        }
 
-    //     await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
+        // If storage address is not provided, get it from pool name
+        if (!incentivesPoolStorageAddress) {
+            const incentivesPool = await this.getIncentivesPoolByPoolName(
+                { paranetId, incentivesPoolName },
+                blockchain,
+            );
+            incentivesPoolStorageAddress = incentivesPool.storageAddr;
+        }
 
-    //     return this.executeContractFunction(
-    //         'ParanetNeuroIncentivesPool',
-    //         'claimIncentivizationProposalVoterReward',
-    //         [],
-    //         blockchain,
-    //     );
-    // }
+        await this.setIncentivesPoolStorage(incentivesPoolStorageAddress, blockchain);
+        return await this.getParanetIncentivesPoolAddress(blockchain);
+    }
 
-    // async claimOperatorReward(paranetId, blockchain) {
-    //     const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(
-    //         paranetId,
-    //         blockchain,
-    //     );
+    async setIncentivesPool(contractAddress, blockchain) {
+        await this.ensureBlockchainInfo(blockchain);
 
-    //     await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
+        if (
+            this[blockchain.name].contractAddresses[blockchain.hubContract][
+                'ParanetIncentivesPool'
+            ] !== contractAddress
+        ) {
+            this[blockchain.name].contractAddresses[blockchain.hubContract][
+                'ParanetIncentivesPool'
+            ] = contractAddress;
+            const web3Instance = await this.getWeb3Instance(blockchain);
+            this[blockchain.name].contracts[blockchain.hubContract]['ParanetIncentivesPool'] =
+                await new web3Instance.eth.Contract(
+                    this.abis['ParanetIncentivesPool'],
+                    this[blockchain.name].contractAddresses[blockchain.hubContract][
+                        'ParanetIncentivesPool'
+                    ],
+                    { from: blockchain.publicKey },
+                );
+        }
+    }
 
-    //     return this.executeContractFunction(
-    //         'ParanetNeuroIncentivesPool',
-    //         'claimParanetOperatorReward',
-    //         [],
-    //         blockchain,
-    //     );
-    // }
+    async getIncentivesPoolStorageAddress(paranetId, blockchain, options = {}) {
+        let { incentivesPoolAddress } = options;
+        const { incentivesPoolName } = options;
 
-    // async getClaimableKnowledgeMinerReward(paranetId, blockchain) {
-    //     const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(
-    //         paranetId,
-    //         blockchain,
-    //     );
+        if (!incentivesPoolAddress) {
+            const incentivesPool = await this.getIncentivesPoolByPoolName(
+                { paranetId, incentivesPoolName },
+                blockchain,
+            );
+            return incentivesPool.storageAddr;
+        }
 
-    //     await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
+        await this.setIncentivesPool(incentivesPoolAddress, blockchain);
 
-    //     return this.callContractFunction(
-    //         'ParanetNeuroIncentivesPool',
-    //         'getClaimableKnowledgeMinerRewardAmount',
-    //         [],
-    //         blockchain,
-    //     );
-    // }
+        return this.executeContractFunction(
+            'ParanetIncentivesPool',
+            'paranetIncentivesPoolStorage',
+            [],
+            blockchain,
+        );
+    }
 
-    // async getClaimableAllKnowledgeMinersReward(paranetId, blockchain) {
-    //     const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(
-    //         paranetId,
-    //         blockchain,
-    //     );
+    async claimKnowledgeMinerReward(paranetId, amount, blockchain, options = {}) {
+        const incentivesPoolAddress = await this.getIncentivesPoolAddress(paranetId, blockchain, {
+            incentivesPoolName: options.incentivesPoolName,
+            incentivesPoolStorageAddress: options.incentivesPoolStorageAddress,
+        });
 
-    //     await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
+        await this.setIncentivesPool(incentivesPoolAddress, blockchain);
 
-    //     return this.callContractFunction(
-    //         'ParanetNeuroIncentivesPool',
-    //         'getClaimableAllKnowledgeMinersRewardAmount',
-    //         [],
-    //         blockchain,
-    //     );
-    // }
+        return this.executeContractFunction(
+            'ParanetIncentivesPool',
+            'claimKnowledgeMinerReward',
+            [amount],
+            blockchain,
+        );
+    }
 
-    // async getClaimableVoterReward(paranetId, blockchain) {
-    //     const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(
-    //         paranetId,
-    //         blockchain,
-    //     );
+    async claimVoterReward(paranetId, blockchain, options = {}) {
+        const incentivesPoolAddress = await this.getIncentivesPoolAddress(paranetId, blockchain, {
+            incentivesPoolName: options.incentivesPoolName,
+            incentivesPoolStorageAddress: options.incentivesPoolStorageAddress,
+        });
 
-    //     await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
+        await this.setIncentivesPool(incentivesPoolAddress, blockchain);
 
-    //     return this.callContractFunction(
-    //         'ParanetNeuroIncentivesPool',
-    //         'getClaimableProposalVoterRewardAmount',
-    //         [],
-    //         blockchain,
-    //     );
-    // }
+        return this.executeContractFunction(
+            'ParanetIncentivesPool',
+            'claimIncentivizationProposalVoterReward',
+            [],
+            blockchain,
+        );
+    }
 
-    // async getClaimableAllVotersReward(paranetId, blockchain) {
-    //     const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(
-    //         paranetId,
-    //         blockchain,
-    //     );
+    async claimOperatorReward(paranetId, blockchain, options = {}) {
+        const incentivesPoolAddress = await this.getIncentivesPoolAddress(paranetId, blockchain, {
+            incentivesPoolName: options.incentivesPoolName,
+            incentivesPoolStorageAddress: options.incentivesPoolStorageAddress,
+        });
 
-    //     await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
+        await this.setIncentivesPool(incentivesPoolAddress, blockchain);
 
-    //     return this.callContractFunction(
-    //         'ParanetNeuroIncentivesPool',
-    //         'getClaimableAllProposalVotersRewardAmount',
-    //         [],
-    //         blockchain,
-    //     );
-    // }
+        return this.executeContractFunction(
+            'ParanetIncentivesPool',
+            'claimParanetOperatorReward',
+            [],
+            blockchain,
+        );
+    }
 
-    // async getClaimableOperatorReward(paranetId, blockchain) {
-    //     const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(
-    //         paranetId,
-    //         blockchain,
-    //     );
+    async getClaimableKnowledgeMinerReward(paranetId, blockchain, options = {}) {
+        const incentivesPoolAddress = await this.getIncentivesPoolAddress(paranetId, blockchain, {
+            incentivesPoolName: options.incentivesPoolName,
+            incentivesPoolStorageAddress: options.incentivesPoolStorageAddress,
+        });
 
-    //     await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
+        await this.setIncentivesPool(incentivesPoolAddress, blockchain);
 
-    //     return this.callContractFunction(
-    //         'ParanetNeuroIncentivesPool',
-    //         'getClaimableParanetOperatorRewardAmount',
-    //         [],
-    //         blockchain,
-    //     );
-    // }
+        return this.callContractFunction(
+            'ParanetIncentivesPool',
+            'getClaimableKnowledgeMinerRewardAmount',
+            [],
+            blockchain,
+        );
+    }
 
-    // async isParanetKnowledgeMiner(address, paranetId, blockchain) {
-    //     const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(
-    //         paranetId,
-    //         blockchain,
-    //     );
+    async getClaimableAllKnowledgeMinersReward(paranetId, blockchain, options = {}) {
+        const incentivesPoolAddress = await this.getIncentivesPoolAddress(paranetId, blockchain, {
+            incentivesPoolName: options.incentivesPoolName,
+            incentivesPoolStorageAddress: options.incentivesPoolStorageAddress,
+        });
 
-    //     await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
+        await this.setIncentivesPool(incentivesPoolAddress, blockchain);
 
-    //     return this.callContractFunction(
-    //         'ParanetNeuroIncentivesPool',
-    //         'isKnowledgeMiner',
-    //         [address],
-    //         blockchain,
-    //     );
-    // }
+        return this.callContractFunction(
+            'ParanetIncentivesPool',
+            'getClaimableAllKnowledgeMinersRewardAmount',
+            [],
+            blockchain,
+        );
+    }
 
-    // async isParanetOperator(address, paranetId, blockchain) {
-    //     const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(
-    //         paranetId,
-    //         blockchain,
-    //     );
+    async getClaimableVoterReward(paranetId, blockchain, options = {}) {
+        const incentivesPoolAddress = await this.getIncentivesPoolAddress(paranetId, blockchain, {
+            incentivesPoolName: options.incentivesPoolName,
+            incentivesPoolStorageAddress: options.incentivesPoolStorageAddress,
+        });
 
-    //     await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
+        await this.setIncentivesPool(incentivesPoolAddress, blockchain);
 
-    //     return this.callContractFunction(
-    //         'ParanetNeuroIncentivesPool',
-    //         'isParanetOperator',
-    //         [address],
-    //         blockchain,
-    //     );
-    // }
+        return this.callContractFunction(
+            'ParanetIncentivesPool',
+            'getClaimableProposalVoterRewardAmount',
+            [],
+            blockchain,
+        );
+    }
 
-    // async isParanetProposalVoter(address, paranetId, blockchain) {
-    //     const neuroIncentivesPoolAddress = await this.getNeuroIncentivesPoolAddress(
-    //         paranetId,
-    //         blockchain,
-    //     );
+    async getClaimableAllVotersReward(paranetId, blockchain, options = {}) {
+        const incentivesPoolAddress = await this.getIncentivesPoolAddress(paranetId, blockchain, {
+            incentivesPoolName: options.incentivesPoolName,
+            incentivesPoolStorageAddress: options.incentivesPoolStorageAddress,
+        });
 
-    //     await this.setIncentivesPool(neuroIncentivesPoolAddress, blockchain);
+        await this.setIncentivesPool(incentivesPoolAddress, blockchain);
 
-    //     return this.callContractFunction(
-    //         'ParanetNeuroIncentivesPool',
-    //         'isProposalVoter',
-    //         [address],
-    //         blockchain,
-    //     );
-    // }
+        return this.callContractFunction(
+            'ParanetIncentivesPool',
+            'getClaimableAllProposalVotersRewardAmount',
+            [],
+            blockchain,
+        );
+    }
+
+    async getClaimableOperatorReward(paranetId, blockchain, options = {}) {
+        const incentivesPoolAddress = await this.getIncentivesPoolAddress(paranetId, blockchain, {
+            incentivesPoolName: options.incentivesPoolName,
+            incentivesPoolStorageAddress: options.incentivesPoolStorageAddress,
+        });
+
+        await this.setIncentivesPool(incentivesPoolAddress, blockchain);
+
+        return this.callContractFunction(
+            'ParanetIncentivesPool',
+            'getClaimableParanetOperatorRewardAmount',
+            [],
+            blockchain,
+        );
+    }
+
+    async isParanetKnowledgeMiner(address, paranetId, blockchain, options = {}) {
+        const incentivesPoolAddress = await this.getIncentivesPoolAddress(paranetId, blockchain, {
+            incentivesPoolName: options.incentivesPoolName,
+            incentivesPoolStorageAddress: options.incentivesPoolStorageAddress,
+        });
+
+        console.log('Incentives Pool Address:', incentivesPoolAddress);
+
+        await this.setIncentivesPool(incentivesPoolAddress, blockchain);
+
+        // Add debug logs for contract instance
+        const contractInstance = await this.getContractInstance(
+            'ParanetIncentivesPool',
+            blockchain,
+        );
+        console.log('Contract Instance Address:', contractInstance.options.address);
+        console.log('Available Methods:', Object.keys(contractInstance.methods));
+
+        return this.callContractFunction(
+            'ParanetIncentivesPool',
+            'isKnowledgeMiner',
+            [address],
+            blockchain,
+        );
+    }
+
+    async isParanetOperator(address, paranetId, blockchain, options = {}) {
+        const incentivesPoolAddress = await this.getIncentivesPoolAddress(paranetId, blockchain, {
+            incentivesPoolName: options.incentivesPoolName,
+            incentivesPoolStorageAddress: options.incentivesPoolStorageAddress,
+        });
+
+        await this.setIncentivesPool(incentivesPoolAddress, blockchain);
+
+        return this.callContractFunction(
+            'ParanetIncentivesPool',
+            'isParanetOperator',
+            [address],
+            blockchain,
+        );
+    }
+
+    async isParanetProposalVoter(address, paranetId, blockchain, options = {}) {
+        const incentivesPoolAddress = await this.getIncentivesPoolAddress(paranetId, blockchain, {
+            incentivesPoolName: options.incentivesPoolName,
+            incentivesPoolStorageAddress: options.incentivesPoolStorageAddress,
+        });
+
+        await this.setIncentivesPool(incentivesPoolAddress, blockchain);
+
+        return this.callContractFunction(
+            'ParanetIncentivesPool',
+            'isProposalVoter',
+            [address],
+            blockchain,
+        );
+    }
 
     // Identity operations
     async getIdentityId(operationalWallet, blockchain) {
@@ -1017,5 +1396,30 @@ export default class BlockchainServiceBase {
 
     convertToWei(ether) {
         return Web3.utils.toWei(ether.toString(), 'ether');
+    }
+
+    async adjustEmissionMultiplier(rewardTokenAddress, tracToTokenEmissionMultiplier, blockchain) {
+        if (rewardTokenAddress !== ZERO_ADDRESS) {
+            // Create contract instance for ERC20 token
+            const tokenContract = new blockchain.web3.eth.Contract(
+                this.abis.IERC20Extended,
+                rewardTokenAddress,
+            );
+
+            try {
+                const decimals = await tokenContract.methods.decimals().call();
+                return (BigInt(tracToTokenEmissionMultiplier) * BigInt(10)) ** BigInt(decimals);
+            } catch (error) {
+                throw new Error('ERC20 token is missing decimals function');
+            }
+        } else {
+            // Neuroweb chains use 12 decimals
+            if (NEUROWEB_INCENTIVE_TYPE_CHAINS.includes(blockchain.name)) {
+                return BigInt(tracToTokenEmissionMultiplier) * BigInt(10) ** BigInt(12);
+            } else {
+                // Other chains use 18 decimals (e.g., ETH)
+                return BigInt(tracToTokenEmissionMultiplier) * BigInt(10) ** BigInt(18);
+            }
+        }
     }
 }

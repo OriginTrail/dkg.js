@@ -5,6 +5,7 @@ import {
     BLOCKCHAINS,
     PARANET_NODES_ACCESS_POLICY,
     PARANET_MINERS_ACCESS_POLICY,
+    PARANET_KC_SUBMISSION_POLICY,
     ZERO_ADDRESS,
 } from '../constants.js';
 
@@ -107,17 +108,27 @@ export default class InputService {
             paranetDescription: this.getParanetDescription(options),
             paranetNodesAccessPolicy: this.getParanetNodesAccessPolicy(options),
             paranetMinersAccessPolicy: this.getParanetMinersAccessPolicy(options),
+            paranetKcSubmissionPolicy: this.getParanetKcSubmissionPolicy(options),
         };
     }
 
     getParanetDeployIncentivesContractArguments(options) {
         return {
             blockchain: this.getBlockchain(options),
-            incentiveType: this.getIncentiveType(options),
-            tracToNeuroEmissionMultiplier: this.getTracToNeuroEmissionMultiplier(options),
+            tracToTokenEmissionMultiplier: this.getTracToTokenEmissionMultiplier(options),
             operatorRewardPercentage: this.getOperatorRewardPercentage(options),
             incentivizationProposalVotersRewardPercentage:
                 this.getIncentivizationProposalVotersRewardPercentage(options),
+            incentivesPoolName: this.getIncentivesPoolName(options),
+            rewardTokenAddress: this.getRewardTokenAddress(options),
+        };
+    }
+
+    getIncentivesPoolStorageAddressArguments(options) {
+        return {
+            incentivesPoolName: this.getIncentivesPoolName(options),
+            incentivesPoolAddress: this.getIncentivesPoolAddress(options),
+            blockchain: this.getBlockchain(options),
         };
     }
 
@@ -380,8 +391,12 @@ export default class InputService {
         return options.paranetMinersAccessPolicy ?? PARANET_MINERS_ACCESS_POLICY.OPEN;
     }
 
-    getTracToNeuroEmissionMultiplier(options) {
-        return options.tracToNeuroEmissionMultiplier ?? null;
+    getParanetKcSubmissionPolicy(options) {
+        return options.paranetKcSubmissionPolicy ?? PARANET_KC_SUBMISSION_POLICY.OPEN;
+    }
+
+    getTracToTokenEmissionMultiplier(options) {
+        return options.tracToTokenEmissionMultiplier ?? null;
     }
 
     getIncentivizationProposalVotersRewardPercentage(options) {
@@ -390,10 +405,6 @@ export default class InputService {
 
     getOperatorRewardPercentage(options) {
         return options.operatorRewardPercentage * 100 ?? null;
-    }
-
-    getIncentiveType(options) {
-        return options.incentiveType ?? null;
     }
 
     getParanetServiceName(options) {
@@ -414,5 +425,17 @@ export default class InputService {
 
     getAssertionCachedLocally(options) {
         return options.assertionCachedLocally ?? false;
+    }
+
+    getIncentivesPoolName(options) {
+        return options.incentivesPoolName ?? null;
+    }
+
+    getIncentivesPoolAddress(options) {
+        return options.incentivesPoolAddress ?? null;
+    }
+
+    getRewardTokenAddress(options) {
+        return options.rewardTokenAddress ?? ZERO_ADDRESS;
     }
 }
