@@ -1277,18 +1277,6 @@ export default class ParanetOperationsManager {
     // async updateClaimableRewards(paranetUAL, options = {}) {
     //     const blockchain = this.inputService.getBlockchain(options);
     //     this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
-    // /**
-    //  * Updates claimable rewards for a Paranet.
-    //  * @async
-    //  * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
-    //  * @param {Object} [options={}] - Additional options for updating rewards.
-    //  * @returns {Object} Object containing transaction hash and status.
-    //  * @example
-    //  * await dkg.paranet.updateClaimableRewards(paranetUAL);
-    //  */
-    // async updateClaimableRewards(paranetUAL, options = {}) {
-    //     const blockchain = this.inputService.getBlockchain(options);
-    //     this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
     //     const { contract: kcStorageContract, kcTokenId, kaTokenId } = resolveUAL(paranetUAL);
     //     if (!kaTokenId) {
@@ -1319,17 +1307,7 @@ export default class ParanetOperationsManager {
     //             status: receipt.status,
     //         };
     //     }
-    //         return {
-    //             operation: receipt,
-    //             transactionHash: receipt.transactionHash,
-    //             status: receipt.status,
-    //         };
-    //     }
 
-    //     return {
-    //         status: 'No updated knowledge assets.',
-    //     };
-    // }
     //     return {
     //         status: 'No updated knowledge assets.',
     //     };
