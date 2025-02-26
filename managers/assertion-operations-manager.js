@@ -1,5 +1,4 @@
 import { kaTools, kcTools } from 'assertion-tools';
-import { LABEL_PREFIX } from '../constants.js';
 
 export default class AssertionOperationsManager {
     constructor(services) {
@@ -65,52 +64,5 @@ export default class AssertionOperationsManager {
     async getChunksNumber(content) {
         const assertions = await kaTools.formatGraph(content);
         return kcTools.calculateNumberOfChunks(assertions.public);
-    }
-
-    /**
-     * Adds labels to the public assertion based on provided conditions.
-     *
-     * @param {Object} content - The content object in JSONLD or NQUADS format.
-     * @param {Array} conditions - An array of condition-label pairs. Each condition is a function that
-     * tests if the triple should be labeled.
-     * @returns {Promise<Object>} - Return the N-Quads formatted string
-     */
-    async addLabels(content, conditions) {
-        this.validationService.validateJsonldOrNquads(content);
-        this.validationService.validateConditions(conditions);
-
-        const assertions = await kcTools.formatDataset(content);
-
-        const resultAssertions = [];
-
-        assertions.forEach((tripleStr) => {
-            const match = tripleStr.match(/<([^>]+)> <([^>]+)> ([^\.]+) \./);
-            if (!match) {
-                throw new Error(`Invalid N-Quad format: ${tripleStr}`);
-            }
-
-            const subject = match[1];
-            const predicate = match[2];
-            let object = match[3].trim();
-
-            if (object.startsWith('"') && object.endsWith('"')) {
-                object = `"${object.slice(1, -1)}"`;
-            } else {
-                object = `${object}`;
-            }
-
-            resultAssertions.push(`<${subject}> <${predicate}> ${object} .`);
-
-            conditions.forEach((condition) => {
-                if (condition.condition === true) {
-                    const labelTriple = `<<<${subject}> <${predicate}> ${object}>> ${LABEL_PREFIX} <${condition.label}> .`;
-                    resultAssertions.push(labelTriple);
-                } else if (condition.condition({ subject, predicate, object })) {
-                        const labelTriple = `<<<${subject}> <${predicate}> ${object}>> ${LABEL_PREFIX} <${condition.label}> .`;
-                        resultAssertions.push(labelTriple);
-                    }
-            });
-        });
-        return resultAssertions;
     }
 }

@@ -7,7 +7,6 @@ import {
     OPERATIONS,
     GET_OUTPUT_FORMATS,
     QUERY_TYPES,
-    BID_SUGGESTION_RANGE_ENUM,
     PARANET_NODES_ACCESS_POLICY,
     PARANET_MINERS_ACCESS_POLICY,
     PARANET_KC_SUBMISSION_POLICY,
@@ -42,10 +41,6 @@ export default class ValidationService {
         if (repository) {
             this.validateRepository(repository);
         }
-    }
-
-    validateIsValidUAL(blockchain) {
-        this.validateBlockchain(blockchain);
     }
 
     validateSetAllowance(blockchain) {
@@ -155,7 +150,7 @@ export default class ValidationService {
     }
 
     validateAssetTransfer(UAL, newOwner, blockchain) {
-        this.validateUAL(UAL);
+        this.validateKAUAL(UAL);
         this.validateNewOwner(newOwner);
         this.validateBlockchain(blockchain);
     }
@@ -511,6 +506,17 @@ export default class ValidationService {
         return true;
     }
 
+    validateKAUAL(ual) {
+        this.validateRequiredParam('UAL', ual);
+        this.validateParamType('UAL', ual, 'string');
+
+        const segments = ual.split(':');
+        const argsString = segments.length === 3 ? segments[2] : `${segments[2]}:${segments[3]}`;
+        const args = argsString.split('/');
+        if (args?.length !== 4) throw Error('Invalid UAL.');
+        return true;
+    }
+
     validateStateIndex(stateIndex) {
         this.validateRequiredParam('stateIndex', stateIndex);
         this.validateParamType('stateIndex', stateIndex, 'number');
@@ -541,6 +547,7 @@ export default class ValidationService {
             'Content must be either a valid JSON-LD object or a N-Quads/N-Triples string.',
         );
     }
+
     validateContent(content) {
         this.validateRequiredParam('content', content);
     }
@@ -707,14 +714,6 @@ export default class ValidationService {
     validateNewOwner(newOwner) {
         this.validateRequiredParam('newOwner', newOwner);
         this.validateParamType('newOwner', newOwner, 'string');
-    }
-
-    validateBidSuggestionRange(bidSuggestionRange) {
-        if (!BID_SUGGESTION_RANGE_ENUM.includes(bidSuggestionRange)) {
-            throw Error(
-                `Invalid bidSuggestionRange parametar: supported parametars ${BID_SUGGESTION_RANGE_ENUM}`,
-            );
-        }
     }
 
     validateParanetName(paranetName) {

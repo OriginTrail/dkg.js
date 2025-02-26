@@ -36,13 +36,7 @@ export default class BlockchainServiceBase {
         this.config = config;
         this.events = {};
         this.abis = {};
-        // this.abis.AssertionStorage = AssertionStorageAbi;
         this.abis.Hub = HubAbi;
-        // this.abis.ServiceAgreementV1 = ServiceAgreementV1Abi;
-        // this.abis.ServiceAgreementStorageProxy = ServiceAgreementStorageProxyAbi;
-        // this.abis.ContentAssetStorage = ContentAssetStorageAbi;
-        // this.abis.UnfinalizedStateStorage = UnfinalizedStateStorageAbi;
-        // this.abis.ContentAsset = ContentAssetAbi;
         this.abis.Token = TokenAbi;
         this.abis.Paranet = ParanetAbi;
         this.abis.ParanetsRegistry = ParanetsRegistryAbi;
@@ -116,44 +110,52 @@ export default class BlockchainServiceBase {
         const web3Instance = await this.getWeb3Instance(blockchain);
 
         try {
-            let gasPrice;
-
-            if (blockchain.name.startsWith('otp')) {
-                gasPrice = await web3Instance.eth.getGasPrice();
-            } else if (blockchain.name.startsWith('base')) {
-                gasPrice = await web3Instance.eth.getGasPrice();
-            } else if (blockchain.name.startsWith('gnosis')) {
-                try {
-                    const response = await axios.get(blockchain.gasPriceOracleLink);
-                    gasPrice =
-                        Number(response?.data?.average) * 1e9 || DEFAULT_GAS_PRICE_WEI.GNOSIS;
-                } catch (e) {
-                    gasPrice = DEFAULT_GAS_PRICE_WEI.GNOSIS;
-                }
-            } else {
-                if (blockchain.name.startsWith('otp')) {
-                    gasPrice = Web3.utils.toWei(DEFAULT_GAS_PRICE.OTP, 'Gwei');
-                } else if (blockchain.name.startsWith('base')) {
-                    gasPrice = Web3.utils.toWei(DEFAULT_GAS_PRICE.BASE, 'Gwei');
-                } else {
-                    gasPrice = Web3.utils.toWei(DEFAULT_GAS_PRICE.GNOSIS, 'Gwei');
-                }
+            if (this.isOtpOrBase(blockchain.name)) {
+                return await web3Instance.eth.getGasPrice();
             }
-            return gasPrice;
+
+            if (this.isGnosis(blockchain.name)) {
+                return await this.getGnosisGasPrice(blockchain);
+            }
+
+            return this.getDefaultGasPrice(blockchain.name);
         } catch (error) {
-            // eslint-disable-next-line no-console
             console.warn(
                 `Failed to fetch the gas price from the network: ${error}. Using default value.`,
             );
-            return Web3.utils.toWei(
-                blockchain.name.startsWith('otp')
-                    ? DEFAULT_GAS_PRICE.OTP
-                    : blockchain.name.startsWith('base')
-                    ? DEFAULT_GAS_PRICE.BASE
-                    : DEFAULT_GAS_PRICE.GNOSIS,
-                'Gwei',
-            );
+            return this.getDefaultGasPrice(blockchain.name);
         }
+    }
+
+    isOtpOrBase(name) {
+        return name.startsWith('otp') || name.startsWith('base');
+    }
+
+    isGnosis(name) {
+        return name.startsWith('gnosis');
+    }
+
+    async getGnosisGasPrice(blockchain) {
+        try {
+            const response = await axios.get(blockchain.gasPriceOracleLink);
+            const averageGasPrice = Number(response?.data?.average) * 1e9;
+            return averageGasPrice || DEFAULT_GAS_PRICE_WEI.GNOSIS;
+        } catch (error) {
+            console.warn(`Failed to fetch gas price from Gnosis oracle: ${error}`);
+            return DEFAULT_GAS_PRICE_WEI.GNOSIS;
+        }
+    }
+
+    getDefaultGasPrice(name) {
+        let defaultGasPrice;
+        if (name.startsWith('otp')) {
+            defaultGasPrice = DEFAULT_GAS_PRICE.OTP;
+        } else if (name.startsWith('base')) {
+            defaultGasPrice = DEFAULT_GAS_PRICE.BASE;
+        } else {
+            defaultGasPrice = DEFAULT_GAS_PRICE.GNOSIS;
+        }
+        return Web3.utils.toWei(defaultGasPrice, 'Gwei');
     }
 
     async callContractFunction(contractName, functionName, args, blockchain) {
@@ -780,113 +782,113 @@ export default class BlockchainServiceBase {
         );
     }
 
-    async addParanetCuratedNodes(requestData, blockchain) {
-        return this.executeContractFunction(
-            'Paranet',
-            'addParanetCuratedNodes',
-            Object.values(requestData),
-            blockchain,
-        );
-    }
+    // async addParanetCuratedNodes(requestData, blockchain) {
+    //     return this.executeContractFunction(
+    //         'Paranet',
+    //         'addParanetCuratedNodes',
+    //         Object.values(requestData),
+    //         blockchain,
+    //     );
+    // }
 
-    async removeParanetCuratedNodes(requestData, blockchain) {
-        return this.executeContractFunction(
-            'Paranet',
-            'removeParanetCuratedNodes',
-            Object.values(requestData),
-            blockchain,
-        );
-    }
+    // async removeParanetCuratedNodes(requestData, blockchain) {
+    //     return this.executeContractFunction(
+    //         'Paranet',
+    //         'removeParanetCuratedNodes',
+    //         Object.values(requestData),
+    //         blockchain,
+    //     );
+    // }
 
-    async requestParanetCuratedNodeAccess(requestData, blockchain) {
-        return this.executeContractFunction(
-            'Paranet',
-            'requestParanetCuratedNodeAccess',
-            Object.values(requestData),
-            blockchain,
-        );
-    }
+    // async requestParanetCuratedNodeAccess(requestData, blockchain) {
+    //     return this.executeContractFunction(
+    //         'Paranet',
+    //         'requestParanetCuratedNodeAccess',
+    //         Object.values(requestData),
+    //         blockchain,
+    //     );
+    // }
 
-    async approveCuratedNode(requestData, blockchain) {
-        return this.executeContractFunction(
-            'Paranet',
-            'approveCuratedNode',
-            Object.values(requestData),
-            blockchain,
-        );
-    }
+    // async approveCuratedNode(requestData, blockchain) {
+    //     return this.executeContractFunction(
+    //         'Paranet',
+    //         'approveCuratedNode',
+    //         Object.values(requestData),
+    //         blockchain,
+    //     );
+    // }
 
-    async rejectCuratedNode(requestData, blockchain) {
-        return this.executeContractFunction(
-            'Paranet',
-            'rejectCuratedNode',
-            Object.values(requestData),
-            blockchain,
-        );
-    }
+    // async rejectCuratedNode(requestData, blockchain) {
+    //     return this.executeContractFunction(
+    //         'Paranet',
+    //         'rejectCuratedNode',
+    //         Object.values(requestData),
+    //         blockchain,
+    //     );
+    // }
 
-    async getCuratedNodes(requestData, blockchain) {
-        return this.callContractFunction(
-            'ParanetsRegistry',
-            'getCuratedNodes',
-            Object.values(requestData),
-            blockchain,
-        );
-    }
+    // async getCuratedNodes(requestData, blockchain) {
+    //     return this.callContractFunction(
+    //         'ParanetsRegistry',
+    //         'getCuratedNodes',
+    //         Object.values(requestData),
+    //         blockchain,
+    //     );
+    // }
 
-    async getKnowledgeMiners(requestData, blockchain) {
-        return this.callContractFunction(
-            'ParanetsRegistry',
-            'getKnowledgeMiners',
-            Object.values(requestData),
-            blockchain,
-        );
-    }
+    // async getKnowledgeMiners(requestData, blockchain) {
+    //     return this.callContractFunction(
+    //         'ParanetsRegistry',
+    //         'getKnowledgeMiners',
+    //         Object.values(requestData),
+    //         blockchain,
+    //     );
+    // }
 
-    async addParanetCuratedMiners(requestData, blockchain) {
-        return this.executeContractFunction(
-            'Paranet',
-            'addParanetCuratedMiners',
-            Object.values(requestData),
-            blockchain,
-        );
-    }
+    // async addParanetCuratedMiners(requestData, blockchain) {
+    //     return this.executeContractFunction(
+    //         'Paranet',
+    //         'addParanetCuratedMiners',
+    //         Object.values(requestData),
+    //         blockchain,
+    //     );
+    // }
 
-    async removeParanetCuratedMiners(requestData, blockchain) {
-        return this.executeContractFunction(
-            'Paranet',
-            'removeParanetCuratedMiners',
-            Object.values(requestData),
-            blockchain,
-        );
-    }
+    // async removeParanetCuratedMiners(requestData, blockchain) {
+    //     return this.executeContractFunction(
+    //         'Paranet',
+    //         'removeParanetCuratedMiners',
+    //         Object.values(requestData),
+    //         blockchain,
+    //     );
+    // }
 
-    async requestParanetCuratedMinerAccess(requestData, blockchain) {
-        return this.executeContractFunction(
-            'Paranet',
-            'requestParanetCuratedMinerAccess',
-            Object.values(requestData),
-            blockchain,
-        );
-    }
+    // async requestParanetCuratedMinerAccess(requestData, blockchain) {
+    //     return this.executeContractFunction(
+    //         'Paranet',
+    //         'requestParanetCuratedMinerAccess',
+    //         Object.values(requestData),
+    //         blockchain,
+    //     );
+    // }
 
-    async approveCuratedMiner(requestData, blockchain) {
-        return this.executeContractFunction(
-            'Paranet',
-            'approveCuratedMiner',
-            Object.values(requestData),
-            blockchain,
-        );
-    }
+    // async approveCuratedMiner(requestData, blockchain) {
+    //     return this.executeContractFunction(
+    //         'Paranet',
+    //         'approveCuratedMiner',
+    //         Object.values(requestData),
+    //         blockchain,
+    //     );
+    // }
 
-    async rejectCuratedMiner(requestData, blockchain) {
-        return this.executeContractFunction(
-            'Paranet',
-            'rejectCuratedMiner',
-            Object.values(requestData),
-            blockchain,
-        );
-    }
+    // async rejectCuratedMiner(requestData, blockchain) {
+    //     return this.executeContractFunction(
+    //         'Paranet',
+    //         'rejectCuratedMiner',
+    //         Object.values(requestData),
+    //         blockchain,
+    //     );
+    // }
 
     async deployIncentivesPool(requestData, blockchain) {
         return this.executeContractFunction(
@@ -906,23 +908,23 @@ export default class BlockchainServiceBase {
         );
     }
 
-    async registerParanetService(requestData, blockchain) {
-        return this.executeContractFunction(
-            'Paranet',
-            'registerParanetService',
-            Object.values(requestData),
-            blockchain,
-        );
-    }
+    // async registerParanetService(requestData, blockchain) {
+    //     return this.executeContractFunction(
+    //         'Paranet',
+    //         'registerParanetService',
+    //         Object.values(requestData),
+    //         blockchain,
+    //     );
+    // }
 
-    async addParanetServices(requestData, blockchain) {
-        return this.executeContractFunction(
-            'Paranet',
-            'addParanetServices',
-            Object.values(requestData),
-            blockchain,
-        );
-    }
+    // async addParanetServices(requestData, blockchain) {
+    //     return this.executeContractFunction(
+    //         'Paranet',
+    //         'addParanetServices',
+    //         Object.values(requestData),
+    //         blockchain,
+    //     );
+    // }
 
     async submitToParanet(requestData, blockchain) {
         return this.executeContractFunction(
@@ -1034,8 +1036,8 @@ export default class BlockchainServiceBase {
         return await this.getParanetIncentivesPoolAddress(blockchain);
     }
 
-    async setIncentivesPool(contractAddress, blockchain) {
-        await this.ensureBlockchainInfo(blockchain);
+    // async setIncentivesPool(contractAddress, blockchain) {
+    //     await this.ensureBlockchainInfo(blockchain);
 
         if (
             this[blockchain.name].contractAddresses[blockchain.hubContract][
@@ -1328,14 +1330,17 @@ export default class BlockchainServiceBase {
         } catch (error) {
             // eslint-disable-next-line no-console
             console.warn(`Failed to fetch the gas price from the network: ${error}. `);
-            return Web3.utils.toWei(
-                blockchain.name.startsWith('otp')
-                    ? DEFAULT_GAS_PRICE.OTP
-                    : blockchain.name.startsWith('base')
-                    ? DEFAULT_GAS_PRICE.BASE
-                    : DEFAULT_GAS_PRICE.GNOSIS,
-                'Gwei',
-            );
+            let defaultGasPrice;
+
+            if (blockchain.name.startsWith('otp')) {
+                defaultGasPrice = DEFAULT_GAS_PRICE.OTP;
+            } else if (blockchain.name.startsWith('base')) {
+                defaultGasPrice = DEFAULT_GAS_PRICE.BASE;
+            } else {
+                defaultGasPrice = DEFAULT_GAS_PRICE.GNOSIS;
+            }
+
+            return Web3.utils.toWei(defaultGasPrice, 'Gwei');
         }
     }
 

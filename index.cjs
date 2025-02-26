@@ -8,6 +8,136 @@ var Web3 = require('web3');
 var module$1 = require('module');
 
 var _documentCurrentScript = typeof document !== 'undefined' ? document.currentScript : null;
+class AssertionOperationsManager {
+    constructor(services) {
+        this.nodeApiService = services.nodeApiService;
+        this.inputService = services.inputService;
+        this.validationService = services.validationService;
+    }
+
+    /**
+     * Formats the content provided, producing both a public and, if available, a private assertion.
+     *
+     * @param {Object} content - The content object containing optional public and private properties.
+     * @returns {Promise<Object>} a promise that resolves with an object containing the
+     * formatted public assertion and, if available, the private assertion.
+     */
+    async formatGraph(content) {
+        return assertionTools.kaTools.formatGraph(content);
+    }
+
+    /**
+     * Calculates and returns the Merkle root of the public assertion from the provided content.
+     *
+     * @param {Object} content - The content object containing optional public and private properties.
+     * @returns {Promise<String>} a promise that resolves with a string representing the
+     * Merkle root of the formatted public assertion.
+     */
+    async getPublicAssertionId(content) {
+        const assertions = await assertionTools.kaTools.formatGraph(content);
+        return assertionTools.kcTools.calculateMerkleRoot(assertions.public);
+    }
+
+    /**
+     * Calculates and returns the size in bytes of the public assertion from the provided content.
+     *
+     * @param {Object} content - The content object containing optional public and private properties.
+     * @returns {Promise<Number>} a promise that resolves with a number representing the
+     * size in bytes of the formatted public assertion.
+     */
+    async getSizeInBytes(content) {
+        const assertions = await assertionTools.kaTools.formatGraph(content);
+        return assertionTools.kcTools.getSizeInBytes(assertions.public);
+    }
+
+    /**
+     * Calculates and returns the number of triples of the public assertion from the provided content.
+     *
+     * @param {Object} content - The content object containing optional public and private properties.
+     * @returns {Promise<Number>} a promise that resolves with a number representing the
+     * number of triples of the formatted public assertion.
+     */
+    async getTriplesNumber(content) {
+        const assertions = await assertionTools.kaTools.formatGraph(content);
+        return assertionTools.kaTools.getTriplesNumber(assertions.public);
+    }
+
+    /**
+     * Calculates and returns the number of chunks of the public assertion from the provided content.
+     *
+     * @param {Object} content - The content object containing optional public and private properties.
+     * @returns {Promise<Number>} a promise that resolves with a number representing the
+     * number of chunks of the formatted public assertion.
+     */
+    async getChunksNumber(content) {
+        const assertions = await assertionTools.kaTools.formatGraph(content);
+        return assertionTools.kcTools.calculateNumberOfChunks(assertions.public);
+    }
+}
+
+function nodeSupported() {
+    return typeof window === 'undefined';
+}
+
+function deriveUAL(blockchain, contract, tokenId) {
+    return `did:dkg:${blockchain.toLowerCase()}/${contract.toLowerCase()}/${tokenId}`;
+}
+
+function resolveUAL(ual) {
+    const segments = ual.split(':');
+    const argsString = segments.length === 3 ? segments[2] : `${segments[2]}:${segments[3]}`;
+    const args = argsString.split('/');
+
+    if (!(args.length === 3 || args.length === 4)) {
+        throw new Error(`UAL doesn't have correct format: ${ual}`);
+    }
+
+    return {
+        blockchain: args[0],
+        contract: args[1],
+        knowledgeCollectionId: parseInt(args[2], 10),
+        ...(args[3] !== undefined ? { tokenId: parseInt(args[3], 10) } : {}),
+    };
+}
+
+async function sleepForMilliseconds(milliseconds) {
+    // eslint-disable-next-line no-promise-executor-return
+    await new Promise((r) => setTimeout(r, milliseconds));
+}
+
+function getOperationStatusObject(operationResult, operationId) {
+    const operationData = operationResult.data?.errorType
+        ? { status: operationResult.status, ...operationResult.data }
+        : { status: operationResult.status };
+
+    return {
+        operationId,
+        ...operationData,
+    };
+}
+
+async function toNQuads(content, inputFormat) {
+    const options = {
+        algorithm: 'URDNA2015',
+        format: 'application/n-quads',
+    };
+
+    {
+        options.inputFormat = inputFormat;
+    }
+
+    const canonized = await jsonld.canonize(content, options);
+
+    return canonized.split('\n').filter((x) => x !== '');
+}
+
+async function toJSONLD(nquads) {
+    return jsonld.fromRDF(nquads, {
+        algorithm: 'URDNA2015',
+        format: 'application/n-quads',
+    });
+}
+
 /**
  * @constant {number} MAX_FILE_SIZE
  * - Max file size for publish
@@ -257,17 +387,6 @@ const DEFAULT_GAS_PRICE_WEI = {
     GNOSIS: '6000000000',
 };
 
-const LOW_BID_SUGGESTION = 'low';
-const MED_BID_SUGGESTION = 'med';
-const HIGH_BID_SUGGESTION = 'high';
-const ALL_BID_SUGGESTION = 'all';
-const BID_SUGGESTION_RANGE_ENUM = [
-    LOW_BID_SUGGESTION,
-    MED_BID_SUGGESTION,
-    HIGH_BID_SUGGESTION,
-    ALL_BID_SUGGESTION,
-];
-
 const CHUNK_BYTE_SIZE = 32;
 
 class AssertionOperationsManager {
@@ -493,79 +612,6 @@ class AssetOperationsManager {
     }
 
     /**
-     * Checks if given UAL is valid.
-     * @async
-     * @param {string} UAL - Universal Asset Locator.
-     * @param {Object} [options={}] - Additional options - currently only blockchain option expected.
-     * @returns {boolean} UAL have passed validation.
-     * @throws {Error} Throws an error if UAL validation fails.
-     * @example did:dkg:otp:2043/0x5cac41237127f94c2d21dae0b14bfefa99880630/1985318
-     */
-    async isValidUAL(UAL, options = {}) {
-        if (typeof UAL !== 'string' || UAL.trim() === '') {
-            throw new Error('UAL must be a non-empty string.');
-        }
-
-        const blockchain = this.inputService.getBlockchain(options);
-        this.validationService.validateIsValidUAL(blockchain);
-
-        const parts = UAL.split('/');
-        if (parts.length !== 3) {
-            throw new Error('UAL format is incorrect.');
-        }
-
-        const prefixes = parts[0].split(':');
-        if (prefixes.length !== 3 && prefixes.length !== 4) {
-            throw new Error('Prefix format in UAL is incorrect.');
-        }
-
-        if (prefixes[0] !== 'did') {
-            throw new Error(`Invalid DID prefix. Expected: 'did'. Received: '${prefixes[0]}'.`);
-        }
-
-        if (prefixes[1] !== 'dkg') {
-            throw new Error(`Invalid DKG prefix. Expected: 'dkg'. Received: '${prefixes[1]}'.`);
-        }
-
-        if (prefixes[2] !== blockchain.name.split(':')[0]) {
-            throw new Error(
-                `Invalid blockchain name in the UAL prefix. Expected: '${
-                    blockchain.name.split(':')[0]
-                }'. Received: '${prefixes[2]}'.`,
-            );
-        }
-
-        if (prefixes.length === 4) {
-            const chainId = await this.blockchainService.getChainId(blockchain);
-            if (Number(prefixes[3]) !== chainId) {
-                throw new Error(
-                    `Chain ID in UAL does not match the blockchain. Expected: '${chainId}'. Received: '${prefixes[3]}'.`,
-                );
-            }
-        }
-
-        const contractAddress = await this.blockchainService.getContractAddress(
-            'ContentAssetStorage',
-            blockchain,
-        );
-        if (parts[1].toLowerCase() !== contractAddress.toLowerCase()) {
-            throw new Error(
-                `Contract address in UAL does not match. Expected: '${contractAddress}'. Received: '${parts[1]}'.`,
-            );
-        }
-
-        try {
-            const owner = await this.blockchainService.getAssetOwner(parts[2], blockchain);
-            if (!owner || owner === ZERO_ADDRESS) {
-                throw new Error('Token does not exist or has no owner.');
-            }
-            return true;
-        } catch (error) {
-            throw new Error(`Error fetching asset owner: ${error.message}`);
-        }
-    }
-
-    /**
      * Sets allowance to a given quantity of tokens.
      * @async
      * @param {BigInt} tokenAmount - The amount of tokens (Wei) to set the allowance.
@@ -745,18 +791,6 @@ class AssetOperationsManager {
         return left;
     }
 
-    manualJoinSignature({ r, s, v }) {
-        // Remove the "0x" prefix from r and s
-        const rNoPrefix = r.replace(/^0x/, '');
-        const sNoPrefix = s.replace(/^0x/, '');
-
-        // Convert v to a 2-digit hex string (e.g. "1b" or "1c")
-        // If v is already 27 or 28, this should work fine.
-        const vHex = Number(v).toString(16).padStart(2, '0');
-
-        return '0x' + rNoPrefix + sNoPrefix + vHex;
-    }
-
     /**
      * Creates a new knowledge collection.
      * @async
@@ -844,7 +878,7 @@ class AssetOperationsManager {
 
             // Create a map of public subject -> index for quick lookup
             const publicSubjectMap = new Map();
-            for (let i = 0; i < publicTriplesGrouped.length; i++) {
+            for (let i = 0; i < publicTriplesGrouped.length; i += 1) {
                 const [publicSubject] = publicTriplesGrouped[i][0].split(' ');
                 publicSubjectMap.set(publicSubject, i);
             }
@@ -949,18 +983,20 @@ class AssetOperationsManager {
                         signature,
                     );
 
-                    let keyIsOperationalWallet;
-                    keyIsOperationalWallet = await this.blockchainService.keyIsOperationalWallet(
-                        blockchain,
-                        signature.identityId,
-                        signerAddress,
-                    );
+                    const keyIsOperationalWallet =
+                        await this.blockchainService.keyIsOperationalWallet(
+                            blockchain,
+                            signature.identityId,
+                            signerAddress,
+                        );
                     if (keyIsOperationalWallet) {
                         identityIds.push(signature.identityId);
                         r.push(signature.r);
                         vs.push(signature.vs);
                     }
-                } catch {}
+                } catch {
+                    // If error happened continue
+                }
             }),
         );
 
@@ -1006,7 +1042,7 @@ class AssetOperationsManager {
                 null,
                 blockchain,
                 stepHooks,
-            ));
+            );
 
         const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, knowledgeCollectionId);
 
@@ -1042,10 +1078,6 @@ class AssetOperationsManager {
         };
     }
 
-    generatePrivateRepresentation(privateSubjectHash) {
-        return `${`<${PRIVATE_HASH_SUBJECT_PREFIX}${privateSubjectHash}>`} <${PRIVATE_RESOURCE_PREDICATE}> <${assertionTools.kaTools.generateNamedNode()}> .`;
-    }
-
     /**
      * Transfer an asset to a new owner on a specified blockchain.
      * @async
@@ -1059,124 +1091,14 @@ class AssetOperationsManager {
 
         this.validationService.validateAssetTransfer(UAL, newOwner, blockchain);
 
-        const { tokenId } = resolveUAL(UAL);
-        const receipt = await this.blockchainService.transferAsset(tokenId, newOwner, blockchain);
-        const owner = await this.blockchainService.getAssetOwner(tokenId, blockchain);
+        const { knowledgeCollectionId, tokenId } = resolveUAL(UAL);
+        const assetId = (knowledgeCollectionId - 1) * 1_000_000 + tokenId;
+        const receipt = await this.blockchainService.transferAsset(assetId, newOwner, blockchain);
+        // const owner = await this.blockchainService.getAssetOwner(tokenId, blockchain);
 
         return {
             UAL,
-            owner,
             operation: receipt,
-        };
-    }
-
-    /**
-     * Retrieves the owner of a specified asset for a given blockchain.
-     * @async
-     * @param {string} UAL - The Universal Asset Locator of the asset.
-     * @param {Object} [options={}] - Optional parameters for blockchain service.
-     * @returns {Object} An object containing the UAL, owner and operation status.
-     */
-    async getOwner(UAL, options = {}) {
-        const blockchain = this.inputService.getBlockchain(options);
-
-        this.validationService.validateAssetGetOwner(UAL, blockchain);
-
-        const { tokenId } = resolveUAL(UAL);
-        const owner = await this.blockchainService.getAssetOwner(tokenId, blockchain);
-        return {
-            UAL,
-            owner,
-            operation: getOperationStatusObject({ data: {}, status: 'COMPLETED' }, null),
-        };
-    }
-
-    /**
-     * Retrieves the issuer of a specified asset for a specified state index and a given blockchain.
-     * @async
-     * @param {string} UAL - The Universal Asset Locator of the asset.
-     * @param {string} stateIndex - The state index of the assertion we want to get issuer of.
-     * @param {Object} [options={}] - Optional parameters for blockchain service.
-     * @returns {Object} An object containing the UAL, issuer and operation status.
-     */
-    async getStateIssuer(UAL, stateIndex, options = {}) {
-        const blockchain = this.inputService.getBlockchain(options);
-        this.validationService.validateAssetGetStateIssuer(UAL, stateIndex, blockchain);
-
-        const { tokenId } = resolveUAL(UAL);
-
-        const state = await this.blockchainService.getAssertionIdByIndex(
-            tokenId,
-            stateIndex,
-            blockchain,
-        );
-
-        const issuer = await this.blockchainService.getAssertionIssuer(
-            tokenId,
-            state,
-            stateIndex,
-            blockchain,
-        );
-        return {
-            UAL,
-            issuer,
-            state,
-            operation: getOperationStatusObject({ data: {}, status: 'COMPLETED' }, null),
-        };
-    }
-
-    /**
-     * Retrieves the latest issuer of a specified asset and a given blockchain.
-     * @async
-     * @param {string} UAL - The Universal Asset Locator of the asset.
-     * @param {Object} [options={}] - Optional parameters for blockchain service.
-     * @returns {Object} An object containing the UAL, issuer and operation status.
-     */
-    async getLatestStateIssuer(UAL, options = {}) {
-        const blockchain = this.inputService.getBlockchain(options);
-        this.validationService.validateAssetGetLatestStateIssuer(UAL, blockchain);
-
-        const { tokenId } = resolveUAL(UAL);
-
-        const states = await this.blockchainService.getAssertionIds(tokenId, blockchain);
-
-        const latestStateIndex = states.length - 1;
-
-        const latestState = states[latestStateIndex];
-
-        const issuer = await this.blockchainService.getAssertionIssuer(
-            tokenId,
-            latestState,
-            latestStateIndex,
-            blockchain,
-        );
-        return {
-            UAL,
-            issuer,
-            latestState,
-            operation: getOperationStatusObject({ data: {}, status: 'COMPLETED' }, null),
-        };
-    }
-
-    /**
-     * Retrieves all assertion ids for a specified asset and a given blockchain.
-     * @async
-     * @param {string} UAL - The Universal Asset Locator of the asset.
-     * @param {Object} [options={}] - Optional parameters for blockchain service.
-     * @returns {Object} An object containing the UAL, issuer and operation status.
-     */
-    async getStates(UAL, options = {}) {
-        const blockchain = this.inputService.getBlockchain(options);
-        this.validationService.validateAssetGetStates(UAL, blockchain);
-
-        const { tokenId } = resolveUAL(UAL);
-
-        const states = await this.blockchainService.getAssertionIds(tokenId, blockchain);
-
-        return {
-            UAL,
-            states,
-            operation: getOperationStatusObject({ data: {}, status: 'COMPLETED' }, null),
         };
     }
 
@@ -1187,6 +1109,8 @@ class AssetOperationsManager {
      * @param {Object} [options={}] - Optional parameters for blockchain service.
      * @returns {Object} An object containing the UAL and operation status.
      */
+
+    // TODO: Update function for v8
     async burn(UAL, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
 
@@ -1209,42 +1133,45 @@ class AssetOperationsManager {
      * @param {Object} [options={}] - Additional options for asset storing period extension.
      * @returns {Object} An object containing the UAL and operation status.
      */
-    async extendStoringPeriod(UAL, epochsNumber, options = {}) {
-        const blockchain = this.inputService.getBlockchain(options);
-        const tokenAmount = this.inputService.getTokenAmount(options);
 
-        this.validationService.validateExtendAssetStoringPeriod(
-            UAL,
-            epochsNumber,
-            tokenAmount,
-            blockchain,
-        );
+    // TOOO: Update for v8
+    // async extendStoringPeriod(UAL, epochsNumber, options = {}) {
+    //     const blockchain = this.inputService.getBlockchain(options);
+    //     const tokenAmount = this.inputService.getTokenAmount(options);
 
-        const { tokenId } = resolveUAL(UAL);
+    //     this.validationService.validateExtendAssetStoringPeriod(
+    //         UAL,
+    //         epochsNumber,
+    //         tokenAmount,
+    //         blockchain,
+    //     );
 
-        let tokenAmountInWei;
+    //     const { tokenId } = resolveUAL(UAL);
+    //     // const datasetSize = await this.blockchainService.getDatasetSize()
 
-        if (tokenAmount != null) {
-            tokenAmountInWei = tokenAmount;
-        } else {
-            tokenAmountInWei =
-                (await this.blockchainService.getStakeWeightedAverageAsk()) *
-                epochsNumber *
-                datasetSize; // need to get dataset size somewhere
-        }
+    //     let tokenAmountInWei;
 
-        const receipt = await this.blockchainService.extendAssetStoringPeriod(
-            tokenId,
-            epochsNumber,
-            tokenAmountInWei,
-            blockchain,
-        );
+    //     if (tokenAmount != null) {
+    //         tokenAmountInWei = tokenAmount;
+    //     } else {
+    //         tokenAmountInWei =
+    //             (await this.blockchainService.getStakeWeightedAverageAsk()) *
+    //             epochsNumber *
+    //             datasetSize; // need to get dataset size somewhere
+    //     }
 
-        return {
-            UAL,
-            operation: receipt,
-        };
-    }
+    //     const receipt = await this.blockchainService.extendAssetStoringPeriod(
+    //         tokenId,
+    //         epochsNumber,
+    //         tokenAmountInWei,
+    //         blockchain,
+    //     );
+
+    //     return {
+    //         UAL,
+    //         operation: receipt,
+    //     };
+    // }
 
     /**
      * Add tokens for an asset on the specified blockchain to a ongoing publishing operation.
@@ -1253,98 +1180,65 @@ class AssetOperationsManager {
      * @param {Object} [options={}] - Additional options for adding tokens.
      * @returns {Object} An object containing the UAL and operation status.
      */
-    async addTokens(UAL, options = {}) {
-        const blockchain = this.inputService.getBlockchain(options);
-        const tokenAmount = this.inputService.getTokenAmount(options);
 
-        this.validationService.validateAddTokens(UAL, tokenAmount, blockchain);
+    // TODO: Update for v8
+    // async addTokens(UAL, options = {}) {
+    //     const blockchain = this.inputService.getBlockchain(options);
+    //     const tokenAmount = this.inputService.getTokenAmount(options);
 
-        const { tokenId } = resolveUAL(UAL);
+    //     this.validationService.validateAddTokens(UAL, tokenAmount, blockchain);
 
-        let tokenAmountInWei;
+    //     const { tokenId } = resolveUAL(UAL);
 
-        if (tokenAmount != null) {
-            tokenAmountInWei = tokenAmount;
-        } else {
-            const endpoint = this.inputService.getEndpoint(options);
-            const port = this.inputService.getPort(options);
-            const authToken = this.inputService.getAuthToken(options);
-            const hashFunctionId = this.inputService.getHashFunctionId(options);
+    //     let tokenAmountInWei;
 
-            const latestFinalizedState = await this.blockchainService.getLatestAssertionId(
-                tokenId,
-                blockchain,
-            );
+    //     if (tokenAmount != null) {
+    //         tokenAmountInWei = tokenAmount;
+    //     } else {
+    //         const endpoint = this.inputService.getEndpoint(options);
+    //         const port = this.inputService.getPort(options);
+    //         const authToken = this.inputService.getAuthToken(options);
+    //         const hashFunctionId = this.inputService.getHashFunctionId(options);
 
-            const latestFinalizedStateSize = await this.blockchainService.getAssertionSize(
-                latestFinalizedState,
-                blockchain,
-            );
+    //         const latestFinalizedState = await this.blockchainService.getLatestAssertionId(
+    //             tokenId,
+    //             blockchain,
+    //         );
 
-            tokenAmountInWei = await this._getUpdateBidSuggestion(
-                UAL,
-                blockchain,
-                endpoint,
-                port,
-                authToken,
-                latestFinalizedState,
-                latestFinalizedStateSize,
-                hashFunctionId,
-            );
+    //         const latestFinalizedStateSize = await this.blockchainService.getAssertionSize(
+    //             latestFinalizedState,
+    //             blockchain,
+    //         );
 
-            if (tokenAmountInWei <= 0) {
-                throw new Error(
-                    `Token amount is bigger than default suggested amount, please specify exact tokenAmount if you still want to add more tokens!`,
-                );
-            }
-        }
+    //         tokenAmountInWei = await this._getUpdateBidSuggestion(
+    //             UAL,
+    //             blockchain,
+    //             endpoint,
+    //             port,
+    //             authToken,
+    //             latestFinalizedState,
+    //             latestFinalizedStateSize,
+    //             hashFunctionId,
+    //         );
 
-        const receipt = await this.blockchainService.addTokens(
-            tokenId,
-            tokenAmountInWei,
-            blockchain,
-        );
+    //         if (tokenAmountInWei <= 0) {
+    //             throw new Error(
+    //                 `Token amount is bigger than default suggested amount, please specify exact tokenAmount if you still want to add more tokens!`,
+    //             );
+    //         }
+    //     }
 
-        return {
-            UAL,
-            operation: receipt,
-        };
-    }
+    //     const receipt = await this.blockchainService.addTokens(
+    //         tokenId,
+    //         tokenAmountInWei,
+    //         blockchain,
+    //     );
 
-    async _getUpdateBidSuggestion(UAL, blockchain, size) {
-        const { contract, tokenId } = resolveUAL(UAL);
-        const firstDatasetRoot = await this.blockchainService.getAssertionIdByIndex(
-            tokenId,
-            0,
-            blockchain,
-        );
-
-        const keyword = ethers.ethers.solidityPacked(['address', 'bytes32'], [contract, firstDatasetRoot]);
-
-        const agreementId = ethers.ethers.sha256(
-            ethers.ethers.solidityPacked(['address', 'uint256', 'bytes'], [contract, tokenId, keyword]),
-        );
-        const agreementData = await this.blockchainService.getAgreementData(
-            agreementId,
-            blockchain,
-        );
-
-        const now = await this.blockchainService.getBlockchainTimestamp(blockchain);
-        const currentEpoch = Math.floor(
-            (now - agreementData.startTime) / agreementData.epochLength,
-        );
-
-        const epochsLeft = agreementData.epochsNumber - currentEpoch;
-
-        const bidSuggestion =
-            (await this.blockchainService.getStakeWeightedAverageAsk()) * epochsLeft * size;
-
-        const tokenAmountInWei =
-            BigInt(bidSuggestion) -
-            (BigInt(agreementData.tokenAmount) + BigInt(agreementData.updateTokenAmount ?? 0));
-
-        return tokenAmountInWei > 0 ? tokenAmountInWei : 0;
-    }
+    //     return {
+    //         UAL,
+    //         operation: receipt,
+    //     };
+    // }
 
     /**
      * Add knowledge asset to a paranet.
@@ -1385,19 +1279,6 @@ class AssetOperationsManager {
             UAL,
             operation: receipt,
         };
-    }
-
-    /**
-     * Updates an existing asset.
-     * @async
-     * @param {string} UAL - The Universal Asset Locator
-     * @param {Object} content - The content of the asset to be updated.
-     * @param {Object} [options={}] - Additional options for asset update.
-     * @returns {Object} Object containing UAL, publicAssertionId and operation status.
-     */
-    async update(UAL, content, options = {}) {
-        console.log('Update feature is currently unavailable in version 8.0.0, coming soon!');
-        return;
     }
 
     /**
@@ -1493,7 +1374,7 @@ class AssetOperationsManager {
             };
         }
         const { metadata } = getOperationResult.data;
-        let assertion = getOperationResult.data.assertion;
+        const { assertion } = getOperationResult.data;
 
         if (!assertion) {
             if (getOperationResult.status !== 'FAILED') {
@@ -2356,15 +2237,15 @@ class ParanetOperationsManager {
         );
     }
 
-    /**
-     * Request to become a node in a curated paranet.
-     * @async
-     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
-     * @example
-     * await dkg.paranet.requestCuratedNodeAccess(UAL);
-     */
-    async requestCuratedNodeAccess(paranetUAL, options = {}) {
-        const blockchain = this.inputService.getBlockchain(options);
+    // /**
+    //  * Request to become a node in a curated paranet.
+    //  * @async
+    //  * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+    //  * @example
+    //  * await dkg.paranet.requestCuratedNodeAccess(UAL);
+    //  */
+    // async requestCuratedNodeAccess(paranetUAL, options = {}) {
+    //     const blockchain = this.inputService.getBlockchain(options);
 
         this.validationService.validateRequestParanetCuratedNodeAccess(paranetUAL, blockchain);
 
@@ -2384,17 +2265,17 @@ class ParanetOperationsManager {
         );
     }
 
-    /**
-     * Approve a node's access request to a curated paranet.
-     * @async
-     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
-     * @param {number} identityId - Identity ID of the node which requested access.
-     * @param {Object} [options={}] - Additional options for adding curated nodes to a paranet.
-     * @example
-     * await dkg.paranet.approveCuratedNode(UAL, identityId: 1);
-     */
-    async approveCuratedNode(paranetUAL, identityId, options = {}) {
-        const blockchain = this.inputService.getBlockchain(options);
+    // /**
+    //  * Approve a node's access request to a curated paranet.
+    //  * @async
+    //  * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+    //  * @param {number} identityId - Identity ID of the node which requested access.
+    //  * @param {Object} [options={}] - Additional options for adding curated nodes to a paranet.
+    //  * @example
+    //  * await dkg.paranet.approveCuratedNode(UAL, identityId: 1);
+    //  */
+    // async approveCuratedNode(paranetUAL, identityId, options = {}) {
+    //     const blockchain = this.inputService.getBlockchain(options);
 
         this.validationService.validateApproveCuratedNode(paranetUAL, blockchain, identityId);
 
@@ -2415,17 +2296,17 @@ class ParanetOperationsManager {
         );
     }
 
-    /**
-     * Reject a node's access request to a curated paranet.
-     * @async
-     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
-     * @param {number} identityId - Identity ID of the node which requested access.
-     * @param {Object} [options={}] - Additional options for adding curated nodes to a paranet.
-     * @example
-     * await dkg.paranet.rejectCuratedNode(UAL, identityId: 1);
-     */
-    async rejectCuratedNode(paranetUAL, identityId, options = {}) {
-        const blockchain = this.inputService.getBlockchain(options);
+    // /**
+    //  * Reject a node's access request to a curated paranet.
+    //  * @async
+    //  * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+    //  * @param {number} identityId - Identity ID of the node which requested access.
+    //  * @param {Object} [options={}] - Additional options for adding curated nodes to a paranet.
+    //  * @example
+    //  * await dkg.paranet.rejectCuratedNode(UAL, identityId: 1);
+    //  */
+    // async rejectCuratedNode(paranetUAL, identityId, options = {}) {
+    //     const blockchain = this.inputService.getBlockchain(options);
 
         this.validationService.validateRejectCuratedNode(paranetUAL, blockchain, identityId);
 
@@ -2446,16 +2327,16 @@ class ParanetOperationsManager {
         );
     }
 
-    /**
-     * Get nodes of a curated paranet.
-     * @async
-     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
-     * @returns {Array[number]} Array of nodes identity IDs.
-     * @example
-     * await dkg.paranet.getCuratedNodes(UAL);
-     */
-    async getCuratedNodes(paranetUAL, options = {}) {
-        const blockchain = this.inputService.getBlockchain(options);
+    // /**
+    //  * Get nodes of a curated paranet.
+    //  * @async
+    //  * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+    //  * @returns {Array[number]} Array of nodes identity IDs.
+    //  * @example
+    //  * await dkg.paranet.getCuratedNodes(UAL);
+    //  */
+    // async getCuratedNodes(paranetUAL, options = {}) {
+    //     const blockchain = this.inputService.getBlockchain(options);
 
         this.validationService.validateGetCuratedNodes(paranetUAL, blockchain);
 
@@ -2466,8 +2347,8 @@ class ParanetOperationsManager {
             blockchain,
         );
 
-        return curatedNodes;
-    }
+    //     return curatedNodes;
+    // }
 
     /**
      * Adds miners to a curated paranet.
@@ -2504,17 +2385,17 @@ class ParanetOperationsManager {
         );
     }
 
-    /**
-     * Removes miners from a curated paranet.
-     * @async
-     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
-     * @param {Array<string>} minerAddresses - List of miner addresses to be removed.
-     * @param {Object} [options={}] - Additional options for adding curated miners to a paranet.
-     * @example
-     * await dkg.paranet.removeCuratedMiners(UAL, identityIds: [1, 2]);
-     */
-    async removeCuratedMiners(paranetUAL, minerAddresses, options = {}) {
-        const blockchain = this.inputService.getBlockchain(options);
+    // /**
+    //  * Removes miners from a curated paranet.
+    //  * @async
+    //  * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+    //  * @param {Array<string>} minerAddresses - List of miner addresses to be removed.
+    //  * @param {Object} [options={}] - Additional options for adding curated miners to a paranet.
+    //  * @example
+    //  * await dkg.paranet.removeCuratedMiners(UAL, identityIds: [1, 2]);
+    //  */
+    // async removeCuratedMiners(paranetUAL, minerAddresses, options = {}) {
+    //     const blockchain = this.inputService.getBlockchain(options);
 
         this.validationService.validateParanetRemoveCuratedMiners(
             paranetUAL,
@@ -2539,15 +2420,15 @@ class ParanetOperationsManager {
         );
     }
 
-    /**
-     * Request to become a miner in a curated paranet.
-     * @async
-     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
-     * @example
-     * await dkg.paranet.requestCuratedMinerAccess(UAL);
-     */
-    async requestCuratedMinerAccess(paranetUAL, options = {}) {
-        const blockchain = this.inputService.getBlockchain(options);
+    // /**
+    //  * Request to become a miner in a curated paranet.
+    //  * @async
+    //  * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+    //  * @example
+    //  * await dkg.paranet.requestCuratedMinerAccess(UAL);
+    //  */
+    // async requestCuratedMinerAccess(paranetUAL, options = {}) {
+    //     const blockchain = this.inputService.getBlockchain(options);
 
         this.validationService.validateRequestParanetCuratedMinerAccess(paranetUAL, blockchain);
 
@@ -2567,17 +2448,17 @@ class ParanetOperationsManager {
         );
     }
 
-    /**
-     * Approve a miner's access request to a curated paranet.
-     * @async
-     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
-     * @param {string} minerAddress - Address of the miner which requested access.
-     * @param {Object} [options={}] - Additional options for adding curated miners to a paranet.
-     * @example
-     * await dkg.paranet.approveCuratedMiner(UAL, minerAddress: 1);
-     */
-    async approveCuratedMiner(paranetUAL, minerAddress, options = {}) {
-        const blockchain = this.inputService.getBlockchain(options);
+    // /**
+    //  * Approve a miner's access request to a curated paranet.
+    //  * @async
+    //  * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+    //  * @param {string} minerAddress - Address of the miner which requested access.
+    //  * @param {Object} [options={}] - Additional options for adding curated miners to a paranet.
+    //  * @example
+    //  * await dkg.paranet.approveCuratedMiner(UAL, minerAddress: 1);
+    //  */
+    // async approveCuratedMiner(paranetUAL, minerAddress, options = {}) {
+    //     const blockchain = this.inputService.getBlockchain(options);
 
         this.validationService.validateApproveCuratedMiner(paranetUAL, blockchain, minerAddress);
 
@@ -2598,17 +2479,17 @@ class ParanetOperationsManager {
         );
     }
 
-    /**
-     * Reject a miner's access request to a curated paranet.
-     * @async
-     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
-     * @param {string} minerAddress - Address of the miner which requested access.
-     * @param {Object} [options={}] - Additional options for adding curated miners to a paranet.
-     * @example
-     * await dkg.paranet.rejectCuratedMiner(UAL, minerAddress: 1);
-     */
-    async rejectCuratedMiner(paranetUAL, minerAddress, options = {}) {
-        const blockchain = this.inputService.getBlockchain(options);
+    // /**
+    //  * Reject a miner's access request to a curated paranet.
+    //  * @async
+    //  * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+    //  * @param {string} minerAddress - Address of the miner which requested access.
+    //  * @param {Object} [options={}] - Additional options for adding curated miners to a paranet.
+    //  * @example
+    //  * await dkg.paranet.rejectCuratedMiner(UAL, minerAddress: 1);
+    //  */
+    // async rejectCuratedMiner(paranetUAL, minerAddress, options = {}) {
+    //     const blockchain = this.inputService.getBlockchain(options);
 
         this.validationService.validateRejectCuratedMiner(paranetUAL, blockchain, minerAddress);
 
@@ -2964,12 +2845,12 @@ class ParanetOperationsManager {
             },
         );
 
-        return {
-            operation: receipt,
-            transactionHash: receipt.transactionHash,
-            status: receipt.status,
-        };
-    }
+    //     return {
+    //         operation: receipt,
+    //         transactionHash: receipt.transactionHash,
+    //         status: receipt.status,
+    //     };
+    // }
 
     /**
      * Claims voter reward for a Paranet.
@@ -2997,18 +2878,18 @@ class ParanetOperationsManager {
         };
     }
 
-    /**
-     * Claims operator reward for a Paranet.
-     * @async
-     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
-     * @param {Object} [options={}] - Additional options for claiming reward.
-     * @returns {Object} Object containing the transaction hash and status.
-     * @example
-     * await dkg.paranet.claimOperatorReward('paranetUAL123');
-     */
-    async claimOperatorReward(paranetUAL, options = {}) {
-        const blockchain = this.inputService.getBlockchain(options);
-        this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
+    // /**
+    //  * Claims operator reward for a Paranet.
+    //  * @async
+    //  * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+    //  * @param {Object} [options={}] - Additional options for claiming reward.
+    //  * @returns {Object} Object containing the transaction hash and status.
+    //  * @example
+    //  * await dkg.paranet.claimOperatorReward('paranetUAL123');
+    //  */
+    // async claimOperatorReward(paranetUAL, options = {}) {
+    //     const blockchain = this.inputService.getBlockchain(options);
+    //     this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
         const paranetId = getParanetId(paranetUAL);
 
@@ -3017,24 +2898,24 @@ class ParanetOperationsManager {
             incentivesPoolStorageAddress: options.incentivesPoolStorageAddress,
         });
 
-        return {
-            operation: receipt,
-            transactionHash: receipt.transactionHash,
-            status: receipt.status,
-        };
-    }
+    //     return {
+    //         operation: receipt,
+    //         transactionHash: receipt.transactionHash,
+    //         status: receipt.status,
+    //     };
+    // }
 
-    /**
-     * Gets the claimable miner reward for a Paranet.
-     * @async
-     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
-     * @returns {number} Claimable miner reward value.
-     * @example
-     * const reward = await dkg.paranet.getClaimableMinerReward(paranetUAL);
-     */
-    async getClaimableMinerReward(paranetUAL, options = {}) {
-        const blockchain = this.inputService.getBlockchain(options);
-        this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
+    // /**
+    //  * Gets the claimable miner reward for a Paranet.
+    //  * @async
+    //  * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+    //  * @returns {number} Claimable miner reward value.
+    //  * @example
+    //  * const reward = await dkg.paranet.getClaimableMinerReward(paranetUAL);
+    //  */
+    // async getClaimableMinerReward(paranetUAL, options = {}) {
+    //     const blockchain = this.inputService.getBlockchain(options);
+    //     this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
         const paranetId = getParanetId(paranetUAL);
 
@@ -3047,21 +2928,21 @@ class ParanetOperationsManager {
             },
         );
 
-        return claimableValue;
-    }
+    //     return claimableValue;
+    // }
 
-    /**
-     * Gets the claimable rewards for all miners of a Paranet.
-     * @async
-     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
-     * @param {Object} [options={}] - Additional options for getting the reward.
-     * @returns {number} Claimable value for all miners.
-     * @example
-     * const reward = await dkg.paranet.getClaimableAllMinersReward(paranetUAL);
-     */
-    async getClaimableAllMinersReward(paranetUAL, options = {}) {
-        const blockchain = this.inputService.getBlockchain(options);
-        this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
+    // /**
+    //  * Gets the claimable rewards for all miners of a Paranet.
+    //  * @async
+    //  * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+    //  * @param {Object} [options={}] - Additional options for getting the reward.
+    //  * @returns {number} Claimable value for all miners.
+    //  * @example
+    //  * const reward = await dkg.paranet.getClaimableAllMinersReward(paranetUAL);
+    //  */
+    // async getClaimableAllMinersReward(paranetUAL, options = {}) {
+    //     const blockchain = this.inputService.getBlockchain(options);
+    //     this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
         const paranetId = getParanetId(paranetUAL);
 
@@ -3074,21 +2955,21 @@ class ParanetOperationsManager {
             },
         );
 
-        return claimableValue;
-    }
+    //     return claimableValue;
+    // }
 
-    /**
-     * Gets the claimable voter reward for a Paranet.
-     * @async
-     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
-     * @param {Object} [options={}] - Additional options for getting the reward.
-     * @returns {number} Claimable voter reward value.
-     * @example
-     * const reward = await dkg.paranet.getClaimableVoterReward(paranetUAL);
-     */
-    async getClaimableVoterReward(paranetUAL, options = {}) {
-        const blockchain = this.inputService.getBlockchain(options);
-        this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
+    // /**
+    //  * Gets the claimable voter reward for a Paranet.
+    //  * @async
+    //  * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+    //  * @param {Object} [options={}] - Additional options for getting the reward.
+    //  * @returns {number} Claimable voter reward value.
+    //  * @example
+    //  * const reward = await dkg.paranet.getClaimableVoterReward(paranetUAL);
+    //  */
+    // async getClaimableVoterReward(paranetUAL, options = {}) {
+    //     const blockchain = this.inputService.getBlockchain(options);
+    //     this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
         const paranetId = getParanetId(paranetUAL);
 
@@ -3101,21 +2982,21 @@ class ParanetOperationsManager {
             },
         );
 
-        return claimableValue;
-    }
+    //     return claimableValue;
+    // }
 
-    /**
-     * Gets the claimable rewards for all voters of a Paranet.
-     * @async
-     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
-     * @param {Object} [options={}] - Additional options for getting the reward.
-     * @returns {number} Claimable value for all voters.
-     * @example
-     * const reward = await dkg.paranet.getClaimableAllVotersReward(paranetUAL);
-     */
-    async getClaimableAllVotersReward(paranetUAL, options = {}) {
-        const blockchain = this.inputService.getBlockchain(options);
-        this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
+    // /**
+    //  * Gets the claimable rewards for all voters of a Paranet.
+    //  * @async
+    //  * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+    //  * @param {Object} [options={}] - Additional options for getting the reward.
+    //  * @returns {number} Claimable value for all voters.
+    //  * @example
+    //  * const reward = await dkg.paranet.getClaimableAllVotersReward(paranetUAL);
+    //  */
+    // async getClaimableAllVotersReward(paranetUAL, options = {}) {
+    //     const blockchain = this.inputService.getBlockchain(options);
+    //     this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
         const paranetId = getParanetId(paranetUAL);
 
@@ -3128,21 +3009,21 @@ class ParanetOperationsManager {
             },
         );
 
-        return claimableValue;
-    }
+    //     return claimableValue;
+    // }
 
-    /**
-     * Gets the claimable operator reward for a Paranet.
-     * @async
-     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
-     * @param {Object} [options={}] - Additional options for getting the reward.
-     * @returns {number} Claimable operator reward value.
-     * @example
-     * const reward = await dkg.paranet.getClaimableOperatorReward(paranetUAL);
-     */
-    async getClaimableOperatorReward(paranetUAL, options = {}) {
-        const blockchain = this.inputService.getBlockchain(options);
-        this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
+    // /**
+    //  * Gets the claimable operator reward for a Paranet.
+    //  * @async
+    //  * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+    //  * @param {Object} [options={}] - Additional options for getting the reward.
+    //  * @returns {number} Claimable operator reward value.
+    //  * @example
+    //  * const reward = await dkg.paranet.getClaimableOperatorReward(paranetUAL);
+    //  */
+    // async getClaimableOperatorReward(paranetUAL, options = {}) {
+    //     const blockchain = this.inputService.getBlockchain(options);
+    //     this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
 
         const paranetId = getParanetId(paranetUAL);
 
@@ -3155,9 +3036,21 @@ class ParanetOperationsManager {
             },
         );
 
-        return claimableValue;
-    }
+    //     return claimableValue;
+    // }
 
+    // /**
+    //  * Updates claimable rewards for a Paranet.
+    //  * @async
+    //  * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+    //  * @param {Object} [options={}] - Additional options for updating rewards.
+    //  * @returns {Object} Object containing transaction hash and status.
+    //  * @example
+    //  * await dkg.paranet.updateClaimableRewards(paranetUAL);
+    //  */
+    // async updateClaimableRewards(paranetUAL, options = {}) {
+    //     const blockchain = this.inputService.getBlockchain(options);
+    //     this.validationService.validateParanetRewardArguments(paranetUAL, blockchain);
     // /**
     //  * Updates claimable rewards for a Paranet.
     //  * @async
@@ -3200,32 +3093,42 @@ class ParanetOperationsManager {
     //             status: receipt.status,
     //         };
     //     }
+    //         return {
+    //             operation: receipt,
+    //             transactionHash: receipt.transactionHash,
+    //             status: receipt.status,
+    //         };
+    //     }
 
     //     return {
     //         status: 'No updated knowledge assets.',
     //     };
     // }
+    //     return {
+    //         status: 'No updated knowledge assets.',
+    //     };
+    // }
 
-    /**
-     * Checks if an address is a knowledge miner for a Paranet.
-     * @async
-     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
-     * @param {string} options.roleAddress - Optional parameter, if not provided checks for the wallet that is given to the blockchain module.
-     * @returns {boolean} True if the address is a knowledge miner, otherwise false.
-     * @example
-     * const isMiner = await dkg.paranet.isKnowledgeMiner('paranetUAL123', { roleAddress: '0xMinerAddress' });
-     */
-    async isKnowledgeMiner(paranetUAL, options = {}) {
-        // eslint-disable-next-line prefer-const
-        let { blockchain, roleAddress } = this.inputService.getParanetRoleCheckArguments(options);
-        if (roleAddress == null) {
-            roleAddress = blockchain.publicKey;
-        }
-        this.validationService.validateParanetRoleCheckArguments(
-            roleAddress,
-            paranetUAL,
-            blockchain,
-        );
+    // /**
+    //  * Checks if an address is a knowledge miner for a Paranet.
+    //  * @async
+    //  * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+    //  * @param {string} options.roleAddress - Optional parameter, if not provided checks for the wallet that is given to the blockchain module.
+    //  * @returns {boolean} True if the address is a knowledge miner, otherwise false.
+    //  * @example
+    //  * const isMiner = await dkg.paranet.isKnowledgeMiner('paranetUAL123', { roleAddress: '0xMinerAddress' });
+    //  */
+    // async isKnowledgeMiner(paranetUAL, options = {}) {
+    //     // eslint-disable-next-line prefer-const
+    //     let { blockchain, roleAddress } = this.inputService.getParanetRoleCheckArguments(options);
+    //     if (roleAddress == null) {
+    //         roleAddress = blockchain.publicKey;
+    //     }
+    //     this.validationService.validateParanetRoleCheckArguments(
+    //         roleAddress,
+    //         paranetUAL,
+    //         blockchain,
+    //     );
 
         const paranetId = getParanetId(paranetUAL);
 
@@ -3239,8 +3142,8 @@ class ParanetOperationsManager {
             },
         );
 
-        return isParanetKnowledgeMiner;
-    }
+    //     return isParanetKnowledgeMiner;
+    // }
 
     /**
      * Checks if an address is a Paranet operator.
@@ -3276,29 +3179,29 @@ class ParanetOperationsManager {
             },
         );
 
-        return isParanetOperator;
-    }
+    //     return isParanetOperator;
+    // }
 
-    /**
-     * Checks if an address is a proposal voter for a Paranet.
-     * @async
-     * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
-     * @param {string} options.roleAddress - Optional parameter, if not provided checks for the wallet that is given to the blockchain module.
-     * @returns {boolean} True if the address is a proposal voter, otherwise false.
-     * @example
-     * const isVoter = await dkg.paranet.isProposalVoter('paranetUAL123', { roleAddress: '0xVoterAddress' });
-     */
-    async isProposalVoter(paranetUAL, options = {}) {
-        // eslint-disable-next-line prefer-const
-        let { blockchain, roleAddress } = this.inputService.getParanetRoleCheckArguments(options);
-        if (roleAddress == null) {
-            roleAddress = blockchain.publicKey;
-        }
-        this.validationService.validateParanetRoleCheckArguments(
-            roleAddress,
-            paranetUAL,
-            blockchain,
-        );
+    // /**
+    //  * Checks if an address is a proposal voter for a Paranet.
+    //  * @async
+    //  * @param {string} paranetUAL - Universal Asset Locator of the Paranet.
+    //  * @param {string} options.roleAddress - Optional parameter, if not provided checks for the wallet that is given to the blockchain module.
+    //  * @returns {boolean} True if the address is a proposal voter, otherwise false.
+    //  * @example
+    //  * const isVoter = await dkg.paranet.isProposalVoter('paranetUAL123', { roleAddress: '0xVoterAddress' });
+    //  */
+    // async isProposalVoter(paranetUAL, options = {}) {
+    //     // eslint-disable-next-line prefer-const
+    //     let { blockchain, roleAddress } = this.inputService.getParanetRoleCheckArguments(options);
+    //     if (roleAddress == null) {
+    //         roleAddress = blockchain.publicKey;
+    //     }
+    //     this.validationService.validateParanetRoleCheckArguments(
+    //         roleAddress,
+    //         paranetUAL,
+    //         blockchain,
+    //     );
 
         const paranetId = getParanetId(paranetUAL);
 
@@ -3312,8 +3215,8 @@ class ParanetOperationsManager {
             },
         );
 
-        return isProposalVoter;
-    }
+    //     return isProposalVoter;
+    // }
 }
 
 class SocketService {
@@ -3351,23 +3254,6 @@ class HttpService {
         }
     }
 
-    async localStore(endpoint, port, authToken, assertions, fullPathToCachedAssertion) {
-        try {
-            const response = await axios({
-                method: 'post',
-                url: `${this.getBaseUrl(endpoint, port)}/local-store`,
-                data: fullPathToCachedAssertion
-                    ? { filePath: fullPathToCachedAssertion }
-                    : assertions,
-                headers: this.prepareRequestConfig(authToken),
-            });
-
-            return response.data.operationId;
-        } catch (error) {
-            throw Error(`Unable to store locally: ${error.message}`);
-        }
-    }
-
     async publish(
         endpoint,
         port,
@@ -3388,42 +3274,6 @@ class HttpService {
                     blockchain,
                     hashFunctionId,
                     minimumNumberOfNodeReplications,
-                },
-                headers: this.prepareRequestConfig(authToken),
-            });
-
-            return response.data.operationId;
-        } catch (error) {
-            throw Error(`Unable to publish: ${error.message}`);
-        }
-    }
-
-    async publishParanet(
-        endpoint,
-        port,
-        authToken,
-        assertions,
-        blockchain,
-        contract,
-        tokenId,
-        hashFunctionId,
-        paranetUAL,
-        sender,
-        txHash,
-    ) {
-        try {
-            const response = await axios({
-                method: 'post',
-                url: `${this.getBaseUrl(endpoint, port)}/publish-paranet`,
-                data: {
-                    assertions,
-                    blockchain,
-                    contract,
-                    tokenId,
-                    hashFunctionId,
-                    paranetUAL,
-                    sender,
-                    txHash,
                 },
                 headers: this.prepareRequestConfig(authToken),
             });
@@ -3467,37 +3317,37 @@ class HttpService {
         }
     }
 
-    async update(
-        endpoint,
-        port,
-        authToken,
-        assertionId,
-        assertion,
-        blockchain,
-        contract,
-        tokenId,
-        hashFunctionId,
-    ) {
-        try {
-            const response = await axios({
-                method: 'post',
-                url: `${this.getBaseUrl(endpoint, port)}/update`,
-                data: {
-                    assertionId,
-                    assertion,
-                    blockchain,
-                    contract,
-                    tokenId,
-                    hashFunctionId,
-                },
-                headers: this.prepareRequestConfig(authToken),
-            });
+    // async update(
+    //     endpoint,
+    //     port,
+    //     authToken,
+    //     assertionId,
+    //     assertion,
+    //     blockchain,
+    //     contract,
+    //     tokenId,
+    //     hashFunctionId,
+    // ) {
+    //     try {
+    //         const response = await axios({
+    //             method: 'post',
+    //             url: `${this.getBaseUrl(endpoint, port)}/update`,
+    //             data: {
+    //                 assertionId,
+    //                 assertion,
+    //                 blockchain,
+    //                 contract,
+    //                 tokenId,
+    //                 hashFunctionId,
+    //             },
+    //             headers: this.prepareRequestConfig(authToken),
+    //         });
 
-            return response.data.operationId;
-        } catch (error) {
-            throw Error(`Unable to update: ${error.message}`);
-        }
-    }
+    //         return response.data.operationId;
+    //     } catch (error) {
+    //         throw Error(`Unable to update: ${error.message}`);
+    //     }
+    // }
 
     async query(endpoint, port, authToken, query, type, paranetUAL, repository) {
         try {
@@ -3678,13 +3528,7 @@ class BlockchainServiceBase {
         this.config = config;
         this.events = {};
         this.abis = {};
-        // this.abis.AssertionStorage = AssertionStorageAbi;
         this.abis.Hub = HubAbi;
-        // this.abis.ServiceAgreementV1 = ServiceAgreementV1Abi;
-        // this.abis.ServiceAgreementStorageProxy = ServiceAgreementStorageProxyAbi;
-        // this.abis.ContentAssetStorage = ContentAssetStorageAbi;
-        // this.abis.UnfinalizedStateStorage = UnfinalizedStateStorageAbi;
-        // this.abis.ContentAsset = ContentAssetAbi;
         this.abis.Token = TokenAbi;
         this.abis.Paranet = ParanetAbi;
         this.abis.ParanetsRegistry = ParanetsRegistryAbi;
@@ -3758,44 +3602,52 @@ class BlockchainServiceBase {
         const web3Instance = await this.getWeb3Instance(blockchain);
 
         try {
-            let gasPrice;
-
-            if (blockchain.name.startsWith('otp')) {
-                gasPrice = await web3Instance.eth.getGasPrice();
-            } else if (blockchain.name.startsWith('base')) {
-                gasPrice = await web3Instance.eth.getGasPrice();
-            } else if (blockchain.name.startsWith('gnosis')) {
-                try {
-                    const response = await axios.get(blockchain.gasPriceOracleLink);
-                    gasPrice =
-                        Number(response?.data?.average) * 1e9 || DEFAULT_GAS_PRICE_WEI.GNOSIS;
-                } catch (e) {
-                    gasPrice = DEFAULT_GAS_PRICE_WEI.GNOSIS;
-                }
-            } else {
-                if (blockchain.name.startsWith('otp')) {
-                    gasPrice = Web3.utils.toWei(DEFAULT_GAS_PRICE.OTP, 'Gwei');
-                } else if (blockchain.name.startsWith('base')) {
-                    gasPrice = Web3.utils.toWei(DEFAULT_GAS_PRICE.BASE, 'Gwei');
-                } else {
-                    gasPrice = Web3.utils.toWei(DEFAULT_GAS_PRICE.GNOSIS, 'Gwei');
-                }
+            if (this.isOtpOrBase(blockchain.name)) {
+                return await web3Instance.eth.getGasPrice();
             }
-            return gasPrice;
+
+            if (this.isGnosis(blockchain.name)) {
+                return await this.getGnosisGasPrice(blockchain);
+            }
+
+            return this.getDefaultGasPrice(blockchain.name);
         } catch (error) {
-            // eslint-disable-next-line no-console
             console.warn(
                 `Failed to fetch the gas price from the network: ${error}. Using default value.`,
             );
-            return Web3.utils.toWei(
-                blockchain.name.startsWith('otp')
-                    ? DEFAULT_GAS_PRICE.OTP
-                    : blockchain.name.startsWith('base')
-                    ? DEFAULT_GAS_PRICE.BASE
-                    : DEFAULT_GAS_PRICE.GNOSIS,
-                'Gwei',
-            );
+            return this.getDefaultGasPrice(blockchain.name);
         }
+    }
+
+    isOtpOrBase(name) {
+        return name.startsWith('otp') || name.startsWith('base');
+    }
+
+    isGnosis(name) {
+        return name.startsWith('gnosis');
+    }
+
+    async getGnosisGasPrice(blockchain) {
+        try {
+            const response = await axios.get(blockchain.gasPriceOracleLink);
+            const averageGasPrice = Number(response?.data?.average) * 1e9;
+            return averageGasPrice || DEFAULT_GAS_PRICE_WEI.GNOSIS;
+        } catch (error) {
+            console.warn(`Failed to fetch gas price from Gnosis oracle: ${error}`);
+            return DEFAULT_GAS_PRICE_WEI.GNOSIS;
+        }
+    }
+
+    getDefaultGasPrice(name) {
+        let defaultGasPrice;
+        if (name.startsWith('otp')) {
+            defaultGasPrice = DEFAULT_GAS_PRICE.OTP;
+        } else if (name.startsWith('base')) {
+            defaultGasPrice = DEFAULT_GAS_PRICE.BASE;
+        } else {
+            defaultGasPrice = DEFAULT_GAS_PRICE.GNOSIS;
+        }
+        return Web3.utils.toWei(defaultGasPrice, 'Gwei');
     }
 
     async callContractFunction(contractName, functionName, args, blockchain) {
@@ -4023,6 +3875,20 @@ class BlockchainServiceBase {
         );
     }
 
+    async decreaseKnowledgeCollectionAllowance(allowanceGap, blockchain) {
+        const knowledgeCollectionAddress = await this.getContractAddress(
+            'KnowledgeCollection',
+            blockchain,
+        );
+
+        await this.executeContractFunction(
+            'Token',
+            'decreaseAllowance',
+            [knowledgeCollectionAddress, allowanceGap],
+            blockchain,
+        );
+    }
+
     async increaseKnowledgeCollectionAllowance(sender, tokenAmount, blockchain) {
         const knowledgeCollectionAddress = await this.getContractAddress(
             'KnowledgeCollection',
@@ -4070,8 +3936,11 @@ class BlockchainServiceBase {
         const sender = await this.getPublicKey(blockchain);
         let allowanceIncreased = false;
         let allowanceGap = 0;
+        let allowanceIncreased = false;
+        let allowanceGap = 0;
 
         try {
+            if (requestData?.paymaster && requestData?.paymaster !== ZERO_ADDRESS) {
             if (requestData?.paymaster && requestData?.paymaster !== ZERO_ADDRESS) {
                 // Handle the case when payer is passed
             } else {
@@ -4119,6 +3988,9 @@ class BlockchainServiceBase {
 
             return { knowledgeCollectionId: id, receipt };
         } catch (error) {
+            if (allowanceIncreased) {
+                await this.decreaseKnowledgeCollectionAllowance(allowanceGap, blockchain);
+            }
             if (allowanceIncreased) {
                 await this.decreaseKnowledgeCollectionAllowance(allowanceGap, blockchain);
             }
@@ -4422,113 +4294,113 @@ class BlockchainServiceBase {
         );
     }
 
-    async addParanetCuratedNodes(requestData, blockchain) {
-        return this.executeContractFunction(
-            'Paranet',
-            'addParanetCuratedNodes',
-            Object.values(requestData),
-            blockchain,
-        );
-    }
+    // async addParanetCuratedNodes(requestData, blockchain) {
+    //     return this.executeContractFunction(
+    //         'Paranet',
+    //         'addParanetCuratedNodes',
+    //         Object.values(requestData),
+    //         blockchain,
+    //     );
+    // }
 
-    async removeParanetCuratedNodes(requestData, blockchain) {
-        return this.executeContractFunction(
-            'Paranet',
-            'removeParanetCuratedNodes',
-            Object.values(requestData),
-            blockchain,
-        );
-    }
+    // async removeParanetCuratedNodes(requestData, blockchain) {
+    //     return this.executeContractFunction(
+    //         'Paranet',
+    //         'removeParanetCuratedNodes',
+    //         Object.values(requestData),
+    //         blockchain,
+    //     );
+    // }
 
-    async requestParanetCuratedNodeAccess(requestData, blockchain) {
-        return this.executeContractFunction(
-            'Paranet',
-            'requestParanetCuratedNodeAccess',
-            Object.values(requestData),
-            blockchain,
-        );
-    }
+    // async requestParanetCuratedNodeAccess(requestData, blockchain) {
+    //     return this.executeContractFunction(
+    //         'Paranet',
+    //         'requestParanetCuratedNodeAccess',
+    //         Object.values(requestData),
+    //         blockchain,
+    //     );
+    // }
 
-    async approveCuratedNode(requestData, blockchain) {
-        return this.executeContractFunction(
-            'Paranet',
-            'approveCuratedNode',
-            Object.values(requestData),
-            blockchain,
-        );
-    }
+    // async approveCuratedNode(requestData, blockchain) {
+    //     return this.executeContractFunction(
+    //         'Paranet',
+    //         'approveCuratedNode',
+    //         Object.values(requestData),
+    //         blockchain,
+    //     );
+    // }
 
-    async rejectCuratedNode(requestData, blockchain) {
-        return this.executeContractFunction(
-            'Paranet',
-            'rejectCuratedNode',
-            Object.values(requestData),
-            blockchain,
-        );
-    }
+    // async rejectCuratedNode(requestData, blockchain) {
+    //     return this.executeContractFunction(
+    //         'Paranet',
+    //         'rejectCuratedNode',
+    //         Object.values(requestData),
+    //         blockchain,
+    //     );
+    // }
 
-    async getCuratedNodes(requestData, blockchain) {
-        return this.callContractFunction(
-            'ParanetsRegistry',
-            'getCuratedNodes',
-            Object.values(requestData),
-            blockchain,
-        );
-    }
+    // async getCuratedNodes(requestData, blockchain) {
+    //     return this.callContractFunction(
+    //         'ParanetsRegistry',
+    //         'getCuratedNodes',
+    //         Object.values(requestData),
+    //         blockchain,
+    //     );
+    // }
 
-    async getKnowledgeMiners(requestData, blockchain) {
-        return this.callContractFunction(
-            'ParanetsRegistry',
-            'getKnowledgeMiners',
-            Object.values(requestData),
-            blockchain,
-        );
-    }
+    // async getKnowledgeMiners(requestData, blockchain) {
+    //     return this.callContractFunction(
+    //         'ParanetsRegistry',
+    //         'getKnowledgeMiners',
+    //         Object.values(requestData),
+    //         blockchain,
+    //     );
+    // }
 
-    async addParanetCuratedMiners(requestData, blockchain) {
-        return this.executeContractFunction(
-            'Paranet',
-            'addParanetCuratedMiners',
-            Object.values(requestData),
-            blockchain,
-        );
-    }
+    // async addParanetCuratedMiners(requestData, blockchain) {
+    //     return this.executeContractFunction(
+    //         'Paranet',
+    //         'addParanetCuratedMiners',
+    //         Object.values(requestData),
+    //         blockchain,
+    //     );
+    // }
 
-    async removeParanetCuratedMiners(requestData, blockchain) {
-        return this.executeContractFunction(
-            'Paranet',
-            'removeParanetCuratedMiners',
-            Object.values(requestData),
-            blockchain,
-        );
-    }
+    // async removeParanetCuratedMiners(requestData, blockchain) {
+    //     return this.executeContractFunction(
+    //         'Paranet',
+    //         'removeParanetCuratedMiners',
+    //         Object.values(requestData),
+    //         blockchain,
+    //     );
+    // }
 
-    async requestParanetCuratedMinerAccess(requestData, blockchain) {
-        return this.executeContractFunction(
-            'Paranet',
-            'requestParanetCuratedMinerAccess',
-            Object.values(requestData),
-            blockchain,
-        );
-    }
+    // async requestParanetCuratedMinerAccess(requestData, blockchain) {
+    //     return this.executeContractFunction(
+    //         'Paranet',
+    //         'requestParanetCuratedMinerAccess',
+    //         Object.values(requestData),
+    //         blockchain,
+    //     );
+    // }
 
-    async approveCuratedMiner(requestData, blockchain) {
-        return this.executeContractFunction(
-            'Paranet',
-            'approveCuratedMiner',
-            Object.values(requestData),
-            blockchain,
-        );
-    }
+    // async approveCuratedMiner(requestData, blockchain) {
+    //     return this.executeContractFunction(
+    //         'Paranet',
+    //         'approveCuratedMiner',
+    //         Object.values(requestData),
+    //         blockchain,
+    //     );
+    // }
 
-    async rejectCuratedMiner(requestData, blockchain) {
-        return this.executeContractFunction(
-            'Paranet',
-            'rejectCuratedMiner',
-            Object.values(requestData),
-            blockchain,
-        );
-    }
+    // async rejectCuratedMiner(requestData, blockchain) {
+    //     return this.executeContractFunction(
+    //         'Paranet',
+    //         'rejectCuratedMiner',
+    //         Object.values(requestData),
+    //         blockchain,
+    //     );
+    // }
 
     async deployIncentivesPool(requestData, blockchain) {
         return this.executeContractFunction(
@@ -4548,23 +4420,23 @@ class BlockchainServiceBase {
         );
     }
 
-    async registerParanetService(requestData, blockchain) {
-        return this.executeContractFunction(
-            'Paranet',
-            'registerParanetService',
-            Object.values(requestData),
-            blockchain,
-        );
-    }
+    // async registerParanetService(requestData, blockchain) {
+    //     return this.executeContractFunction(
+    //         'Paranet',
+    //         'registerParanetService',
+    //         Object.values(requestData),
+    //         blockchain,
+    //     );
+    // }
 
-    async addParanetServices(requestData, blockchain) {
-        return this.executeContractFunction(
-            'Paranet',
-            'addParanetServices',
-            Object.values(requestData),
-            blockchain,
-        );
-    }
+    // async addParanetServices(requestData, blockchain) {
+    //     return this.executeContractFunction(
+    //         'Paranet',
+    //         'addParanetServices',
+    //         Object.values(requestData),
+    //         blockchain,
+    //     );
+    // }
 
     async submitToParanet(requestData, blockchain) {
         return this.executeContractFunction(
@@ -4676,8 +4548,8 @@ class BlockchainServiceBase {
         return await this.getParanetIncentivesPoolAddress(blockchain);
     }
 
-    async setIncentivesPool(contractAddress, blockchain) {
-        await this.ensureBlockchainInfo(blockchain);
+    // async setIncentivesPool(contractAddress, blockchain) {
+    //     await this.ensureBlockchainInfo(blockchain);
 
         if (
             this[blockchain.name].contractAddresses[blockchain.hubContract][
@@ -4970,14 +4842,17 @@ class BlockchainServiceBase {
         } catch (error) {
             // eslint-disable-next-line no-console
             console.warn(`Failed to fetch the gas price from the network: ${error}. `);
-            return Web3.utils.toWei(
-                blockchain.name.startsWith('otp')
-                    ? DEFAULT_GAS_PRICE.OTP
-                    : blockchain.name.startsWith('base')
-                    ? DEFAULT_GAS_PRICE.BASE
-                    : DEFAULT_GAS_PRICE.GNOSIS,
-                'Gwei',
-            );
+            let defaultGasPrice;
+
+            if (blockchain.name.startsWith('otp')) {
+                defaultGasPrice = DEFAULT_GAS_PRICE.OTP;
+            } else if (blockchain.name.startsWith('base')) {
+                defaultGasPrice = DEFAULT_GAS_PRICE.BASE;
+            } else {
+                defaultGasPrice = DEFAULT_GAS_PRICE.GNOSIS;
+            }
+
+            return Web3.utils.toWei(defaultGasPrice, 'Gwei');
         }
     }
 
@@ -5181,9 +5056,9 @@ class BrowserBlockchainService extends BlockchainServiceBase {
 
     async transferAsset(tokenId, to, blockchain) {
         return this.executeContractFunction(
-            'ContentAssetStorage',
-            'transferFrom',
-            [await this.getAccount(), to, tokenId],
+            'KnowledgeCollectionStorage',
+            'safeTransferFrom',
+            [await this.getAccount(), to, tokenId, 1, '0x'],
             blockchain,
         );
     }
@@ -5318,9 +5193,9 @@ class NodeBlockchainService extends BlockchainServiceBase {
 
     async transferAsset(tokenId, to, blockchain) {
         return this.executeContractFunction(
-            'ContentAssetStorage',
-            'transferFrom',
-            [blockchain.publicKey, to, tokenId],
+            'KnowledgeCollectionStorage',
+            'safeTransferFrom',
+            [blockchain.publicKey, to, tokenId, 1, '0x'],
             blockchain,
         );
     }
@@ -5362,10 +5237,6 @@ class ValidationService {
         if (repository) {
             this.validateRepository(repository);
         }
-    }
-
-    validateIsValidUAL(blockchain) {
-        this.validateBlockchain(blockchain);
     }
 
     validateSetAllowance(blockchain) {
@@ -5475,7 +5346,7 @@ class ValidationService {
     }
 
     validateAssetTransfer(UAL, newOwner, blockchain) {
-        this.validateUAL(UAL);
+        this.validateKAUAL(UAL);
         this.validateNewOwner(newOwner);
         this.validateBlockchain(blockchain);
     }
@@ -5831,6 +5702,17 @@ class ValidationService {
         return true;
     }
 
+    validateKAUAL(ual) {
+        this.validateRequiredParam('UAL', ual);
+        this.validateParamType('UAL', ual, 'string');
+
+        const segments = ual.split(':');
+        const argsString = segments.length === 3 ? segments[2] : `${segments[2]}:${segments[3]}`;
+        const args = argsString.split('/');
+        if (args?.length !== 4) throw Error('Invalid UAL.');
+        return true;
+    }
+
     validateStateIndex(stateIndex) {
         this.validateRequiredParam('stateIndex', stateIndex);
         this.validateParamType('stateIndex', stateIndex, 'number');
@@ -5861,6 +5743,7 @@ class ValidationService {
             'Content must be either a valid JSON-LD object or a N-Quads/N-Triples string.',
         );
     }
+
     validateContent(content) {
         this.validateRequiredParam('content', content);
     }
@@ -6027,14 +5910,6 @@ class ValidationService {
     validateNewOwner(newOwner) {
         this.validateRequiredParam('newOwner', newOwner);
         this.validateParamType('newOwner', newOwner, 'string');
-    }
-
-    validateBidSuggestionRange(bidSuggestionRange) {
-        if (!BID_SUGGESTION_RANGE_ENUM.includes(bidSuggestionRange)) {
-            throw Error(
-                `Invalid bidSuggestionRange parametar: supported parametars ${BID_SUGGESTION_RANGE_ENUM}`,
-            );
-        }
     }
 
     validateParanetName(paranetName) {
@@ -6699,6 +6574,7 @@ class DkgClient {
         // Backwards compatibility
         this.graph.get = this.asset.get.bind(this.asset);
         this.graph.create = this.asset.create.bind(this.asset);
+        this.graph.publishFinality = this.asset.publishFinality.bind(this.asset);
         this.graph.publishFinality = this.asset.publishFinality.bind(this.asset);
     }
 }
