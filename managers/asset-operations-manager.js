@@ -894,9 +894,9 @@ export default class AssetOperationsManager {
 
         this.validationService.validateSubmitToParanet(UAL, paranetUAL, blockchain);
 
-        const { contract, kcTokenId } = resolveUAL(UAL);
+        const { contract: kcStorageContract, kcTokenId } = resolveUAL(UAL);
         const {
-            contract: paranetContract,
+            contract: paranetKCStorageContract,
             kcTokenId: paranetKCTokenId,
             kaTokenId: paranetKATokenId,
         } = resolveUAL(paranetUAL);
@@ -907,10 +907,10 @@ export default class AssetOperationsManager {
 
         const receipt = await this.blockchainService.submitToParanet(
             {
-                paranetContract,
+                paranetKCStorageContract,
                 paranetKCTokenId,
                 paranetKATokenId,
-                contract,
+                kcStorageContract,
                 kcTokenId,
             },
             blockchain,

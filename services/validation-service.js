@@ -10,6 +10,7 @@ import {
     BID_SUGGESTION_RANGE_ENUM,
     PARANET_NODES_ACCESS_POLICY,
     PARANET_MINERS_ACCESS_POLICY,
+    PARANET_KC_SUBMISSION_POLICY,
 } from '../constants.js';
 import { nodeSupported } from './utilities.js';
 
@@ -210,6 +211,7 @@ export default class ValidationService {
         paranetDescription,
         paranetNodesAccessPolicy,
         paranetMinersAccessPolicy,
+        paranetKcSubmissionPolicy,
     ) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
@@ -217,6 +219,56 @@ export default class ValidationService {
         this.validateParanetDescription(paranetDescription);
         this.validateParanetNodesAccessPolicy(paranetNodesAccessPolicy);
         this.validateParanetMinersAccessPolicy(paranetMinersAccessPolicy);
+        this.validateParanetKcSubmissionPolicy(paranetKcSubmissionPolicy);
+    }
+
+    validateParanetIsKnowledgeCollectionRegistered(kcUAL, paranetUAL, blockchain) {
+        this.validateUAL(kcUAL);
+        this.validateUAL(paranetUAL);
+        this.validateBlockchain(blockchain);
+    }
+
+    validateParanetAddCurator(paranetUAL, curatorAddress, blockchain) {
+        this.validateUAL(paranetUAL);
+        this.validateAddress(curatorAddress);
+        this.validateBlockchain(blockchain);
+    }
+
+    validateParanetRemoveCurator(paranetUAL, curatorAddress, blockchain) {
+        this.validateUAL(paranetUAL);
+        this.validateAddress(curatorAddress);
+        this.validateBlockchain(blockchain);
+    }
+
+    validateParanetReviewKnowledgeCollection(kcUAL, paranetUAL, accepted, blockchain) {
+        this.validateUAL(kcUAL);
+        this.validateUAL(paranetUAL);
+        this.validateAccepted(accepted);
+        this.validateBlockchain(blockchain);
+    }
+
+    validateParanetStageKnowledgeCollection(kcUAL, paranetUAL, blockchain) {
+        this.validateUAL(kcUAL);
+        this.validateUAL(paranetUAL);
+        this.validateBlockchain(blockchain);
+    }
+
+    validateParanetIsKnowledgeCollectionStaged(kcUAL, paranetUAL, blockchain) {
+        this.validateUAL(kcUAL);
+        this.validateUAL(paranetUAL);
+        this.validateBlockchain(blockchain);
+    }
+
+    validateParanetIsKnowledgeCollectionApproved(kcUAL, paranetUAL, blockchain) {
+        this.validateUAL(kcUAL);
+        this.validateUAL(paranetUAL);
+        this.validateBlockchain(blockchain);
+    }
+
+    validateParanetGetKnowledgeCollectionApprovalStatus(kcUAL, paranetUAL, blockchain) {
+        this.validateUAL(kcUAL);
+        this.validateUAL(paranetUAL);
+        this.validateBlockchain(blockchain);
     }
 
     validateParanetAddCuratedNodes(UAL, blockchain, identityIds) {
@@ -302,17 +354,56 @@ export default class ValidationService {
     validateDeployIncentivesContract(
         UAL,
         blockchain,
-        tracToNeuroEmissionMultiplier,
+        tracToTokenEmissionMultiplier,
         operatorRewardPercentage,
         incentivizationProposalVotersRewardPercentage,
+        incentivesPoolName,
+        rewardTokenAddress,
     ) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
-        this.validateTracToNeuroEmissionMultiplier(tracToNeuroEmissionMultiplier);
+        this.validateTracToTokenEmissionMultiplier(tracToTokenEmissionMultiplier);
         this.validateOperatorRewardPercentage(operatorRewardPercentage);
         this.validateIncentivizationProposalVotersRewardPercentage(
             incentivizationProposalVotersRewardPercentage,
         );
+        this.validateIncentivesPoolName(incentivesPoolName);
+        this.validateAddress(rewardTokenAddress);
+    }
+
+    validateRedeployIncentivesContract(UAL, poolStorageAddress, blockchain) {
+        this.validateUAL(UAL);
+        this.validateAddress(poolStorageAddress);
+        this.validateBlockchain(blockchain);
+    }
+
+    validateGetAllIncentivesPools(UAL, blockchain) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+    }
+
+    validateGetIncentivesPoolStorageAddress(
+        UAL,
+        incentivesPoolName,
+        incentivesPoolAddress,
+        blockchain,
+    ) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+
+        if (incentivesPoolName) {
+            this.validateIncentivesPoolName(incentivesPoolName);
+        }
+
+        if (incentivesPoolAddress) {
+            this.validateAddress(incentivesPoolAddress);
+        }
+
+        if (!incentivesPoolName && !incentivesPoolAddress) {
+            throw new Error(
+                'Either incentives pool name or address is required for this operation!',
+            );
+        }
     }
 
     validateParanetRewardArguments(UAL, blockchain) {
@@ -654,11 +745,20 @@ export default class ValidationService {
             );
     }
 
-    validateTracToNeuroEmissionMultiplier(tracToNeuroEmissionMultiplier) {
-        this.validateRequiredParam('tracToNeuroEmissionMultiplier', tracToNeuroEmissionMultiplier);
+    validateParanetKcSubmissionPolicy(paranetKcSubmissionPolicy) {
+        this.validateRequiredParam('paranetKcSubmissionPolicy', paranetKcSubmissionPolicy);
+        this.validateParamType('paranetKcSubmissionPolicy', paranetKcSubmissionPolicy, 'number');
+        if (!Object.values(PARANET_KC_SUBMISSION_POLICY).includes(paranetKcSubmissionPolicy))
+            throw Error(
+                `Invalid paranet KC submission policy: ${paranetKcSubmissionPolicy}. Should be 0 for OPEN or 1 for CURATED`,
+            );
+    }
+
+    validateTracToTokenEmissionMultiplier(tracToTokenEmissionMultiplier) {
+        this.validateRequiredParam('tracToTokenEmissionMultiplier', tracToTokenEmissionMultiplier);
         this.validateParamType(
-            'tracToNeuroEmissionMultiplier',
-            tracToNeuroEmissionMultiplier,
+            'tracToTokenEmissionMultiplier',
+            tracToTokenEmissionMultiplier,
             'number',
         );
     }
@@ -681,6 +781,11 @@ export default class ValidationService {
             incentivizationProposalVotersRewardPercentage < 0
         )
             throw Error('Invalid percentage value for incentivization proposal voters reward.');
+    }
+
+    validateIncentivesPoolName(incentivesPoolName) {
+        this.validateRequiredParam('incentivesPoolName', incentivesPoolName);
+        this.validateParamType('incentivesPoolName', incentivesPoolName, 'string');
     }
 
     validateOperatorRewardPercentage(operatorRewardPercentage) {
@@ -772,5 +877,10 @@ export default class ValidationService {
         this.validateMinimumNumberOfFinalizationConfirmations(
             minimumNumberOfFinalizationConfirmations,
         );
+    }
+
+    validateAccepted(accepted) {
+        this.validateRequiredParam('accepted', accepted);
+        this.validateParamType('accepted', accepted, 'boolean');
     }
 }

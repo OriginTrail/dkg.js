@@ -112,3 +112,8 @@ export function getParanetId(paranetUAL) {
         ethers.solidityPacked(['address', 'uint256', 'uint256'], [contract, kcTokenId, kaTokenId]),
     );
 }
+
+export function getKnowledgeCollectionId(kcUAL) {
+    const { contract, kcTokenId } = resolveUAL(kcUAL);
+    return ethers.keccak256(ethers.solidityPacked(['address', 'uint256'], [contract, kcTokenId]));
+}
