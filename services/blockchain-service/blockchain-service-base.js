@@ -1036,8 +1036,8 @@ export default class BlockchainServiceBase {
         return await this.getParanetIncentivesPoolAddress(blockchain);
     }
 
-    // async setIncentivesPool(contractAddress, blockchain) {
-    //     await this.ensureBlockchainInfo(blockchain);
+    async setIncentivesPool(contractAddress, blockchain) {
+        await this.ensureBlockchainInfo(blockchain);
 
         if (
             this[blockchain.name].contractAddresses[blockchain.hubContract][

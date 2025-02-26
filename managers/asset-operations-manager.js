@@ -457,7 +457,7 @@ export default class AssetOperationsManager {
                 null,
                 blockchain,
                 stepHooks,
-            );
+            ));
 
         const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, knowledgeCollectionId);
 
