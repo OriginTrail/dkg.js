@@ -908,23 +908,23 @@ export default class BlockchainServiceBase {
         );
     }
 
-    // async registerParanetService(requestData, blockchain) {
-    //     return this.executeContractFunction(
-    //         'Paranet',
-    //         'registerParanetService',
-    //         Object.values(requestData),
-    //         blockchain,
-    //     );
-    // }
+    async registerParanetService(requestData, blockchain) {
+        return this.executeContractFunction(
+            'Paranet',
+            'registerParanetService',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
 
-    // async addParanetServices(requestData, blockchain) {
-    //     return this.executeContractFunction(
-    //         'Paranet',
-    //         'addParanetServices',
-    //         Object.values(requestData),
-    //         blockchain,
-    //     );
-    // }
+    async addParanetServices(requestData, blockchain) {
+        return this.executeContractFunction(
+            'Paranet',
+            'addParanetServices',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
 
     async submitToParanet(requestData, blockchain) {
         return this.executeContractFunction(
