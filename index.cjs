@@ -171,7 +171,7 @@ const PARANET_MINERS_ACCESS_POLICY = {
 
 const PARANET_KC_SUBMISSION_POLICY = {
     OPEN: 0,
-    PERMISSIONED: 1,
+    STAGING: 1,
 };
 
 const PARANET_KNOWLEDGE_COLLECTION_STATUS = {
@@ -4197,23 +4197,23 @@ class BlockchainServiceBase {
         );
     }
 
-    // async registerParanetService(requestData, blockchain) {
-    //     return this.executeContractFunction(
-    //         'Paranet',
-    //         'registerParanetService',
-    //         Object.values(requestData),
-    //         blockchain,
-    //     );
-    // }
+    async registerParanetService(requestData, blockchain) {
+        return this.executeContractFunction(
+            'Paranet',
+            'registerParanetService',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
 
-    // async addParanetServices(requestData, blockchain) {
-    //     return this.executeContractFunction(
-    //         'Paranet',
-    //         'addParanetServices',
-    //         Object.values(requestData),
-    //         blockchain,
-    //     );
-    // }
+    async addParanetServices(requestData, blockchain) {
+        return this.executeContractFunction(
+            'Paranet',
+            'addParanetServices',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
 
     async submitToParanet(requestData, blockchain) {
         return this.executeContractFunction(
