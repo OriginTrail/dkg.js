@@ -1,6 +1,6 @@
 <a name="readme-top"></a>
 
-___
+---
 
 <br />
 <div align="center">
@@ -15,7 +15,7 @@ ___
     </br>
     <a href="https://docs.origintrail.io/">OriginTrail Docs</a>
     ·
-    <a href="https://github.com/OriginTrail/dkg.js/examples/demo.js">View Demo</a>
+    <a href="https://github.com/OriginTrail/dkg.js/blob/v8/develop/examples/demo.js">View Demo</a>
     ·
     <a href="https://github.com/OriginTrail/dkg.js/issues">Report Bug</a>
     ·
@@ -52,7 +52,7 @@ ___
   </ol>
 </details>
 
-___
+---
 
 <br/>
 
@@ -62,6 +62,7 @@ ___
 <summary>
 
 ### **What is the Decentralized Knowledge Graph?**
+
 </summary>
 
 <br/>
@@ -71,17 +72,19 @@ ___
 </div>
 
 OriginTrail Decentralized Knowledge Graph (DKG), hosted on the OriginTrail Decentralized Network (ODN) as trusted knowledge infrastructure, is shared global Knowledge Graph of Knowledge Assets. Running on the basis of the permissionless multi-chain OriginTrail protocol, it combines blockchains and knowledge graph technology to enable trusted AI applications based on key W3C standards.
+
 </details>
 
 <details open>
 <summary>
 
 ### **The OriginTrail DKG Architecture**
+
 </summary>
 
 <br/>
 
-The OriginTrail tech stack is a three layer structure, consisting of the multi-chain consensus layer (OriginTrail layer 1, running on multiple blockchains), the Decentralized Knowledge Graph layer (OriginTrail Layer 2, hosted on the ODN) and Trusted Knowledge applications in the application layer. 
+The OriginTrail tech stack is a three layer structure, consisting of the multi-chain consensus layer (OriginTrail layer 1, running on multiple blockchains), the Decentralized Knowledge Graph layer (OriginTrail Layer 2, hosted on the ODN) and Trusted Knowledge applications in the application layer.
 
 <div align="center">
     <img src="images/dkg-architecture.png" alt="DKG Architecture" width="400">
@@ -89,13 +92,15 @@ The OriginTrail tech stack is a three layer structure, consisting of the multi-c
 
 Further, the architecture differentiates between **the public, replicated knowledge graph** shared by all network nodes according to the protocol, and **private Knowledge graphs** hosted separately by each of the OriginTrail nodes.
 
-**Anyone can run an OriginTrail node and become part of the ODN, contributing  to the network capacity and hosting the OriginTrail DKG. The OriginTrail node is the ultimate data service for data and knowledge intensive Web3 applications and is used as the key backbone for trusted AI applications (see https://chatdkg.ai)**
+**Anyone can run an OriginTrail node and become part of the ODN, contributing to the network capacity and hosting the OriginTrail DKG. The OriginTrail node is the ultimate data service for data and knowledge intensive Web3 applications and is used as the key backbone for trusted AI applications (see https://chatdkg.ai)**
+
 </details>
 
 <details open>
 <summary>
 
 ### **What is a Knowledge Asset?**
+
 </summary>
 
 <br/>
@@ -107,15 +112,16 @@ Further, the architecture differentiates between **the public, replicated knowle
 **Knowledge Asset is the new, AI‑ready resource for the Internet**
 
 Knowledge Assets are verifiable containers of structured knowledge that live on the OriginTrail DKG and provide:
-- **Discoverability - UAL is the new URL**. Uniform Asset Locators (UALs, based on the W3C Decentralized Identifiers) are a new Web3 knowledge identifier (extensions of the Uniform Resource Locators - URLs) which identify a specific piece of knowledge and make it easy to find and connect with other Knowledge Assets.
-- **Ownership - NFTs enable ownership**. Each Knowledge Asset contains an NFT token that enables ownership, knowledge asset administration and market mechanisms.
-- **Verifiability - On-chain information origin and verifiable trail**. The blockchain tech increases trust, security, transparency, and the traceability of information.
 
+-   **Discoverability - UAL is the new URL**. Uniform Asset Locators (UALs, based on the W3C Decentralized Identifiers) are a new Web3 knowledge identifier (extensions of the Uniform Resource Locators - URLs) which identify a specific piece of knowledge and make it easy to find and connect with other Knowledge Assets.
+-   **Ownership - NFTs enable ownership**. Each Knowledge Asset contains an NFT token that enables ownership, knowledge asset administration and market mechanisms.
+-   **Verifiability - On-chain information origin and verifiable trail**. The blockchain tech increases trust, security, transparency, and the traceability of information.
 
 By their nature, Knowledge Assets are semantic resources (following the W3C Semantic Web set of standards), and through their symbolic representations inherently AI ready. See more at https://chatdkg.ai
 <br/>
 
 **Discover Knowledge Assets with the DKG Explorer:**
+
 <div align="center">
     <table>
         <tr>
@@ -147,7 +153,6 @@ By their nature, Knowledge Assets are semantic resources (following the W3C Sema
     </table>
 </div>
 
-
 </details>
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -155,16 +160,17 @@ By their nature, Knowledge Assets are semantic resources (following the W3C Sema
 
 ## 🚀 Getting Started
 
-___
+---
 
 ### Prerequisites
 
-- **Node.js** >= 16.0.0
-- **npm** >= 8.0.0
+-   **Node.js** >= 16.0.0
+-   **npm** >= 8.0.0
 
 In order to use in the local environment, make sure to [run the local DKG network](https://github.com/OriginTrail/ot-node?tab=readme-ov-file#local-network-setup).
 
-___
+---
+
 <br/>
 
 ### Installation
@@ -172,11 +178,13 @@ ___
 <br/>
 
 Install the SDK:
+
 ```bash
 npm install dkg.js
 ```
 
-Now you can run a demo example file (requires the local DKG network running): 
+Now you can run a demo example file (requires the local DKG network running):
+
 ```bash
 node examples/demo.js
 ```
@@ -246,4 +254,4 @@ Don't forget to give the project a star! Thanks again!
   </a>
 </div>
 
-___
+---
