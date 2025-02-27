@@ -30,6 +30,7 @@ const KnowledgeCollectionAbi = require('dkg-evm-module/abi/KnowledgeCollection.j
 const KnowledgeCollectionStorageAbi = require('dkg-evm-module/abi/KnowledgeCollectionStorage.json');
 const AskStorageAbi = require('dkg-evm-module/abi/AskStorage.json');
 const ChronosAbi = require('dkg-evm-module/abi/Chronos.json');
+const IERC20ExtendedAbi = require('dkg-evm-module/abi/IERC20Extended.json');
 
 export default class BlockchainServiceBase {
     constructor(config = {}) {
@@ -50,6 +51,7 @@ export default class BlockchainServiceBase {
         this.abis.AskStorage = AskStorageAbi;
         this.abis.Chronos = ChronosAbi;
         this.abis.ParanetStagingRegistry = ParanetStagingRegistryAbi;
+        this.abis.IERC20Extended = IERC20ExtendedAbi;
         this.abis.KnowledgeCollectionStorage.filter((obj) => obj.type === 'event').forEach(
             (event) => {
                 const concatInputs = event.inputs.map((input) => input.internalType);
@@ -1401,7 +1403,8 @@ export default class BlockchainServiceBase {
     async adjustEmissionMultiplier(rewardTokenAddress, tracToTokenEmissionMultiplier, blockchain) {
         if (rewardTokenAddress !== ZERO_ADDRESS) {
             // Create contract instance for ERC20 token
-            const tokenContract = new blockchain.web3.eth.Contract(
+            const web3Instance = await this.getWeb3Instance(blockchain);
+            const tokenContract = new web3Instance.eth.Contract(
                 this.abis.IERC20Extended,
                 rewardTokenAddress,
             );
@@ -1410,7 +1413,10 @@ export default class BlockchainServiceBase {
                 const decimals = await tokenContract.methods.decimals().call();
                 return (BigInt(tracToTokenEmissionMultiplier) * BigInt(10)) ** BigInt(decimals);
             } catch (error) {
-                throw new Error('ERC20 token is missing decimals function');
+                console.log(
+                    'ERC20 token is missing decimals function, adding 18 decimals as default',
+                );
+                return BigInt(tracToTokenEmissionMultiplier) * BigInt(10) ** BigInt(18);
             }
         } else {
             // Neuroweb chains use 12 decimals
