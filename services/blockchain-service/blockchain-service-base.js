@@ -1403,6 +1403,7 @@ export default class BlockchainServiceBase {
     async adjustEmissionMultiplier(rewardTokenAddress, tracToTokenEmissionMultiplier, blockchain) {
         if (rewardTokenAddress !== ZERO_ADDRESS) {
             // Create contract instance for ERC20 token
+            await this.ensureBlockchainInfo(blockchain);
             const web3Instance = await this.getWeb3Instance(blockchain);
             const tokenContract = new web3Instance.eth.Contract(
                 this.abis.IERC20Extended,
@@ -1411,7 +1412,7 @@ export default class BlockchainServiceBase {
 
             try {
                 const decimals = await tokenContract.methods.decimals().call();
-                return (BigInt(tracToTokenEmissionMultiplier) * BigInt(10)) ** BigInt(decimals);
+                return BigInt(tracToTokenEmissionMultiplier) * BigInt(10) ** BigInt(decimals);
             } catch (error) {
                 console.log(
                     'ERC20 token is missing decimals function, adding 18 decimals as default',
