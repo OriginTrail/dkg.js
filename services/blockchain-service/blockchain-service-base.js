@@ -1075,7 +1075,7 @@ export default class BlockchainServiceBase {
 
         await this.setIncentivesPool(incentivesPoolAddress, blockchain);
 
-        return this.executeContractFunction(
+        return this.callContractFunction(
             'ParanetIncentivesPool',
             'paranetIncentivesPoolStorage',
             [],
@@ -1217,17 +1217,7 @@ export default class BlockchainServiceBase {
             incentivesPoolStorageAddress: options.incentivesPoolStorageAddress,
         });
 
-        console.log('Incentives Pool Address:', incentivesPoolAddress);
-
         await this.setIncentivesPool(incentivesPoolAddress, blockchain);
-
-        // Add debug logs for contract instance
-        const contractInstance = await this.getContractInstance(
-            'ParanetIncentivesPool',
-            blockchain,
-        );
-        console.log('Contract Instance Address:', contractInstance.options.address);
-        console.log('Available Methods:', Object.keys(contractInstance.methods));
 
         return this.callContractFunction(
             'ParanetIncentivesPool',
