@@ -15,7 +15,7 @@ const DkgClient = new DKG({
     blockchain: {
         name: BLOCKCHAIN_IDS.HARDHAT_1,
         publicKey: PUBLIC_KEY,
-        privateKey: process.env.PRIVATE_KEY,
+        privateKey: '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
     },
     maxNumberOfRetries: 300,
     frequency: 2,
@@ -90,7 +90,7 @@ function divider() {
 
     const queryOperationResult = await DkgClient.graph.query(
         `
-        PREFIX SCHEMA: <http://schema.org/>
+        PREFIX schema: <http://schema.org/>
         SELECT ?s ?stateName
             WHERE {
                 ?s schema:state ?stateName .
