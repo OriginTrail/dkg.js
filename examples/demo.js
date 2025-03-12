@@ -61,25 +61,21 @@ function divider() {
 
     divider();
 
-    console.time('Publish (1 replication, 3 finalizations)');
     const create_result = await DkgClient.asset.create(content, {
         epochsNum: 2,
         minimumNumberOfFinalizationConfirmations: 3,
         minimumNumberOfNodeReplications: 1,
     });
-    console.timeEnd('Publish (1 replication, 3 finalizations)');
 
     console.log(JSON.stringify(create_result));
 
     divider();
 
-    console.time('get');
     const get_result = await DkgClient.asset.get(create_result.UAL, {
         contentType: 'all',
     });
     console.log('======================== ASSET GET');
     console.log(get_result);
-    console.timeEnd('get');
 
     divider();
 
@@ -88,7 +84,6 @@ function divider() {
     console.log(publishFinalityResult);
 
     divider();
-    console.time('query');
     const queryOperationResult = await DkgClient.graph.query(
         `
         PREFIX SCHEMA: <http://schema.org/>
@@ -99,7 +94,6 @@ function divider() {
             `,
         'SELECT',
     );
-    console.timeEnd('query');
     console.log('======================== ASSET QUERY');
     console.log(queryOperationResult);
 })();
