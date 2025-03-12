@@ -102,17 +102,38 @@ export const BLOCKCHAINS = {
 
 export const PARANET_NODES_ACCESS_POLICY = {
     OPEN: 0,
-    CURATED: 1,
+    PERMISSIONED: 1,
 };
 
 export const PARANET_MINERS_ACCESS_POLICY = {
     OPEN: 0,
-    CURATED: 1,
+    PERMISSIONED: 1,
 };
 
-export const INCENTIVE_TYPE = {
-    NEUROWEB: 'Neuroweb',
+export const PARANET_KC_SUBMISSION_POLICY = {
+    OPEN: 0,
+    STAGING: 1,
 };
+
+export const PARANET_KNOWLEDGE_COLLECTION_STATUS = {
+    0: 'NONE',
+    1: 'PENDING',
+    2: 'APPROVED',
+    3: 'REJECTED',
+};
+
+export const INCENTIVE_MULTIPLIER = {
+    Neuroweb: 10n ** 12n,
+    NeurowebERC20: 10n ** 18n,
+};
+
+export const NEUROWEB_INCENTIVE_TYPE_CHAINS = [
+    BLOCKCHAIN_IDS.NEUROWEB_DEVNET,
+    BLOCKCHAIN_IDS.NEUROWEB_TESTNET,
+    BLOCKCHAIN_IDS.NEUROWEB_MAINNET,
+    BLOCKCHAIN_IDS.HARDHAT_1,
+    BLOCKCHAIN_IDS.HARDHAT_2,
+];
 
 export const BLOCKCHAINS_RENAME_PAIRS = {
     hardhat1: 'hardhat1:31337',
