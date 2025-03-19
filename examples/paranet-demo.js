@@ -108,7 +108,7 @@ function divider() {
     console.log(incentivesPoolStorageAddressResult);
     divider();
 
-    // Fund the incentives pool storage contract
+    // Fund the incentives pool storage contract - Works on DEVELOPMENT ONLY
     const web3 = await DkgClient.blockchain.getWeb3Instance();
     const incentivesAmount = web3.utils.toWei('100', 'ether');
     const txHash = await web3.eth.sendTransaction({
@@ -251,7 +251,6 @@ function divider() {
     console.log(
         '======================== IS MINER : ',
         await DkgClient.paranet.isKnowledgeMiner(paranetUAL, {
-            roleAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
             incentivesPoolName: incentivesPoolOptions.incentivesPoolName,
         }),
     );

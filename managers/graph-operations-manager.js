@@ -1,15 +1,10 @@
-import { kaTools, kcTools } from 'assertion-tools';
+import { kaTools } from 'assertion-tools';
 import { ethers } from 'ethers';
 import {
     OPERATIONS,
-    CHUNK_BYTE_SIZE,
-    OPERATION_STATUSES,
     PRIVATE_RESOURCE_PREDICATE,
     PRIVATE_HASH_SUBJECT_PREFIX,
 } from '../constants.js';
-import { getOperationStatusObject, deriveUAL } from '../services/utilities.js';
-import emptyHooks from '../util/empty-hooks.js';
-
 export default class GraphOperationsManager {
     constructor(services) {
         this.nodeApiService = services.nodeApiService;
@@ -41,7 +36,7 @@ export default class GraphOperationsManager {
             repository,
         );
 
-        const operationId = await this.nodeApiService.query(
+        return this.nodeApiService.query(
             endpoint,
             port,
             authToken,
@@ -49,16 +44,6 @@ export default class GraphOperationsManager {
             queryType,
             paranetUAL,
             repository,
-        );
-
-        return this.nodeApiService.getOperationResult(
-            endpoint,
-            port,
-            authToken,
-            OPERATIONS.QUERY,
-            maxNumberOfRetries,
-            frequency,
-            operationId,
         );
     }
 

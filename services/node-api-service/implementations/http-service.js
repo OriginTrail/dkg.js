@@ -130,11 +130,11 @@ export default class HttpService {
         try {
             const response = await axios({
                 method: 'post',
-                url: `${this.getBaseUrl(endpoint, port)}/query`,
+                url: `${this.getBaseUrl(endpoint, port)}/direct-query`,
                 data: { query, type, repository, paranetUAL },
                 headers: this.prepareRequestConfig(authToken),
             });
-            return response.data.operationId;
+            return response.data;
         } catch (error) {
             throw Error(`Unable to query: ${error.message}`);
         }
