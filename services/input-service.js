@@ -348,7 +348,7 @@ export default class InputService {
     }
 
     getPayer(options) {
-        return options.payer ?? this.config.payer ?? ZERO_ADDRESS;
+        return options.paymaster ?? this.config.paymaster ?? ZERO_ADDRESS;
     }
 
     getMinimumNumberOfFinalizationConfirmations(options) {
