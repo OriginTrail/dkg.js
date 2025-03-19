@@ -31,6 +31,7 @@ const KnowledgeCollectionStorageAbi = require('dkg-evm-module/abi/KnowledgeColle
 const AskStorageAbi = require('dkg-evm-module/abi/AskStorage.json');
 const ChronosAbi = require('dkg-evm-module/abi/Chronos.json');
 const IERC20ExtendedAbi = require('dkg-evm-module/abi/IERC20Extended.json');
+const PaymasterManagerAbi = require('dkg-evm-module/abi/PaymasterManager.json');
 
 export default class BlockchainServiceBase {
     constructor(config = {}) {
@@ -52,10 +53,23 @@ export default class BlockchainServiceBase {
         this.abis.Chronos = ChronosAbi;
         this.abis.ParanetStagingRegistry = ParanetStagingRegistryAbi;
         this.abis.IERC20Extended = IERC20ExtendedAbi;
+        this.abis.PaymasterManager = PaymasterManagerAbi;
+
+        // Register events from KnowledgeCollectionStorage
         this.abis.KnowledgeCollectionStorage.filter((obj) => obj.type === 'event').forEach(
             (event) => {
                 const concatInputs = event.inputs.map((input) => input.internalType);
+                this.events[event.name] = {
+                    hash: Web3.utils.keccak256(`${event.name}(${concatInputs})`),
+                    inputs: event.inputs,
+                };
+            },
+        );
 
+        // Register events from PaymasterManager
+        this.abis.PaymasterManager.filter((obj) => obj.type === 'event').forEach(
+            (event) => {
+                const concatInputs = event.inputs.map((input) => input.internalType);
                 this.events[event.name] = {
                     hash: Web3.utils.keccak256(`${event.name}(${concatInputs})`),
                     inputs: event.inputs,
@@ -418,6 +432,25 @@ export default class BlockchainServiceBase {
             allowanceIncreased: false,
             allowanceGap,
         };
+    }
+
+    // Paymaster operations
+
+    async createPaymaster(blockchain) {
+        let receipt = await this.executeContractFunction(
+            'PaymasterManager',
+            'deployPaymaster',
+            [],
+            blockchain,
+        );
+
+        const { deployer, paymasterAddress } = await this.decodeEventLogs(
+            receipt,
+            'PaymasterDeployed',
+            blockchain,
+        );
+
+        return { deployer, paymasterAddress};
     }
 
     // Knowledge assets operations

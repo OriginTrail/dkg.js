@@ -46,4 +46,17 @@ export default class BlockchainOperationsManager {
         const blockchain = this.inputService.getBlockchain(options);
         return this.blockchainService.getWeb3Instance(blockchain);
     }
+
+    /**
+     * Deploy and retrieve the owner and address of a new Paymaster contract.
+     * @async
+     * @param {Object} [options={}] - Optional parameters for blockchain service.
+     * @returns {Promise<Object>} - A promise that resolves to and object containing Paymaster deployer and address.
+     */
+    async createPaymaster(options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        const address = await this.blockchainService.createPaymaster(blockchain);
+
+        return address;
+    }
 }
