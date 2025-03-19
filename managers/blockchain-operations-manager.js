@@ -55,8 +55,8 @@ export default class BlockchainOperationsManager {
      */
     async createPaymaster(options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
-        const address = await this.blockchainService.createPaymaster(blockchain);
+        const { deployer, paymasterAddress } = await this.blockchainService.createPaymaster(blockchain);
 
-        return address;
+        return { deployer, paymasterAddress};
     }
 }
