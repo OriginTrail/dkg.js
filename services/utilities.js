@@ -30,16 +30,16 @@ export function resolveUAL(ual) {
         return {
             blockchain: args[0],
             contract: args[1],
-            kcTokenId: parseInt(args[2], 10),
-            kaTokenId: parseInt(args[3], 10),
+            knowledgeCollectionId: parseInt(args[2], 10),
+            tokenId: parseInt(args[3], 10),
         };
     }
 
     if (args.length === 3) {
         return {
             blockchain: args[0],
-            contract: args[1],
-            kcTokenId: parseInt(args[2], 10),
+            knowledgeCollectionId: args[1],
+            tokenId: parseInt(args[2], 10),
         };
     }
 
