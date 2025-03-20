@@ -1452,4 +1452,100 @@ export default class BlockchainServiceBase {
             }
         }
     }
+
+    /**
+     * Execute a contract function using the contract's address directly instead of its name
+     * @param {string} contractAddress - The address of the contract
+     * @param {string} contractType - The type of contract (to determine ABI, e.g., 'Paymaster')
+     * @param {string} functionName - The name of the function to execute
+     * @param {Array} args - The arguments to pass to the function
+     * @param {Object} blockchain - The blockchain configuration
+     * @returns {Promise<Object>} - The transaction receipt
+     */
+    async executeContractFunctionByAddress(contractAddress, contractType, functionName, args, blockchain) {
+        await this.ensureBlockchainInfo(blockchain);
+        const web3Instance = await this.getWeb3Instance(blockchain);
+
+        // Create a contract instance directly with the provided address
+        const contractInstance = new web3Instance.eth.Contract(
+            this.abis[contractType],
+            contractAddress,
+            { from: blockchain.publicKey }
+        );
+
+        let tx;
+
+        try {
+            tx = await this.prepareTransaction(contractInstance, functionName, args, blockchain);
+
+            let receipt = await contractInstance.methods[functionName](...args).send(tx);
+            if (blockchain.name.startsWith('otp') && blockchain.waitNeurowebTxFinalization) {
+                receipt = await this.waitForTransactionFinalization(receipt, blockchain);
+            }
+            return receipt;
+        } catch (error) {
+            if (/revert|VM Exception/i.test(error.message)) {
+                let status;
+                try {
+                    status = await contractInstance.methods.status().call();
+                } catch (_) {
+                    status = false;
+                }
+
+                if (!status) {
+                    await web3Instance.eth.call({
+                        to: contractAddress,
+                        data: tx.data,
+                        from: tx.from,
+                    });
+
+                    return contractInstance.methods[functionName](...args).send(tx);
+                }
+            }
+
+            throw error;
+        }
+    }
+
+    /**
+     * Call (read-only) a contract function using the contract's address directly instead of its name
+     * @param {string} contractAddress - The address of the contract
+     * @param {string} contractType - The type of contract (to determine ABI, e.g., 'Paymaster')
+     * @param {string} functionName - The name of the function to call
+     * @param {Array} args - The arguments to pass to the function
+     * @param {Object} blockchain - The blockchain configuration
+     * @returns {Promise<any>} - The function return value
+     */
+    async callContractFunctionByAddress(contractAddress, contractType, functionName, args, blockchain) {
+        await this.ensureBlockchainInfo(blockchain);
+        const web3Instance = await this.getWeb3Instance(blockchain);
+
+        // Create a contract instance directly with the provided address
+        const contractInstance = new web3Instance.eth.Contract(
+            this.abis[contractType],
+            contractAddress,
+            { from: blockchain.publicKey }
+        );
+
+        try {
+            return await contractInstance.methods[functionName](...args).call();
+        } catch (error) {
+            if (/revert|VM Exception/i.test(error.message)) {
+                let status;
+                try {
+                    status = await contractInstance.methods.status().call();
+                } catch (_) {
+                    status = false;
+                }
+
+                if (!status) {
+                    // Try again
+                    return contractInstance.methods[functionName](...args).call();
+                }
+            }
+
+            throw error;
+        }
+    }
+
 }

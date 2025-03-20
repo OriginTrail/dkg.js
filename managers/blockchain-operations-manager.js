@@ -59,4 +59,44 @@ export default class BlockchainOperationsManager {
 
         return { deployer, paymasterAddress};
     }
+
+    /**
+     * Execute a contract function using the contract's address directly instead of its name
+     * @param {string} contractAddress - The address of the contract
+     * @param {string} contractType - The type of contract (to determine ABI, e.g., 'Paymaster')
+     * @param {string} functionName - The name of the function to execute
+     * @param {Array} args - The arguments to pass to the function
+     * @param {Object} [options={}] - Optional parameters for blockchain service
+     * @returns {Promise<Object>} - The transaction receipt
+     */
+    async executeContractFunctionByAddress(contractAddress, contractType, functionName, args, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        return this.blockchainService.executeContractFunctionByAddress(
+            contractAddress,
+            contractType,
+            functionName,
+            args,
+            blockchain
+        );
+    }
+
+    /**
+     * Call (read-only) a contract function using the contract's address directly instead of its name
+     * @param {string} contractAddress - The address of the contract
+     * @param {string} contractType - The type of contract (to determine ABI, e.g., 'Paymaster')
+     * @param {string} functionName - The name of the function to call
+     * @param {Array} args - The arguments to pass to the function
+     * @param {Object} [options={}] - Optional parameters for blockchain service
+     * @returns {Promise<any>} - The function return value
+     */
+    async callContractFunctionByAddress(contractAddress, contractType, functionName, args, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        return this.blockchainService.callContractFunctionByAddress(
+            contractAddress,
+            contractType,
+            functionName,
+            args,
+            blockchain
+        );
+    }
 }
