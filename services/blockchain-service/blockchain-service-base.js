@@ -32,6 +32,7 @@ const AskStorageAbi = require('dkg-evm-module/abi/AskStorage.json');
 const ChronosAbi = require('dkg-evm-module/abi/Chronos.json');
 const IERC20ExtendedAbi = require('dkg-evm-module/abi/IERC20Extended.json');
 const PaymasterManagerAbi = require('dkg-evm-module/abi/PaymasterManager.json');
+const PaymasterAbi = require('dkg-evm-module/abi/Paymaster.json');
 
 export default class BlockchainServiceBase {
     constructor(config = {}) {
@@ -54,6 +55,7 @@ export default class BlockchainServiceBase {
         this.abis.ParanetStagingRegistry = ParanetStagingRegistryAbi;
         this.abis.IERC20Extended = IERC20ExtendedAbi;
         this.abis.PaymasterManager = PaymasterManagerAbi;
+        this.abis.Paymaster = PaymasterAbi;
 
         // Register events from KnowledgeCollectionStorage
         this.abis.KnowledgeCollectionStorage.filter((obj) => obj.type === 'event').forEach(
@@ -451,6 +453,87 @@ export default class BlockchainServiceBase {
         );
 
         return { deployer, paymasterAddress};
+    }
+
+    async addAllowedAddressPaymaster(address, paymasterAddress, blockchain) {
+        return this.executeContractFunctionByAddress(
+            paymasterAddress,
+            'Paymaster',
+            'addAllowedAddress',
+            [address],
+            blockchain
+        );
+    }
+
+    async removeAllowedAddressPaymaster(address, paymasterAddress, blockchain) {
+        return this.executeContractFunctionByAddress(
+            paymasterAddress,
+            'Paymaster',
+            'removeAllowedAddress',
+            [address],
+            blockchain
+        );
+    }
+
+    async fundPaymaster(paymasterAddress, amount, blockchain) {
+        return this.executeContractFunctionByAddress(
+            paymasterAddress,
+            'Paymaster',
+            'fundPaymaster',
+            [amount],
+            blockchain
+        );
+    }
+
+    async withdrawFromPaymaster(paymasterAddress, recipient, amount, blockchain) {
+        return this.executeContractFunctionByAddress(
+            paymasterAddress,
+            'Paymaster',
+            'withdraw',
+            [recipient, amount],
+            blockchain
+        );
+    }
+
+    async isAddressAllowedPaymaster(address, paymasterAddress, blockchain) {
+        return this.callContractFunctionByAddress(
+            paymasterAddress,
+            'Paymaster',
+            'allowedAddresses',
+            [address],
+            blockchain
+        );
+    }
+
+    async getPaymasterOwner(paymasterAddress, blockchain) {
+        return this.callContractFunctionByAddress(
+            paymasterAddress,
+            'Paymaster',
+            'owner',
+            [],
+            blockchain
+        );
+    }
+
+    async getPaymasterBalance(paymasterAddress, blockchain) {
+        const tokenAddress = await this.getPaymasterTokenContract(paymasterAddress, blockchain);
+        return this.callContractFunctionByAddress(
+            tokenAddress,
+            'Token',
+            'balanceOf',
+            [paymasterAddress],
+            blockchain
+        );
+    }
+
+    async getPaymasterTokenContract(paymasterAddress, blockchain) {
+        return this.callContractFunctionByAddress(
+            paymasterAddress,
+            'Paymaster',
+            'tokenContract',
+            [],
+            blockchain
+        );
     }
 
     // Knowledge assets operations

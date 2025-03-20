@@ -61,6 +61,113 @@ export default class BlockchainOperationsManager {
     }
 
     /**
+     * Add an allowed address to a Paymaster contract.
+     * @async
+     * @param {string} address - The address to add to the allowed list.
+     * @param {string} paymasterAddress - The address of the Paymaster contract.
+     * @param {Object} [options={}] - Optional parameters for blockchain service.
+     * @returns {Promise<Object>} - A promise that resolves to the transaction result.
+     */
+    async addAllowedAddressPaymaster(address, paymasterAddress, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        return this.blockchainService.addAllowedAddressPaymaster(address, paymasterAddress, blockchain);
+    }
+
+    /**
+     * Remove an allowed address from a Paymaster contract
+     * @param {string} address - The address to remove from allowed list
+     * @param {string} paymasterAddress - The address of the Paymaster contract
+     * @param {Object} [options={}] - Optional parameters for blockchain service
+     * @returns {Promise<Object>} - The transaction receipt
+     */
+    async removeAllowedAddressPaymaster(address, paymasterAddress, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        return this.blockchainService.removeAllowedAddressPaymaster(
+            address,
+            paymasterAddress,
+            blockchain
+        );
+    }
+
+    /**
+     * Fund a Paymaster contract with tokens
+     * @param {string} paymasterAddress - The address of the Paymaster contract
+     * @param {string|number} amount - The amount of tokens to fund
+     * @param {Object} [options={}] - Optional parameters for blockchain service
+     * @returns {Promise<Object>} - The transaction receipt
+     */
+    async fundPaymaster(paymasterAddress, amount, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        return this.blockchainService.fundPaymaster(
+            paymasterAddress,
+            amount,
+            blockchain
+        );
+    }
+
+    /**
+     * Withdraw tokens from a Paymaster contract (only callable by owner)
+     * @param {string} paymasterAddress - The address of the Paymaster contract
+     * @param {string} recipient - The address to receive the tokens
+     * @param {string|number} amount - The amount of tokens to withdraw
+     * @param {Object} [options={}] - Optional parameters for blockchain service
+     * @returns {Promise<Object>} - The transaction receipt
+     */
+    async withdrawFromPaymaster(paymasterAddress, recipient, amount, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        return this.blockchainService.withdrawFromPaymaster(
+            paymasterAddress,
+            recipient,
+            amount,
+            blockchain
+        );
+    }
+
+    /**
+     * Check if an address is allowed to use a Paymaster
+     * @param {string} address - The address to check
+     * @param {string} paymasterAddress - The address of the Paymaster contract
+     * @param {Object} [options={}] - Optional parameters for blockchain service
+     * @returns {Promise<boolean>} - Whether the address is allowed
+     */
+    async isAddressAllowedPaymaster(address, paymasterAddress, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        return this.blockchainService.isAddressAllowedPaymaster(
+            address,
+            paymasterAddress,
+            blockchain
+        );
+    }
+
+    /**
+     * Get the owner of a Paymaster contract
+     * @param {string} paymasterAddress - The address of the Paymaster contract
+     * @param {Object} [options={}] - Optional parameters for blockchain service
+     * @returns {Promise<string>} - The owner address
+     */
+    async getPaymasterOwner(paymasterAddress, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        return this.blockchainService.getPaymasterOwner(
+            paymasterAddress,
+            blockchain
+        );
+    }
+
+    /**
+     * Get the token balance of a Paymaster contract
+     * @param {string} paymasterAddress - The address of the Paymaster contract
+     * @param {Object} [options={}] - Optional parameters for blockchain service
+     * @returns {Promise<string>} - The token balance
+     */
+    async getPaymasterBalance(paymasterAddress, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        return this.blockchainService.getPaymasterBalance(
+            paymasterAddress,
+            blockchain
+        );
+    }
+
+    /**
      * Execute a contract function using the contract's address directly instead of its name
      * @param {string} contractAddress - The address of the contract
      * @param {string} contractType - The type of contract (to determine ABI, e.g., 'Paymaster')
