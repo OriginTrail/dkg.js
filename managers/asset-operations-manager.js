@@ -506,8 +506,8 @@ export default class AssetOperationsManager {
 
         this.validationService.validateAssetTransfer(UAL, newOwner, blockchain);
 
-        const { knowledgeCollectionId, tokenId } = resolveUAL(UAL);
-        const assetId = (knowledgeCollectionId - 1) * 1_000_000 + tokenId;
+        const { kcTokenId, kaTokenId } = resolveUAL(UAL);
+        const assetId = (kcTokenId - 1) * 1_000_000 + kaTokenId;
         const receipt = await this.blockchainService.transferAsset(assetId, newOwner, blockchain);
         // const owner = await this.blockchainService.getAssetOwner(tokenId, blockchain);
 
