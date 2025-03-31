@@ -30,7 +30,7 @@ const KnowledgeCollectionAbi = require('dkg-evm-module/abi/KnowledgeCollection.j
 const KnowledgeCollectionStorageAbi = require('dkg-evm-module/abi/KnowledgeCollectionStorage.json');
 const AskStorageAbi = require('dkg-evm-module/abi/AskStorage.json');
 const ChronosAbi = require('dkg-evm-module/abi/Chronos.json');
-// const IERC20ExtendedAbi = require('dkg-evm-module/abi/IERC20Extended.json');
+const IERC20ExtendedAbi = require('dkg-evm-module/abi/IERC20Extended.json');
 
 export default class BlockchainServiceBase {
     constructor(config = {}) {
@@ -51,7 +51,7 @@ export default class BlockchainServiceBase {
         this.abis.AskStorage = AskStorageAbi;
         this.abis.Chronos = ChronosAbi;
         this.abis.ParanetStagingRegistry = ParanetStagingRegistryAbi;
-        // this.abis.IERC20Extended = IERC20ExtendedAbi;
+        this.abis.IERC20Extended = IERC20ExtendedAbi;
         this.abis.KnowledgeCollectionStorage.filter((obj) => obj.type === 'event').forEach(
             (event) => {
                 const concatInputs = event.inputs.map((input) => input.internalType);
