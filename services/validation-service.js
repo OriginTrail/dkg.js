@@ -266,7 +266,7 @@ export default class ValidationService {
         this.validateBlockchain(blockchain);
     }
 
-    validateParanetAddCuratedNodes(UAL, blockchain, identityIds) {
+    validateParanetaddPermissionedNodes(UAL, blockchain, identityIds) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
 
@@ -275,7 +275,7 @@ export default class ValidationService {
         }
     }
 
-    validateParanetRemoveCuratedNodes(UAL, blockchain, identityIds) {
+    validateParanetremovePermissionedNodes(UAL, blockchain, identityIds) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
 

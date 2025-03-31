@@ -99,7 +99,7 @@ function divider() {
 
     const paranetUAL = `${paranetAssetResult.UAL}/1`;
     const paranetRegistered = await DkgClient.paranet.create(paranetUAL, paranetOptions);
-    console.log('======================== A CURATED PARANET REGISTERED');
+    console.log('======================== A PERMISSIONED PARANET REGISTERED');
     console.log(paranetRegistered);
     divider();
 
@@ -107,22 +107,22 @@ function divider() {
     const node2IdentityId = await DkgClient.node.getIdentityId(NODE2_KEYS.publicKey);
     const node3IdentityId = await DkgClient.node.getIdentityId(NODE3_KEYS.publicKey);
     let identityIds = [node1IdentityId, node2IdentityId, node3IdentityId];
-    await DkgClient.paranet.addCuratedNodes(paranetUAL, identityIds);
-    console.log('======================== ADDED NODES TO A CURATED PARANET');
+    await DkgClient.paranet.addPermissionedNodes(paranetUAL, identityIds);
+    console.log('======================== ADDED NODES TO A PERMISSIONED PARANET');
     let nodes = await DkgClient.paranet.getPermissionedNodes(paranetUAL);
     console.log({
         paranetUAL: paranetUAL,
-        curatedNodes: nodes,
+        permissionedNodes: nodes,
     });
     divider();
 
     identityIds = [node2IdentityId, node3IdentityId];
-    await DkgClient.paranet.removeCuratedNodes(paranetUAL, identityIds);
-    console.log('======================== REMOVED NODES FROM A CURATED PARANET');
+    await DkgClient.paranet.removePermissionedNodes(paranetUAL, identityIds);
+    console.log('======================== REMOVED NODES FROM A PERMISSIONED PARANET');
     nodes = await DkgClient.paranet.getPermissionedNodes(paranetUAL);
     console.log({
         paranetUAL: paranetUAL,
-        curatedNodes: nodes,
+        permissionedNodes: nodes,
     });
     divider();
 
@@ -130,11 +130,13 @@ function divider() {
         blockchain: NODE2_KEYS,
     });
     await DkgClient.paranet.rejectPermissionedNode(paranetUAL, node2IdentityId);
-    console.log("======================== REJECT A NODE'S ACCESS REQUEST TO A CURATED PARANET");
+    console.log(
+        "======================== REJECT A NODE'S ACCESS REQUEST TO A PERMISSIONED PARANET",
+    );
     nodes = await DkgClient.paranet.getPermissionedNodes(paranetUAL);
     console.log({
         paranetUAL: paranetUAL,
-        curatedNodes: nodes,
+        permissionedNodes: nodes,
     });
     divider();
 
@@ -142,17 +144,19 @@ function divider() {
         blockchain: NODE2_KEYS,
     });
     await DkgClient.paranet.approvePermissionedNode(paranetUAL, node2IdentityId);
-    console.log("======================== APPROVE A NODE'S ACCESS REQUEST TO A CURATED PARANET");
+    console.log(
+        "======================== APPROVE A NODE'S ACCESS REQUEST TO A PERMISSIONED PARANET",
+    );
     nodes = await DkgClient.paranet.getPermissionedNodes(paranetUAL);
     console.log({
         paranetUAL: paranetUAL,
-        curatedNodes: nodes,
+        permissionedNodes: nodes,
     });
     divider();
 
     let minerAddresses = [NODE3_KEYS.publicKey, NODE4_KEYS.publicKey, NODE5_KEYS.publicKey];
     await DkgClient.paranet.addParanetPermissionedMiners(paranetUAL, minerAddresses);
-    console.log('======================== ADDED KNOWLEDGE MINERS TO A CURATED PARANET');
+    console.log('======================== ADDED KNOWLEDGE MINERS TO A PERMISSIONED PARANET');
     let miners = await DkgClient.paranet.getKnowledgeMiners(paranetUAL);
     console.log({
         paranetUAL: paranetUAL,
@@ -162,7 +166,7 @@ function divider() {
 
     minerAddresses = [NODE4_KEYS.publicKey, NODE5_KEYS.publicKey];
     await DkgClient.paranet.removeParanetPermissionedMiners(paranetUAL, minerAddresses);
-    console.log('======================== REMOVED KNOWLEDGE MINERS FROM A CURATED PARANET');
+    console.log('======================== REMOVED KNOWLEDGE MINERS FROM A PERMISSIONED PARANET');
     miners = await DkgClient.paranet.getKnowledgeMiners(paranetUAL);
     console.log({
         paranetUAL: paranetUAL,
@@ -176,12 +180,12 @@ function divider() {
     });
     await DkgClient.paranet.rejectPermissionedMiner(paranetUAL, minerAddress);
     console.log(
-        "======================== REJECT A KNOWLEDGE MINER'S ACCESS REQUEST TO A CURATED PARANET",
+        "======================== REJECT A KNOWLEDGE MINER'S ACCESS REQUEST TO A PERMISSIONED PARANET",
     );
     miners = await DkgClient.paranet.getKnowledgeMiners(paranetUAL);
     console.log({
         paranetUAL: paranetUAL,
-        curatedMiners: miners,
+        permissionedMiners: miners,
     });
     divider();
 
@@ -190,12 +194,12 @@ function divider() {
     });
     await DkgClient.paranet.approvePermissionedMiner(paranetUAL, minerAddress);
     console.log(
-        "======================== APPROVE A KNOWLEDGE MINER'S ACCESS REQUEST TO A CURATED PARANET",
+        "======================== APPROVE A KNOWLEDGE MINER'S ACCESS REQUEST TO A PERMISSIONED PARANET",
     );
     miners = await DkgClient.paranet.getKnowledgeMiners(paranetAssetResult.UAL);
     console.log({
         paranetUAL: paranetUAL,
-        curatedMiners: miners,
+        permissionedMiners: miners,
     });
     divider();
 
@@ -205,7 +209,7 @@ function divider() {
         minimumNumberOfNodeReplications: 3,
     });
     console.log(
-        '======================== MINT A KA, LOCAL STORE AND SUBMIT IT TO A CURATED PARANET - KNOWLEDGE MINER IS APPROVED',
+        '======================== MINT A KA, LOCAL STORE AND SUBMIT IT TO A PERMISSIONED PARANET - KNOWLEDGE MINER IS APPROVED',
     );
     console.log(localStoreFirstAssetResult);
     divider();
@@ -241,7 +245,7 @@ function divider() {
     });
 
     console.log(
-        '======================== MINT A KA, LOCAL STORE AND SUBMIT IT TO A CURATED PARANET - KNOWLEDGE MINER IS NOT APPROVED',
+        '======================== MINT A KA, LOCAL STORE AND SUBMIT IT TO A PERMISSIONED PARANET - KNOWLEDGE MINER IS NOT APPROVED',
     );
     console.log(createResult);
     divider();

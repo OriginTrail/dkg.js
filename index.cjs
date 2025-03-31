@@ -81,8 +81,7 @@ class AssertionOperationsManager {
  */
 const MAX_FILE_SIZE = 10000000;
 
-const PRIVATE_ASSERTION_PREDICATE =
-    'https://ontology.origintrail.io/dkg/1.0#privateMerkleRoot';
+const PRIVATE_ASSERTION_PREDICATE = 'https://ontology.origintrail.io/dkg/1.0#privateMerkleRoot';
 
 const PRIVATE_RESOURCE_PREDICATE =
     'https://ontology.origintrail.io/dkg/1.0#representsPrivateResource';
@@ -218,7 +217,8 @@ const WEBSOCKET_PROVIDER_OPTIONS = {
 const OPERATIONS = {
     PUBLISH: 'publish',
     GET: 'get',
-    LOCAL_STORE: 'local-store'};
+    LOCAL_STORE: 'local-store',
+};
 
 const OPERATION_STATUSES$1 = {
     PENDING: 'PENDING',
@@ -403,13 +403,18 @@ function getParanetId(paranetUAL) {
         throw new Error('Invalid paranet UAL! Knowledge asset token id is required!');
     }
     return ethers.ethers.keccak256(
-        ethers.ethers.solidityPacked(['address', 'uint256', 'uint256'], [contract, kcTokenId, kaTokenId]),
+        ethers.ethers.solidityPacked(
+            ['address', 'uint256', 'uint256'],
+            [contract, kcTokenId, kaTokenId],
+        ),
     );
 }
 
 function getKnowledgeCollectionId(kcUAL) {
     const { contract, kcTokenId } = resolveUAL(kcUAL);
-    return ethers.ethers.keccak256(ethers.ethers.solidityPacked(['address', 'uint256'], [contract, kcTokenId]));
+    return ethers.ethers.keccak256(
+        ethers.ethers.solidityPacked(['address', 'uint256'], [contract, kcTokenId]),
+    );
 }
 
 /**
@@ -681,10 +686,15 @@ class AssetOperationsManager {
         dataset.public = assertionTools.kcTools.generateMissingIdsForBlankNodes(dataset.public);
 
         if (dataset.private?.length) {
-            dataset.private = assertionTools.kcTools.generateMissingIdsForBlankNodes(dataset.private);
+            dataset.private = assertionTools.kcTools.generateMissingIdsForBlankNodes(
+                dataset.private,
+            );
 
             // Group private triples by subject and flatten
-            const privateTriplesGrouped = assertionTools.kcTools.groupNquadsBySubject(dataset.private, true);
+            const privateTriplesGrouped = assertionTools.kcTools.groupNquadsBySubject(
+                dataset.private,
+                true,
+            );
             dataset.private = privateTriplesGrouped.flat();
 
             // Compute private root and add to public
@@ -694,7 +704,10 @@ class AssetOperationsManager {
             );
 
             // Group public triples by subject
-            publicTriplesGrouped = assertionTools.kcTools.groupNquadsBySubject(dataset.public, true);
+            publicTriplesGrouped = assertionTools.kcTools.groupNquadsBySubject(
+                dataset.public,
+                true,
+            );
 
             // Create a map of public subject -> index for quick lookup
             const publicSubjectMap = new Map();
@@ -737,11 +750,17 @@ class AssetOperationsManager {
             dataset.public = publicTriplesGrouped.flat();
         } else {
             // No private triples, just group and flatten public
-            publicTriplesGrouped = assertionTools.kcTools.groupNquadsBySubject(dataset.public, true);
+            publicTriplesGrouped = assertionTools.kcTools.groupNquadsBySubject(
+                dataset.public,
+                true,
+            );
             dataset.public = publicTriplesGrouped.flat();
         }
 
-        const numberOfChunks = assertionTools.kcTools.calculateNumberOfChunks(dataset.public, CHUNK_BYTE_SIZE$1);
+        const numberOfChunks = assertionTools.kcTools.calculateNumberOfChunks(
+            dataset.public,
+            CHUNK_BYTE_SIZE$1,
+        );
         const datasetSize = numberOfChunks * CHUNK_BYTE_SIZE$1;
 
         this.validationService.validateAssertionSizeInBytes(datasetSize);
@@ -845,7 +864,9 @@ class AssetOperationsManager {
                 {
                     publishOperationId,
                     merkleRoot: datasetRoot,
-                    knowledgeAssetsAmount: assertionTools.kcTools.countDistinctSubjects(dataset.public),
+                    knowledgeAssetsAmount: assertionTools.kcTools.countDistinctSubjects(
+                        dataset.public,
+                    ),
                     byteSize: datasetSize,
                     epochs: epochsNum,
                     tokenAmount: estimatedPublishingCost.toString(),
@@ -1986,12 +2007,16 @@ class ParanetOperationsManager {
      * @param {Array<number>} identityIds - List of node Identity IDs.
      * @param {Object} [options={}] - Additional options for adding curated nodes to a paranet.
      * @example
-     * await dkg.paranet.addCuratedNodes(UAL, identityIds: [1, 2]);
+     * await dkg.paranet.addPermissionedNodes(UAL, identityIds: [1, 2]);
      */
-    async addCuratedNodes(paranetUAL, identityIds, options = {}) {
+    async addPermissionedNodes(paranetUAL, identityIds, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
 
-        this.validationService.validateParanetAddCuratedNodes(paranetUAL, blockchain, identityIds);
+        this.validationService.validateParanetaddPermissionedNodes(
+            paranetUAL,
+            blockchain,
+            identityIds,
+        );
 
         const {
             contract: paranetKCStorageContract,
@@ -2021,12 +2046,12 @@ class ParanetOperationsManager {
      * @param {Array<number>} identityIds - List of node Identity IDs to be removed.
      * @param {Object} [options={}] - Additional options for adding curated nodes to a paranet.
      * @example
-     * await dkg.paranet.removeCuratedNodes(UAL, identityIds: [1, 2]);
+     * await dkg.paranet.removePermissionedNodes(UAL, identityIds: [1, 2]);
      */
-    async removeCuratedNodes(paranetUAL, identityIds, options = {}) {
+    async removePermissionedNodes(paranetUAL, identityIds, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
 
-        this.validationService.validateParanetRemoveCuratedNodes(
+        this.validationService.validateParanetremovePermissionedNodes(
             paranetUAL,
             blockchain,
             identityIds,
@@ -2170,12 +2195,12 @@ class ParanetOperationsManager {
 
         const paranetId = getParanetId(paranetUAL);
 
-        const curatedNodes = await this.blockchainService.getPermissionedNodes(
+        const permissionedNodes = await this.blockchainService.getPermissionedNodes(
             { paranetId },
             blockchain,
         );
 
-        return curatedNodes;
+        return permissionedNodes;
     }
 
     /**
@@ -3343,20 +3368,35 @@ var NodeApiInterface = {
 /* eslint-disable dot-notation */
 /* eslint-disable no-await-in-loop */
 
-const require$1 = module$1.createRequire((typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : (_documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === 'SCRIPT' && _documentCurrentScript.src || new URL('index.cjs', document.baseURI).href)));
+const require$1 = module$1.createRequire(
+    typeof document === 'undefined'
+        ? require('u' + 'rl').pathToFileURL(__filename).href
+        : (_documentCurrentScript &&
+              _documentCurrentScript.tagName.toUpperCase() === 'SCRIPT' &&
+              _documentCurrentScript.src) ||
+              new URL('index.cjs', document.baseURI).href,
+);
 
 const HubAbi = require$1('dkg-evm-module/abi/Hub.json');
 const TokenAbi = require$1('dkg-evm-module/abi/Token.json');
 const ParanetAbi = require$1('dkg-evm-module/abi/Paranet.json');
 const ParanetsRegistryAbi = require$1('dkg-evm-module/abi/ParanetsRegistry.json');
-const ParanetIncentivesPoolFactoryAbi = require$1('dkg-evm-module/abi/ParanetIncentivesPoolFactory.json');
+const ParanetIncentivesPoolFactoryAbi = require$1(
+    'dkg-evm-module/abi/ParanetIncentivesPoolFactory.json',
+);
 const ParanetIncentivesPoolAbi = require$1('dkg-evm-module/abi/ParanetIncentivesPool.json');
-const ParanetIncentivesPoolStorageAbi = require$1('dkg-evm-module/abi/ParanetIncentivesPoolStorage.json');
-const ParanetKnowledgeMinersRegistryAbi = require$1('dkg-evm-module/abi/ParanetKnowledgeMinersRegistry.json');
+const ParanetIncentivesPoolStorageAbi = require$1(
+    'dkg-evm-module/abi/ParanetIncentivesPoolStorage.json',
+);
+const ParanetKnowledgeMinersRegistryAbi = require$1(
+    'dkg-evm-module/abi/ParanetKnowledgeMinersRegistry.json',
+);
 const ParanetStagingRegistryAbi = require$1('dkg-evm-module/abi/ParanetStagingRegistry.json');
 const IdentityStorageAbi = require$1('dkg-evm-module/abi/IdentityStorage.json');
 const KnowledgeCollectionAbi = require$1('dkg-evm-module/abi/KnowledgeCollection.json');
-const KnowledgeCollectionStorageAbi = require$1('dkg-evm-module/abi/KnowledgeCollectionStorage.json');
+const KnowledgeCollectionStorageAbi = require$1(
+    'dkg-evm-module/abi/KnowledgeCollectionStorage.json',
+);
 const AskStorageAbi = require$1('dkg-evm-module/abi/AskStorage.json');
 const ChronosAbi = require$1('dkg-evm-module/abi/Chronos.json');
 // const IERC20ExtendedAbi = require('dkg-evm-module/abi/IERC20Extended.json');
@@ -5276,7 +5316,7 @@ class ValidationService {
         this.validateBlockchain(blockchain);
     }
 
-    validateParanetAddCuratedNodes(UAL, blockchain, identityIds) {
+    validateParanetaddPermissionedNodes(UAL, blockchain, identityIds) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
 
@@ -5285,7 +5325,7 @@ class ValidationService {
         }
     }
 
-    validateParanetRemoveCuratedNodes(UAL, blockchain, identityIds) {
+    validateParanetremovePermissionedNodes(UAL, blockchain, identityIds) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
 
@@ -5827,7 +5867,8 @@ class ValidationService {
         this.validateRequiredParam('address', address);
         this.validateParamType('address', address, 'string');
 
-        if (!ethers.isAddress(address)) throw Error(`Wrong address format. Given address: ${address}`);
+        if (!ethers.isAddress(address))
+            throw Error(`Wrong address format. Given address: ${address}`);
     }
 
     validateIdentityId(identityId) {

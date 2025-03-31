@@ -402,12 +402,16 @@ export default class ParanetOperationsManager {
      * @param {Array<number>} identityIds - List of node Identity IDs.
      * @param {Object} [options={}] - Additional options for adding curated nodes to a paranet.
      * @example
-     * await dkg.paranet.addCuratedNodes(UAL, identityIds: [1, 2]);
+     * await dkg.paranet.addPermissionedNodes(UAL, identityIds: [1, 2]);
      */
-    async addCuratedNodes(paranetUAL, identityIds, options = {}) {
+    async addPermissionedNodes(paranetUAL, identityIds, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
 
-        this.validationService.validateParanetAddCuratedNodes(paranetUAL, blockchain, identityIds);
+        this.validationService.validateParanetaddPermissionedNodes(
+            paranetUAL,
+            blockchain,
+            identityIds,
+        );
 
         const {
             contract: paranetKCStorageContract,
@@ -437,12 +441,12 @@ export default class ParanetOperationsManager {
      * @param {Array<number>} identityIds - List of node Identity IDs to be removed.
      * @param {Object} [options={}] - Additional options for adding curated nodes to a paranet.
      * @example
-     * await dkg.paranet.removeCuratedNodes(UAL, identityIds: [1, 2]);
+     * await dkg.paranet.removePermissionedNodes(UAL, identityIds: [1, 2]);
      */
-    async removeCuratedNodes(paranetUAL, identityIds, options = {}) {
+    async removePermissionedNodes(paranetUAL, identityIds, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
 
-        this.validationService.validateParanetRemoveCuratedNodes(
+        this.validationService.validateParanetremovePermissionedNodes(
             paranetUAL,
             blockchain,
             identityIds,
@@ -586,12 +590,12 @@ export default class ParanetOperationsManager {
 
         const paranetId = getParanetId(paranetUAL);
 
-        const curatedNodes = await this.blockchainService.getPermissionedNodes(
+        const permissionedNodes = await this.blockchainService.getPermissionedNodes(
             { paranetId },
             blockchain,
         );
 
-        return curatedNodes;
+        return permissionedNodes;
     }
 
     /**
