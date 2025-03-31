@@ -150,54 +150,54 @@ function divider() {
     });
     divider();
 
-    // let minerAddresses = [NODE3_KEYS.publicKey, NODE4_KEYS.publicKey, NODE5_KEYS.publicKey];
-    // await DkgClient.paranet.addParanetPermissionedMiners(paranetUAL, minerAddresses);
-    // console.log('======================== ADDED KNOWLEDGE MINERS TO A CURATED PARANET');
-    // let miners = await DkgClient.paranet.getKnowledgeMiners(paranetUAL);
-    // console.log({
-    //     paranetUAL: paranetUAL,
-    //     knowledgeMiners: miners,
-    // });
-    // divider();
+    let minerAddresses = [NODE3_KEYS.publicKey, NODE4_KEYS.publicKey, NODE5_KEYS.publicKey];
+    await DkgClient.paranet.addParanetPermissionedMiners(paranetUAL, minerAddresses);
+    console.log('======================== ADDED KNOWLEDGE MINERS TO A CURATED PARANET');
+    let miners = await DkgClient.paranet.getKnowledgeMiners(paranetUAL);
+    console.log({
+        paranetUAL: paranetUAL,
+        knowledgeMiners: miners,
+    });
+    divider();
 
-    // minerAddresses = [NODE4_KEYS.publicKey, NODE5_KEYS.publicKey];
-    // await DkgClient.paranet.removeParanetPermissionedMiners(paranetUAL, minerAddresses);
-    // console.log('======================== REMOVED KNOWLEDGE MINERS FROM A CURATED PARANET');
-    // miners = await DkgClient.paranet.getKnowledgeMiners(paranetUAL);
-    // console.log({
-    //     paranetUAL: paranetUAL,
-    //     knowledgeMiners: miners,
-    // });
-    // divider();
+    minerAddresses = [NODE4_KEYS.publicKey, NODE5_KEYS.publicKey];
+    await DkgClient.paranet.removeParanetPermissionedMiners(paranetUAL, minerAddresses);
+    console.log('======================== REMOVED KNOWLEDGE MINERS FROM A CURATED PARANET');
+    miners = await DkgClient.paranet.getKnowledgeMiners(paranetUAL);
+    console.log({
+        paranetUAL: paranetUAL,
+        knowledgeMiners: miners,
+    });
+    divider();
 
-    // let minerAddress = NODE4_KEYS.publicKey;
-    // await DkgClient.paranet.requestParanetPermissionedMinerAccess(paranetUAL, {
-    //     blockchain: NODE4_KEYS,
-    // });
-    // await DkgClient.paranet.rejectPermissionedMiner(paranetUAL, minerAddress);
-    // console.log(
-    //     "======================== REJECT A KNOWLEDGE MINER'S ACCESS REQUEST TO A CURATED PARANET",
-    // );
-    // miners = await DkgClient.paranet.getKnowledgeMiners(paranetUAL);
-    // console.log({
-    //     paranetUAL: paranetUAL,
-    //     curatedMiners: miners,
-    // });
-    // divider();
+    let minerAddress = NODE4_KEYS.publicKey;
+    await DkgClient.paranet.requestParanetPermissionedMinerAccess(paranetUAL, {
+        blockchain: NODE4_KEYS,
+    });
+    await DkgClient.paranet.rejectPermissionedMiner(paranetUAL, minerAddress);
+    console.log(
+        "======================== REJECT A KNOWLEDGE MINER'S ACCESS REQUEST TO A CURATED PARANET",
+    );
+    miners = await DkgClient.paranet.getKnowledgeMiners(paranetUAL);
+    console.log({
+        paranetUAL: paranetUAL,
+        curatedMiners: miners,
+    });
+    divider();
 
-    // await DkgClient.paranet.requestParanetPermissionedMinerAccess(paranetUAL, {
-    //     blockchain: NODE4_KEYS,
-    // });
-    // await DkgClient.paranet.approvePermissionedMiner(paranetUAL, minerAddress);
-    // console.log(
-    //     "======================== APPROVE A KNOWLEDGE MINER'S ACCESS REQUEST TO A CURATED PARANET",
-    // );
-    // miners = await DkgClient.paranet.getKnowledgeMiners(paranetAssetResult.UAL);
-    // console.log({
-    //     paranetUAL: paranetUAL,
-    //     curatedMiners: miners,
-    // });
-    // divider();
+    await DkgClient.paranet.requestParanetPermissionedMinerAccess(paranetUAL, {
+        blockchain: NODE4_KEYS,
+    });
+    await DkgClient.paranet.approvePermissionedMiner(paranetUAL, minerAddress);
+    console.log(
+        "======================== APPROVE A KNOWLEDGE MINER'S ACCESS REQUEST TO A CURATED PARANET",
+    );
+    miners = await DkgClient.paranet.getKnowledgeMiners(paranetAssetResult.UAL);
+    console.log({
+        paranetUAL: paranetUAL,
+        curatedMiners: miners,
+    });
+    divider();
 
     const localStoreFirstAssetResult = await DkgClient.asset.create(content, {
         epochsNum: 2,
