@@ -284,24 +284,24 @@ export default class ValidationService {
         }
     }
 
-    validateRequestParanetCuratedNodeAccess(UAL, blockchain) {
+    validaterequestParanetPermissionedNodeAccess(UAL, blockchain) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
     }
 
-    validateApproveCuratedNode(UAL, blockchain, identityId) {
-        this.validateUAL(UAL);
-        this.validateBlockchain(blockchain);
-        this.validateIdentityId(identityId);
-    }
-
-    validateRejectCuratedNode(UAL, blockchain, identityId) {
+    validateapprovePermissionedNode(UAL, blockchain, identityId) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
         this.validateIdentityId(identityId);
     }
 
-    validateGetCuratedNodes(UAL, blockchain) {
+    validaterejectPermissionedNode(UAL, blockchain, identityId) {
+        this.validateUAL(UAL);
+        this.validateBlockchain(blockchain);
+        this.validateIdentityId(identityId);
+    }
+
+    validategetPermissionedNodes(UAL, blockchain) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
     }
@@ -311,7 +311,7 @@ export default class ValidationService {
         this.validateBlockchain(blockchain);
     }
 
-    validateParanetAddCuratedMiners(UAL, blockchain, minerAddresses) {
+    validateParanetaddParanetPermissionedMiners(UAL, blockchain, minerAddresses) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
 
@@ -320,7 +320,7 @@ export default class ValidationService {
         }
     }
 
-    validateParanetRemoveCuratedMiners(UAL, blockchain, minerAddresses) {
+    validateParanetremoveParanetPermissionedMiners(UAL, blockchain, minerAddresses) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
 
@@ -329,18 +329,18 @@ export default class ValidationService {
         }
     }
 
-    validateRequestParanetCuratedMinerAccess(UAL, blockchain) {
+    validaterequestParanetPermissionedMinerAccess(UAL, blockchain) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
     }
 
-    validateApproveCuratedMiner(UAL, blockchain, minerAddress) {
+    validateapprovePermissionedMiner(UAL, blockchain, minerAddress) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
         this.validateAddress(minerAddress);
     }
 
-    validateRejectCuratedMiner(UAL, blockchain, minerAddress) {
+    validaterejectPermissionedMiner(UAL, blockchain, minerAddress) {
         this.validateUAL(UAL);
         this.validateBlockchain(blockchain);
         this.validateAddress(minerAddress);

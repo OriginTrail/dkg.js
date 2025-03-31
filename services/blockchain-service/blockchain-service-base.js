@@ -30,7 +30,7 @@ const KnowledgeCollectionAbi = require('dkg-evm-module/abi/KnowledgeCollection.j
 const KnowledgeCollectionStorageAbi = require('dkg-evm-module/abi/KnowledgeCollectionStorage.json');
 const AskStorageAbi = require('dkg-evm-module/abi/AskStorage.json');
 const ChronosAbi = require('dkg-evm-module/abi/Chronos.json');
-const IERC20ExtendedAbi = require('dkg-evm-module/abi/IERC20Extended.json');
+// const IERC20ExtendedAbi = require('dkg-evm-module/abi/IERC20Extended.json');
 
 export default class BlockchainServiceBase {
     constructor(config = {}) {
@@ -51,7 +51,7 @@ export default class BlockchainServiceBase {
         this.abis.AskStorage = AskStorageAbi;
         this.abis.Chronos = ChronosAbi;
         this.abis.ParanetStagingRegistry = ParanetStagingRegistryAbi;
-        this.abis.IERC20Extended = IERC20ExtendedAbi;
+        // this.abis.IERC20Extended = IERC20ExtendedAbi;
         this.abis.KnowledgeCollectionStorage.filter((obj) => obj.type === 'event').forEach(
             (event) => {
                 const concatInputs = event.inputs.map((input) => input.internalType);
@@ -784,113 +784,113 @@ export default class BlockchainServiceBase {
         );
     }
 
-    // async addParanetCuratedNodes(requestData, blockchain) {
-    //     return this.executeContractFunction(
-    //         'Paranet',
-    //         'addParanetCuratedNodes',
-    //         Object.values(requestData),
-    //         blockchain,
-    //     );
-    // }
+    async addParanetPermissionedNodes(requestData, blockchain) {
+        return this.executeContractFunction(
+            'Paranet',
+            'addParanetPermissionedNodes',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
 
-    // async removeParanetCuratedNodes(requestData, blockchain) {
-    //     return this.executeContractFunction(
-    //         'Paranet',
-    //         'removeParanetCuratedNodes',
-    //         Object.values(requestData),
-    //         blockchain,
-    //     );
-    // }
+    async removeParanetPermissionedNodes(requestData, blockchain) {
+        return this.executeContractFunction(
+            'Paranet',
+            'removeParanetPermissionedNodes',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
 
-    // async requestParanetCuratedNodeAccess(requestData, blockchain) {
-    //     return this.executeContractFunction(
-    //         'Paranet',
-    //         'requestParanetCuratedNodeAccess',
-    //         Object.values(requestData),
-    //         blockchain,
-    //     );
-    // }
+    async requestParanetPermissionedNodeAccess(requestData, blockchain) {
+        return this.executeContractFunction(
+            'Paranet',
+            'requestParanetPermissionedNodeAccess',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
 
-    // async approveCuratedNode(requestData, blockchain) {
-    //     return this.executeContractFunction(
-    //         'Paranet',
-    //         'approveCuratedNode',
-    //         Object.values(requestData),
-    //         blockchain,
-    //     );
-    // }
+    async approvePermissionedNode(requestData, blockchain) {
+        return this.executeContractFunction(
+            'Paranet',
+            'approvePermissionedNode',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
 
-    // async rejectCuratedNode(requestData, blockchain) {
-    //     return this.executeContractFunction(
-    //         'Paranet',
-    //         'rejectCuratedNode',
-    //         Object.values(requestData),
-    //         blockchain,
-    //     );
-    // }
+    async rejectPermissionedNode(requestData, blockchain) {
+        return this.executeContractFunction(
+            'Paranet',
+            'rejectPermissionedNode',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
 
-    // async getCuratedNodes(requestData, blockchain) {
-    //     return this.callContractFunction(
-    //         'ParanetsRegistry',
-    //         'getCuratedNodes',
-    //         Object.values(requestData),
-    //         blockchain,
-    //     );
-    // }
+    async getPermissionedNodes(requestData, blockchain) {
+        return this.callContractFunction(
+            'ParanetsRegistry',
+            'getPermissionedNodes',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
 
-    // async getKnowledgeMiners(requestData, blockchain) {
-    //     return this.callContractFunction(
-    //         'ParanetsRegistry',
-    //         'getKnowledgeMiners',
-    //         Object.values(requestData),
-    //         blockchain,
-    //     );
-    // }
+    async getKnowledgeMiners(requestData, blockchain) {
+        return this.callContractFunction(
+            'ParanetsRegistry',
+            'getKnowledgeMiners',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
 
-    // async addParanetCuratedMiners(requestData, blockchain) {
-    //     return this.executeContractFunction(
-    //         'Paranet',
-    //         'addParanetCuratedMiners',
-    //         Object.values(requestData),
-    //         blockchain,
-    //     );
-    // }
+    async addParanetPermissionedMiners(requestData, blockchain) {
+        return this.executeContractFunction(
+            'Paranet',
+            'addParanetPermissionedMiners',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
 
-    // async removeParanetCuratedMiners(requestData, blockchain) {
-    //     return this.executeContractFunction(
-    //         'Paranet',
-    //         'removeParanetCuratedMiners',
-    //         Object.values(requestData),
-    //         blockchain,
-    //     );
-    // }
+    async removeParanetPermissionedMiners(requestData, blockchain) {
+        return this.executeContractFunction(
+            'Paranet',
+            'removeParanetPermissionedMiners',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
 
-    // async requestParanetCuratedMinerAccess(requestData, blockchain) {
-    //     return this.executeContractFunction(
-    //         'Paranet',
-    //         'requestParanetCuratedMinerAccess',
-    //         Object.values(requestData),
-    //         blockchain,
-    //     );
-    // }
+    async requestParanetPermissionedMinerAccess(requestData, blockchain) {
+        return this.executeContractFunction(
+            'Paranet',
+            'requestParanetPermissionedMinerAccess',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
 
-    // async approveCuratedMiner(requestData, blockchain) {
-    //     return this.executeContractFunction(
-    //         'Paranet',
-    //         'approveCuratedMiner',
-    //         Object.values(requestData),
-    //         blockchain,
-    //     );
-    // }
+    async approvePermissionedMiner(requestData, blockchain) {
+        return this.executeContractFunction(
+            'Paranet',
+            'approvePermissionedMiner',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
 
-    // async rejectCuratedMiner(requestData, blockchain) {
-    //     return this.executeContractFunction(
-    //         'Paranet',
-    //         'rejectCuratedMiner',
-    //         Object.values(requestData),
-    //         blockchain,
-    //     );
-    // }
+    async rejectPermissionedMiner(requestData, blockchain) {
+        return this.executeContractFunction(
+            'Paranet',
+            'rejectPermissionedMiner',
+            Object.values(requestData),
+            blockchain,
+        );
+    }
 
     async deployIncentivesPool(requestData, blockchain) {
         return this.executeContractFunction(
