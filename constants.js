@@ -74,7 +74,7 @@ export const BLOCKCHAINS = {
             rpc: 'https://sepolia.base.org',
         },
         'otp:20430': {
-            hubContract: '0xd7d073b560412c6A7F33dD670d323D01061E5DEb',
+            hubContract: '0xe233b5b78853a62b1e11ebe88bf083e25b0a57a6',
             rpc: 'https://lofar-testnet.origin-trail.network',
         },
         'gnosis:10200': {
