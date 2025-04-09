@@ -133,7 +133,7 @@ const BLOCKCHAINS = {
             rpc: 'https://sepolia.base.org',
         },
         'otp:20430': {
-            hubContract: '0xd7d073b560412c6A7F33dD670d323D01061E5DEb',
+            hubContract: '0xe233b5b78853a62b1e11ebe88bf083e25b0a57a6',
             rpc: 'https://lofar-testnet.origin-trail.network',
         },
         'gnosis:10200': {
@@ -218,10 +218,9 @@ const WEBSOCKET_PROVIDER_OPTIONS = {
 const OPERATIONS = {
     PUBLISH: 'publish',
     GET: 'get',
-    LOCAL_STORE: 'local-store',
-    QUERY: 'query'};
+    LOCAL_STORE: 'local-store'};
 
-const OPERATION_STATUSES = {
+const OPERATION_STATUSES$1 = {
     PENDING: 'PENDING',
     COMPLETED: 'COMPLETED',
     FAILED: 'FAILED',
@@ -322,13 +321,13 @@ const DEFAULT_GAS_PRICE_WEI = {
     GNOSIS: '6000000000',
 };
 
-const CHUNK_BYTE_SIZE = 32;
+const CHUNK_BYTE_SIZE$1 = 32;
 
 function nodeSupported() {
     return typeof window === 'undefined';
 }
 
-function deriveUAL(blockchain, contract, kcTokenId, kaTokenId) {
+function deriveUAL$1(blockchain, contract, kcTokenId, kaTokenId) {
     const ual = `did:dkg:${blockchain.toLowerCase()}/${contract.toLowerCase()}/${kcTokenId}`;
     return kaTokenId ? `${ual}/${kaTokenId}` : ual;
 }
@@ -365,7 +364,7 @@ async function sleepForMilliseconds(milliseconds) {
     await new Promise((r) => setTimeout(r, milliseconds));
 }
 
-function getOperationStatusObject(operationResult, operationId) {
+function getOperationStatusObject$1(operationResult, operationId) {
     const operationData = operationResult.data?.errorType
         ? { status: operationResult.status, ...operationResult.data }
         : { status: operationResult.status };
@@ -420,7 +419,7 @@ function getKnowledgeCollectionId(kcUAL) {
  */
 // TODO: Either to be deprecated or added to all operations
 
-var emptyHooks = {
+var emptyHooks$1 = {
     afterHook: () => {},
 };
 
@@ -620,7 +619,7 @@ class AssetOperationsManager {
      * @param {Object} [stepHooks=emptyHooks] - Hooks to execute during knowledge collection creation.
      * @returns {Object} Object containing UAL, publicAssertionId and operation status.
      */
-    async create(content, options = {}, stepHooks = emptyHooks) {
+    async create(content, options = {}, stepHooks = emptyHooks$1) {
         this.validationService.validateJsonldOrNquads(content);
         const {
             blockchain,
@@ -742,8 +741,8 @@ class AssetOperationsManager {
             dataset.public = publicTriplesGrouped.flat();
         }
 
-        const numberOfChunks = assertionTools.kcTools.calculateNumberOfChunks(dataset.public, CHUNK_BYTE_SIZE);
-        const datasetSize = numberOfChunks * CHUNK_BYTE_SIZE;
+        const numberOfChunks = assertionTools.kcTools.calculateNumberOfChunks(dataset.public, CHUNK_BYTE_SIZE$1);
+        const datasetSize = numberOfChunks * CHUNK_BYTE_SIZE$1;
 
         this.validationService.validateAssertionSizeInBytes(datasetSize);
         const datasetRoot = assertionTools.kcTools.calculateMerkleRoot(dataset.public);
@@ -774,13 +773,13 @@ class AssetOperationsManager {
         );
 
         if (
-            publishOperationResult.status !== OPERATION_STATUSES.COMPLETED &&
+            publishOperationResult.status !== OPERATION_STATUSES$1.COMPLETED &&
             !publishOperationResult.data.minAcksReached
         ) {
             return {
                 datasetRoot,
                 operation: {
-                    publish: getOperationStatusObject(publishOperationResult, publishOperationId),
+                    publish: getOperationStatusObject$1(publishOperationResult, publishOperationId),
                 },
             };
         }
@@ -865,7 +864,7 @@ class AssetOperationsManager {
                 stepHooks,
             ));
 
-        const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, knowledgeCollectionId);
+        const UAL = deriveUAL$1(blockchain.name, contentAssetStorageAddress, knowledgeCollectionId);
 
         let finalityStatusResult = 0;
         if (minimumNumberOfFinalizationConfirmations > 0) {
@@ -886,7 +885,7 @@ class AssetOperationsManager {
             signatures: publishOperationResult.data.signatures,
             operation: {
                 mintKnowledgeCollection: mintKnowledgeCollectionReceipt,
-                publish: getOperationStatusObject(publishOperationResult, publishOperationId),
+                publish: getOperationStatusObject$1(publishOperationResult, publishOperationId),
                 finality: {
                     status:
                         finalityStatusResult >= minimumNumberOfFinalizationConfirmations
@@ -1175,7 +1174,7 @@ class AssetOperationsManager {
             if (getOperationResult.data?.length) {
                 return {
                     operation: {
-                        get: getOperationStatusObject(getOperationResult, getOperationId),
+                        get: getOperationStatusObject$1(getOperationResult, getOperationId),
                     },
                     subjectUALPairs: getOperationResult.data,
                 };
@@ -1190,7 +1189,7 @@ class AssetOperationsManager {
 
             return {
                 operation: {
-                    get: getOperationStatusObject(getOperationResult, getOperationId),
+                    get: getOperationStatusObject$1(getOperationResult, getOperationId),
                 },
             };
         }
@@ -1208,7 +1207,7 @@ class AssetOperationsManager {
 
             return {
                 operation: {
-                    get: getOperationStatusObject(getOperationResult, getOperationId),
+                    get: getOperationStatusObject$1(getOperationResult, getOperationId),
                 },
             };
         }
@@ -1235,7 +1234,7 @@ class AssetOperationsManager {
             assertion: formattedAssertion,
             ...(includeMetadata && metadata && { metadata: formattedMetadata }),
             operation: {
-                get: getOperationStatusObject(getOperationResult, getOperationId),
+                get: getOperationStatusObject$1(getOperationResult, getOperationId),
             },
         };
     }
@@ -1368,7 +1367,7 @@ class GraphOperationsManager {
             repository,
         );
 
-        const operationId = await this.nodeApiService.query(
+        return this.nodeApiService.query(
             endpoint,
             port,
             authToken,
@@ -1376,16 +1375,6 @@ class GraphOperationsManager {
             queryType,
             paranetUAL,
             repository,
-        );
-
-        return this.nodeApiService.getOperationResult(
-            endpoint,
-            port,
-            authToken,
-            OPERATIONS.QUERY,
-            maxNumberOfRetries,
-            frequency,
-            operationId,
         );
     }
 
@@ -1446,15 +1435,15 @@ class GraphOperationsManager {
                 .map((line) => line.trimStart().trimEnd())
                 .filter((line) => line.trim() !== '');
         } else {
-            dataset = await assertionTools.kcTools.formatDataset(content);
+            dataset = await kcTools.formatDataset(content);
         }
 
-        const numberOfChunks = assertionTools.kcTools.calculateNumberOfChunks(dataset, CHUNK_BYTE_SIZE);
+        const numberOfChunks = kcTools.calculateNumberOfChunks(dataset, CHUNK_BYTE_SIZE);
 
         const datasetSize = numberOfChunks * CHUNK_BYTE_SIZE;
 
         this.validationService.validateAssertionSizeInBytes(datasetSize);
-        const datasetRoot = assertionTools.kcTools.calculateMerkleRoot(dataset);
+        const datasetRoot = kcTools.calculateMerkleRoot(dataset);
 
         const contentAssetStorageAddress = await this.blockchainService.getContractAddress(
             'ContentAssetStorage',
@@ -3150,11 +3139,11 @@ class HttpService {
         try {
             const response = await axios({
                 method: 'post',
-                url: `${this.getBaseUrl(endpoint, port)}/query`,
+                url: `${this.getBaseUrl(endpoint, port)}/direct-query`,
                 data: { query, type, repository, paranetUAL },
                 headers: this.prepareRequestConfig(authToken),
             });
-            return response.data.operationId;
+            return response.data;
         } catch (error) {
             throw Error(`Unable to query: ${error.message}`);
         }
@@ -3238,7 +3227,7 @@ class HttpService {
         operationId,
     ) {
         let response = {
-            status: OPERATION_STATUSES.PENDING,
+            status: OPERATION_STATUSES$1.PENDING,
         };
         let retries = 0;
 
@@ -3268,8 +3257,8 @@ class HttpService {
                 response = { data: { status: 'NETWORK ERROR' } };
             }
         } while (
-            response.data.status !== OPERATION_STATUSES.COMPLETED &&
-            response.data.status !== OPERATION_STATUSES.FAILED &&
+            response.data.status !== OPERATION_STATUSES$1.COMPLETED &&
+            response.data.status !== OPERATION_STATUSES$1.FAILED &&
             !response.data.data?.minAcksReached
         );
         return response.data;
@@ -3319,6 +3308,7 @@ const KnowledgeCollectionAbi = require$1('dkg-evm-module/abi/KnowledgeCollection
 const KnowledgeCollectionStorageAbi = require$1('dkg-evm-module/abi/KnowledgeCollectionStorage.json');
 const AskStorageAbi = require$1('dkg-evm-module/abi/AskStorage.json');
 const ChronosAbi = require$1('dkg-evm-module/abi/Chronos.json');
+const IERC20ExtendedAbi = require$1('dkg-evm-module/abi/IERC20Extended.json');
 
 class BlockchainServiceBase {
     constructor(config = {}) {
@@ -3339,6 +3329,7 @@ class BlockchainServiceBase {
         this.abis.AskStorage = AskStorageAbi;
         this.abis.Chronos = ChronosAbi;
         this.abis.ParanetStagingRegistry = ParanetStagingRegistryAbi;
+        this.abis.IERC20Extended = IERC20ExtendedAbi;
         this.abis.KnowledgeCollectionStorage.filter((obj) => obj.type === 'event').forEach(
             (event) => {
                 const concatInputs = event.inputs.map((input) => input.internalType);
@@ -3714,7 +3705,7 @@ class BlockchainServiceBase {
         paranetKaContract,
         paranetTokenId,
         blockchain,
-        stepHooks = emptyHooks,
+        stepHooks = emptyHooks$1,
     ) {
         const sender = await this.getPublicKey(blockchain);
         let allowanceIncreased = false;
@@ -4362,7 +4353,7 @@ class BlockchainServiceBase {
 
         await this.setIncentivesPool(incentivesPoolAddress, blockchain);
 
-        return this.executeContractFunction(
+        return this.callContractFunction(
             'ParanetIncentivesPool',
             'paranetIncentivesPoolStorage',
             [],
@@ -4504,17 +4495,7 @@ class BlockchainServiceBase {
             incentivesPoolStorageAddress: options.incentivesPoolStorageAddress,
         });
 
-        console.log('Incentives Pool Address:', incentivesPoolAddress);
-
         await this.setIncentivesPool(incentivesPoolAddress, blockchain);
-
-        // Add debug logs for contract instance
-        const contractInstance = await this.getContractInstance(
-            'ParanetIncentivesPool',
-            blockchain,
-        );
-        console.log('Contract Instance Address:', contractInstance.options.address);
-        console.log('Available Methods:', Object.keys(contractInstance.methods));
 
         return this.callContractFunction(
             'ParanetIncentivesPool',
@@ -4690,16 +4671,21 @@ class BlockchainServiceBase {
     async adjustEmissionMultiplier(rewardTokenAddress, tracToTokenEmissionMultiplier, blockchain) {
         if (rewardTokenAddress !== ZERO_ADDRESS) {
             // Create contract instance for ERC20 token
-            const tokenContract = new blockchain.web3.eth.Contract(
+            await this.ensureBlockchainInfo(blockchain);
+            const web3Instance = await this.getWeb3Instance(blockchain);
+            const tokenContract = new web3Instance.eth.Contract(
                 this.abis.IERC20Extended,
                 rewardTokenAddress,
             );
 
             try {
                 const decimals = await tokenContract.methods.decimals().call();
-                return (BigInt(tracToTokenEmissionMultiplier) * BigInt(10)) ** BigInt(decimals);
+                return BigInt(tracToTokenEmissionMultiplier) * BigInt(10) ** BigInt(decimals);
             } catch (error) {
-                throw new Error('ERC20 token is missing decimals function');
+                console.log(
+                    'ERC20 token is missing decimals function, adding 18 decimals as default',
+                );
+                return BigInt(tracToTokenEmissionMultiplier) * BigInt(10) ** BigInt(18);
             }
         } else {
             // Neuroweb chains use 12 decimals
