@@ -47,10 +47,10 @@ const NODE4_KEYS = {
     privateKey: '0x9904da7fe786e5d1f8629b565b688425d78053d4325e746c5ad8ac4328248037',
 };
 
-// const NODE5_KEYS = {
-//     publicKey: '0x8A4673B00B04b59CaC44926ABeDa85ed181fA436',
-//     privateKey: '0xfb07091daf99c1d493820ae8dcbc439b48b13ca844684bb1dcae27c9e680e62b',
-// };
+const NODE5_KEYS = {
+    publicKey: '0x8A4673B00B04b59CaC44926ABeDa85ed181fA436',
+    privateKey: '0xfb07091daf99c1d493820ae8dcbc439b48b13ca844684bb1dcae27c9e680e62b',
+};
 
 function divider() {
     console.log('==================================================');
