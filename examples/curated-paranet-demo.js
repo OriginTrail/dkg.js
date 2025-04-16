@@ -93,7 +93,7 @@ function divider() {
         paranetName: 'FirstParanet',
         paranetDescription: 'First ever paranet on DKG!',
         paranetNodesAccessPolicy: PARANET_NODES_ACCESS_POLICY.PERMISSIONED,
-        paranetMinersAccessPolicy: PARANET_MINERS_ACCESS_POLICY.OPEN,
+        paranetMinersAccessPolicy: PARANET_MINERS_ACCESS_POLICY.PERMISSIONED,
         knowledgeCollectionsSubmissionPolicy: PARANET_KC_SUBMISSION_POLICY.OPEN,
     };
 
