@@ -14,7 +14,8 @@
         "watch": "npm run cjs-compat && npx webpack --config webpack.config.cjs --watch --progress",
         "lint": "eslint .",
         "cjs-compat": "npx rollup index.js --file index.cjs --format cjs",
-        "postinstall": "npm run cjs-compat"
+        "postinstall": "npm run cjs-compat",
+        "test:publish:query:ka": "node publish-ka-node02.js && node publish-ka-node03.js"
     },
     "repository": {
         "type": "git",
