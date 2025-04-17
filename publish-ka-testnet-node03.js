@@ -6,6 +6,7 @@ const ENVIRONMENT = ENVIRONMENTS.TESTNET;
 const OT_NODE_HOSTNAME = 'https://v6-pegasus-node-03.origin-trail.network';
 const OT_NODE_PORT = '8900';
 const PUBLIC_KEY = '0x0111ff148a06Eb44Ee0FA65e6c3627433B8dE4Df';
+const PRIVATE_KEY = process.env.PRIVATE_KEY;
 
 const DkgClient = new DKG({
     environment: ENVIRONMENT,
@@ -14,7 +15,7 @@ const DkgClient = new DKG({
     blockchain: {
         name: BLOCKCHAIN_IDS.NEUROWEB_TESTNET,
         publicKey: PUBLIC_KEY,
-        privateKey: process.env.PRIVATE_KEY,
+        privateKey: PRIVATE_KEY,
     },
     maxNumberOfRetries: 300,
     frequency: 2,
