@@ -15,7 +15,8 @@
         "lint": "eslint .",
         "cjs-compat": "npx rollup index.js --file index.cjs --format cjs",
         "postinstall": "npm run cjs-compat",
-        "test:publish:query:ka": "node publish-ka-node02.js && node publish-ka-node03.js"
+        "test:publish:query:ka:testnet": "node publish-ka-testnet-node02.js && node publish-ka-testnet-node03.js",
+        "test:publish:query:ka:mainnet": "node publish-ka-mainnet.js"
     },
     "repository": {
         "type": "git",
