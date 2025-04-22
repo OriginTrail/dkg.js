@@ -1,0 +1,102 @@
+{
+  "stats": {
+    "suites": 1,
+    "tests": 1,
+    "passes": 1,
+    "pending": 0,
+    "failures": 0,
+    "start": "2025-04-22T14:19:13.849Z",
+    "end": "2025-04-22T14:19:45.595Z",
+    "duration": 31746,
+    "testsRegistered": 1,
+    "passPercent": 100,
+    "pendingPercent": 0,
+    "other": 0,
+    "hasOther": false,
+    "skipped": 0,
+    "hasSkipped": false
+  },
+  "results": [
+    {
+      "uuid": "c9c4a645-ddd8-4400-8f27-c79a90b82843",
+      "title": "",
+      "fullFile": "/Users/bojancolic/dkg.js/tests/publish-ka-testnet-node03.spec.js",
+      "file": "/tests/publish-ka-testnet-node03.spec.js",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "138fb556-bae8-4817-945c-a6d6e5f50836",
+          "title": "DKG Asset Lifecycle on Testnet (Node 03)",
+          "fullFile": "/Users/bojancolic/dkg.js/tests/publish-ka-testnet-node03.spec.js",
+          "file": "/tests/publish-ka-testnet-node03.spec.js",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "should publish and query a Knowledge Asset",
+              "fullTitle": "DKG Asset Lifecycle on Testnet (Node 03) should publish and query a Knowledge Asset",
+              "timedOut": false,
+              "duration": 31743,
+              "state": "passed",
+              "speed": "slow",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "const content = {\n  public: {\n    '@context': 'https://www.schema.org',\n    '@id': 'urn:first-ka:info:hello-dkg',\n    '@type': 'CreativeWork',\n    name: 'Hello DKG',\n    description: 'My first Knowledge Asset on the Decentralized Knowledge Graph!',\n  },\n};\nconst create_result = await DkgClient.asset.create(content, {\n  epochsNum: 2,\n  minimumNumberOfFinalizationConfirmations: 3,\n  minimumNumberOfNodeReplications: 1,\n});\nif (!create_result) {\n  throw new Error('Knowledge Asset was not published successfully');\n}\n\n  console.log(JSON.stringify(create_result));\nconst queryOperationResult = await DkgClient.graph.query(\n  `\n  PREFIX schema: <http://schema.org/>\n  SELECT ?s ?name ?description\n  WHERE {\n    ?s schema:name ?name ;\n       schema:description ?description .\n  }\n  `,\n  'SELECT'\n);\nassert.ok(queryOperationResult?.data?.length > 0, 'Query returned no results');\nconsole.log('Query results:', queryOperationResult);",
+              "err": {},
+              "uuid": "de96cd5d-8090-41b6-ae9d-3337297ec748",
+              "parentUUID": "138fb556-bae8-4817-945c-a6d6e5f50836",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "de96cd5d-8090-41b6-ae9d-3337297ec748"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 31743,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 360000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    }
+  ],
+  "meta": {
+    "mocha": {
+      "version": "11.1.0"
+    },
+    "mochawesome": {
+      "options": {
+        "quiet": false,
+        "reportFilename": "node03_dkg",
+        "saveHtml": true,
+        "saveJson": true,
+        "consoleReporter": "spec",
+        "useInlineDiffs": false,
+        "code": true
+      },
+      "version": "7.1.3"
+    },
+    "marge": {
+      "options": {
+        "reportFilename": "node03_dkg"
+      },
+      "version": "6.2.0"
+    }
+  }
+}
