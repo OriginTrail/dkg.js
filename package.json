@@ -15,8 +15,8 @@
         "lint": "eslint .",
         "cjs-compat": "npx rollup index.js --file index.cjs --format cjs",
         "postinstall": "npm run cjs-compat",
-        "test:dkg:node02": "mocha tests/publish-ka-testnet-node02.spec.js --reporter mochawesome --reporter-options reportFilename=node02_dkg",
-        "test:dkg:node03": "mocha tests/publish-ka-testnet-node03.spec.js --reporter mochawesome --reporter-options reportFilename=node03_dkg",
+        "test:dkg:node02": "mocha tests/publish-ka-testnet-node02.spec.js --retries 2 --reporter mochawesome --reporter-options reportFilename=node02_dkg",
+        "test:dkg:node03": "mocha tests/publish-ka-testnet-node03.spec.js --retries 2 --reporter mochawesome --reporter-options reportFilename=node03_dkg",
         "generate:testnet:node02:report": "node report-testnet-node02-config.js",
         "generate:testnet:node03:report": "node report-testnet-node03-config.js",
         "test:publish:query:ka:mainnet": "node publish-ka-mainnet.js"
