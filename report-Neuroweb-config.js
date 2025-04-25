@@ -11,7 +11,7 @@ const config = defineConfig({
       targets: [
         {
           name: 'teams',
-          //condition: 'fail',
+          condition: 'fail',
           inputs: {
             url: teamsHookBaseURL,
             only_failures: true,
