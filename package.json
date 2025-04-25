@@ -15,10 +15,12 @@
         "lint": "eslint .",
         "cjs-compat": "npx rollup index.js --file index.cjs --format cjs",
         "postinstall": "npm run cjs-compat",
-        "test:dkg:node02": "mocha tests/publish-ka-testnet-node02.spec.js --retries 2 --reporter mochawesome --reporter-options reportFilename=node02_dkg",
-        "test:dkg:node03": "mocha tests/publish-ka-testnet-node03.spec.js --retries 2 --reporter mochawesome --reporter-options reportFilename=node03_dkg",
-        "generate:testnet:node02:report": "node report-testnet-node02-config.js",
-        "generate:testnet:node03:report": "node report-testnet-node03-config.js",
+        "test:base:testnet": "mocha tests/Base_Testnet.spec.js --retries 0 --reporter mochawesome --reporter-options reportFilename=testnet_base",
+        "test:gnosis:testnet": "mocha tests/Gnosis_Testnet.spec.js --retries 0 --reporter mochawesome --reporter-options reportFilename=testnet_gnosis",
+        "test:neuroweb:testnet": "mocha tests/Neuroweb_Testnet.spec.js --retries 0 --reporter mochawesome --reporter-options reportFilename=testnet_neuroweb",
+        "generate:base:report": "node report-Base-config.js",
+        "generate:gnosis:report": "node report-Gnosis-config.js",
+        "generate:neuroweb:report": "node report-Neuroweb-config.js",
         "test:publish:query:ka:mainnet": "node publish-ka-mainnet.js"
     },
     "repository": {
