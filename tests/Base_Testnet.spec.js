@@ -34,7 +34,7 @@ function getRandomDescription() {
   { name: 'Node 03', hostname: 'https://v6-pegasus-node-03.origin-trail.network' },
 ].forEach(({ name, hostname }) => {
   describe(`DKG Asset Lifecycle on Testnet (${name})`, function () {
-    this.timeout(360000);
+    this.timeout(180000);
 
     const DkgClient = new DKG({
       environment: ENVIRONMENT,
