@@ -51,7 +51,7 @@ function getRandomDescription() {
       nodeApiVersion: '/v1',
     });
 
-    it('should publish and query a Knowledge Asset', async () => {
+    it('should publish, query, and get a Knowledge Asset', async () => {
       const uniqueWord = getRandomWord();
       const content = {
         public: {
@@ -63,18 +63,29 @@ function getRandomDescription() {
         },
       };
 
+      // 1. Publish
       const create_result = await DkgClient.asset.create(content, {
         epochsNum: 2,
         minimumNumberOfFinalizationConfirmations: 3,
         minimumNumberOfNodeReplications: 1,
       });
 
-      if (!create_result) {
-        throw new Error(`Knowledge Asset not published successfully on ${name}`);
+      if (
+        !create_result ||
+        !create_result.operation ||
+        create_result.operation.publish.status !== 'COMPLETED' ||
+        create_result.operation.finality?.status !== 'FINALIZED'
+      ) {
+        throw new Error(`Knowledge Asset not published or finalized successfully on ${name}`);
       }
 
       console.log(`Knowledge Asset Published successfully on ${name}:`, JSON.stringify(create_result, null, 2));
 
+      // Save UAL from publish result
+      const ual = create_result?.UAL;
+      assert.ok(ual, `UAL not found after publish on ${name}`);
+
+      // 2. Query
       const queryOperationResult = await DkgClient.graph.query(
         `
         PREFIX schema: <http://schema.org/>
@@ -89,6 +100,11 @@ function getRandomDescription() {
 
       assert.ok(queryOperationResult?.data?.length > 0, `Query returned no results for ${name}`);
       console.log(`Query results from ${name}:`, queryOperationResult);
+
+      // 3. Get
+      const getResult = await DkgClient.asset.get(ual);
+      assert.ok(getResult?.assertion, `Get operation failed or no assertion found for ${name}`);
+      console.log(`Get results from ${name}:`, getResult);
     });
   });
 });
