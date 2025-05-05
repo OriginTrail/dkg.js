@@ -9,30 +9,37 @@ const OT_NODE_PORT = '8900';
 const PUBLIC_KEY = '0x0111ff148a06Eb44Ee0FA65e6c3627433B8dE4Df';
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
 
-// Random word helper
+// Total number of nodes to test
+const TOTAL_NODES = 3;
+
+// Generate node info dynamically
+const nodes = Array.from({ length: TOTAL_NODES }, (_, i) => {
+  const nodeNumber = (i + 1).toString().padStart(2, '0'); // "01", "02", ...
+  return {
+    name: `Node ${nodeNumber}`,
+    hostname: `https://v6-pegasus-node-${nodeNumber}.origin-trail.network`,
+  };
+});
+
 function getRandomWord() {
   const words = ['Galaxy', 'Nebula', 'Orbit', 'Quantum', 'Pixel', 'Velocity', 'Echo', 'Nova'];
   return words[Math.floor(Math.random() * words.length)];
 }
 
-// Random sentence helper
 function getRandomDescription() {
   const templates = [
     'This asset explores the mysteries of {}.',
     'An in-depth look into {} technologies.',
     'Unlocking the power of {} in modern systems.',
     'How {} shapes our digital future.',
-    'A fresh perspective on {} innovation.'
+    'A fresh perspective on {} innovation.',
   ];
   const word = getRandomWord();
   const template = templates[Math.floor(Math.random() * templates.length)];
   return template.replace('{}', word);
 }
 
-[
-  { name: 'Node 02', hostname: 'https://v6-pegasus-node-02.origin-trail.network' },
-  { name: 'Node 03', hostname: 'https://v6-pegasus-node-03.origin-trail.network' },
-].forEach(({ name, hostname }) => {
+nodes.forEach(({ name, hostname }) => {
   describe(`DKG Asset Lifecycle on Testnet (${name})`, function () {
     this.timeout(180000);
 
@@ -62,7 +69,7 @@ function getRandomDescription() {
           description: getRandomDescription(),
         },
       };
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      await new Promise(resolve => setTimeout(resolve, 15000));
 
       // 1. Publish
       const create_result = await DkgClient.asset.create(content, {
@@ -81,9 +88,6 @@ function getRandomDescription() {
       }
 
       console.log(`Knowledge Asset Published successfully on ${name}:`);
-      //console.log(JSON.stringify(create_result, null, 2));
-
-      // Save UAL from publish result
       const ual = create_result?.UAL;
       assert.ok(ual, `UAL not found after publish on ${name}`);
 
@@ -102,13 +106,11 @@ function getRandomDescription() {
 
       assert.ok(queryOperationResult?.data?.length > 0, `Query returned no results for ${name}`);
       console.log(`Successfully queried Knowledge Asset on ${name}`);
-      //console.log(`Query results from ${name}:`, queryOperationResult);
 
       // 3. Get
       const getResult = await DkgClient.asset.get(ual);
       assert.ok(getResult?.assertion, `Get operation failed or no assertion found for ${name}`);
       console.log(`Successfully got Knowledge Asset on ${name}`);
-      //console.log(`Get results from ${name}:`, getResult);
     });
   });
 });
