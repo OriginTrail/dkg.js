@@ -84,7 +84,7 @@ nodes.forEach(({ name, hostname }) => {
         create_result.operation.publish.status !== 'COMPLETED' ||
         create_result.operation.finality?.status !== 'FINALIZED'
       ) {
-        throw new Error(`Knowledge Asset not published or finalized successfully on ${name}`);
+        throw new Error(`Knowledge Asset not published or finalized successfully on ${name}. Error: ${JSON.stringify(create_result, null, 2)}`);
       }
 
       console.log(`Knowledge Asset Published successfully on ${name}:`);
