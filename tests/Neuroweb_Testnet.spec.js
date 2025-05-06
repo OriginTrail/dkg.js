@@ -76,9 +76,6 @@ nodes.forEach(({ name, hostname }) => {
         epochsNum: 2,
         minimumNumberOfFinalizationConfirmations: 3,
         minimumNumberOfNodeReplications: 1,
-        transactionOptions: {
-          gasPrice: '60000000000'
-        }
       });
 
       if (
