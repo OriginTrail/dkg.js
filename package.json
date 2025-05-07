@@ -21,7 +21,7 @@
         "generate:testnet:base:report": "node report-Testnet-Base-config.js",
         "generate:testnet:gnosis:report": "node report-Testnet-Gnosis-config.js",
         "generate:testnet:neuroweb:report": "node report-Testnet-Neuroweb-config.js",
-        "generate:mainnet:report": "node report-Mainnet-Neuroweb-config.js",
+        "generate:mainnet:neuroweb:report": "node report-Mainnet-Neuroweb-config.js",
         "test:neuroweb:mainnet": "mocha tests/mainnet/Neuroweb_Mainnet.spec.js --reporter mochawesome --reporter-options reportFilename=mainnet_neuroweb"
     },
     "repository": {
