@@ -18,9 +18,9 @@
         "test:base:testnet": "mocha tests/testnet/Base_Testnet.spec.js --reporter mochawesome --reporter-options reportFilename=testnet_base",
         "test:gnosis:testnet": "mocha tests/testnet/Gnosis_Testnet.spec.js --reporter mochawesome --reporter-options reportFilename=testnet_gnosis",
         "test:neuroweb:testnet": "mocha tests/testnet/Neuroweb_Testnet.spec.js --reporter mochawesome --reporter-options reportFilename=testnet_neuroweb",
-        "generate:base:report": "node report-Testnet-Base-config.js",
-        "generate:gnosis:report": "node report-Testnet-Gnosis-config.js",
-        "generate:neuroweb:report": "node report-Testnet-Neuroweb-config.js",
+        "generate:testnet:base:report": "node report-Testnet-Base-config.js",
+        "generate:testnet:gnosis:report": "node report-Testnet-Gnosis-config.js",
+        "generate:testnet:neuroweb:report": "node report-Testnet-Neuroweb-config.js",
         "generate:mainnet:report": "node report-Mainnet-Neuroweb-config.js",
         "test:neuroweb:mainnet": "mocha tests/mainnet/Neuroweb_Mainnet.spec.js --reporter mochawesome --reporter-options reportFilename=mainnet_neuroweb"
     },
