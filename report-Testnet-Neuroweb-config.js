@@ -16,7 +16,7 @@ const config = defineConfig({
             url: teamsHookBaseURL,
             only_failures: true,
             publish: 'test-summary-slim',
-            title: 'Gnosis Knowledge Asset Publish/Query Test Report',
+            title: 'Testnet Neuroweb Knowledge Asset Publish/Query Test Report',
             width: 'Full',
           },
           extensions: [
@@ -28,8 +28,8 @@ const config = defineConfig({
               inputs: {
                 links: [
                   {
-                    text: 'Testnet Gnosis HTML Report',
-                    url: 'https://titan.dplcenter.xyz/view/Tests/job/Publish-Query-Get-Knowledge-Asset/Gnosis_20Testnet_20Report/*zip*/Gnosis_20Testnet_20Report.zip',
+                    text: 'Testnet Neuroweb HTML Report',
+                    url: 'https://titan.dplcenter.xyz/view/Tests/job/Testnet-Publish-Query-Get-Knowledge-Asset/Neuroweb_20Testnet_20Report/*zip*/Neuroweb_20Testnet_20Report.zip',
                   },
                 ],
               },
@@ -40,7 +40,7 @@ const config = defineConfig({
       results: [
         {
           type: 'mocha',
-          files: ['./mochawesome-report/testnet_gnosis.json'],
+          files: ['./mochawesome-report/testnet_neuroweb.json'],
         },
       ],
     },

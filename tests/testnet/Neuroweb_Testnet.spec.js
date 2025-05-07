@@ -1,6 +1,6 @@
 import { strict as assert } from 'assert';
-import DKG from '../index.js';
-import { BLOCKCHAIN_IDS, ENVIRONMENTS } from '../constants.js';
+import DKG from '../../index.js';
+import { BLOCKCHAIN_IDS, ENVIRONMENTS } from '../../constants.js';
 import 'dotenv/config';
 import { randomUUID } from 'crypto';
 
@@ -48,7 +48,7 @@ nodes.forEach(({ name, hostname }) => {
       endpoint: hostname,
       port: OT_NODE_PORT,
       blockchain: {
-        name: BLOCKCHAIN_IDS.GNOSIS_TESTNET,
+        name: BLOCKCHAIN_IDS.NEUROWEB_TESTNET,
         publicKey: PUBLIC_KEY,
         privateKey: PRIVATE_KEY,
       },

@@ -16,7 +16,7 @@ const config = defineConfig({
             url: teamsHookBaseURL,
             only_failures: true,
             publish: 'test-summary-slim',
-            title: 'Base Knowledge Asset Publish/Query Test Report',
+            title: 'Mainnet Neuroweb Knowledge Asset Publish/Query Test Report',
             width: 'Full',
           },
           extensions: [
@@ -28,8 +28,8 @@ const config = defineConfig({
               inputs: {
                 links: [
                   {
-                    text: 'Testnet Base HTML Report',
-                    url: 'https://titan.dplcenter.xyz/view/Tests/job/Publish-Query-Get-Knowledge-Asset/Base_20Testnet_20Report/*zip*/Base_20Testnet_20Report.zip',
+                    text: 'Mainnet Neuroweb HTML Report',
+                    url: 'https://titan.dplcenter.xyz/view/Tests/job/Mainnet-Publish-Query-Get-Knowledge-Asset/Neuroweb_20Mainnet_20Report/*zip*/Neuroweb_20Mainnet_20Report.zip',
                   },
                 ],
               },
@@ -40,7 +40,7 @@ const config = defineConfig({
       results: [
         {
           type: 'mocha',
-          files: ['./mochawesome-report/testnet_base.json'],
+          files: ['./mochawesome-report/mainnet_neuroweb.json'],
         },
       ],
     },

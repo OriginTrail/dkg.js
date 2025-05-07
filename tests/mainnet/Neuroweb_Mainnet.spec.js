@@ -1,25 +1,14 @@
 import { strict as assert } from 'assert';
-import DKG from '../index.js';
-import { BLOCKCHAIN_IDS, ENVIRONMENTS } from '../constants.js';
+import DKG from '../../index.js';
+import { BLOCKCHAIN_IDS, ENVIRONMENTS } from '../../constants.js';
 import 'dotenv/config';
 import { randomUUID } from 'crypto';
 
-const ENVIRONMENT = ENVIRONMENTS.TESTNET;
+const ENVIRONMENT = ENVIRONMENTS.MAINNET;
+const OT_NODE_HOSTNAME = 'https://positron.origin-trail.network';
 const OT_NODE_PORT = '8900';
 const PUBLIC_KEY = '0x0111ff148a06Eb44Ee0FA65e6c3627433B8dE4Df';
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
-
-// Total number of nodes to test
-const TOTAL_NODES = 3;
-
-// Generate node info dynamically
-const nodes = Array.from({ length: TOTAL_NODES }, (_, i) => {
-  const nodeNumber = (i + 1).toString().padStart(2, '0'); // "01", "02", ...
-  return {
-    name: `Node ${nodeNumber}`,
-    hostname: `https://v6-pegasus-node-${nodeNumber}.origin-trail.network`,
-  };
-});
 
 function getRandomWord() {
   const words = ['Galaxy', 'Nebula', 'Orbit', 'Quantum', 'Pixel', 'Velocity', 'Echo', 'Nova'];
@@ -38,17 +27,15 @@ function getRandomDescription() {
   const template = templates[Math.floor(Math.random() * templates.length)];
   return template.replace('{}', word);
 }
-
-nodes.forEach(({ name, hostname }) => {
-  describe(`DKG Asset Lifecycle on Testnet (${name})`, function () {
+  describe(`DKG Asset Lifecycle on Mainnet`, function () {
     this.timeout(180000);
 
     const DkgClient = new DKG({
       environment: ENVIRONMENT,
-      endpoint: hostname,
+      endpoint: OT_NODE_HOSTNAME,
       port: OT_NODE_PORT,
       blockchain: {
-        name: BLOCKCHAIN_IDS.BASE_TESTNET,
+        name: BLOCKCHAIN_IDS.NEUROWEB_MAINNET,
         publicKey: PUBLIC_KEY,
         privateKey: PRIVATE_KEY,
       },
@@ -64,6 +51,7 @@ nodes.forEach(({ name, hostname }) => {
     it('should publish, query, and get a Knowledge Asset', async () => {
       console.log('Attempt:', attempt);
       attempt++;
+      const name = "Mainnet";
       const uniqueWord = getRandomWord();
       const content = {
         public: {
@@ -118,5 +106,4 @@ nodes.forEach(({ name, hostname }) => {
       console.log(`Successfully got Knowledge Asset on ${name}`);
     });
   });
-});
 });
