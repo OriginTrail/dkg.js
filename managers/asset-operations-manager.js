@@ -85,13 +85,13 @@ export default class AssetOperationsManager {
     /**
      * Increases allowance for a set quantity of tokens.
      * @async
-     * @param {BigInt} spenderAddress
      * @param {BigInt} tokenAmount - The amount of tokens (Wei) to increase the allowance for.
      * @param {Object} [options={}] - Additional options for increasing allowance - currently only blockchain option expected.
      * @returns {Object} Object containing hash of blockchain transaction and status.
      */
-    async increaseAllowance(spenderAddress, tokenAmount, options = {}) {
+    async increaseAllowance(tokenAmount, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
+        const spenderAddress = this.inputService.getSpenderAddress(options);
 
         this.validationService.validateIncreaseAllowance(blockchain);
 

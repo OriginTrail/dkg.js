@@ -233,6 +233,10 @@ export default class InputService {
         return blockchainConfig;
     }
 
+    getSpenderAddress(options) {
+        return options.spenderAddress ?? null;
+    }
+
     getGraphLocation(options) {
         return (
             options.graphLocation ??

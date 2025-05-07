@@ -70,7 +70,7 @@ function divider() {
     const isAllowed = await DkgClient.blockchain.isAddressAllowedPaymaster(PUBLIC_KEY, paymasterAddress);
     console.log(isAllowed);
 
-    await DkgClient.asset.increaseAllowance(paymasterAddress, ethers.parseEther('100'));
+    await DkgClient.asset.increaseAllowance(ethers.parseEther('100'), {spenderAddress: paymasterAddress});
 
     await DkgClient.blockchain.fundPaymaster(paymasterAddress, ethers.parseEther('10'));
     console.log('======================== FUND PAYMASTER');
