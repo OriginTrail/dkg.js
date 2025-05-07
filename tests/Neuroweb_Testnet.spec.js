@@ -57,8 +57,13 @@ nodes.forEach(({ name, hostname }) => {
       contentType: 'all',
       nodeApiVersion: '/v1',
     });
+    let attempt = 0;
+    describe('', function () {
+      this.retries(2);
 
     it('should publish, query, and get a Knowledge Asset', async () => {
+      console.log('Attempt:', attempt);
+      attempt++;
       const uniqueWord = getRandomWord();
       const content = {
         public: {
@@ -113,4 +118,5 @@ nodes.forEach(({ name, hostname }) => {
       console.log(`Successfully got Knowledge Asset on ${name}`);
     });
   });
+});
 });

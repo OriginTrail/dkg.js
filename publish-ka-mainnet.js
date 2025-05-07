@@ -8,7 +8,6 @@ const OT_NODE_PORT = '8900';
 const PUBLIC_KEY = '0x0111ff148a06Eb44Ee0FA65e6c3627433B8dE4Df';
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
 
-// IMPORTANT: Don't forget to add your PRIVATE_KEY to the .env file.
 const DkgClient = new DKG({
     environment: ENVIRONMENT,
     endpoint: OT_NODE_HOSTNAME,
