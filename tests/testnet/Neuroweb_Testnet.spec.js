@@ -41,7 +41,7 @@ function getRandomDescription() {
 
 nodes.forEach(({ name, hostname }) => {
   describe(`DKG Asset Lifecycle on Testnet (${name})`, function () {
-    this.timeout(180000);
+    this.timeout(300000);
 
     const DkgClient = new DKG({
       environment: ENVIRONMENT,
@@ -74,7 +74,7 @@ nodes.forEach(({ name, hostname }) => {
           description: getRandomDescription(),
         },
       };
-      await new Promise(resolve => setTimeout(resolve, 30000));
+      await new Promise(resolve => setTimeout(resolve, 60000));
 
       // 1. Publish
       const create_result = await DkgClient.asset.create(content, {
