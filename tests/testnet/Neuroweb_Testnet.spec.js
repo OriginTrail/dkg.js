@@ -74,7 +74,7 @@ nodes.forEach(({ name, hostname }) => {
           description: getRandomDescription(),
         },
       };
-      await new Promise(resolve => setTimeout(resolve, 15000));
+      await new Promise(resolve => setTimeout(resolve, 30000));
 
       // 1. Publish
       const create_result = await DkgClient.asset.create(content, {
