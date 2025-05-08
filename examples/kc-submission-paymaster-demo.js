@@ -108,15 +108,14 @@ function divider() {
     console.log(publishFinalityResult);
 
     divider();
-
     const queryOperationResult = await DkgClient.graph.query(
         `
-        PREFIX SCHEMA: <http://schema.org/>
+        PREFIX schema: <http://schema.org/>
         SELECT ?s ?stateName
-            WHERE {
-                ?s schema:state ?stateName .
+        WHERE {
+            ?s schema:state ?stateName .
             }
-        `,
+            `,
         'SELECT',
     );
     console.log('======================== ASSET QUERY');
