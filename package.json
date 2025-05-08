@@ -4,8 +4,10 @@
     "description": "Javascript library for interaction with the OriginTrail Decentralized Knowledge Graph",
     "main": "index.js",
     "exports": {
-        "import": "./index.js",
-        "require": "./index.cjs",
+        ".": {
+            "import": "./index.js",
+            "require": "./index.cjs"
+        },
         "./constants": {
             "import": "./constants/index.js",
             "require": "./constants/index.cjs"
