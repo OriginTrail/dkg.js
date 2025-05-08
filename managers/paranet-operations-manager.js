@@ -1,5 +1,5 @@
 import { resolveUAL, getParanetId, getKnowledgeCollectionId } from '../services/utilities.js';
-import { PARANET_KNOWLEDGE_COLLECTION_STATUS } from '../constants.js';
+import { PARANET_KNOWLEDGE_COLLECTION_STATUS } from '../constants/constants.js';
 
 export default class ParanetOperationsManager {
     constructor(services) {
