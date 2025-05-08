@@ -12,9 +12,8 @@ const PRIVATE_KEY = process.env.PRIVATE_KEY;
 // Total number of nodes to test
 const TOTAL_NODES = 3;
 
-// Generate node info dynamically
 const nodes = Array.from({ length: TOTAL_NODES }, (_, i) => {
-  const nodeNumber = (i + 1).toString().padStart(2, '0'); // "01", "02", ...
+  const nodeNumber = (i + 1).toString().padStart(2, '0');
   return {
     name: `Node ${nodeNumber}`,
     hostname: `https://v6-pegasus-node-${nodeNumber}.origin-trail.network`,
@@ -41,7 +40,7 @@ function getRandomDescription() {
 
 nodes.forEach(({ name, hostname }) => {
   describe(`DKG Asset Lifecycle on Testnet (${name})`, function () {
-    this.timeout(180000);
+    this.timeout(300000);
 
     const DkgClient = new DKG({
       environment: ENVIRONMENT,
@@ -57,66 +56,76 @@ nodes.forEach(({ name, hostname }) => {
       contentType: 'all',
       nodeApiVersion: '/v1',
     });
+
     let attempt = 0;
     describe('', function () {
       this.retries(2);
 
-    it('should publish, query, and get a Knowledge Asset', async () => {
-      console.log('Attempt:', attempt);
-      attempt++;
-      const uniqueWord = getRandomWord();
-      const content = {
-        public: {
-          '@context': 'https://www.schema.org',
-          '@id': `urn:ka:${name.replace(' ', '').toLowerCase()}-${randomUUID()}`,
-          '@type': 'CreativeWork',
-          name: `DKG ${uniqueWord} ${Date.now()}`,
-          description: getRandomDescription(),
-        },
-      };
-      await new Promise(resolve => setTimeout(resolve, 30000));
+      it('should publish, query, and get a Knowledge Asset', async () => {
+        console.log('Attempt:', attempt);
+        attempt++;
 
-      // 1. Publish
-      const create_result = await DkgClient.asset.create(content, {
-        epochsNum: 2,
-        minimumNumberOfFinalizationConfirmations: 3,
-        minimumNumberOfNodeReplications: 1,
+        const uniqueWord = getRandomWord();
+        const content = {
+          public: {
+            '@context': 'https://www.schema.org',
+            '@id': `urn:ka:${name.replace(' ', '').toLowerCase()}-${randomUUID()}`,
+            '@type': 'CreativeWork',
+            name: `DKG ${uniqueWord} ${Date.now()}`,
+            description: getRandomDescription(),
+          },
+        };
+
+        await new Promise(resolve => setTimeout(resolve, 60000));
+
+        // 1. Publish
+        const create_result = await DkgClient.asset.create(content, {
+          epochsNum: 2,
+          minimumNumberOfFinalizationConfirmations: 3,
+          minimumNumberOfNodeReplications: 1,
+        });
+        assert.ok(create_result, `❌ No result returned from publish call on ${name}`);
+        assert.ok(create_result.operation, `❌ Missing operation in create_result on ${name}`);
+        assert.strictEqual(
+          create_result.operation.publish.status,
+          'COMPLETED',
+          `❌ Publish status is not COMPLETED on ${name}. Got: ${create_result.operation.publish.status}`
+        );
+        assert.ok(
+          create_result.operation.finality,
+          `❌ Missing finality object in operation on ${name}`
+        );
+        assert.strictEqual(
+          create_result.operation.finality.status,
+          'FINALIZED',
+          `❌ Finality status is not FINALIZED on ${name}. Got: ${create_result.operation.finality.status}`
+        );
+
+        console.log(`Knowledge Asset Published successfully on ${name}:`);
+        const ual = create_result?.UAL;
+        assert.ok(ual, `UAL not found after publish on ${name}`);
+
+        // 2. Query
+        const queryOperationResult = await DkgClient.graph.query(
+          `
+          PREFIX schema: <http://schema.org/>
+          SELECT ?s ?name ?description
+          WHERE {
+            ?s schema:name ?name ;
+              schema:description ?description .
+          }
+          `,
+          'SELECT'
+        );
+
+        assert.ok(queryOperationResult?.data?.length > 0, `Query returned no results for ${name}`);
+        console.log(`Successfully queried Knowledge Asset on ${name}`);
+
+        // 3. Get
+        const getResult = await DkgClient.asset.get(ual);
+        assert.ok(getResult?.assertion, `Get operation failed or no assertion found for ${name}`);
+        console.log(`Successfully got Knowledge Asset on ${name}`);
       });
-
-      if (
-        !create_result ||
-        !create_result.operation ||
-        create_result.operation.publish.status !== 'COMPLETED' ||
-        create_result.operation.finality?.status !== 'FINALIZED'
-      ) {
-        throw new Error(`Knowledge Asset not published or finalized successfully on ${name}. Error: ${JSON.stringify(create_result, null, 2)}`);
-      }
-
-      console.log(`Knowledge Asset Published successfully on ${name}:`);
-      const ual = create_result?.UAL;
-      assert.ok(ual, `UAL not found after publish on ${name}`);
-
-      // 2. Query
-      const queryOperationResult = await DkgClient.graph.query(
-        `
-        PREFIX schema: <http://schema.org/>
-        SELECT ?s ?name ?description
-        WHERE {
-          ?s schema:name ?name ;
-             schema:description ?description .
-        }
-        `,
-        'SELECT'
-      );
-
-      assert.ok(queryOperationResult?.data?.length > 0, `Query returned no results for ${name}`);
-      console.log(`Successfully queried Knowledge Asset on ${name}`);
-
-      // 3. Get
-      const getResult = await DkgClient.asset.get(ual);
-      assert.ok(getResult?.assertion, `Get operation failed or no assertion found for ${name}`);
-      console.log(`Successfully got Knowledge Asset on ${name}`);
     });
   });
-});
 });
