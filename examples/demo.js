@@ -1,5 +1,5 @@
 import DKG from '../index.js';
-import { BLOCKCHAIN_IDS, ENVIRONMENTS } from '../constants.js';
+import { BLOCKCHAIN_IDS, ENVIRONMENTS } from '../constants/constants.js';
 import 'dotenv/config';
 
 const ENVIRONMENT = ENVIRONMENTS.DEVELOPMENT;
