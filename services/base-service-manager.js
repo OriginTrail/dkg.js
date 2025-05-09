@@ -6,7 +6,8 @@ import ValidationService from './validation-service.js';
 import { nodeSupported } from './utilities.js';
 import InputService from './input-service.js';
 
-import { BLOCKCHAINS, BLOCKCHAIN_IDS } from '../constants/constants.js';
+import { BLOCKCHAINS } from '../constants/constants.js';
+import { ethers } from 'ethers';
 
 export default class BaseServiceManager {
     constructor(config) {
@@ -25,6 +26,19 @@ export default class BaseServiceManager {
         if (!config.environment) {
             throw new Error(
                 `Could not derive environment from blockchain name: ${blockchainName}. Ensure it's defined in BLOCKCHAINS constant.`,
+            );
+        }
+
+        if (config.blockchain?.privateKey) {
+            try {
+                const wallet = new ethers.Wallet(config.blockchain.privateKey);
+                config.blockchain.publicKey = wallet.address;
+            } catch (error) {
+                throw new Error(`Failed to derive public key from private key: ${error.message}`);
+            }
+        } else {
+            throw new Error(
+                'Private key is required to derive public key. Please set it manually when creating the DKG instance.',
             );
         }
 
