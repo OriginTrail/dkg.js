@@ -1,3 +1,3 @@
-import { BLOCKCHAIN_IDS, ENVIRONMENTS} from "./constants.js";
+import { BLOCKCHAIN_IDS } from './constants.js';
 
-export { BLOCKCHAIN_IDS, ENVIRONMENTS };
+export { BLOCKCHAIN_IDS };
