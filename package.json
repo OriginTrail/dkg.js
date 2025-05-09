@@ -1,11 +1,17 @@
 {
     "name": "dkg.js",
-    "version": "8.0.11",
+    "version": "8.0.12",
     "description": "Javascript library for interaction with the OriginTrail Decentralized Knowledge Graph",
     "main": "index.js",
     "exports": {
-        "import": "./index.js",
-        "require": "./index.cjs"
+        ".": {
+            "import": "./index.js",
+            "require": "./index.cjs"
+        },
+        "./constants": {
+            "import": "./constants/index.js",
+            "require": "./constants/index.cjs"
+        }
     },
     "type": "module",
     "scripts": {
@@ -13,7 +19,9 @@
         "build": "npm run cjs-compat && webpack --config webpack.config.cjs",
         "watch": "npm run cjs-compat && webpack --config webpack.config.cjs --watch --progress",
         "lint": "eslint .",
-        "cjs-compat": "rollup index.js --file index.cjs --format cjs",
+        "cjs:main": "npx rollup index.js --file index.cjs --format cjs",
+        "cjs:constants": "npx rollup constants/index.js --file constants/index.cjs --format cjs",
+        "cjs-compat": "npm run cjs:main && npm run cjs:constants",
         "postinstall": "npm run cjs-compat"
     },
     "repository": {

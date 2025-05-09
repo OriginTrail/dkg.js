@@ -6,7 +6,7 @@ import ValidationService from './validation-service.js';
 import { nodeSupported } from './utilities.js';
 import InputService from './input-service.js';
 
-import { BLOCKCHAINS_RENAME_PAIRS  } from '../constants.js';
+import { BLOCKCHAINS_RENAME_PAIRS  } from '../constants/constants.js';
 
 export default class BaseServiceManager {
     constructor(config) {

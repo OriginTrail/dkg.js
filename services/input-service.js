@@ -7,7 +7,7 @@ import {
     PARANET_MINERS_ACCESS_POLICY,
     PARANET_KC_SUBMISSION_POLICY,
     ZERO_ADDRESS,
-} from '../constants.js';
+} from '../constants/constants.js';
 
 export default class InputService {
     constructor(config = {}) {

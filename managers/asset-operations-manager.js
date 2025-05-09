@@ -15,7 +15,7 @@ import {
     PRIVATE_HASH_SUBJECT_PREFIX,
     PRIVATE_ASSERTION_PREDICATE,
     GET_OUTPUT_FORMATS,
-} from '../constants.js';
+} from '../constants/constants.js';
 import emptyHooks from '../util/empty-hooks.js';
 
 export default class AssetOperationsManager {

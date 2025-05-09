@@ -4,7 +4,7 @@ import {
     OPERATIONS,
     PRIVATE_RESOURCE_PREDICATE,
     PRIVATE_HASH_SUBJECT_PREFIX,
-} from '../constants.js';
+} from '../constants/constants.js';
 export default class GraphOperationsManager {
     constructor(services) {
         this.nodeApiService = services.nodeApiService;

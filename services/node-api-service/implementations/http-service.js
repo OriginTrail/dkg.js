@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { OPERATION_STATUSES } from '../../../constants.js';
+import { OPERATION_STATUSES } from '../../../constants/constants.js';
 import { sleepForMilliseconds } from '../../utilities.js';
 
 export default class HttpService {

@@ -8,7 +8,7 @@ import {
     BLOCKCHAIN_IDS,
     ENVIRONMENTS,
     PARANET_KC_SUBMISSION_POLICY,
-} from '../constants.js';
+} from '../constants/constants.js';
 
 const ENVIRONMENT = ENVIRONMENTS.DEVELOPMENT;
 const OT_NODE_HOSTNAME = 'http://localhost';

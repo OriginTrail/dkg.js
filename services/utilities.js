@@ -1,5 +1,5 @@
 import jsonld from 'jsonld';
-import { GRAPH_LOCATIONS, GRAPH_STATES, OT_NODE_TRIPLE_STORE_REPOSITORIES } from '../constants.js';
+import { GRAPH_LOCATIONS, GRAPH_STATES, OT_NODE_TRIPLE_STORE_REPOSITORIES } from '../constants/constants.js';
 import { ethers } from 'ethers';
 
 export function isEmptyObject(obj) {
