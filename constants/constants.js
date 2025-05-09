@@ -23,21 +23,12 @@ export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 export const BLOCKCHAIN_IDS = {
     HARDHAT_1: 'hardhat1:31337',
     HARDHAT_2: 'hardhat2:31337',
-    BASE_DEVNET: 'base:84532',
-    GNOSIS_DEVNET: 'gnosis:10200',
-    NEUROWEB_DEVNET: 'otp:2160',
     BASE_TESTNET: 'base:84532',
     GNOSIS_TESTNET: 'gnosis:10200',
     NEUROWEB_TESTNET: 'otp:20430',
     BASE_MAINNET: 'base:8453',
     GNOSIS_MAINNET: 'gnosis:100',
     NEUROWEB_MAINNET: 'otp:2043',
-};
-export const ENVIRONMENTS = {
-    MAINNET: 'mainnet',
-    TESTNET: 'testnet',
-    DEVNET: 'devnet',
-    DEVELOPMENT: 'development',
 };
 export const BLOCKCHAINS = {
     development: {
@@ -48,24 +39,6 @@ export const BLOCKCHAINS = {
         'hardhat2:31337': {
             rpc: 'http://localhost:9545',
             hubContract: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
-        },
-    },
-    devnet: {
-        'base:84532': {
-            hubContract: '0xE043daF4cC8ae2c720ef95fc82574a37a429c40A',
-            rpc: 'https://sepolia.base.org',
-        },
-    },
-    stabledevnet_staging: {
-        'base:84532': {
-            hubContract: '0xAB4A4794Fc1F415C24807B947280aCa8dC492238',
-            rpc: 'https://sepolia.base.org',
-        },
-    },
-    stabledevnet_prod: {
-        'base:84532': {
-            hubContract: '0xaA849CAC4FA86f6b7484503f3c7a314772AED6d4',
-            rpc: 'https://sepolia.base.org',
         },
     },
     testnet: {
@@ -128,20 +101,11 @@ export const INCENTIVE_MULTIPLIER = {
 };
 
 export const NEUROWEB_INCENTIVE_TYPE_CHAINS = [
-    BLOCKCHAIN_IDS.NEUROWEB_DEVNET,
     BLOCKCHAIN_IDS.NEUROWEB_TESTNET,
     BLOCKCHAIN_IDS.NEUROWEB_MAINNET,
     BLOCKCHAIN_IDS.HARDHAT_1,
     BLOCKCHAIN_IDS.HARDHAT_2,
 ];
-
-export const BLOCKCHAINS_RENAME_PAIRS = {
-    hardhat1: 'hardhat1:31337',
-    hardhat2: 'hardhat2:31337',
-    'otp::devnet': 'otp:2160',
-    'otp::testnet': 'otp:20430',
-    'otp::mainnet': 'otp:2043',
-};
 
 export const TRANSACTION_RETRY_ERRORS = [
     'transaction was not mined',
@@ -217,17 +181,6 @@ export const OPERATIONS_STEP_STATUS = {
 
 export const DEFAULT_PROXIMITY_SCORE_FUNCTIONS_PAIR_IDS = {
     development: { 'hardhat1:31337': 2, 'hardhat2:31337': 2, 'otp:2043': 2 },
-    devnet: {
-        'otp:2160': 2,
-        'gnosis:10200': 2,
-        'base:84532': 2,
-    },
-    stabledevnet_staging: {
-        'base:84532': 2,
-    },
-    stabledevnet_prod: {
-        'base:84532': 2,
-    },
     testnet: {
         'otp:20430': 2,
         'gnosis:10200': 2,
