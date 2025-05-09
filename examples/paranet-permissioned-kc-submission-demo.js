@@ -11,7 +11,6 @@ import {
 const OT_NODE_HOSTNAME = 'http://localhost';
 const OT_NODE_PORT = '8900';
 const BLOCKCHAIN_NAME = BLOCKCHAIN_IDS.HARDHAT_1;
-const PUBLIC_KEY = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
 
 // IMPORTANT: Don't forget to add your PRIVATE_KEY to the .env file.
 const DkgClient = new DKG({
@@ -19,7 +18,6 @@ const DkgClient = new DKG({
     port: OT_NODE_PORT,
     blockchain: {
         name: BLOCKCHAIN_NAME,
-        publicKey: PUBLIC_KEY,
         privateKey: process.env.PRIVATE_KEY,
     },
     maxNumberOfRetries: 30,
@@ -77,7 +75,10 @@ function divider() {
     divider();
 
     // ADD CURATOR TO PARANET
-    const addCuratorResult = await DkgClient.paranet.addCurator(paranetUAL, PUBLIC_KEY);
+    const addCuratorResult = await DkgClient.paranet.addCurator(
+        paranetUAL,
+        await DkgClient.blockchain.getWalletAddress(),
+    );
     console.log('======================== CURATOR ADDED TO PARANET');
     console.log(addCuratorResult);
     divider();
@@ -207,7 +208,10 @@ function divider() {
     divider();
 
     // REMOVE CURATOR
-    const removeCuratorResult = await DkgClient.paranet.removeCurator(paranetUAL, PUBLIC_KEY);
+    const removeCuratorResult = await DkgClient.paranet.removeCurator(
+        paranetUAL,
+        await DkgClient.blockchain.getWalletAddress(),
+    );
     console.log('======================== CURATOR REMOVED FROM PARANET');
     console.log(removeCuratorResult);
     divider();

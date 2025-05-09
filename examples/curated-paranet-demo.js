@@ -10,14 +10,12 @@ import {
 const OT_NODE_HOSTNAME = 'http://localhost';
 const OT_NODE_PORT = '8900';
 const BLOCKCHAIN_NAME = BLOCKCHAIN_IDS.HARDHAT_1;
-const PUBLIC_KEY = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
 
 const DkgClient = new DKG({
     endpoint: OT_NODE_HOSTNAME,
     port: OT_NODE_PORT,
     blockchain: {
         name: BLOCKCHAIN_NAME,
-        publicKey: PUBLIC_KEY,
         privateKey: process.env.PRIVATE_KEY,
     },
     maxNumberOfRetries: 30,
