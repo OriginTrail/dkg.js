@@ -6,22 +6,20 @@ import {
     PARANET_NODES_ACCESS_POLICY,
     PARANET_MINERS_ACCESS_POLICY,
     BLOCKCHAIN_IDS,
-    ENVIRONMENTS,
     PARANET_KC_SUBMISSION_POLICY,
 } from '../constants/constants.js';
 
-const ENVIRONMENT = ENVIRONMENTS.DEVELOPMENT;
 const OT_NODE_HOSTNAME = 'http://localhost';
 const OT_NODE_PORT = '8900';
+const BLOCKCHAIN_NAME = BLOCKCHAIN_IDS.HARDHAT_1;
 const PUBLIC_KEY = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
 
 // IMPORTANT: Don't forget to add your PRIVATE_KEY to the .env file.
 const DkgClient = new DKG({
-    environment: ENVIRONMENT,
     endpoint: OT_NODE_HOSTNAME,
     port: OT_NODE_PORT,
     blockchain: {
-        name: BLOCKCHAIN_IDS.HARDHAT_1,
+        name: BLOCKCHAIN_NAME,
         publicKey: PUBLIC_KEY,
         privateKey: process.env.PRIVATE_KEY,
     },
