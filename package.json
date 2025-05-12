@@ -22,7 +22,11 @@
         "generate:testnet:gnosis:report": "node report-Testnet-Gnosis-config.js",
         "generate:testnet:neuroweb:report": "node report-Testnet-Neuroweb-config.js",
         "generate:mainnet:neuroweb:report": "node report-Mainnet-Neuroweb-config.js",
-        "test:neuroweb:mainnet": "mocha tests/mainnet/Neuroweb_Mainnet.spec.js --reporter mochawesome --reporter-options reportFilename=mainnet_neuroweb"
+        "generate:mainnet:gnosis:report": "node report-Mainnet-Gnosis-config.js",
+        "generate:mainnet:base:report": "node report-Mainnet-Base-config.js",
+        "test:neuroweb:mainnet": "mocha tests/mainnet/Neuroweb_Mainnet.spec.js --reporter mochawesome --reporter-options reportFilename=mainnet_neuroweb",
+        "test:base:mainnet": "mocha tests/mainnet/Base_Mainnet.spec.js --reporter mochawesome --reporter-options reportFilename=mainnet_base",
+        "test:gnosis:mainnet": "mocha tests/mainnet/Gnosis_Mainnet.spec.js --reporter mochawesome --reporter-options reportFilename=mainnet_gnosis"
     },
     "repository": {
         "type": "git",

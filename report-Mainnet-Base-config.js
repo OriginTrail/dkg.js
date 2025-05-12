@@ -1,0 +1,50 @@
+import { publish, defineConfig } from 'test-results-reporter';
+import dotenv from 'dotenv';
+dotenv.config();
+
+const teamsHookBaseURL = process.env.TEAMS_HOOK;
+//const kurjiCvekHook = process.env.KURJI_CVEK_HOOK;
+
+const config = defineConfig({
+  reports: [
+    {
+      targets: [
+        {
+          name: 'teams',
+          condition: 'fail',
+          inputs: {
+            url: teamsHookBaseURL,
+            only_failures: true,
+            publish: 'test-summary-slim',
+            title: 'Mainnet Base Knowledge Asset Publish/Query Test Report',
+            width: 'Full',
+          },
+          extensions: [
+            {
+              name: 'quick-chart-test-summary',
+            },
+            {
+              name: 'hyperlinks',
+              inputs: {
+                links: [
+                  {
+                    text: 'Mainnet Base HTML Report',
+                    url: 'https://titan.dplcenter.xyz/view/Tests/job/Mainnet-Publish-Query-Get-Knowledge-Asset/Base_20Mainnet_20Report/*zip*/Base_20Mainnet_20Report.zip',
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+      results: [
+        {
+          type: 'mocha',
+          files: ['./mochawesome-report/mainnet_base.json'],
+        },
+      ],
+    },
+  ],
+});
+
+publish({ config });

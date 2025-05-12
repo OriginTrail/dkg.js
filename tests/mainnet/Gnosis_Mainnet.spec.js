@@ -35,7 +35,7 @@ function getRandomDescription() {
       endpoint: OT_NODE_HOSTNAME,
       port: OT_NODE_PORT,
       blockchain: {
-        name: BLOCKCHAIN_IDS.NEUROWEB_MAINNET,
+        name: BLOCKCHAIN_IDS.GNOSIS_MAINNET,
         publicKey: PUBLIC_KEY,
         privateKey: PRIVATE_KEY,
       },
@@ -51,7 +51,7 @@ function getRandomDescription() {
     it('should publish, query, and get a Knowledge Asset', async () => {
       console.log('Attempt:', attempt);
       attempt++;
-      const name = "Mainnet Neuroweb";
+      const name = "Mainnet Gnosis";
       const uniqueWord = getRandomWord();
       const content = {
         public: {

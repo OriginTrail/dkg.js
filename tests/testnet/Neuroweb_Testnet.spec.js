@@ -40,7 +40,7 @@ function getRandomDescription() {
 
 nodes.forEach(({ name, hostname }) => {
   describe(`DKG Asset Lifecycle on Testnet (${name})`, function () {
-    this.timeout(300000);
+    this.timeout(150000);
 
     const DkgClient = new DKG({
       environment: ENVIRONMENT,
