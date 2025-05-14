@@ -29,7 +29,7 @@ const config = defineConfig({
                 links: [
                   {
                     text: 'Mainnet Gnosis HTML Report',
-                    url: 'https://titan.dplcenter.xyz/view/Tests/job/Mainnet-Publish-Query-Get-Knowledge-Asset/Gnosis_20Mainnet_20Report/*zip*/Gnosis_20Mainnet_20Report.zip',
+                    url: 'https://titan.dplcenter.xyz/view/Tests/job/dkg.js-Mainnet-Publish-Query-Get-Knowledge-Asset/Gnosis_20Mainnet_20Report/*zip*/Gnosis_20Mainnet_20Report.zip',
                   },
                 ],
               },

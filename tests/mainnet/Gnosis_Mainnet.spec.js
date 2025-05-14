@@ -70,21 +70,21 @@ function getRandomDescription() {
         minimumNumberOfFinalizationConfirmations: 3,
         minimumNumberOfNodeReplications: 1,
       });
-      assert.ok(create_result, `❌ No result returned from publish call on ${name}`);
-        assert.ok(create_result.operation, `❌ Missing operation in create_result on ${name}`);
+      assert.ok(create_result, `No result returned from publish call on ${name}`);
+        assert.ok(create_result.operation, `Missing operation in create_result on ${name}`);
         assert.strictEqual(
           create_result.operation.publish.status,
           'COMPLETED',
-          `❌ Publish status is not COMPLETED on ${name}. Got: ${create_result.operation.publish.status}`
+          `Publish status is not COMPLETED on ${name}. Got: ${create_result.operation.publish.status}`
         );
         assert.ok(
           create_result.operation.finality,
-          `❌ Missing finality object in operation on ${name}`
+          `Missing finality object in operation on ${name}`
         );
         assert.strictEqual(
           create_result.operation.finality.status,
           'FINALIZED',
-          `❌ Finality status is not FINALIZED on ${name}. Got: ${create_result.operation.finality.status}`
+          `Finality status is not FINALIZED on ${name}. Got: ${create_result.operation.finality.status}`
         );
       const ual = create_result?.UAL;
       assert.ok(ual, `UAL not found after publish on ${name}`);

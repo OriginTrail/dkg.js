@@ -29,7 +29,7 @@ const config = defineConfig({
                 links: [
                   {
                     text: 'Testnet Neuroweb HTML Report',
-                    url: 'https://titan.dplcenter.xyz/view/Tests/job/Testnet-Publish-Query-Get-Knowledge-Asset/Neuroweb_20Testnet_20Report/*zip*/Neuroweb_20Testnet_20Report.zip',
+                    url: 'https://titan.dplcenter.xyz/view/Tests/job/dkg.js-Testnet-Publish-Query-Get-Knowledge-Asset/Neuroweb_20Testnet_20Report/*zip*/Neuroweb_20Testnet_20Report.zip',
                   },
                 ],
               },

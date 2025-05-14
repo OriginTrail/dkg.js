@@ -29,7 +29,7 @@ const config = defineConfig({
                 links: [
                   {
                     text: 'Testnet Base HTML Report',
-                    url: 'https://titan.dplcenter.xyz/view/Tests/job/Testnet-Publish-Query-Get-Knowledge-Asset/Base_20Testnet_20Report/*zip*/Base_20Testnet_20Report.zip',
+                    url: 'https://titan.dplcenter.xyz/view/Tests/job/dkg.js-Testnet-Publish-Query-Get-Knowledge-Asset/Base_20Testnet_20Report/*zip*/Base_20Testnet_20Report.zip',
                   },
                 ],
               },
