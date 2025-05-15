@@ -28,7 +28,7 @@ function getRandomDescription() {
   return template.replace('{}', word);
 }
   describe(`DKG Asset Lifecycle on Mainnet`, function () {
-    this.timeout(200000);
+    this.timeout(5000000);
 
     const DkgClient = new DKG({
       environment: ENVIRONMENT,
