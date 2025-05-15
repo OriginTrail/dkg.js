@@ -7,7 +7,7 @@ import { randomUUID } from 'crypto';
 const ENVIRONMENT = ENVIRONMENTS.TESTNET;
 const OT_NODE_PORT = '8900';
 const PUBLIC_KEY = '0xC804682F30c611B7c2AD40F17587Ad5e04974418';
-const PRIVATE_KEY = process.env.PRIVATE_KEY;
+const PRIVATE_KEY = process.env.TESTNET_PRIVATE_KEY;
 
 // Total number of nodes to test
 const TOTAL_NODES = 3;

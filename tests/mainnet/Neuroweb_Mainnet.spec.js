@@ -8,7 +8,7 @@ const ENVIRONMENT = ENVIRONMENTS.MAINNET;
 const OT_NODE_HOSTNAME = 'https://positron.origin-trail.network';
 const OT_NODE_PORT = '8900';
 const PUBLIC_KEY = '0x42ae12826Eb3b920D3b818e1D6fdF9Ad0054e471';
-const PRIVATE_KEY = process.env.PRIVATE_KEY;
+const PRIVATE_KEY = process.env.MAINNET_PRIVATE_KEY;
 
 function getRandomWord() {
   const words = ['Galaxy', 'Nebula', 'Orbit', 'Quantum', 'Pixel', 'Velocity', 'Echo', 'Nova'];
