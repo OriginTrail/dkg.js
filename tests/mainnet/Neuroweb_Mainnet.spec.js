@@ -7,7 +7,7 @@ import { randomUUID } from 'crypto';
 const ENVIRONMENT = ENVIRONMENTS.MAINNET;
 const OT_NODE_HOSTNAME = 'https://positron.origin-trail.network';
 const OT_NODE_PORT = '8900';
-const PUBLIC_KEY = '0x0111ff148a06Eb44Ee0FA65e6c3627433B8dE4Df';
+const PUBLIC_KEY = '0x42ae12826Eb3b920D3b818e1D6fdF9Ad0054e471';
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
 
 function getRandomWord() {
@@ -28,7 +28,7 @@ function getRandomDescription() {
   return template.replace('{}', word);
 }
   describe(`DKG Asset Lifecycle on Mainnet`, function () {
-    this.timeout(500000);
+    this.timeout(150000);
 
     const DkgClient = new DKG({
       environment: ENVIRONMENT,
@@ -62,7 +62,7 @@ function getRandomDescription() {
           description: getRandomDescription(),
         },
       };
-      await new Promise(resolve => setTimeout(resolve, 300000));
+      await new Promise(resolve => setTimeout(resolve, 60000));
 
       // 1. Publish
       const create_result = await DkgClient.asset.create(content, {
