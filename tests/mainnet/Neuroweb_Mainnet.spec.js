@@ -28,7 +28,7 @@ function getRandomDescription() {
   return template.replace('{}', word);
 }
   describe(`DKG Asset Lifecycle on Mainnet`, function () {
-    this.timeout(150000);
+    this.timeout(500000);
 
     const DkgClient = new DKG({
       environment: ENVIRONMENT,
@@ -46,7 +46,7 @@ function getRandomDescription() {
     });
     let attempt = 0;
     describe('', function () {
-      this.retries(2);
+      this.retries(0);
 
     it('should publish, query, and get a Knowledge Asset', async () => {
       console.log('Attempt:', attempt);
@@ -62,7 +62,7 @@ function getRandomDescription() {
           description: getRandomDescription(),
         },
       };
-      await new Promise(resolve => setTimeout(resolve, 60000));
+      await new Promise(resolve => setTimeout(resolve, 300000));
 
       // 1. Publish
       const create_result = await DkgClient.asset.create(content, {
