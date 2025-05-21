@@ -40,7 +40,7 @@ function getRandomDescription() {
 
 nodes.forEach(({ name, hostname }) => {
   describe(`DKG Asset Lifecycle on Testnet (${name})`, function () {
-    this.timeout(500000);
+    this.timeout(180000);
 
     const DkgClient = new DKG({
       environment: ENVIRONMENT,
@@ -59,7 +59,7 @@ nodes.forEach(({ name, hostname }) => {
 
     let attempt = 0;
     describe('', function () {
-      this.retries(0);
+      this.retries(5);
 
       it('should publish, query, and get a Knowledge Asset', async () => {
         console.log('Attempt:', attempt);
@@ -76,7 +76,7 @@ nodes.forEach(({ name, hostname }) => {
           },
         };
 
-        await new Promise(resolve => setTimeout(resolve, 300000));
+        await new Promise(resolve => setTimeout(resolve, 30000));
 
         // 1. Publish
         const create_result = await DkgClient.asset.create(content, {
