@@ -123,7 +123,7 @@ describe(`DKG Asset Lifecycle on Mainnet`, function () {
         console.log(`✅ Successfully got Knowledge Asset on ${name}`);
       } catch (e) {
         printException(e, name);
-        throw e;
+        assert.fail(`Test failed: ${e.message}`);
       }
     });
   });

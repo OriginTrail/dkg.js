@@ -121,8 +121,9 @@ nodes.forEach(({ name, hostname }) => {
           console.log(`✅ Successfully got Knowledge Asset on ${name}`);
         } catch (error) {
           logError(error, name);
-          throw error;
+          assert.fail(`Test failed on ${name}: ${error.message}`);
         }
+        
       });
     });
   });
