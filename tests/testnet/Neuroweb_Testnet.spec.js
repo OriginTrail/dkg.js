@@ -9,7 +9,6 @@ const OT_NODE_PORT = '8900';
 const PUBLIC_KEY = '0xC804682F30c611B7c2AD40F17587Ad5e04974418';
 const PRIVATE_KEY = process.env.TESTNET_PRIVATE_KEY;
 
-// Total number of nodes to test
 const TOTAL_NODES = 3;
 
 const nodes = Array.from({ length: TOTAL_NODES }, (_, i) => {
@@ -36,6 +35,17 @@ function getRandomDescription() {
   const word = getRandomWord();
   const template = templates[Math.floor(Math.random() * templates.length)];
   return template.replace('{}', word);
+}
+
+function logError(error, name) {
+  console.log(`\n❌ Error on ${name}`);
+  console.log(`🔺 Type: ${error.name}`);
+  console.log(`🧵 Message: ${error.message}`);
+  if (error.stack) {
+    const stackLines = error.stack.split('\n').filter(line => !line.includes('node_modules'));
+    const lastRelevant = stackLines[1] || stackLines[0];
+    if (lastRelevant) console.log(`📍 Location: ${lastRelevant.trim()}`);
+  }
 }
 
 nodes.forEach(({ name, hostname }) => {
@@ -78,53 +88,41 @@ nodes.forEach(({ name, hostname }) => {
 
         await new Promise(resolve => setTimeout(resolve, 30000));
 
-        // 1. Publish
-        const create_result = await DkgClient.asset.create(content, {
-          epochsNum: 2,
-          minimumNumberOfFinalizationConfirmations: 3,
-          minimumNumberOfNodeReplications: 1,
-        });
-        assert.ok(create_result, `No result returned from publish call on ${name}`);
-        assert.ok(create_result.operation, `Missing operation in create_result on ${name}`);
-        assert.strictEqual(
-          create_result.operation.publish.status,
-          'COMPLETED',
-          `Publish status is not COMPLETED on ${name}. Got: ${create_result.operation.publish.status}`
-        );
-        assert.ok(
-          create_result.operation.finality,
-          `Missing finality object in operation on ${name}`
-        );
-        assert.strictEqual(
-          create_result.operation.finality.status,
-          'FINALIZED',
-          `Finality status is not FINALIZED on ${name}. Got: ${create_result.operation.finality.status}`
-        );
+        try {
+          const create_result = await DkgClient.asset.create(content, {
+            epochsNum: 2,
+            minimumNumberOfFinalizationConfirmations: 3,
+            minimumNumberOfNodeReplications: 1,
+          });
 
-        console.log(`Knowledge Asset Published successfully on ${name}:`);
-        const ual = create_result?.UAL;
-        assert.ok(ual, `UAL not found after publish on ${name}`);
+          assert.ok(create_result, `No result returned from publish call on ${name}`);
+          assert.ok(create_result.operation, `Missing operation in create_result on ${name}`);
+          assert.strictEqual(create_result.operation.publish.status, 'COMPLETED');
+          assert.ok(create_result.operation.finality);
+          assert.strictEqual(create_result.operation.finality.status, 'FINALIZED');
 
-        // 2. Query
-        const queryOperationResult = await DkgClient.graph.query(
-          `
-          PREFIX schema: <http://schema.org/>
-          SELECT ?s ?name ?description
-          WHERE {
-            ?s schema:name ?name ;
-              schema:description ?description .
-          }
-          `,
-          'SELECT'
-        );
+          console.log(`\n✅  Knowledge Asset Published successfully on ${name}`);
+          const ual = create_result?.UAL;
+          assert.ok(ual, `UAL not found after publish on ${name}`);
 
-        assert.ok(queryOperationResult?.data?.length > 0, `Query returned no results for ${name}`);
-        console.log(`Successfully queried Knowledge Asset on ${name}`);
+          const queryOperationResult = await DkgClient.graph.query(
+            `PREFIX schema: <http://schema.org/>
+             SELECT ?s ?name ?description
+             WHERE {
+               ?s schema:name ?name ; schema:description ?description .
+             }`,
+            'SELECT'
+          );
+          assert.ok(queryOperationResult?.data?.length > 0, `Query returned no results for ${name}`);
+          console.log(`✅ Successfully queried Knowledge Asset on ${name}`);
 
-        // 3. Get
-        const getResult = await DkgClient.asset.get(ual);
-        assert.ok(getResult?.assertion, `Get operation failed or no assertion found for ${name}`);
-        console.log(`Successfully got Knowledge Asset on ${name}`);
+          const getResult = await DkgClient.asset.get(ual);
+          assert.ok(getResult?.assertion, `Get operation failed or no assertion found for ${name}`);
+          console.log(`✅ Successfully got Knowledge Asset on ${name}`);
+        } catch (error) {
+          logError(error, name);
+          throw error;
+        }
       });
     });
   });
