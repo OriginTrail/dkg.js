@@ -69,7 +69,7 @@ nodes.forEach(({ name, hostname }) => {
 
     let attempt = 0;
     describe('', function () {
-      this.retries(5);
+      this.retries(0);
 
       it('should publish, query, and get a Knowledge Asset', async () => {
         console.log('Attempt:', attempt);
