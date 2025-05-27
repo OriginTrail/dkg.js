@@ -1,6 +1,6 @@
 import { strict as assert } from 'assert';
 import DKG from '../../index.js';
-import { BLOCKCHAIN_IDS, ENVIRONMENTS } from '../../constants/constants.js';
+import { BLOCKCHAIN_IDS } from '../../constants/constants.js';
 import 'dotenv/config';
 import { randomUUID } from 'crypto';
 
