@@ -94,7 +94,6 @@ const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 const BLOCKCHAIN_IDS = {
     HARDHAT_1: 'hardhat1:31337',
     HARDHAT_2: 'hardhat2:31337',
-    NEUROWEB_DEVNET: 'otp:2160',
     NEUROWEB_TESTNET: 'otp:20430',
     NEUROWEB_MAINNET: 'otp:2043',
 };
@@ -107,24 +106,6 @@ const BLOCKCHAINS = {
         'hardhat2:31337': {
             rpc: 'http://localhost:9545',
             hubContract: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
-        },
-    },
-    devnet: {
-        'base:84532': {
-            hubContract: '0xE043daF4cC8ae2c720ef95fc82574a37a429c40A',
-            rpc: 'https://sepolia.base.org',
-        },
-    },
-    stabledevnet_staging: {
-        'base:84532': {
-            hubContract: '0xAB4A4794Fc1F415C24807B947280aCa8dC492238',
-            rpc: 'https://sepolia.base.org',
-        },
-    },
-    stabledevnet_prod: {
-        'base:84532': {
-            hubContract: '0xaA849CAC4FA86f6b7484503f3c7a314772AED6d4',
-            rpc: 'https://sepolia.base.org',
         },
     },
     testnet: {
@@ -182,20 +163,11 @@ const PARANET_KNOWLEDGE_COLLECTION_STATUS = {
 };
 
 const NEUROWEB_INCENTIVE_TYPE_CHAINS = [
-    BLOCKCHAIN_IDS.NEUROWEB_DEVNET,
     BLOCKCHAIN_IDS.NEUROWEB_TESTNET,
     BLOCKCHAIN_IDS.NEUROWEB_MAINNET,
     BLOCKCHAIN_IDS.HARDHAT_1,
     BLOCKCHAIN_IDS.HARDHAT_2,
 ];
-
-const BLOCKCHAINS_RENAME_PAIRS = {
-    hardhat1: 'hardhat1:31337',
-    hardhat2: 'hardhat2:31337',
-    'otp::devnet': 'otp:2160',
-    'otp::testnet': 'otp:20430',
-    'otp::mainnet': 'otp:2043',
-};
 
 const TRANSACTION_RETRY_ERRORS = [
     'transaction was not mined',
@@ -260,17 +232,6 @@ const OPERATIONS_STEP_STATUS = {
 
 const DEFAULT_PROXIMITY_SCORE_FUNCTIONS_PAIR_IDS = {
     development: { 'hardhat1:31337': 2, 'hardhat2:31337': 2, 'otp:2043': 2 },
-    devnet: {
-        'otp:2160': 2,
-        'gnosis:10200': 2,
-        'base:84532': 2,
-    },
-    stabledevnet_staging: {
-        'base:84532': 2,
-    },
-    stabledevnet_prod: {
-        'base:84532': 2,
-    },
     testnet: {
         'otp:20430': 2,
         'gnosis:10200': 2,
@@ -1333,6 +1294,17 @@ class BlockchainOperationsManager {
     async getWeb3Instance(options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
         return this.blockchainService.getWeb3Instance(blockchain);
+    }
+
+    /**
+     * Retrieve the wallet.
+     * @async
+     * @param {Object} [options={}] - Optional parameters for blockchain service.
+     * @returns {Promise<Object>} - A promise that resolves to the wallet.
+     */
+    async getWalletAddress(options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        return blockchain.publicKey;
     }
 }
 
@@ -6334,11 +6306,37 @@ class InputService {
 class BaseServiceManager {
     constructor(config) {
         const blockchainName = config.blockchain?.name;
-        const configWithNewBlockchainName = config;
-        if (blockchainName && Object.keys(BLOCKCHAINS_RENAME_PAIRS).includes(blockchainName))
-            configWithNewBlockchainName.blockchain.name = BLOCKCHAINS_RENAME_PAIRS[blockchainName];
+        if (!blockchainName) {
+            throw new Error('Blockchain name is required. Please set it manually.');
+        }
 
-        this.initializeServices(configWithNewBlockchainName);
+        for (const [env, chainsInEnv] of Object.entries(BLOCKCHAINS)) {
+            if (Object.keys(chainsInEnv).includes(blockchainName)) {
+                config.environment = env;
+                break;
+            }
+        }
+
+        if (!config.environment) {
+            throw new Error(
+                `Could not derive environment from blockchain name: ${blockchainName}. Ensure it's defined in BLOCKCHAINS constant.`,
+            );
+        }
+
+        if (config.blockchain?.privateKey) {
+            try {
+                const wallet = new ethers.ethers.Wallet(config.blockchain.privateKey);
+                config.blockchain.publicKey = wallet.address;
+            } catch (error) {
+                throw new Error(`Failed to derive public key from private key: ${error.message}`);
+            }
+        } else {
+            throw new Error(
+                'Private key is required to derive public key. Please set it manually when creating the DKG instance.',
+            );
+        }
+
+        this.initializeServices(config);
     }
 
     initializeServices(config) {
