@@ -22,7 +22,19 @@
         "cjs:main": "npx rollup index.js --file index.cjs --format cjs",
         "cjs:constants": "npx rollup constants/index.js --file constants/index.cjs --format cjs",
         "cjs-compat": "npm run cjs:main && npm run cjs:constants",
-        "postinstall": "npm run cjs-compat"
+        "postinstall": "npm run cjs-compat",
+        "test:base:testnet": "mocha tests/testnet/Base_Testnet.spec.js --reporter mochawesome --reporter-options reportFilename=testnet_base",
+        "test:gnosis:testnet": "mocha tests/testnet/Gnosis_Testnet.spec.js --reporter mochawesome --reporter-options reportFilename=testnet_gnosis",
+        "test:neuroweb:testnet": "mocha tests/testnet/Neuroweb_Testnet.spec.js --reporter mochawesome --reporter-options reportFilename=testnet_neuroweb",
+        "generate:testnet:base:report": "node report-Testnet-Base-config.js",
+        "generate:testnet:gnosis:report": "node report-Testnet-Gnosis-config.js",
+        "generate:testnet:neuroweb:report": "node report-Testnet-Neuroweb-config.js",
+        "generate:mainnet:neuroweb:report": "node report-Mainnet-Neuroweb-config.js",
+        "generate:mainnet:gnosis:report": "node report-Mainnet-Gnosis-config.js",
+        "generate:mainnet:base:report": "node report-Mainnet-Base-config.js",
+        "test:neuroweb:mainnet": "mocha tests/mainnet/Neuroweb_Mainnet.spec.js --reporter mochawesome --reporter-options reportFilename=mainnet_neuroweb",
+        "test:base:mainnet": "mocha tests/mainnet/Base_Mainnet.spec.js --reporter mochawesome --reporter-options reportFilename=mainnet_base",
+        "test:gnosis:mainnet": "mocha tests/mainnet/Gnosis_Mainnet.spec.js --reporter mochawesome --reporter-options reportFilename=mainnet_gnosis"
     },
     "repository": {
         "type": "git",
