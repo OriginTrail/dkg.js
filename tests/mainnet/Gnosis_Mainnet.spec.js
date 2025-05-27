@@ -1,10 +1,9 @@
 import { strict as assert } from 'assert';
 import DKG from '../../index.js';
-import { BLOCKCHAIN_IDS, ENVIRONMENTS } from '../../constants.js';
+import { BLOCKCHAIN_IDS } from '../../constants/constants.js';
 import 'dotenv/config';
 import { randomUUID } from 'crypto';
 
-const ENVIRONMENT = ENVIRONMENTS.MAINNET;
 const OT_NODE_HOSTNAME = 'https://positron.origin-trail.network';
 const OT_NODE_PORT = '8900';
 const PUBLIC_KEY = '0x42ae12826Eb3b920D3b818e1D6fdF9Ad0054e471';
@@ -43,7 +42,6 @@ describe(`DKG Asset Lifecycle on Mainnet`, function () {
   this.timeout(180000);
 
   const DkgClient = new DKG({
-    environment: ENVIRONMENT,
     endpoint: OT_NODE_HOSTNAME,
     port: OT_NODE_PORT,
     blockchain: {

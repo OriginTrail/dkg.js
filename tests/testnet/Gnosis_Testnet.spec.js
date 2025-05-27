@@ -1,10 +1,9 @@
 import { strict as assert } from 'assert';
 import DKG from '../../index.js';
-import { BLOCKCHAIN_IDS, ENVIRONMENTS } from '../../constants.js';
+import { BLOCKCHAIN_IDS, ENVIRONMENTS } from '../../constants/constants.js';
 import 'dotenv/config';
 import { randomUUID } from 'crypto';
 
-const ENVIRONMENT = ENVIRONMENTS.TESTNET;
 const OT_NODE_PORT = '8900';
 const PUBLIC_KEY = '0xC804682F30c611B7c2AD40F17587Ad5e04974418';
 const PRIVATE_KEY = process.env.TESTNET_PRIVATE_KEY;
@@ -53,7 +52,7 @@ nodes.forEach(({ name, hostname }) => {
     this.timeout(180000);
 
     const DkgClient = new DKG({
-      environment: ENVIRONMENT,
+
       endpoint: hostname,
       port: OT_NODE_PORT,
       blockchain: {

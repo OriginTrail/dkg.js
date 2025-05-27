@@ -1,12 +1,12 @@
-import { BLOCKCHAINS } from '../../constants.js';
-BLOCKCHAINS.mainnet['base:8453'].rpc = 'https://api-base-mainnet-archive.dwellir.com/c5568240-7482-4fe0-8bf9-33c2a7a8ffdc';
+import { BLOCKCHAINS } from '../../constants/constants.js';
+BLOCKCHAINS.mainnet['base:8453'].rpc = 'https://site1.moralis-nodes.com/base/2cb0d661c0614680b84a5c1c91f4d6aa';
 import { strict as assert } from 'assert';
 import DKG from '../../index.js';
-import { BLOCKCHAIN_IDS, ENVIRONMENTS } from '../../constants.js';
+import { BLOCKCHAIN_IDS } from '../../constants/constants.js';
 import 'dotenv/config';
 import { randomUUID } from 'crypto';
 
-const ENVIRONMENT = ENVIRONMENTS.MAINNET;
+//const ENVIRONMENT = ENVIRONMENTS.MAINNET;
 const OT_NODE_HOSTNAME = 'https://positron.origin-trail.network';
 const OT_NODE_PORT = '8900';
 const PUBLIC_KEY = '0x42ae12826Eb3b920D3b818e1D6fdF9Ad0054e471';
@@ -45,7 +45,6 @@ describe(`DKG Asset Lifecycle on Mainnet`, function () {
   this.timeout(180000);
 
   const DkgClient = new DKG({
-    environment: ENVIRONMENT,
     endpoint: OT_NODE_HOSTNAME,
     port: OT_NODE_PORT,
     blockchain: {
