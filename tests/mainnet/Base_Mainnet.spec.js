@@ -52,8 +52,8 @@ describe(`DKG Asset Lifecycle on Mainnet`, function () {
       publicKey: PUBLIC_KEY,
       privateKey: PRIVATE_KEY,
     },
-    maxNumberOfRetries: 300,
-    frequency: 2,
+    maxNumberOfRetries: 30,
+    frequency: 15,
     contentType: 'all',
     nodeApiVersion: '/v1',
   });
