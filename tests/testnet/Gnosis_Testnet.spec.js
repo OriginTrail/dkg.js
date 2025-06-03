@@ -70,7 +70,7 @@ nodes.forEach(({ name, hostname }, currentIndex) => {
         const failedAssets = [];
 
         for (let i = 0; i < 15; i++) {
-          console.log(`\nPublishing KA #${i + 1} on ${name}`);
+          console.log(`\n📡 Publishing KA #${i + 1} on ${name}`);
           const uniqueWord = getRandomWord();
           const content = {
             public: {
@@ -140,11 +140,19 @@ nodes.forEach(({ name, hostname }, currentIndex) => {
             totalPassed++;
           } catch (error) {
             logError(error, name);
-            let reason = error.message.includes('UAL not found') ? 'Publish failed — no UAL' :
-                         error.message.includes('Query returned no results') ? `Query failed — UAL: ${ual || 'N/A'}` :
-                         error.message.includes('Get failed') ? `Local get failed — UAL: ${ual || 'N/A'}` :
-                         error.message.includes('Remote get failed') ? `Remote get failed — UAL: ${ual || 'N/A'}` :
-                         `Unknown failure — UAL: ${ual || 'N/A'}`;
+
+            let reason;
+            if (!ual) {
+              reason = `Publish failed — No UAL`;
+            } else if (error.message.includes('Query returned no results')) {
+              reason = `Query failed — UAL: ${ual}`;
+            } else if (error.message.includes('Get failed')) {
+              reason = `Local get failed — UAL: ${ual}`;
+            } else if (error.message.includes('Remote get failed')) {
+              reason = `Remote get failed — UAL: ${ual}`;
+            } else {
+              reason = `Failed after publish — UAL: ${ual}`;
+            }
 
             failedAssets.push(`KA #${i + 1} (${reason})`);
             totalFailed++;
