@@ -45,7 +45,7 @@ function logError(error, name) {
 
 nodes.forEach(({ name, hostname }, currentIndex) => {
   describe(`DKG Asset Lifecycle on Testnet (${name})`, function () {
-    this.timeout(1200000); // 10 minutes
+    this.timeout(1200000);
 
     const DkgClient = new DKG({
       endpoint: hostname,
@@ -61,15 +61,12 @@ nodes.forEach(({ name, hostname }, currentIndex) => {
       nodeApiVersion: '/v1',
     });
 
-    let attempt = 0;
     describe('', function () {
       this.retries(0);
 
       it('should publish 15 Knowledge Assets per node', async () => {
         for (let i = 0; i < 15; i++) {
-          console.log(`\nPublishing KA #${i + 1} on ${name} (Attempt ${attempt})`);
-          attempt++;
-
+          console.log(`\nPublishing KA #${i + 1} on ${name}`);
           const uniqueWord = getRandomWord();
           const content = {
             public: {
