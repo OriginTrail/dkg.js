@@ -83,6 +83,7 @@ nodes.forEach(({ name, hostname }, currentIndex) => {
           };
 
           let ual = null;
+          let step = 'publishing';
 
           try {
             const create_result = await DkgClient.asset.create(content, {
@@ -101,6 +102,7 @@ nodes.forEach(({ name, hostname }, currentIndex) => {
             assert.ok(ual, `UAL not found after publish`);
             console.log(`✅ Published KA #${i + 1} with UAL: ${ual}`);
 
+            step = 'querying';
             const queryResult = await DkgClient.graph.query(
               `PREFIX schema: <http://schema.org/>
                SELECT ?s ?name ?description
@@ -112,10 +114,12 @@ nodes.forEach(({ name, hostname }, currentIndex) => {
             assert.ok(queryResult?.data?.length > 0, `Query returned no results`);
             console.log(`✅ Query succeeded`);
 
+            step = 'local get';
             const getResult = await DkgClient.asset.get(ual);
             assert.ok(getResult?.assertion, `Get failed`);
             console.log(`✅ Local get succeeded`);
 
+            step = 'remote get';
             const otherIndexes = nodes.map((_, i) => i).filter(i => i !== currentIndex);
             const remoteNode = nodes[otherIndexes[Math.floor(Math.random() * otherIndexes.length)]];
 
@@ -144,11 +148,11 @@ nodes.forEach(({ name, hostname }, currentIndex) => {
             let reason;
             if (!ual) {
               reason = `Publish failed — No UAL`;
-            } else if (error.message.includes('Query returned no results')) {
+            } else if (step === 'querying') {
               reason = `Query failed — UAL: ${ual}`;
-            } else if (error.message.includes('Get failed')) {
+            } else if (step === 'local get') {
               reason = `Local get failed — UAL: ${ual}`;
-            } else if (error.message.includes('Remote get failed')) {
+            } else if (step === 'remote get') {
               reason = `Remote get failed — UAL: ${ual}`;
             } else {
               reason = `Failed after publish — UAL: ${ual}`;
