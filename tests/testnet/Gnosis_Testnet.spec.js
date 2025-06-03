@@ -65,9 +65,12 @@ nodes.forEach(({ name, hostname }, currentIndex) => {
       this.retries(0);
 
       it('should publish 15 Knowledge Assets per node', async () => {
+        let totalPassed = 0;
+        let totalFailed = 0;
+        const failedAssets = [];
+
         for (let i = 0; i < 15; i++) {
           console.log(`\nPublishing KA #${i + 1} on ${name}`);
-
           const uniqueWord = getRandomWord();
           const content = {
             public: {
@@ -79,6 +82,8 @@ nodes.forEach(({ name, hostname }, currentIndex) => {
             },
           };
 
+          let ual = null;
+
           try {
             const create_result = await DkgClient.asset.create(content, {
               epochsNum: 2,
@@ -86,15 +91,15 @@ nodes.forEach(({ name, hostname }, currentIndex) => {
               minimumNumberOfNodeReplications: 3,
             });
 
-            assert.ok(create_result, `No result returned from publish call on ${name}`);
-            assert.ok(create_result.operation, `Missing operation in create_result on ${name}`);
+            assert.ok(create_result, `No result returned from publish call`);
+            assert.ok(create_result.operation, `Missing operation in create_result`);
             assert.strictEqual(create_result.operation.publish.status, 'COMPLETED');
             assert.ok(create_result.operation.finality);
             assert.strictEqual(create_result.operation.finality.status, 'FINALIZED');
 
-            const ual = create_result?.UAL;
-            assert.ok(ual, `UAL not found after publish on ${name}`);
-            console.log(`✅ Published KA #${i + 1} on ${name} with UAL: ${ual}`);
+            ual = create_result?.UAL;
+            assert.ok(ual, `UAL not found after publish`);
+            console.log(`✅ Published KA #${i + 1} with UAL: ${ual}`);
 
             const queryResult = await DkgClient.graph.query(
               `PREFIX schema: <http://schema.org/>
@@ -104,12 +109,12 @@ nodes.forEach(({ name, hostname }, currentIndex) => {
                }`,
               'SELECT'
             );
-            assert.ok(queryResult?.data?.length > 0, `Query returned no results for ${name}`);
-            console.log(`✅ Query succeeded on ${name}`);
+            assert.ok(queryResult?.data?.length > 0, `Query returned no results`);
+            console.log(`✅ Query succeeded`);
 
             const getResult = await DkgClient.asset.get(ual);
-            assert.ok(getResult?.assertion, `Get failed on ${name}`);
-            console.log(`✅ Local get succeeded on ${name}`);
+            assert.ok(getResult?.assertion, `Get failed`);
+            console.log(`✅ Local get succeeded`);
 
             const otherIndexes = nodes.map((_, i) => i).filter(i => i !== currentIndex);
             const remoteNode = nodes[otherIndexes[Math.floor(Math.random() * otherIndexes.length)]];
@@ -129,13 +134,30 @@ nodes.forEach(({ name, hostname }, currentIndex) => {
             });
 
             const remoteGetResult = await RemoteDkgClient.asset.get(ual);
-            assert.ok(remoteGetResult?.assertion, `Failed to get KA from ${remoteNode.name}`);
+            assert.ok(remoteGetResult?.assertion, `Remote get failed`);
             console.log(`✅ Remote get succeeded on ${remoteNode.name}`);
+
+            totalPassed++;
           } catch (error) {
             logError(error, name);
-            console.log(`⚠️ Skipping KA #${i + 1} on ${name} due to error.`);
+            let reason = error.message.includes('UAL not found') ? 'Publish failed — no UAL' :
+                         error.message.includes('Query returned no results') ? `Query failed — UAL: ${ual || 'N/A'}` :
+                         error.message.includes('Get failed') ? `Local get failed — UAL: ${ual || 'N/A'}` :
+                         error.message.includes('Remote get failed') ? `Remote get failed — UAL: ${ual || 'N/A'}` :
+                         `Unknown failure — UAL: ${ual || 'N/A'}`;
+
+            failedAssets.push(`KA #${i + 1} (${reason})`);
+            totalFailed++;
             continue;
           }
+        }
+
+        console.log(`\n──────────── Summary for ${name} ────────────`);
+        console.log(`✅ Success: ${totalPassed} / 15`);
+        console.log(`❌ Failed: ${totalFailed}`);
+        if (failedAssets.length > 0) {
+          console.log(`🔍 Failed Assets:`);
+          failedAssets.forEach(entry => console.log(`  - ${entry}`));
         }
       });
     });
