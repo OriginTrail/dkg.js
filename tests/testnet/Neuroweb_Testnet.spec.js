@@ -10,7 +10,7 @@ const PRIVATE_KEY = process.env.TESTNET_PRIVATE_KEY;
 
 const nodes = [
   { name: 'Node 01', hostname: 'https://v6-pegasus-node-01.origin-trail.network' },
-  { name: 'Node 01', hostname: 'https://v6-pegasus-node-04.origin-trail.network' },
+  { name: 'Node 04', hostname: 'https://v6-pegasus-node-04.origin-trail.network' },
   { name: 'Node 08', hostname: 'https://v6-pegasus-node-08.origin-trail.network' },
 ];
 
