@@ -42,6 +42,9 @@ function logError(error, name) {
     if (lastRelevant) console.log(`📍 Location: ${lastRelevant.trim()}`);
   }
 }
+const globalStats = {
+  [BLOCKCHAIN_IDS.BASE_TESTNET]: {},
+};
 
 nodes.forEach(({ name, hostname }, currentIndex) => {
   describe(`DKG Asset Lifecycle on Testnet (${name})`, function () {
@@ -171,7 +174,37 @@ nodes.forEach(({ name, hostname }, currentIndex) => {
           console.log(`🔍 Failed Assets:`);
           failedAssets.forEach(entry => console.log(`  - ${entry}`));
         }
+
+        // Store in global stats
+        globalStats[BLOCKCHAIN_IDS.BASE_TESTNET][name] = {
+          success: totalPassed,
+          failed: totalFailed,
+        };
       });
     });
+  });
+});
+
+// Print final global summary
+after(() => {
+  console.log(`\n\n📊 Global Publish Summary:`);
+
+  Object.entries(globalStats).forEach(([blockchain, nodeStats]) => {
+    console.log(`\n🔗 Blockchain: ${blockchain}`);
+
+    let totalSuccess = 0;
+    let totalFail = 0;
+
+    Object.entries(nodeStats).forEach(([nodeName, { success, failed }]) => {
+      const total = success + failed;
+      const rate = ((success / total) * 100).toFixed(2);
+      totalSuccess += success;
+      totalFail += failed;
+      console.log(`  • ${nodeName}: ✅ ${success} / ❌ ${failed} (${rate}%)`);
+    });
+
+    const grandTotal = totalSuccess + totalFail;
+    const totalRate = ((totalSuccess / grandTotal) * 100).toFixed(2);
+    console.log(`  📦 TOTAL: ✅ ${totalSuccess} / ❌ ${totalFail} -> ${totalRate}%`);
   });
 });
