@@ -32,6 +32,12 @@ function getRandomDescription() {
   return template.replace('{}', word);
 }
 
+const globalStats = {
+  [BLOCKCHAIN_IDS.BASE_TESTNET]: {},
+};
+
+const errorStats = {};
+
 function logError(error, name) {
   console.log(`\n❌ Error on ${name}`);
   console.log(`🔺 Type: ${error.name}`);
@@ -41,10 +47,12 @@ function logError(error, name) {
     const lastRelevant = stackLines[1] || stackLines[0];
     if (lastRelevant) console.log(`📍 Location: ${lastRelevant.trim()}`);
   }
+
+  // Track the error
+  if (!errorStats[name]) errorStats[name] = {};
+  const key = `${error.name}: ${error.message.split('\n')[0]}`;
+  errorStats[name][key] = (errorStats[name][key] || 0) + 1;
 }
-const globalStats = {
-  [BLOCKCHAIN_IDS.BASE_TESTNET]: {},
-};
 
 nodes.forEach(({ name, hostname }, currentIndex) => {
   describe(`DKG Asset Lifecycle on Testnet (${name})`, function () {
@@ -206,5 +214,13 @@ after(() => {
     const grandTotal = totalSuccess + totalFail;
     const totalRate = ((totalSuccess / grandTotal) * 100).toFixed(2);
     console.log(`  📦 TOTAL: ✅ ${totalSuccess} / ❌ ${totalFail} -> ${totalRate}%`);
+  });
+
+  console.log(`\n\n📊 Error Breakdown by Node:`);
+  Object.entries(errorStats).forEach(([nodeName, errors]) => {
+    console.log(`\n🔧 ${nodeName}`);
+    Object.entries(errors).forEach(([message, count]) => {
+      console.log(`  • ${count}x ${message}`);
+    });
   });
 });
