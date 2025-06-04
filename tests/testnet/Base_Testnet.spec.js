@@ -165,7 +165,7 @@ nodes.forEach(({ name, hostname }, currentIndex) => {
         }
 
         console.log(`\n──────────── Summary for ${name} ────────────`);
-        console.log(`✅ Success: ${totalPassed} / 7`);
+        console.log(`✅ Success: ${totalPassed} / 7 -> ${totalPassed / 7 * 100}%`);
         console.log(`❌ Failed: ${totalFailed}`);
         if (failedAssets.length > 0) {
           console.log(`🔍 Failed Assets:`);
