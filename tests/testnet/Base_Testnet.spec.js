@@ -64,12 +64,12 @@ nodes.forEach(({ name, hostname }, currentIndex) => {
     describe('', function () {
       this.retries(0);
 
-      it('should publish 7 Knowledge Assets per node', async () => {
+      it('should publish 15 Knowledge Assets per node', async () => {
         let totalPassed = 0;
         let totalFailed = 0;
         const failedAssets = [];
 
-        for (let i = 0; i < 7; i++) {
+        for (let i = 0; i < 15; i++) {
           console.log(`\n📡 Publishing KA #${i + 1} on ${name}`);
           const uniqueWord = getRandomWord();
           const content = {
@@ -165,7 +165,7 @@ nodes.forEach(({ name, hostname }, currentIndex) => {
         }
 
         console.log(`\n──────────── Summary for ${name} ────────────`);
-        console.log(`✅ Success: ${totalPassed} / 7 -> ${totalPassed / 7 * 100}%`);
+        console.log(`✅ Success: ${totalPassed} / 15 -> ${((totalPassed / 15) * 100).toFixed(2)}%`);
         console.log(`❌ Failed: ${totalFailed}`);
         if (failedAssets.length > 0) {
           console.log(`🔍 Failed Assets:`);
