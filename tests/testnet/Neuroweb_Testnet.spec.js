@@ -52,8 +52,8 @@ function logError(error, nodeName) {
   errorStats[nodeName][key] = (errorStats[nodeName][key] || 0) + 1;
 }
 
-describe('Sequential DKG Asset Lifecycle on Neuroweb Testnet', function () {
-  this.timeout(3600000);
+describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
+  this.timeout(1200000);
 
   it('should sequentially test all nodes', async () => {
     for (let currentIndex = 0; currentIndex < nodes.length; currentIndex++) {
@@ -146,7 +146,13 @@ describe('Sequential DKG Asset Lifecycle on Neuroweb Testnet', function () {
             nodeApiVersion: '/v1',
           });
 
-          const remoteGetResult = await RemoteDkgClient.asset.get(ual);
+          const remoteGetResult = await Promise.race([
+            RemoteDkgClient.asset.get(ual),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Remote get timed out after 2 minutes')), 2 * 60 * 1000)
+            ),
+          ]);
+
           assert.ok(remoteGetResult?.assertion);
           console.log(`✅ Remote get succeeded on ${remoteNode.name}`);
 
