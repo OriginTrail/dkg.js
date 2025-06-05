@@ -9,9 +9,9 @@ const PUBLIC_KEY = '0xC804682F30c611B7c2AD40F17587Ad5e04974418';
 const PRIVATE_KEY = process.env.TESTNET_PRIVATE_KEY;
 
 const nodes = [
-  { name: 'Node 01', hostname: 'https://v6-pegasus-node-01.origin-trail.network' },
-  { name: 'Node 04', hostname: 'https://v6-pegasus-node-04.origin-trail.network' },
   { name: 'Node 08', hostname: 'https://v6-pegasus-node-08.origin-trail.network' },
+  { name: 'Node 04', hostname: 'https://v6-pegasus-node-04.origin-trail.network' },
+  { name: 'Node 01', hostname: 'https://v6-pegasus-node-01.origin-trail.network' },
 ];
 
 function getRandomWord() {
