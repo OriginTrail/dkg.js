@@ -53,7 +53,7 @@ function logError(error, nodeName) {
 }
 
 describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
-  this.timeout(1200000);
+  this.timeout(95 * 60 * 1000);
 
   it('should sequentially test all nodes', async () => {
     for (let currentIndex = 0; currentIndex < nodes.length; currentIndex++) {

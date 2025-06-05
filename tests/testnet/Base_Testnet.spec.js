@@ -53,7 +53,7 @@ function logError(error, nodeName) {
 }
 
 describe('DKG Asset Lifecycle on Base Testnet', function () {
-  this.timeout(1200000);
+  this.timeout(95 * 60 * 1000);
 
   it('should sequentially test all nodes', async () => {
     for (let currentIndex = 0; currentIndex < nodes.length; currentIndex++) {
@@ -154,7 +154,7 @@ describe('DKG Asset Lifecycle on Base Testnet', function () {
               totalPassed++;
             })(),
             new Promise((_, reject) =>
-              setTimeout(() => reject(new Error(`Timeout after 2 minutes during "${step}" on ${stepNodeName}`)), 8 * 60 * 1000)
+              setTimeout(() => reject(new Error(`Timeout after 2 minutes during "${step}" on ${stepNodeName}`)), 2 * 60 * 1000)
             ),
           ]);
         } catch (error) {
