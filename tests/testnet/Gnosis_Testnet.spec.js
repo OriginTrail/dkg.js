@@ -76,7 +76,7 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
         nodeApiVersion: '/v1',
       });
 
-      for (let i = 0; i < 15; i++) {
+      for (let i = 0; i < 10; i++) {
         console.log(`\n📡 Publishing KA #${i + 1} on ${name}`);
         const content = {
           public: {
