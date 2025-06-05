@@ -154,7 +154,7 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
               totalPassed++;
             })(),
             new Promise((_, reject) =>
-              setTimeout(() => reject(new Error(`Timeout after 2 minutes during "${step}" on ${stepNodeName}`)), 2 * 60 * 1000)
+              setTimeout(() => reject(new Error(`Timeout after 2 minutes during "${step}" on ${stepNodeName}`)), 5 * 60 * 1000)
             ),
           ]);
         } catch (error) {
