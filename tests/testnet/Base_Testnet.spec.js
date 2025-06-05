@@ -9,8 +9,8 @@ const PUBLIC_KEY = '0xC804682F30c611B7c2AD40F17587Ad5e04974418';
 const PRIVATE_KEY = process.env.TESTNET_PRIVATE_KEY;
 
 const nodes = [
-  { name: 'Node 01', hostname: 'https://v6-pegasus-node-04.origin-trail.network' },
-  { name: 'Node 04', hostname: 'https://v6-pegasus-node-01.origin-trail.network' },
+  { name: 'Node 04', hostname: 'https://v6-pegasus-node-04.origin-trail.network' },
+  { name: 'Node 01', hostname: 'https://v6-pegasus-node-01.origin-trail.network' },
   { name: 'Node 08', hostname: 'https://v6-pegasus-node-08.origin-trail.network' },
 ];
 
@@ -94,69 +94,76 @@ describe('DKG Asset Lifecycle on Base Testnet', function () {
         let stepNodeName = name;
 
         try {
-          const create_result = await DkgClient.asset.create(content, {
-            epochsNum: 2,
-            minimumNumberOfFinalizationConfirmations: 3,
-            minimumNumberOfNodeReplications: 3,
-          });
+          await Promise.race([
+            (async () => {
+              const create_result = await DkgClient.asset.create(content, {
+                epochsNum: 2,
+                minimumNumberOfFinalizationConfirmations: 3,
+                minimumNumberOfNodeReplications: 3,
+              });
 
-          assert.ok(create_result);
-          assert.ok(create_result.operation);
-          assert.strictEqual(create_result.operation.publish.status, 'COMPLETED');
-          assert.ok(create_result.operation.finality);
-          assert.strictEqual(create_result.operation.finality.status, 'FINALIZED');
+              assert.ok(create_result);
+              assert.ok(create_result.operation);
+              assert.strictEqual(create_result.operation.publish.status, 'COMPLETED');
+              assert.ok(create_result.operation.finality);
+              assert.strictEqual(create_result.operation.finality.status, 'FINALIZED');
 
-          ual = create_result.UAL;
-          assert.ok(ual);
-          console.log(`✅ Published KA #${i + 1} with UAL: ${ual}`);
+              ual = create_result.UAL;
+              assert.ok(ual);
+              console.log(`✅ Published KA #${i + 1} with UAL: ${ual}`);
 
-          step = 'querying';
-          const queryResult = await DkgClient.graph.query(
-            `PREFIX schema: <http://schema.org/>
-             SELECT ?s ?name ?description
-             WHERE {
-               ?s schema:name ?name ; schema:description ?description .
-             }`,
-            'SELECT'
-          );
-          assert.ok(queryResult?.data?.length > 0);
-          console.log(`✅ Query succeeded`);
+              step = 'querying';
+              const queryResult = await DkgClient.graph.query(
+                `PREFIX schema: <http://schema.org/>
+                 SELECT ?s ?name ?description
+                 WHERE {
+                   ?s schema:name ?name ; schema:description ?description .
+                 }`,
+                'SELECT'
+              );
+              assert.ok(queryResult?.data?.length > 0);
+              console.log(`✅ Query succeeded`);
 
-          step = 'local get';
-          const getResult = await DkgClient.asset.get(ual);
-          assert.ok(getResult?.assertion);
-          console.log(`✅ Local get succeeded`);
+              step = 'local get';
+              const getResult = await DkgClient.asset.get(ual);
+              assert.ok(getResult?.assertion);
+              console.log(`✅ Local get succeeded`);
 
-          step = 'remote get';
-          const otherIndexes = nodes.map((_, i) => i).filter(i => i !== currentIndex);
-          const remoteNode = nodes[otherIndexes[Math.floor(Math.random() * otherIndexes.length)]];
-          stepNodeName = remoteNode.name;
+              step = 'remote get';
+              const otherIndexes = nodes.map((_, i) => i).filter(i => i !== currentIndex);
+              const remoteNode = nodes[otherIndexes[Math.floor(Math.random() * otherIndexes.length)]];
+              stepNodeName = remoteNode.name;
 
-          const RemoteDkgClient = new DKG({
-            endpoint: remoteNode.hostname,
-            port: OT_NODE_PORT,
-            blockchain: {
-              name: BLOCKCHAIN_IDS.BASE_TESTNET,
-              publicKey: PUBLIC_KEY,
-              privateKey: PRIVATE_KEY,
-            },
-            maxNumberOfRetries: 300,
-            frequency: 2,
-            contentType: 'all',
-            nodeApiVersion: '/v1',
-          });
+              const RemoteDkgClient = new DKG({
+                endpoint: remoteNode.hostname,
+                port: OT_NODE_PORT,
+                blockchain: {
+                  name: BLOCKCHAIN_IDS.BASE_TESTNET,
+                  publicKey: PUBLIC_KEY,
+                  privateKey: PRIVATE_KEY,
+                },
+                maxNumberOfRetries: 300,
+                frequency: 2,
+                contentType: 'all',
+                nodeApiVersion: '/v1',
+              });
 
-          const remoteGetResult = await Promise.race([
-            RemoteDkgClient.asset.get(ual),
+              const remoteGetResult = await Promise.race([
+                RemoteDkgClient.asset.get(ual),
+                new Promise((_, reject) =>
+                  setTimeout(() => reject(new Error('Remote get timed out after 2 minutes')), 2 * 60 * 1000)
+                ),
+              ]);
+
+              assert.ok(remoteGetResult?.assertion);
+              console.log(`✅ Remote get succeeded on ${remoteNode.name}`);
+
+              totalPassed++;
+            })(),
             new Promise((_, reject) =>
-              setTimeout(() => reject(new Error('Remote get timed out after 2 minutes')), 2 * 60 * 1000)
+              setTimeout(() => reject(new Error('KA full lifecycle timed out after 2 minutes')), 2 * 60 * 1000)
             ),
           ]);
-
-          assert.ok(remoteGetResult?.assertion);
-          console.log(`✅ Remote get succeeded on ${remoteNode.name}`);
-
-          totalPassed++;
         } catch (error) {
           logError(error, stepNodeName);
           const reason = !ual
