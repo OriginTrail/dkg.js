@@ -168,7 +168,7 @@ describe('DKG Asset Lifecycle on Base Testnet', function () {
       }
 
       console.log(`\n──────────── Summary for ${name} ────────────`);
-      console.log(`✅ Success: ${totalPassed} / 15 -> ${((totalPassed / 15) * 100).toFixed(2)}%`);
+      console.log(`✅ Success: ${totalPassed} / 10 -> ${((totalPassed / 10) * 100).toFixed(2)}%`);
       console.log(`❌ Failed: ${totalFailed}`);
       if (failedAssets.length > 0) {
         console.log(`🔍 Failed Assets:`);
