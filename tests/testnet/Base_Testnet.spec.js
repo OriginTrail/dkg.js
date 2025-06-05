@@ -78,13 +78,12 @@ describe('DKG Asset Lifecycle on Base Testnet', function () {
 
       for (let i = 0; i < 15; i++) {
         console.log(`\n📡 Publishing KA #${i + 1} on ${name}`);
-        const uniqueWord = getRandomWord();
         const content = {
           public: {
             '@context': 'https://www.schema.org',
             '@id': `urn:ka:${name.replace(' ', '').toLowerCase()}-${randomUUID()}`,
             '@type': 'CreativeWork',
-            name: `DKG ${uniqueWord} ${Date.now()}`,
+            name: `DKG ${getRandomWord()} ${Date.now()}`,
             description: getRandomDescription(),
           },
         };
@@ -148,20 +147,14 @@ describe('DKG Asset Lifecycle on Base Testnet', function () {
                 nodeApiVersion: '/v1',
               });
 
-              const remoteGetResult = await Promise.race([
-                RemoteDkgClient.asset.get(ual),
-                new Promise((_, reject) =>
-                  setTimeout(() => reject(new Error('Remote get timed out after 2 minutes')), 2 * 60 * 1000)
-                ),
-              ]);
-
+              const remoteGetResult = await RemoteDkgClient.asset.get(ual);
               assert.ok(remoteGetResult?.assertion);
               console.log(`✅ Remote get succeeded on ${remoteNode.name}`);
 
               totalPassed++;
             })(),
             new Promise((_, reject) =>
-              setTimeout(() => reject(new Error('KA full lifecycle timed out after 2 minutes')), 2 * 60 * 1000)
+              setTimeout(() => reject(new Error(`Timeout after 2 minutes during "${step}" on ${stepNodeName}`)), 2 * 60 * 1000)
             ),
           ]);
         } catch (error) {
