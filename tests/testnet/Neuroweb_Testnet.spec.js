@@ -38,8 +38,8 @@ const globalStats = {
 
 const errorStats = {};
 
-function logError(error, name) {
-  console.log(`\n❌ Error on ${name}`);
+function logError(error, nodeName) {
+  console.log(`\n❌ Error on ${nodeName}`);
   console.log(`🔺 Type: ${error.name}`);
   console.log(`🧵 Message: ${error.message}`);
   if (error.stack) {
@@ -48,10 +48,9 @@ function logError(error, name) {
     if (lastRelevant) console.log(`📍 Location: ${lastRelevant.trim()}`);
   }
 
-  // Track the error
-  if (!errorStats[name]) errorStats[name] = {};
+  if (!errorStats[nodeName]) errorStats[nodeName] = {};
   const key = `${error.name}: ${error.message.split('\n')[0]}`;
-  errorStats[name][key] = (errorStats[name][key] || 0) + 1;
+  errorStats[nodeName][key] = (errorStats[nodeName][key] || 0) + 1;
 }
 
 nodes.forEach(({ name, hostname }, currentIndex) => {
@@ -95,6 +94,7 @@ nodes.forEach(({ name, hostname }, currentIndex) => {
 
           let ual = null;
           let step = 'publishing';
+          let stepNodeName = name;
 
           try {
             const create_result = await DkgClient.asset.create(content, {
@@ -133,6 +133,7 @@ nodes.forEach(({ name, hostname }, currentIndex) => {
             step = 'remote get';
             const otherIndexes = nodes.map((_, i) => i).filter(i => i !== currentIndex);
             const remoteNode = nodes[otherIndexes[Math.floor(Math.random() * otherIndexes.length)]];
+            stepNodeName = remoteNode.name;
 
             const RemoteDkgClient = new DKG({
               endpoint: remoteNode.hostname,
@@ -154,7 +155,7 @@ nodes.forEach(({ name, hostname }, currentIndex) => {
 
             totalPassed++;
           } catch (error) {
-            logError(error, name);
+            logError(error, stepNodeName);
 
             let reason;
             if (!ual) {
@@ -183,7 +184,6 @@ nodes.forEach(({ name, hostname }, currentIndex) => {
           failedAssets.forEach(entry => console.log(`  - ${entry}`));
         }
 
-        // Store in global stats
         globalStats[BLOCKCHAIN_IDS.NEUROWEB_TESTNET][name] = {
           success: totalPassed,
           failed: totalFailed,
@@ -193,7 +193,6 @@ nodes.forEach(({ name, hostname }, currentIndex) => {
   });
 });
 
-// Print final global summary
 after(() => {
   console.log(`\n\n📊 Global Publish Summary:`);
 
