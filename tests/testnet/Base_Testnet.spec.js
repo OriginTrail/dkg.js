@@ -10,8 +10,8 @@ const PRIVATE_KEY = process.env.TESTNET_PRIVATE_KEY;
 
 const nodes = [
   { name: 'Node 01', hostname: 'https://v6-pegasus-node-01.origin-trail.network' },
-  { name: 'Node 02', hostname: 'https://v6-pegasus-node-02.origin-trail.network' },
-  { name: 'Node 03', hostname: 'https://v6-pegasus-node-03.origin-trail.network' },
+  { name: 'Node 04', hostname: 'https://v6-pegasus-node-04.origin-trail.network' },
+  { name: 'Node 08', hostname: 'https://v6-pegasus-node-08.origin-trail.network' },
 ];
 
 function getRandomWord() {
@@ -76,7 +76,7 @@ describe('DKG Asset Lifecycle on Base Testnet', function () {
         nodeApiVersion: '/v1',
       });
 
-      for (let i = 0; i < 2; i++) {
+      for (let i = 0; i < 10; i++) {
         console.log(`\n📡 Publishing KA #${i + 1} on ${name}`);
         const content = {
           public: {
@@ -154,7 +154,7 @@ describe('DKG Asset Lifecycle on Base Testnet', function () {
               totalPassed++;
             })(),
             new Promise((_, reject) =>
-              setTimeout(() => reject(new Error(`Timeout after 2 minutes during "${step}" on ${stepNodeName}`)), 5 * 60 * 1000)
+              setTimeout(() => reject(new Error(`Timeout after 3 minutes during "${step}" on ${stepNodeName}`)), 3 * 60 * 1000)
             ),
           ]);
         } catch (error) {
