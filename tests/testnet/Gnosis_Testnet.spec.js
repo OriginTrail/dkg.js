@@ -5,13 +5,76 @@ import 'dotenv/config';
 import { randomUUID } from 'crypto';
 
 const OT_NODE_PORT = '8900';
-const PUBLIC_KEY = '0xC804682F30c611B7c2AD40F17587Ad5e04974418';
-const PRIVATE_KEY = process.env.TESTNET_PRIVATE_KEY;
+
+const nodeKeys = {
+  'Node 01': {
+    publicKey: process.env.TESTNET_GNOSIS_NODE01_PUBLIC_KEY,
+    privateKey: process.env.TESTNET_GNOSIS_NODE01_PRIVATE_KEY
+  },
+  'Node 04': {
+    publicKey: process.env.TESTNET_GNOSIS_NODE04_PUBLIC_KEY,
+    privateKey: process.env.TESTNET_GNOSIS_NODE04_PRIVATE_KEY
+  },
+  'Node 05': {
+    publicKey: process.env.TESTNET_GNOSIS_NODE05_PUBLIC_KEY,
+    privateKey: process.env.TESTNET_GNOSIS_NODE05_PRIVATE_KEY
+  },
+  'Node 06': {
+    publicKey: process.env.TESTNET_GNOSIS_NODE06_PUBLIC_KEY,
+    privateKey: process.env.TESTNET_GNOSIS_NODE06_PRIVATE_KEY
+  },
+  'Node 07': {
+    publicKey: process.env.TESTNET_GNOSIS_NODE07_PUBLIC_KEY,
+    privateKey: process.env.TESTNET_GNOSIS_NODE07_PRIVATE_KEY
+  },
+  'Node 08': {
+    publicKey: process.env.TESTNET_GNOSIS_NODE08_PUBLIC_KEY,
+    privateKey: process.env.TESTNET_GNOSIS_NODE08_PRIVATE_KEY
+  },
+  'Node 09': {
+    publicKey: process.env.TESTNET_GNOSIS_NODE09_PUBLIC_KEY,
+    privateKey: process.env.TESTNET_GNOSIS_NODE09_PRIVATE_KEY
+  },
+  'Node 10': {
+    publicKey: process.env.TESTNET_GNOSIS_NODE10_PUBLIC_KEY,
+    privateKey: process.env.TESTNET_GNOSIS_NODE10_PRIVATE_KEY
+  },
+  'Node 13': {
+    publicKey: process.env.TESTNET_GNOSIS_NODE13_PUBLIC_KEY,
+    privateKey: process.env.TESTNET_GNOSIS_NODE13_PRIVATE_KEY
+  },
+  'Node 14': {
+    publicKey: process.env.TESTNET_GNOSIS_NODE14_PUBLIC_KEY,
+    privateKey: process.env.TESTNET_GNOSIS_NODE14_PRIVATE_KEY
+  },
+  'Node 21': {
+    publicKey: process.env.TESTNET_GNOSIS_NODE21_PUBLIC_KEY,
+    privateKey: process.env.TESTNET_GNOSIS_NODE21_PRIVATE_KEY
+  },
+  'Node 23': {
+    publicKey: process.env.TESTNET_GNOSIS_NODE23_PUBLIC_KEY,
+    privateKey: process.env.TESTNET_GNOSIS_NODE23_PRIVATE_KEY
+  },
+  'Node 37': {
+    publicKey: process.env.TESTNET_GNOSIS_NODE37_PUBLIC_KEY,
+    privateKey: process.env.TESTNET_GNOSIS_NODE37_PRIVATE_KEY
+  }
+};
 
 const nodes = [
   { name: 'Node 01', hostname: 'https://v6-pegasus-node-01.origin-trail.network' },
   { name: 'Node 04', hostname: 'https://v6-pegasus-node-04.origin-trail.network' },
+  { name: 'Node 05', hostname: 'https://v6-pegasus-node-05.origin-trail.network' },
+  { name: 'Node 06', hostname: 'https://v6-pegasus-node-06.origin-trail.network' },
+  { name: 'Node 07', hostname: 'https://v6-pegasus-node-07.origin-trail.network' },
   { name: 'Node 08', hostname: 'https://v6-pegasus-node-08.origin-trail.network' },
+  { name: 'Node 09', hostname: 'https://v6-pegasus-node-09.origin-trail.network' },
+  { name: 'Node 10', hostname: 'https://v6-pegasus-node-10.origin-trail.network' },
+  { name: 'Node 13', hostname: 'https://v6-pegasus-node-13.origin-trail.network' },
+  { name: 'Node 14', hostname: 'https://v6-pegasus-node-14.origin-trail.network' },
+  { name: 'Node 21', hostname: 'https://v6-pegasus-node-21.origin-trail.network' },
+  { name: 'Node 23', hostname: 'https://v6-pegasus-node-23.origin-trail.network' },
+  { name: 'Node 37', hostname: 'https://v6-pegasus-node-37.origin-trail.network' },
 ];
 
 function getRandomWord() {
@@ -38,6 +101,17 @@ const globalStats = {
 
 const errorStats = {};
 
+function formatDuration(ms) {
+  const seconds = ms / 1000;
+  if (seconds < 60) {
+    return `${seconds.toFixed(2)} seconds`;
+  } else {
+    const mins = Math.floor(seconds / 60);
+    const secs = (seconds % 60).toFixed(2);
+    return `${mins} min ${secs} sec`;
+  }
+}
+
 function logError(error, nodeName) {
   console.log(`\n❌ Error on ${nodeName}`);
   console.log(`🔺 Type: ${error.name}`);
@@ -53,13 +127,33 @@ function logError(error, nodeName) {
 }
 
 describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
-  this.timeout(95 * 60 * 1000);
+  this.timeout(35 * 60 * 1000);
 
-  it('should sequentially test all nodes', async () => {
-    for (let currentIndex = 0; currentIndex < nodes.length; currentIndex++) {
-      const { name, hostname } = nodes[currentIndex];
-      let totalPassed = 0;
-      let totalFailed = 0;
+  it('should sequentially test selected node(s)', async () => {
+    const NODE_TO_TEST = process.env.NODE_TO_TEST;
+
+    const nodesToRun = NODE_TO_TEST
+      ? nodes.filter((node) => node.name === NODE_TO_TEST)
+      : nodes;
+
+    console.log(`\n🚀 Running test for node: ${nodesToRun.map((n) => n.name).join(', ')}`);
+
+    for (let currentIndex = 0; currentIndex < nodesToRun.length; currentIndex++) {
+      const { name, hostname } = nodesToRun[currentIndex];
+
+      // Initialize per-step counters:
+      let publishSuccess = 0;
+      let publishFail = 0;
+      let querySuccess = 0;
+      let queryFail = 0;
+      let localGetSuccess = 0;
+      let localGetFail = 0;
+      let remoteGetSuccess = 0;
+      let remoteGetFail = 0;
+
+      const publishDurations = [];
+      const localGetDurations = [];
+
       const failedAssets = [];
 
       const DkgClient = new DKG({
@@ -67,8 +161,8 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
         port: OT_NODE_PORT,
         blockchain: {
           name: BLOCKCHAIN_IDS.GNOSIS_TESTNET,
-          publicKey: PUBLIC_KEY,
-          privateKey: PRIVATE_KEY,
+          publicKey: nodeKeys[name].publicKey,
+          privateKey: nodeKeys[name].privateKey,
         },
         maxNumberOfRetries: 300,
         frequency: 2,
@@ -95,11 +189,17 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
         try {
           await Promise.race([
             (async () => {
+              // Measure publish time:
+              const publishStart = Date.now();
+
               const create_result = await DkgClient.asset.create(content, {
                 epochsNum: 2,
                 minimumNumberOfFinalizationConfirmations: 3,
                 minimumNumberOfNodeReplications: 3,
               });
+
+              const publishEnd = Date.now();
+              publishDurations.push(publishEnd - publishStart);
 
               assert.ok(create_result);
               assert.ok(create_result.operation);
@@ -110,6 +210,7 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
               ual = create_result.UAL;
               assert.ok(ual);
               console.log(`✅ Published KA #${i + 1} with UAL: ${ual}`);
+              publishSuccess++;
 
               step = 'querying';
               const queryResult = await DkgClient.graph.query(
@@ -122,11 +223,19 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
               );
               assert.ok(queryResult?.data?.length > 0);
               console.log(`✅ Query succeeded`);
+              querySuccess++;
 
               step = 'local get';
+              const localGetStart = Date.now();
+
               const getResult = await DkgClient.asset.get(ual);
+
+              const localGetEnd = Date.now();
+              localGetDurations.push(localGetEnd - localGetStart);
+
               assert.ok(getResult?.assertion);
               console.log(`✅ Local get succeeded`);
+              localGetSuccess++;
 
               step = 'remote get';
               const otherIndexes = nodes.map((_, i) => i).filter(i => i !== currentIndex);
@@ -138,8 +247,8 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
                 port: OT_NODE_PORT,
                 blockchain: {
                   name: BLOCKCHAIN_IDS.GNOSIS_TESTNET,
-                  publicKey: PUBLIC_KEY,
-                  privateKey: PRIVATE_KEY,
+                  publicKey: nodeKeys[remoteNode.name].publicKey,
+                  privateKey: nodeKeys[remoteNode.name].privateKey,
                 },
                 maxNumberOfRetries: 300,
                 frequency: 2,
@@ -150,8 +259,8 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
               const remoteGetResult = await RemoteDkgClient.asset.get(ual);
               assert.ok(remoteGetResult?.assertion);
               console.log(`✅ Remote get succeeded on ${remoteNode.name}`);
+              remoteGetSuccess++;
 
-              totalPassed++;
             })(),
             new Promise((_, reject) =>
               setTimeout(() => reject(new Error(`Timeout after 3 minutes during "${step}" on ${stepNodeName}`)), 3 * 60 * 1000)
@@ -163,21 +272,40 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
             ? 'Publish failed — No UAL'
             : `${step.charAt(0).toUpperCase() + step.slice(1)} failed — UAL: ${ual}`;
           failedAssets.push(`KA #${i + 1} (${reason})`);
-          totalFailed++;
+
+          // Increment correct fail counter:
+          switch (step) {
+            case 'publishing': publishFail++; break;
+            case 'querying': queryFail++; break;
+            case 'local get': localGetFail++; break;
+            case 'remote get': remoteGetFail++; break;
+          }
         }
       }
 
+      const avgPublishMs = publishDurations.length > 0 ? publishDurations.reduce((a, b) => a + b, 0) / publishDurations.length : 0;
+      const avgLocalGetMs = localGetDurations.length > 0 ? localGetDurations.reduce((a, b) => a + b, 0) / localGetDurations.length : 0;
+
       console.log(`\n──────────── Summary for ${name} ────────────`);
-      console.log(`✅ Success: ${totalPassed} / 10 -> ${((totalPassed / 10) * 100).toFixed(2)}%`);
-      console.log(`❌ Failed: ${totalFailed}`);
       if (failedAssets.length > 0) {
         console.log(`🔍 Failed Assets:`);
         failedAssets.forEach(entry => console.log(`  - ${entry}`));
+      } else {
+        console.log(`✅ All assets processed successfully`);
       }
 
+      // Save stats for global summary:
       globalStats[BLOCKCHAIN_IDS.GNOSIS_TESTNET][name] = {
-        success: totalPassed,
-        failed: totalFailed,
+        publishSuccess,
+        publishFail,
+        querySuccess,
+        queryFail,
+        localGetSuccess,
+        localGetFail,
+        remoteGetSuccess,
+        remoteGetFail,
+        avgPublishMs,
+        avgLocalGetMs,
       };
     }
   });
@@ -186,18 +314,15 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
     console.log(`\n\n📊 Global Publish Summary:`);
     Object.entries(globalStats).forEach(([blockchain, nodeStats]) => {
       console.log(`\n🔗 Blockchain: ${blockchain}`);
-      let totalSuccess = 0;
-      let totalFail = 0;
-      Object.entries(nodeStats).forEach(([nodeName, { success, failed }]) => {
-        const total = success + failed;
-        const rate = ((success / total) * 100).toFixed(2);
-        totalSuccess += success;
-        totalFail += failed;
-        console.log(`  • ${nodeName}: ✅ ${success} / ❌ ${failed} (${rate}%)`);
+      Object.entries(nodeStats).forEach(([nodeName, stats]) => {
+        console.log(`  • ${nodeName}:`);
+        console.log(`    🔸 Publish: ✅ ${stats.publishSuccess} / ❌ ${stats.publishFail} -> ${((stats.publishSuccess / (stats.publishSuccess + stats.publishFail)) * 100).toFixed(2)}%`);
+        console.log(`    🔸 Query:   ✅ ${stats.querySuccess} / ❌ ${stats.queryFail} -> ${((stats.querySuccess / (stats.querySuccess + stats.queryFail)) * 100).toFixed(2)}%`);
+        console.log(`    🔸 Local Get: ✅ ${stats.localGetSuccess} / ❌ ${stats.localGetFail} -> ${((stats.localGetSuccess / (stats.localGetSuccess + stats.localGetFail)) * 100).toFixed(2)}%`);
+        console.log(`    🔸 Remote Get: ✅ ${stats.remoteGetSuccess} / ❌ ${stats.remoteGetFail} -> ${((stats.remoteGetSuccess / (stats.remoteGetSuccess + stats.remoteGetFail)) * 100).toFixed(2)}%`);
+        console.log(`    ⏱️ Avg Publish Time: ${formatDuration(stats.avgPublishMs)}`);
+        console.log(`    ⏱️ Avg Local Get Time: ${formatDuration(stats.avgLocalGetMs)}`);
       });
-      const grandTotal = totalSuccess + totalFail;
-      const totalRate = ((totalSuccess / grandTotal) * 100).toFixed(2);
-      console.log(`  📦 TOTAL: ✅ ${totalSuccess} / ❌ ${totalFail} -> ${totalRate}%`);
     });
 
     console.log(`\n\n📊 Error Breakdown by Node:`);
