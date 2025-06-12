@@ -3,6 +3,7 @@ import DKG from '../../index.js';
 import { BLOCKCHAIN_IDS } from '../../constants/constants.js';
 import 'dotenv/config';
 import { randomUUID } from 'crypto';
+import fs from 'fs';
 
 const OT_NODE_PORT = '8900';
 
