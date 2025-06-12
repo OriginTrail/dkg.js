@@ -32,10 +32,15 @@ for (const file of files) {
         continue; // skip to next file
     }
 
-    // Insert safely
+    // Determine table name based on blockchain_name
+    let tableName = 'publish_testnet_summary';
+    if (summary.blockchain_name && summary.blockchain_name.toString().includes('MAINNET')) {
+        tableName = 'publish_mainnet_summary';
+    }
+
     try {
         const query = `
-            INSERT INTO your_table_name (
+            INSERT INTO ${tableName} (
                 blockchain_name, node_name,
                 publish_success_rate, query_success_rate,
                 publisher_get_success_rate, non_publisher_get_success_rate,
@@ -59,9 +64,9 @@ for (const file of files) {
             summary.time_stamp
         ]);
 
-        console.log(`✅ Inserted ${file} into DB`);
+        console.log(`✅ Inserted ${file} into table '${tableName}'`);
     } catch (err) {
-        console.error(`❌ Failed to insert ${file} into DB:`, err.message);
+        console.error(`❌ Failed to insert ${file} into DB (table '${tableName}'):`, err.message);
         continue;
     }
 }
