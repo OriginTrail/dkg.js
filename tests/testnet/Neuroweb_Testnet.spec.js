@@ -113,7 +113,10 @@ function formatDuration(ms) {
     return `${mins} min ${secs} sec`;
   }
 }
-
+function safeRate(success, fail) {
+  const total = success + fail;
+  return total === 0 ? '0.00' : ((success / total) * 100).toFixed(2);
+}
 function logError(error, nodeName) {
   console.log(`\n❌ Error on ${nodeName}`);
   console.log(`🔺 Type: ${error.name}`);
@@ -327,19 +330,36 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
         avgLocalGetMs,
         avgRemoteGetMs,
       };
+      const summary = {
+        blockchain_name: BLOCKCHAIN_IDS.NEUROWEB_TESTNET,
+        node_name: name,
+        publish_success_rate: safeRate(publishSuccess, publishFail),
+        query_success_rate: safeRate(querySuccess, queryFail),
+        publisher_get_success_rate: safeRate(localGetSuccess, localGetFail),
+        non_publisher_get_success_rate: safeRate(remoteGetSuccess, remoteGetFail),
+        average_publish_time: (avgPublishMs / 1000).toFixed(2),
+        average_query_time: (avgQueryMs / 1000).toFixed(2),
+        average_publisher_get_time: (avgLocalGetMs / 1000).toFixed(2),
+        average_non_publisher_get_time: (avgRemoteGetMs / 1000).toFixed(2),
+        time_stamp: new Date().toISOString()
+      };
+
+// Define safe file name:
+const summaryFileName = `summary_${name.replace(' ', '_')}.json`;
+fs.writeFileSync(summaryFileName, JSON.stringify(summary, null, 2));
+console.log(`✅ Saved summary to ${summaryFileName}`);
     }
   });
-
   after(() => {
     console.log(`\n\n📊 Global Publish Summary:`);
     Object.entries(globalStats).forEach(([blockchain, nodeStats]) => {
       console.log(`\n🔗 Blockchain: ${blockchain}`);
       Object.entries(nodeStats).forEach(([nodeName, stats]) => {
         console.log(`  • ${nodeName}:`);
-        console.log(`    🔸 Publish: ✅ ${stats.publishSuccess} / ❌ ${stats.publishFail} -> ${((stats.publishSuccess / (stats.publishSuccess + stats.publishFail)) * 100).toFixed(2)}%`);
-        console.log(`    🔸 Query:   ✅ ${stats.querySuccess} / ❌ ${stats.queryFail} -> ${((stats.querySuccess / (stats.querySuccess + stats.queryFail)) * 100).toFixed(2)}%`);
-        console.log(`    🔸 Publisher Node Get: ✅ ${stats.localGetSuccess} / ❌ ${stats.localGetFail} -> ${((stats.localGetSuccess / (stats.localGetSuccess + stats.localGetFail)) * 100).toFixed(2)}%`);
-        console.log(`    🔸 Non-Publisher Node Get: ✅ ${stats.remoteGetSuccess} / ❌ ${stats.remoteGetFail} -> ${((stats.remoteGetSuccess / (stats.remoteGetSuccess + stats.remoteGetFail)) * 100).toFixed(2)}%`);
+        console.log(`    🔸 Publish: ✅ ${stats.publishSuccess} / ❌ ${stats.publishFail} -> ${safeRate(stats.publishSuccess, stats.publishFail)}%`);
+        console.log(`    🔸 Query:   ✅ ${stats.querySuccess} / ❌ ${stats.queryFail} -> ${safeRate(stats.querySuccess, stats.queryFail)}%`);
+        console.log(`    🔸 Publisher Node Get: ✅ ${stats.localGetSuccess} / ❌ ${stats.localGetFail} -> ${safeRate(stats.localGetSuccess, stats.localGetFail)}%`);
+        console.log(`    🔸 Non-Publisher Node Get: ✅ ${stats.remoteGetSuccess} / ❌ ${stats.remoteGetFail} -> ${safeRate(stats.remoteGetSuccess, stats.remoteGetFail)}%`);
         console.log(`    ⏱️ Avg Publish Time: ${formatDuration(stats.avgPublishMs)}`);
         console.log(`    ⏱️ Avg Query Time: ${formatDuration(stats.avgQueryMs)}`);
         console.log(`    ⏱️ Avg Publisher Node Get Time: ${formatDuration(stats.avgLocalGetMs)}`);
