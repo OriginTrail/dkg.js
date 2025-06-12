@@ -42,6 +42,8 @@ const globalStats = {
 const errorStats = {};
 
 function formatDuration(ms) {
+  if (!ms || isNaN(ms)) return `0.00 seconds`;
+
   const seconds = ms / 1000;
   if (seconds < 60) {
     return `${seconds.toFixed(2)} seconds`;
@@ -92,7 +94,9 @@ describe('DKG Asset Lifecycle on Base Mainnet', function () {
       let remoteGetFail = 0;
 
       const publishDurations = [];
+      const queryDurations = [];
       const localGetDurations = [];
+      const remoteGetDurations = [];
 
       const failedAssets = [];
 
@@ -153,6 +157,8 @@ describe('DKG Asset Lifecycle on Base Mainnet', function () {
               publishSuccess++;
 
               step = 'querying';
+              const queryStart = Date.now();
+
               const queryResult = await DkgClient.graph.query(
                 `PREFIX schema: <http://schema.org/>
                  SELECT ?s ?name ?description
@@ -161,11 +167,15 @@ describe('DKG Asset Lifecycle on Base Mainnet', function () {
                  }`,
                 'SELECT'
               );
+
+              const queryEnd = Date.now();
+              queryDurations.push(queryEnd - queryStart);
+
               assert.ok(queryResult?.data?.length > 0);
               console.log(`✅ Query succeeded`);
               querySuccess++;
 
-              step = 'local get';
+              step = 'publisher node get';
               const localGetStart = Date.now();
 
               const getResult = await DkgClient.asset.get(ual);
@@ -174,10 +184,10 @@ describe('DKG Asset Lifecycle on Base Mainnet', function () {
               localGetDurations.push(localGetEnd - localGetStart);
 
               assert.ok(getResult?.assertion);
-              console.log(`✅ Local get succeeded`);
+              console.log(`✅ Publisher Node Get Succeeded`);
               localGetSuccess++;
 
-              step = 'remote get';
+              step = 'non-publisher node get';
               const otherIndexes = nodes.map((_, i) => i).filter(i => i !== currentIndex);
               const remoteNode = nodes[otherIndexes[Math.floor(Math.random() * otherIndexes.length)]];
               stepNodeName = remoteNode.name;
@@ -196,9 +206,15 @@ describe('DKG Asset Lifecycle on Base Mainnet', function () {
                 nodeApiVersion: '/v1',
               });
 
+              const remoteGetStart = Date.now();
+
               const remoteGetResult = await RemoteDkgClient.asset.get(ual);
+
+              const remoteGetEnd = Date.now();
+              remoteGetDurations.push(remoteGetEnd - remoteGetStart);
+
               assert.ok(remoteGetResult?.assertion);
-              console.log(`✅ Remote get succeeded on ${remoteNode.name}`);
+              console.log(`✅ Non-Publisher Node Get Succeeded on ${remoteNode.name}`);
               remoteGetSuccess++;
 
             })(),
@@ -217,14 +233,16 @@ describe('DKG Asset Lifecycle on Base Mainnet', function () {
           switch (step) {
             case 'publishing': publishFail++; break;
             case 'querying': queryFail++; break;
-            case 'local get': localGetFail++; break;
-            case 'remote get': remoteGetFail++; break;
+            case 'publisher node get': localGetFail++; break;
+            case 'non-publisher node get': remoteGetFail++; break;
           }
         }
       }
 
-      const avgPublishMs = publishDurations.length > 0 ? publishDurations.reduce((a, b) => a + b, 0) / publishDurations.length : 0;
-      const avgLocalGetMs = localGetDurations.length > 0 ? localGetDurations.reduce((a, b) => a + b, 0) / localGetDurations.length : 0;
+      const avgPublishMs = publishSuccess > 0 && publishDurations.length > 0 ? publishDurations.reduce((a, b) => a + b, 0) / publishDurations.length : 0;
+      const avgQueryMs = querySuccess > 0 && queryDurations.length > 0 ? queryDurations.reduce((a, b) => a + b, 0) / queryDurations.length : 0;
+      const avgLocalGetMs = localGetSuccess > 0 && localGetDurations.length > 0 ? localGetDurations.reduce((a, b) => a + b, 0) / localGetDurations.length : 0;
+      const avgRemoteGetMs = remoteGetSuccess > 0 && remoteGetDurations.length > 0 ? remoteGetDurations.reduce((a, b) => a + b, 0) / remoteGetDurations.length : 0;
 
       console.log(`\n──────────── Summary for ${name} ────────────`);
       if (failedAssets.length > 0) {
@@ -245,7 +263,9 @@ describe('DKG Asset Lifecycle on Base Mainnet', function () {
         remoteGetSuccess,
         remoteGetFail,
         avgPublishMs,
+        avgQueryMs,
         avgLocalGetMs,
+        avgRemoteGetMs,
       };
     }
   });
@@ -258,10 +278,12 @@ describe('DKG Asset Lifecycle on Base Mainnet', function () {
         console.log(`  • ${nodeName}:`);
         console.log(`    🔸 Publish: ✅ ${stats.publishSuccess} / ❌ ${stats.publishFail} -> ${((stats.publishSuccess / (stats.publishSuccess + stats.publishFail)) * 100).toFixed(2)}%`);
         console.log(`    🔸 Query:   ✅ ${stats.querySuccess} / ❌ ${stats.queryFail} -> ${((stats.querySuccess / (stats.querySuccess + stats.queryFail)) * 100).toFixed(2)}%`);
-        console.log(`    🔸 Local Get: ✅ ${stats.localGetSuccess} / ❌ ${stats.localGetFail} -> ${((stats.localGetSuccess / (stats.localGetSuccess + stats.localGetFail)) * 100).toFixed(2)}%`);
-        console.log(`    🔸 Remote Get: ✅ ${stats.remoteGetSuccess} / ❌ ${stats.remoteGetFail} -> ${((stats.remoteGetSuccess / (stats.remoteGetSuccess + stats.remoteGetFail)) * 100).toFixed(2)}%`);
+        console.log(`    🔸 Publisher Node Get: ✅ ${stats.localGetSuccess} / ❌ ${stats.localGetFail} -> ${((stats.localGetSuccess / (stats.localGetSuccess + stats.localGetFail)) * 100).toFixed(2)}%`);
+        console.log(`    🔸 Non-Publisher Node Get: ✅ ${stats.remoteGetSuccess} / ❌ ${stats.remoteGetFail} -> ${((stats.remoteGetSuccess / (stats.remoteGetSuccess + stats.remoteGetFail)) * 100).toFixed(2)}%`);
         console.log(`    ⏱️ Avg Publish Time: ${formatDuration(stats.avgPublishMs)}`);
-        console.log(`    ⏱️ Avg Local Get Time: ${formatDuration(stats.avgLocalGetMs)}`);
+        console.log(`    ⏱️ Avg Query Time: ${formatDuration(stats.avgQueryMs)}`);
+        console.log(`    ⏱️ Avg Publisher Node Get Time: ${formatDuration(stats.avgLocalGetMs)}`);
+        console.log(`    ⏱️ Avg Non-Publisher Node Get Time: ${formatDuration(stats.avgRemoteGetMs)}`);
       });
     });
 
