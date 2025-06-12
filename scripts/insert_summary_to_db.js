@@ -1,17 +1,18 @@
 import fs from 'fs';
-import mysql from 'mysql2/promise';
+import { Client } from 'pg';
 import 'dotenv/config';
 
-let db;
+const db = new Client({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    port: process.env.DB_PORT || 5432,
+});
 
 try {
-    db = await mysql.createConnection({
-        host: process.env.DB_HOST,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME,
-    });
-    console.log('✅ Connected to DB');
+    await db.connect();
+    console.log('✅ Connected to PostgreSQL DB');
 } catch (err) {
     console.error('❌ Failed to connect to DB:', err.message);
     process.exit(1);
@@ -23,16 +24,14 @@ for (const file of files) {
     console.log(`Processing ${file}`);
     let summary;
 
-    // Read file safely
     try {
         const raw = fs.readFileSync(file, 'utf8');
         summary = JSON.parse(raw);
     } catch (err) {
         console.error(`❌ Failed to read or parse ${file}:`, err.message);
-        continue; // skip to next file
+        continue;
     }
 
-    // Determine table name based on blockchain_name
     let tableName = 'publish_testnet_summary';
     if (summary.blockchain_name && summary.blockchain_name.toString().includes('MAINNET')) {
         tableName = 'publish_mainnet_summary';
@@ -47,10 +46,10 @@ for (const file of files) {
                 average_publish_time, average_query_time,
                 average_publisher_get_time, average_non_publisher_get_time,
                 time_stamp
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         `;
 
-        await db.execute(query, [
+        await db.query(query, [
             summary.blockchain_name,
             summary.node_name,
             summary.publish_success_rate,
@@ -61,7 +60,7 @@ for (const file of files) {
             summary.average_query_time,
             summary.average_publisher_get_time,
             summary.average_non_publisher_get_time,
-            summary.time_stamp
+            summary.time_stamp,
         ]);
 
         console.log(`✅ Inserted ${file} into table '${tableName}'`);
