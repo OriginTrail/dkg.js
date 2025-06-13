@@ -349,6 +349,9 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
 const summaryFileName = `summary_${name.replace(' ', '_')}.json`;
 fs.writeFileSync(summaryFileName, JSON.stringify(summary, null, 2));
 console.log(`✅ Saved summary to ${summaryFileName}`);
+const errorsFileName = `errors_${name.replace(' ', '_')}.json`;
+fs.writeFileSync(errorsFileName, JSON.stringify(errorStats[name] || {}, null, 2));
+console.log(`✅ Saved errors to ${errorsFileName}`);
     }
   });
   after(() => {
