@@ -354,15 +354,15 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
         node_name: name,
         publish_success_rate: safeRate(publishSuccess, publishFail),
         query_success_rate: safeRate(querySuccess, queryFail),
-        local_get_success_rate: safeRate(localGetSuccess, localGetFail),
-        get_success_rate: safeRate(remoteGetSuccess, remoteGetFail),
+        publisher_get_success_rate: safeRate(localGetSuccess, localGetFail),
+        non_publisher_get_success_rate: safeRate(remoteGetSuccess, remoteGetFail),
         average_publish_time: (avgPublishMs / 1000).toFixed(2),
         average_query_time: (avgQueryMs / 1000).toFixed(2),
-        average_local_get_time: (avgLocalGetMs / 1000).toFixed(2),
-        average_get_time: (avgRemoteGetMs / 1000).toFixed(2),
+        average_publisher_get_time: (avgLocalGetMs / 1000).toFixed(2),
+        average_non_publisher_get_time: (avgRemoteGetMs / 1000).toFixed(2),
         time_stamp: new Date().toISOString()
-      };
-
+    };    
+    
 // Define safe file name:
 const summaryFileName = `summary_${name.replace(' ', '_')}.json`;
 fs.writeFileSync(summaryFileName, JSON.stringify(summary, null, 2));
