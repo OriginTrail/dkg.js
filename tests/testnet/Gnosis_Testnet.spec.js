@@ -221,7 +221,6 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
               ual = create_result.UAL;
               assert.ok(ual);
               console.log(`✅ Published KA #${i + 1} with UAL: ${ual}`);
-              publishSuccess = true;
               publishSuccess++;
 
             })(),

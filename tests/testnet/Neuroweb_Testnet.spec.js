@@ -219,7 +219,6 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
               ual = create_result.UAL;
               assert.ok(ual);
               console.log(`✅ Published KA #${i + 1} with UAL: ${ual}`);
-              publishSuccess = true;
               publishSuccess++;
 
             })(),

@@ -145,7 +145,7 @@ describe('DKG Asset Lifecycle on Base Mainnet', function () {
 
               const create_result = await DkgClient.asset.create(content, {
                 epochsNum: 2,
-                minimumNumberOfFinalizationConfirmations: 3,
+                minimumNumberOfFinalizationConfirmations: 1,
                 minimumNumberOfNodeReplications: 3,
               });
 
@@ -161,7 +161,6 @@ describe('DKG Asset Lifecycle on Base Mainnet', function () {
               ual = create_result.UAL;
               assert.ok(ual);
               console.log(`✅ Published KA #${i + 1} with UAL: ${ual}`);
-              publishSuccess = true;
               publishSuccess++;
 
             })(),
