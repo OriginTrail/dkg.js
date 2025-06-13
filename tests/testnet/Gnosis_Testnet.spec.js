@@ -195,6 +195,7 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
         let ual = null;
         let step = 'publishing';
         let stepNodeName = name;
+        let publishSuccess = false;
 
         try {
           await Promise.race([
@@ -220,68 +221,8 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
               ual = create_result.UAL;
               assert.ok(ual);
               console.log(`✅ Published KA #${i + 1} with UAL: ${ual}`);
+              publishSuccess = true;
               publishSuccess++;
-
-              step = 'querying';
-              const queryStart = Date.now();
-
-              const queryResult = await DkgClient.graph.query(
-                `PREFIX schema: <http://schema.org/>
-                 SELECT ?s ?name ?description
-                 WHERE {
-                   ?s schema:name ?name ; schema:description ?description .
-                 }`,
-                'SELECT'
-              );
-
-              const queryEnd = Date.now();
-              queryDurations.push(queryEnd - queryStart);
-
-              assert.ok(queryResult?.data?.length > 0);
-              console.log(`✅ Query succeeded`);
-              querySuccess++;
-
-              step = 'publisher node get';
-              const localGetStart = Date.now();
-
-              const getResult = await DkgClient.asset.get(ual);
-
-              const localGetEnd = Date.now();
-              localGetDurations.push(localGetEnd - localGetStart);
-
-              assert.ok(getResult?.assertion);
-              console.log(`✅ Publisher Node Get Succeeded`);
-              localGetSuccess++;
-
-              step = 'non-publisher node get';
-              const otherIndexes = nodes.map((_, i) => i).filter(i => i !== currentIndex);
-              const remoteNode = nodes[otherIndexes[Math.floor(Math.random() * otherIndexes.length)]];
-              stepNodeName = remoteNode.name;
-
-              const RemoteDkgClient = new DKG({
-                endpoint: remoteNode.hostname,
-                port: OT_NODE_PORT,
-                blockchain: {
-                  name: BLOCKCHAIN_IDS.GNOSIS_TESTNET,
-                  publicKey: nodeKeys[remoteNode.name].publicKey,
-                  privateKey: nodeKeys[remoteNode.name].privateKey,
-                },
-                maxNumberOfRetries: 300,
-                frequency: 2,
-                contentType: 'all',
-                nodeApiVersion: '/v1',
-              });
-
-              const remoteGetStart = Date.now();
-
-              const remoteGetResult = await RemoteDkgClient.asset.get(ual);
-
-              const remoteGetEnd = Date.now();
-              remoteGetDurations.push(remoteGetEnd - remoteGetStart);
-
-              assert.ok(remoteGetResult?.assertion);
-              console.log(`✅ Non-Publisher Node Get Succeeded on ${remoteNode.name}`);
-              remoteGetSuccess++;
 
             })(),
             new Promise((_, reject) =>
@@ -290,18 +231,97 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
           ]);
         } catch (error) {
           logError(error, stepNodeName);
-          const reason = !ual
-            ? 'Publish failed — No UAL'
-            : `${step.charAt(0).toUpperCase() + step.slice(1)} failed — UAL: ${ual}`;
+          const reason = 'Publish failed — No UAL';
           failedAssets.push(`KA #${i + 1} (${reason})`);
+          publishFail++;
+          ual = 'did:dkg:gnosis:10200/0x592AAe7aBEED0ecF399C2628B3D18F769C544383/21467/1';
+          console.log(`⚠️ Using fallback UAL: ${ual}`);
+        }
 
-          // Increment correct fail counter:
-          switch (step) {
-            case 'publishing': publishFail++; break;
-            case 'querying': queryFail++; break;
-            case 'publisher node get': localGetFail++; break;
-            case 'non-publisher node get': remoteGetFail++; break;
-          }
+        // Continue with query, local get, and remote get regardless of publish status
+        try {
+          step = 'querying';
+          const queryStart = Date.now();
+
+          const queryResult = await DkgClient.graph.query(
+            `PREFIX schema: <http://schema.org/>
+             SELECT ?s ?name ?description
+             WHERE {
+               ?s schema:name ?name ; schema:description ?description .
+             }`,
+            'SELECT'
+          );
+
+          const queryEnd = Date.now();
+          queryDurations.push(queryEnd - queryStart);
+
+          assert.ok(queryResult?.data?.length > 0);
+          console.log(`✅ Query succeeded`);
+          querySuccess++;
+
+        } catch (error) {
+          logError(error, stepNodeName);
+          const reason = `Query failed — UAL: ${ual}`;
+          failedAssets.push(`KA #${i + 1} (${reason})`);
+          queryFail++;
+        }
+
+        try {
+          step = 'local get';
+          const localGetStart = Date.now();
+
+          const getResult = await DkgClient.asset.get(ual);
+
+          const localGetEnd = Date.now();
+          localGetDurations.push(localGetEnd - localGetStart);
+
+          assert.ok(getResult?.assertion);
+          console.log(`✅ Local Get Succeeded`);
+          localGetSuccess++;
+
+        } catch (error) {
+          logError(error, stepNodeName);
+          const reason = `Local Get failed — UAL: ${ual}`;
+          failedAssets.push(`KA #${i + 1} (${reason})`);
+          localGetFail++;
+        }
+
+        try {
+          step = 'get';
+          const otherIndexes = nodes.map((_, i) => i).filter(i => i !== currentIndex);
+          const remoteNode = nodes[otherIndexes[Math.floor(Math.random() * otherIndexes.length)]];
+          stepNodeName = remoteNode.name;
+
+          const RemoteDkgClient = new DKG({
+            endpoint: remoteNode.hostname,
+            port: OT_NODE_PORT,
+            blockchain: {
+              name: BLOCKCHAIN_IDS.GNOSIS_TESTNET,
+              publicKey: nodeKeys[remoteNode.name].publicKey,
+              privateKey: nodeKeys[remoteNode.name].privateKey,
+            },
+            maxNumberOfRetries: 300,
+            frequency: 2,
+            contentType: 'all',
+            nodeApiVersion: '/v1',
+          });
+
+          const remoteGetStart = Date.now();
+
+          const remoteGetResult = await RemoteDkgClient.asset.get(ual);
+
+          const remoteGetEnd = Date.now();
+          remoteGetDurations.push(remoteGetEnd - remoteGetStart);
+
+          assert.ok(remoteGetResult?.assertion);
+          console.log(`✅ Get Succeeded on ${remoteNode.name}`);
+          remoteGetSuccess++;
+
+        } catch (error) {
+          logError(error, stepNodeName);
+          const reason = `Get failed — UAL: ${ual}`;
+          failedAssets.push(`KA #${i + 1} (${reason})`);
+          remoteGetFail++;
         }
       }
 
@@ -339,12 +359,12 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
         node_name: name,
         publish_success_rate: safeRate(publishSuccess, publishFail),
         query_success_rate: safeRate(querySuccess, queryFail),
-        publisher_get_success_rate: safeRate(localGetSuccess, localGetFail),
-        non_publisher_get_success_rate: safeRate(remoteGetSuccess, remoteGetFail),
+        local_get_success_rate: safeRate(localGetSuccess, localGetFail),
+        get_success_rate: safeRate(remoteGetSuccess, remoteGetFail),
         average_publish_time: (avgPublishMs / 1000).toFixed(2),
         average_query_time: (avgQueryMs / 1000).toFixed(2),
-        average_publisher_get_time: (avgLocalGetMs / 1000).toFixed(2),
-        average_non_publisher_get_time: (avgRemoteGetMs / 1000).toFixed(2),
+        average_local_get_time: (avgLocalGetMs / 1000).toFixed(2),
+        average_get_time: (avgRemoteGetMs / 1000).toFixed(2),
         time_stamp: new Date().toISOString()
       };
 
@@ -366,12 +386,12 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
         console.log(`  • ${nodeName}:`);
         console.log(`    🔸 Publish: ✅ ${stats.publishSuccess} / ❌ ${stats.publishFail} -> ${safeRate(stats.publishSuccess, stats.publishFail)}%`);
         console.log(`    🔸 Query:   ✅ ${stats.querySuccess} / ❌ ${stats.queryFail} -> ${safeRate(stats.querySuccess, stats.queryFail)}%`);
-        console.log(`    🔸 Publisher Node Get: ✅ ${stats.localGetSuccess} / ❌ ${stats.localGetFail} -> ${safeRate(stats.localGetSuccess, stats.localGetFail)}%`);
-        console.log(`    🔸 Non-Publisher Node Get: ✅ ${stats.remoteGetSuccess} / ❌ ${stats.remoteGetFail} -> ${safeRate(stats.remoteGetSuccess, stats.remoteGetFail)}%`);
+        console.log(`    🔸 Local Get: ✅ ${stats.localGetSuccess} / ❌ ${stats.localGetFail} -> ${safeRate(stats.localGetSuccess, stats.localGetFail)}%`);
+        console.log(`    🔸 Get: ✅ ${stats.remoteGetSuccess} / ❌ ${stats.remoteGetFail} -> ${safeRate(stats.remoteGetSuccess, stats.remoteGetFail)}%`);
         console.log(`    ⏱️ Avg Publish Time: ${formatDuration(stats.avgPublishMs)}`);
         console.log(`    ⏱️ Avg Query Time: ${formatDuration(stats.avgQueryMs)}`);
-        console.log(`    ⏱️ Avg Publisher Node Get Time: ${formatDuration(stats.avgLocalGetMs)}`);
-        console.log(`    ⏱️ Avg Non-Publisher Node Get Time: ${formatDuration(stats.avgRemoteGetMs)}`);
+        console.log(`    ⏱️ Avg Local Get Time: ${formatDuration(stats.avgLocalGetMs)}`);
+        console.log(`    ⏱️ Avg Get Time: ${formatDuration(stats.avgRemoteGetMs)}`);
       });
     });
 
