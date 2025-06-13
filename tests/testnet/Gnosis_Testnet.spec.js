@@ -195,7 +195,6 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
         let ual = null;
         let step = 'publishing';
         let stepNodeName = name;
-        let publishSuccess = false;
 
         try {
           await Promise.race([
@@ -233,7 +232,7 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
           const reason = 'Publish failed — No UAL';
           failedAssets.push(`KA #${i + 1} (${reason})`);
           publishFail++;
-          ual = 'did:dkg:gnosis:10200/0x592AAe7aBEED0ecF399C2628B3D18F769C544383/21467/1';
+          ual = 'did:dkg:otp:20430/0xcdb28e93ed340ec10a71bba00a31dbfcf1bd5d37/180388';
           console.log(`⚠️ Using fallback UAL: ${ual}`);
         }
 

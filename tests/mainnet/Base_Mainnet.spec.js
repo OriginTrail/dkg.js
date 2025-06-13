@@ -135,7 +135,6 @@ describe('DKG Asset Lifecycle on Base Mainnet', function () {
         let ual = null;
         let step = 'publishing';
         let stepNodeName = name;
-        let publishSuccess = false;
 
         try {
           await Promise.race([
@@ -173,7 +172,7 @@ describe('DKG Asset Lifecycle on Base Mainnet', function () {
           const reason = 'Publish failed — No UAL';
           failedAssets.push(`KA #${i + 1} (${reason})`);
           publishFail++;
-          ual = 'did:dkg:base:8453/0xc28f310a87f7621a087a603e2ce41c22523f11d7/435';
+          ual = 'did:dkg:base:8453/0xc28f310a87f7621a087a603e2ce41c22523f11d7/120278';
           console.log(`⚠️ Using fallback UAL: ${ual}`);
         }
 

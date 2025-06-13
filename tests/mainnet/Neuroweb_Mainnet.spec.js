@@ -132,7 +132,6 @@ describe('DKG Asset Lifecycle on Neuroweb Mainnet', function () {
         let ual = null;
         let step = 'publishing';
         let stepNodeName = name;
-        let publishSuccess = false;
 
         try {
           await Promise.race([
@@ -170,7 +169,7 @@ describe('DKG Asset Lifecycle on Neuroweb Mainnet', function () {
           const reason = 'Publish failed — No UAL';
           failedAssets.push(`KA #${i + 1} (${reason})`);
           publishFail++;
-          ual = 'did:dkg:otp/0x5cac41237127f94c2d21dae0b14bfefa99880630/309100';
+          ual = 'did:dkg:otp:2043/0x8f678eb0e57ee8a109b295710e23076fa3a443fe/3598384';
           console.log(`⚠️ Using fallback UAL: ${ual}`);
         }
 
