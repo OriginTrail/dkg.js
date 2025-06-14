@@ -350,7 +350,7 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
         avgRemoteGetMs,
       };
       const summary = {
-        blockchain_name: BLOCKCHAIN_IDS.NEUROWEB_TESTNET,
+        blockchain_name: DkgClient.config.blockchain.name,
         node_name: name,
         publish_success_rate: safeRate(publishSuccess, publishFail),
         query_success_rate: safeRate(querySuccess, queryFail),
