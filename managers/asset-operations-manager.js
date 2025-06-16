@@ -421,14 +421,23 @@ export default class AssetOperationsManager {
         } else {
             const timeUntilNextEpoch = await this.blockchainService.timeUntilNextEpoch(blockchain);
             const epochLength = await this.blockchainService.epochLength(blockchain);
+            const elapsedTimeInCurrentEpoch = await this.blockchainService.elapsedTimeInCurrentEpoch(blockchain);
+
             const stakeWeightedAverageAsk = await this.blockchainService.getStakeWeightedAverageAsk(
                 blockchain,
             );
+
             estimatedPublishingCost =
-                (BigInt(stakeWeightedAverageAsk) *
-                    (BigInt(epochsNum) * BigInt(1e18) +
-                        (BigInt(timeUntilNextEpoch) * BigInt(1e18)) / BigInt(epochLength)) *
-                    BigInt(datasetSize)) /
+                BigInt(stakeWeightedAverageAsk) *
+                    (
+                        // fractional current epoch
+                        BigInt(timeUntilNextEpoch) * BigInt(1e18) / BigInt(epochLength) +
+                        // whole in between epochs
+                        BigInt(epochsNum - 1) * BigInt(1e18) +
+                        // fractional last epoch
+                        BigInt(elapsedTimeInCurrentEpoch) * BigInt(1e18) / BigInt(epochLength)
+                    ) *
+                BigInt(datasetSize) /
                 BigInt(1024) /
                 BigInt(1e18);
         }
