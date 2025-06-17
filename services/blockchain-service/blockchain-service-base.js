@@ -433,22 +433,20 @@ export default class BlockchainServiceBase {
         let allowanceIncreased = false;
         let allowanceGap = 0;
 
+        if (requestData?.paymaster && requestData?.paymaster !== ZERO_ADDRESS) {
+            // Handle the case when payer is passed
+        } else {
+            ({ allowanceIncreased, allowanceGap } = await this.increaseKnowledgeCollectionAllowance(
+                sender,
+                requestData.tokenAmount,
+                blockchain,
+            ));
+        }
+
+        stepHooks.afterHook({
+            status: OPERATIONS_STEP_STATUS.INCREASE_ALLOWANCE_COMPLETED,
+        });
         try {
-            if (requestData?.paymaster && requestData?.paymaster !== ZERO_ADDRESS) {
-                // Handle the case when payer is passed
-            } else {
-                ({ allowanceIncreased, allowanceGap } =
-                    await this.increaseKnowledgeCollectionAllowance(
-                        sender,
-                        requestData.tokenAmount,
-                        blockchain,
-                    ));
-            }
-
-            stepHooks.afterHook({
-                status: OPERATIONS_STEP_STATUS.INCREASE_ALLOWANCE_COMPLETED,
-            });
-
             let receipt;
             if (paranetKaContract == null && paranetTokenId == null) {
                 receipt = await this.executeContractFunction(
