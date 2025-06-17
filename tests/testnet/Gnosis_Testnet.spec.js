@@ -1,3 +1,6 @@
+import { BLOCKCHAINS } from '../../constants/constants.js';
+BLOCKCHAINS.testnet['gnosis:10200'].rpc = 'https://api-chiado-archive.dwellir.com/6be44cb0-c8c8-464f-8910-1e1f027e076a';
+
 import { strict as assert } from 'assert';
 import DKG from '../../index.js';
 import { BLOCKCHAIN_IDS } from '../../constants/constants.js';

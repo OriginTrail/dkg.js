@@ -1,3 +1,6 @@
+import { BLOCKCHAINS } from '../../constants/constants.js';
+BLOCKCHAINS.mainnet['otp:2043'].rpc = 'https://astrosat.origintrail.network';
+
 import { strict as assert } from 'assert';
 import DKG from '../../index.js';
 import { BLOCKCHAIN_IDS } from '../../constants/constants.js';

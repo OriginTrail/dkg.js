@@ -1,3 +1,6 @@
+import { BLOCKCHAINS } from '../../constants/constants.js';
+BLOCKCHAINS.testnet['otp:20430'].rpc = 'https://lofar-testnet.origintrail.network';
+
 import { strict as assert } from 'assert';
 import DKG from '../../index.js';
 import { BLOCKCHAIN_IDS } from '../../constants/constants.js';

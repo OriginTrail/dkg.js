@@ -1,3 +1,6 @@
+import { BLOCKCHAINS } from '../../constants/constants.js';
+BLOCKCHAINS.mainnet['gnosis:100'].rpc = 'https://api-gnosis-archive.dwellir.com/ce0b9180-f868-4142-a4c7-6265641cfb49';
+
 import { strict as assert } from 'assert';
 import DKG from '../../index.js';
 import { BLOCKCHAIN_IDS } from '../../constants/constants.js';

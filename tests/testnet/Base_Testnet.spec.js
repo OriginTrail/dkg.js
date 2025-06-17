@@ -1,3 +1,6 @@
+import { BLOCKCHAINS } from '../../constants/constants.js';
+BLOCKCHAINS.testnet['base:84532'].rpc = 'https://api-base-sepolia-archive.dwellir.com/39af1cad-1abb-430d-8c46-a46104e85db5';
+
 import { strict as assert } from 'assert';
 import DKG from '../../index.js';
 import { BLOCKCHAIN_IDS } from '../../constants/constants.js';
