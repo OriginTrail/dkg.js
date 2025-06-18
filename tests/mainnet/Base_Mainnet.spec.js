@@ -9,14 +9,43 @@ import { randomUUID } from 'crypto';
 import fs from 'fs';
 
 const OT_NODE_PORT = '8900';
-const PUBLIC_KEY = '0x42ae12826Eb3b920D3b818e1D6fdF9Ad0054e471';
-const PRIVATE_KEY = process.env.MAINNET_PRIVATE_KEY;
 
+// https://positron.origin-trail.network - public node
 const nodes = [
-  { name: 'Node 01', hostname: 'https://positron.origin-trail.network' },
-  { name: 'Node 02', hostname: 'https://v6-pegasus-node-02.origin-trail.network' },
-  { name: 'Node 03', hostname: 'https://v6-pegasus-node-03.origin-trail.network' },
+  { name: 'Node 25', hostname: 'https://proxima-node-25.origin-trail.network' },
+  { name: 'Node 26', hostname: 'https://proxima-node-26.origin-trail.network' },
+  { name: 'Node 27', hostname: 'https://proxima-node-27.origin-trail.network' },
+  { name: 'Node 28', hostname: 'https://proxima-node-28.origin-trail.network' },
+  { name: 'Node 29', hostname: 'https://proxima-node-29.origin-trail.network' },
+  { name: 'Node 30', hostname: 'https://proxima-node-30.origin-trail.network' },
 ];
+
+const nodeKeys = {
+  'Node 25': {
+    publicKey: process.env.MAINNET_BASE_NODE25_PUBLIC_KEY,
+    privateKey: process.env.MAINNET_BASE_NODE25_PRIVATE_KEY
+  },
+  'Node 26': {
+    publicKey: process.env.MAINNET_BASE_NODE26_PUBLIC_KEY,
+    privateKey: process.env.MAINNET_BASE_NODE26_PRIVATE_KEY
+  },
+  'Node 27': {
+    publicKey: process.env.MAINNET_BASE_NODE27_PUBLIC_KEY,
+    privateKey: process.env.MAINNET_BASE_NODE27_PRIVATE_KEY
+  },
+  'Node 28': {
+    publicKey: process.env.MAINNET_BASE_NODE28_PUBLIC_KEY,
+    privateKey: process.env.MAINNET_BASE_NODE28_PRIVATE_KEY
+  },
+  'Node 29': {
+    publicKey: process.env.MAINNET_BASE_NODE29_PUBLIC_KEY,
+    privateKey: process.env.MAINNET_BASE_NODE29_PRIVATE_KEY
+  },
+  'Node 30': {
+    publicKey: process.env.MAINNET_BASE_NODE30_PUBLIC_KEY,
+    privateKey: process.env.MAINNET_BASE_NODE30_PRIVATE_KEY
+  }
+};
 
 function getRandomWord() {
   const words = ['Galaxy', 'Nebula', 'Orbit', 'Quantum', 'Pixel', 'Velocity', 'Echo', 'Nova'];
@@ -111,8 +140,8 @@ describe('DKG Asset Lifecycle on Base Mainnet', function () {
         port: OT_NODE_PORT,
         blockchain: {
           name: BLOCKCHAIN_IDS.BASE_MAINNET,
-          publicKey: PUBLIC_KEY,
-          privateKey: PRIVATE_KEY,
+          publicKey: nodeKeys[name].publicKey,
+          privateKey: nodeKeys[name].privateKey,
         },
         maxNumberOfRetries: 300,
         frequency: 2,
@@ -235,8 +264,8 @@ describe('DKG Asset Lifecycle on Base Mainnet', function () {
             port: OT_NODE_PORT,
             blockchain: {
               name: BLOCKCHAIN_IDS.BASE_MAINNET,
-              publicKey: PUBLIC_KEY,
-              privateKey: PRIVATE_KEY,
+              publicKey: nodeKeys[remoteNode.name].publicKey,
+              privateKey: nodeKeys[remoteNode.name].privateKey,
             },
             maxNumberOfRetries: 300,
             frequency: 2,
