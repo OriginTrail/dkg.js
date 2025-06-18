@@ -322,7 +322,7 @@ describe('DKG Asset Lifecycle on Gnosis Mainnet', function () {
       };
 
       const summary = {
-        blockchain_name: BLOCKCHAIN_IDS.NEUROWEB_TESTNET,
+        blockchain_name: BLOCKCHAIN_IDS.GNOSIS_MAINNET,
         node_name: name,
         publish_success_rate: safeRate(publishSuccess, publishFail),
         query_success_rate: safeRate(querySuccess, queryFail),

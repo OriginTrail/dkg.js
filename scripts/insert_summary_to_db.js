@@ -20,6 +20,9 @@ try {
 
 const files = process.argv.slice(2);
 
+// Match only if blockchain_name ends with exactly one of these full port tokens
+const MAINNET_PORTS = [':8453', ':100', ':2043'];
+
 for (const file of files) {
     console.log(`Processing ${file}`);
     let summary;
@@ -32,10 +35,16 @@ for (const file of files) {
         continue;
     }
 
-    let tableName = 'publish_testnet_summary';
-    if (summary.blockchain_name && summary.blockchain_name.toString().includes('MAINNET')) {
-        tableName = 'publish_mainnet_summary';
+    let isMainnet = false;
+    if (
+        summary.blockchain_name &&
+        typeof summary.blockchain_name === 'string' &&
+        MAINNET_PORTS.some(port => summary.blockchain_name.endsWith(port))
+    ) {
+        isMainnet = true;
     }
+
+    const tableName = isMainnet ? 'publish_mainnet_summary' : 'publish_testnet_summary';
 
     try {
         const query = `

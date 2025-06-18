@@ -322,7 +322,7 @@ describe('DKG Asset Lifecycle on Base Mainnet', function () {
       };
 
       const summary = {
-        blockchain_name: BLOCKCHAIN_IDS.NEUROWEB_TESTNET,
+        blockchain_name: BLOCKCHAIN_IDS.BASE_MAINNET,
         node_name: name,
         publish_success_rate: safeRate(publishSuccess, publishFail),
         query_success_rate: safeRate(querySuccess, queryFail),
