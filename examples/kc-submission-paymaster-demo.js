@@ -1,21 +1,18 @@
 import DKG from '../index.js';
-import { BLOCKCHAIN_IDS, ENVIRONMENTS } from '../constants.js';
+import { BLOCKCHAIN_IDS } from '../constants/constants.js';
 import { ethers } from 'ethers';
 import 'dotenv/config';
 
-const ENVIRONMENT = ENVIRONMENTS.DEVELOPMENT;
 const OT_NODE_HOSTNAME = 'http://localhost';
 const OT_NODE_PORT = '8900';
-const PUBLIC_KEY = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
+const BLOCKCHAIN_NAME = BLOCKCHAIN_IDS.HARDHAT_1;
 
 // IMPORTANT: Don't forget to add your PRIVATE_KEY to the .env file.
 const DkgClient = new DKG({
-    environment: ENVIRONMENT,
     endpoint: OT_NODE_HOSTNAME,
     port: OT_NODE_PORT,
     blockchain: {
-        name: BLOCKCHAIN_IDS.HARDHAT_1,
-        publicKey: PUBLIC_KEY,
+        name: BLOCKCHAIN_NAME,
         privateKey: process.env.PRIVATE_KEY,
     },
     maxNumberOfRetries: 300,
@@ -59,27 +56,27 @@ function divider() {
     console.log('======================== NODE INFO RECEIVED');
     console.log(nodeInfo);
 
-    divider();
-
-    const { deployer, paymasterAddress } = await DkgClient.blockchain.createPaymaster();
     console.log('======================== DEPLOY PAYMASTER');
+    const { deployer, paymasterAddress } = await DkgClient.blockchain.createPaymaster();
+    console.log("Paymaster address: ", paymasterAddress);
 
-    await DkgClient.blockchain.addAllowedAddressPaymaster(PUBLIC_KEY, paymasterAddress);
-    console.log('======================== WHITELISTED ADDRESS');
+    console.log('======================== WHITELIST ADDRESS');
+    await DkgClient.blockchain.addAllowedAddressPaymaster(deployer, paymasterAddress);
 
-    const isAllowed = await DkgClient.blockchain.isAddressAllowedPaymaster(PUBLIC_KEY, paymasterAddress);
-    console.log(isAllowed);
+    const isAllowed = await DkgClient.blockchain.isAddressAllowedPaymaster(deployer, paymasterAddress);
+    console.log("Address whitelisted: ", isAllowed);
 
     await DkgClient.asset.increaseAllowance(ethers.parseEther('100'), {spenderAddress: paymasterAddress});
 
-    await DkgClient.blockchain.fundPaymaster(paymasterAddress, ethers.parseEther('10'));
     console.log('======================== FUND PAYMASTER');
+    await DkgClient.blockchain.fundPaymaster(paymasterAddress, ethers.parseEther('10'));
 
-    const paymasterBalance = await DkgClient.blockchain.getPaymasterBalance(paymasterAddress);
-    console.log(paymasterBalance);
+    let paymasterBalance = await DkgClient.blockchain.getPaymasterBalance(paymasterAddress);
+    console.log("Starting paymaster balance: ", paymasterBalance);
 
     divider();
 
+    console.log('======================== PUBLISH');
     console.time('Publish (1 replication, 3 finalizations)');
     const create_result = await DkgClient.asset.create(content, {
         epochsNum: 2,
@@ -92,6 +89,9 @@ function divider() {
     console.log(JSON.stringify(create_result));
 
     divider();
+
+    paymasterBalance = await DkgClient.blockchain.getPaymasterBalance(paymasterAddress);
+    console.log("Paymaster balance after the publish: ", paymasterBalance);
 
     console.time('get');
     const get_result = await DkgClient.asset.get(create_result.UAL, {
