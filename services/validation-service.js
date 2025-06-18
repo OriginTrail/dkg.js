@@ -10,7 +10,7 @@ import {
     PARANET_NODES_ACCESS_POLICY,
     PARANET_MINERS_ACCESS_POLICY,
     PARANET_KC_SUBMISSION_POLICY,
-} from '../constants.js';
+} from '../constants/constants.js';
 import { nodeSupported } from './utilities.js';
 
 export default class ValidationService {

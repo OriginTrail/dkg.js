@@ -205,5 +205,15 @@ export default class BlockchainOperationsManager {
             args,
             blockchain
         );
+      
+    /**
+     * Retrieve the wallet.
+     * @async
+     * @param {Object} [options={}] - Optional parameters for blockchain service.
+     * @returns {Promise<Object>} - A promise that resolves to the wallet.
+     */
+    async getWalletAddress(options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        return blockchain.publicKey;
     }
 }

@@ -10,7 +10,7 @@ import {
     DEFAULT_GAS_PRICE_WEI,
     ZERO_ADDRESS,
     NEUROWEB_INCENTIVE_TYPE_CHAINS,
-} from '../../constants.js';
+} from '../../constants/constants.js';
 import emptyHooks from '../../util/empty-hooks.js';
 import { sleepForMilliseconds } from '../utilities.js';
 

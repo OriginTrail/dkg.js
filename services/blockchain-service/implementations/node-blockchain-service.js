@@ -1,7 +1,7 @@
 /* eslint-disable no-param-reassign */
 /* eslint-disable no-await-in-loop */
 import Web3 from 'web3';
-import { TRANSACTION_RETRY_ERRORS, WEBSOCKET_PROVIDER_OPTIONS } from '../../../constants.js';
+import { TRANSACTION_RETRY_ERRORS, WEBSOCKET_PROVIDER_OPTIONS } from '../../../constants/constants.js';
 import BlockchainServiceBase from '../blockchain-service-base.js';
 
 export default class NodeBlockchainService extends BlockchainServiceBase {

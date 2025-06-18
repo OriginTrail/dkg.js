@@ -1,19 +1,27 @@
 {
     "name": "dkg.js",
-    "version": "8.0.13",
+    "version": "8.0.14",
     "description": "Javascript library for interaction with the OriginTrail Decentralized Knowledge Graph",
     "main": "index.js",
     "exports": {
-        "import": "./index.js",
-        "require": "./index.cjs"
+        ".": {
+            "import": "./index.js",
+            "require": "./index.cjs"
+        },
+        "./constants": {
+            "import": "./constants/index.js",
+            "require": "./constants/index.cjs"
+        }
     },
     "type": "module",
     "scripts": {
         "compile-contracts": "cd ./node_modules/dkg-evm-module && npm run compile",
-        "build": "npm run cjs-compat && npx webpack --config webpack.config.cjs",
-        "watch": "npm run cjs-compat && npx webpack --config webpack.config.cjs --watch --progress",
+        "build": "npm run cjs-compat && webpack --config webpack.config.cjs",
+        "watch": "npm run cjs-compat && webpack --config webpack.config.cjs --watch --progress",
         "lint": "eslint .",
-        "cjs-compat": "npx rollup index.js --file index.cjs --format cjs",
+        "cjs:main": "npx rollup index.js --file index.cjs --format cjs",
+        "cjs:constants": "npx rollup constants/index.js --file constants/index.cjs --format cjs",
+        "cjs-compat": "npm run cjs:main && npm run cjs:constants",
         "postinstall": "npm run cjs-compat"
     },
     "repository": {
@@ -36,7 +44,7 @@
     },
     "homepage": "https://github.com/OriginTrail/dkg.js/tree/main#readme",
     "dependencies": {
-        "assertion-tools": "8.0.2",
+        "assertion-tools": "8.0.6",
         "axios": "^0.27.2",
         "dkg-evm-module": "git+https://github.com/OriginTrail/dkg-evm-module.git#release/v8.0.13-testnet",
         "dotenv": "^16.4.7",

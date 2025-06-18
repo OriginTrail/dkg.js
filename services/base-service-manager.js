@@ -6,16 +6,43 @@ import ValidationService from './validation-service.js';
 import { nodeSupported } from './utilities.js';
 import InputService from './input-service.js';
 
-import { BLOCKCHAINS_RENAME_PAIRS  } from '../constants.js';
+import { BLOCKCHAINS } from '../constants/constants.js';
+import { ethers } from 'ethers';
 
 export default class BaseServiceManager {
     constructor(config) {
         const blockchainName = config.blockchain?.name;
-        const configWithNewBlockchainName = config;
-        if (blockchainName && Object.keys(BLOCKCHAINS_RENAME_PAIRS).includes(blockchainName))
-            configWithNewBlockchainName.blockchain.name = BLOCKCHAINS_RENAME_PAIRS[blockchainName];
+        if (!blockchainName) {
+            throw new Error('Blockchain name is required. Please set it manually.');
+        }
 
-        this.initializeServices(configWithNewBlockchainName);
+        for (const [env, chainsInEnv] of Object.entries(BLOCKCHAINS)) {
+            if (Object.keys(chainsInEnv).includes(blockchainName)) {
+                config.environment = env;
+                break;
+            }
+        }
+
+        if (!config.environment) {
+            throw new Error(
+                `Could not derive environment from blockchain name: ${blockchainName}. Ensure it's defined in BLOCKCHAINS constant.`,
+            );
+        }
+
+        if (config.blockchain?.privateKey) {
+            try {
+                const wallet = new ethers.Wallet(config.blockchain.privateKey);
+                config.blockchain.publicKey = wallet.address;
+            } catch (error) {
+                throw new Error(`Failed to derive public key from private key: ${error.message}`);
+            }
+        } else {
+            throw new Error(
+                'Private key is required to derive public key. Please set it manually when creating the DKG instance.',
+            );
+        }
+
+        this.initializeServices(config);
     }
 
     initializeServices(config) {
