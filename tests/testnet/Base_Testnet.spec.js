@@ -138,7 +138,7 @@ function logError(error, nodeName) {
 }
 
 describe('DKG Asset Lifecycle on Base Testnet', function () {
-  this.timeout(95 * 60 * 1000);
+  this.timeout(130 * 60 * 1000);
 
   it('should sequentially test selected node(s)', async () => {
     const NODE_TO_TEST = process.env.NODE_TO_TEST;
