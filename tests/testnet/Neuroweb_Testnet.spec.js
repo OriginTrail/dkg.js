@@ -1,5 +1,5 @@
 import { BLOCKCHAINS } from '../../constants/constants.js';
-BLOCKCHAINS.testnet['otp:20430'].rpc = 'https://lofar-testnet.origintrail.network';
+BLOCKCHAINS.testnet['otp:20430'].rpc = process.env.NEUROWEB_TESTNET_RPC;
 
 import { strict as assert } from 'assert';
 import DKG from '../../index.js';
@@ -240,24 +240,27 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
         // Continue with query, local get, and remote get regardless of publish status
         try {
           step = 'querying';
-          const queryStart = Date.now();
-
-          const queryResult = await DkgClient.graph.query(
-            `PREFIX schema: <http://schema.org/>
-             SELECT ?s ?name ?description
-             WHERE {
-               ?s schema:name ?name ; schema:description ?description .
-             }`,
-            'SELECT'
-          );
-
-          const queryEnd = Date.now();
-          queryDurations.push(queryEnd - queryStart);
-
-          assert.ok(queryResult?.data?.length > 0);
-          console.log(`✅ Query succeeded`);
-          querySuccess++;
-
+          await Promise.race([
+            (async () => {
+              const queryStart = Date.now();
+              const queryResult = await DkgClient.graph.query(
+                `PREFIX schema: <http://schema.org/>
+                 SELECT ?s ?name ?description
+                 WHERE {
+                   ?s schema:name ?name ; schema:description ?description .
+                 }`,
+                'SELECT'
+              );
+              const queryEnd = Date.now();
+              queryDurations.push(queryEnd - queryStart);
+              assert.ok(queryResult?.data?.length > 0);
+              console.log(`✅ Query succeeded`);
+              querySuccess++;
+            })(),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error(`Timeout after 3 minutes during "${step}" on ${stepNodeName}`)), 3 * 60 * 1000)
+            ),
+          ]);
         } catch (error) {
           logError(error, stepNodeName);
           const reason = `Query failed — UAL: ${ual}`;
@@ -267,17 +270,20 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
 
         try {
           step = 'local get';
-          const localGetStart = Date.now();
-
-          const getResult = await DkgClient.asset.get(ual);
-
-          const localGetEnd = Date.now();
-          localGetDurations.push(localGetEnd - localGetStart);
-
-          assert.ok(getResult?.assertion);
-          console.log(`✅ Local Get Succeeded`);
-          localGetSuccess++;
-
+          await Promise.race([
+            (async () => {
+              const localGetStart = Date.now();
+              const getResult = await DkgClient.asset.get(ual);
+              const localGetEnd = Date.now();
+              localGetDurations.push(localGetEnd - localGetStart);
+              assert.ok(getResult?.assertion);
+              console.log(`✅ Local Get Succeeded`);
+              localGetSuccess++;
+            })(),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error(`Timeout after 3 minutes during "${step}" on ${stepNodeName}`)), 3 * 60 * 1000)
+            ),
+          ]);
         } catch (error) {
           logError(error, stepNodeName);
           const reason = `Local Get failed — UAL: ${ual}`;
@@ -290,32 +296,33 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
           const otherIndexes = nodes.map((_, i) => i).filter(i => i !== currentIndex);
           const remoteNode = nodes[otherIndexes[Math.floor(Math.random() * otherIndexes.length)]];
           stepNodeName = remoteNode.name;
-
-          const RemoteDkgClient = new DKG({
-            endpoint: remoteNode.hostname,
-            port: OT_NODE_PORT,
-            blockchain: {
-              name: BLOCKCHAIN_IDS.NEUROWEB_TESTNET,
-              publicKey: nodeKeys[remoteNode.name].publicKey,
-              privateKey: nodeKeys[remoteNode.name].privateKey,
-            },
-            maxNumberOfRetries: 300,
-            frequency: 2,
-            contentType: 'all',
-            nodeApiVersion: '/v1',
-          });
-
-          const remoteGetStart = Date.now();
-
-          const remoteGetResult = await RemoteDkgClient.asset.get(ual);
-
-          const remoteGetEnd = Date.now();
-          remoteGetDurations.push(remoteGetEnd - remoteGetStart);
-
-          assert.ok(remoteGetResult?.assertion);
-          console.log(`✅ Get Succeeded on ${remoteNode.name}`);
-          remoteGetSuccess++;
-
+          await Promise.race([
+            (async () => {
+              const RemoteDkgClient = new DKG({
+                endpoint: remoteNode.hostname,
+                port: OT_NODE_PORT,
+                blockchain: {
+                  name: BLOCKCHAIN_IDS.NEUROWEB_TESTNET,
+                  publicKey: nodeKeys[remoteNode.name].publicKey,
+                  privateKey: nodeKeys[remoteNode.name].privateKey,
+                },
+                maxNumberOfRetries: 300,
+                frequency: 2,
+                contentType: 'all',
+                nodeApiVersion: '/v1',
+              });
+              const remoteGetStart = Date.now();
+              const remoteGetResult = await RemoteDkgClient.asset.get(ual);
+              const remoteGetEnd = Date.now();
+              remoteGetDurations.push(remoteGetEnd - remoteGetStart);
+              assert.ok(remoteGetResult?.assertion);
+              console.log(`✅ Get Succeeded on ${remoteNode.name}`);
+              remoteGetSuccess++;
+            })(),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error(`Timeout after 3 minutes during "${step}" on ${stepNodeName}`)), 3 * 60 * 1000)
+            ),
+          ]);
         } catch (error) {
           logError(error, stepNodeName);
           const reason = `Get failed — UAL: ${ual}`;
