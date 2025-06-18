@@ -233,6 +233,10 @@ export default class InputService {
         return blockchainConfig;
     }
 
+    getSpenderAddress(options) {
+        return options.spenderAddress ?? null;
+    }
+
     getGraphLocation(options) {
         return (
             options.graphLocation ??
@@ -348,7 +352,7 @@ export default class InputService {
     }
 
     getPayer(options) {
-        return options.payer ?? this.config.payer ?? ZERO_ADDRESS;
+        return options.paymaster ?? this.config.paymaster ?? ZERO_ADDRESS;
     }
 
     getMinimumNumberOfFinalizationConfirmations(options) {

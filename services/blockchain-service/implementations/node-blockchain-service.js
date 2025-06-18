@@ -10,10 +10,21 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
         this.config = config;
         this.events = {};
 
+        // Register events from KnowledgeCollectionStorage
         this.abis.KnowledgeCollectionStorage.filter((obj) => obj.type === 'event').forEach(
             (event) => {
                 const concatInputs = event.inputs.map((input) => input.internalType);
+                this.events[event.name] = {
+                    hash: Web3.utils.keccak256(`${event.name}(${concatInputs})`),
+                    inputs: event.inputs,
+                };
+            },
+        );
 
+        // Register events from PaymasterManager
+        this.abis.PaymasterManager.filter((obj) => obj.type === 'event').forEach(
+            (event) => {
+                const concatInputs = event.inputs.map((input) => input.internalType);
                 this.events[event.name] = {
                     hash: Web3.utils.keccak256(`${event.name}(${concatInputs})`),
                     inputs: event.inputs,
@@ -135,5 +146,89 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
             [blockchain.publicKey, to, tokenId, 1, '0x'],
             blockchain,
         );
+    }
+
+    /**
+     * Execute a contract function using the contract's address directly instead of its name
+     * @param {string} contractAddress - The address of the contract
+     * @param {string} contractType - The type of contract (to determine ABI, e.g., 'Paymaster')
+     * @param {string} functionName - The name of the function to execute
+     * @param {Array} args - The arguments to pass to the function
+     * @param {Object} blockchain - The blockchain configuration
+     * @returns {Promise<Object>} - The transaction receipt
+     */
+    async executeContractFunctionByAddress(contractAddress, contractType, functionName, args, blockchain) {
+        await this.ensureBlockchainInfo(blockchain);
+        const web3Instance = await this.getWeb3Instance(blockchain);
+
+        // Create a contract instance directly with the provided address
+        const contractInstance = new web3Instance.eth.Contract(
+            this.abis[contractType],
+            contractAddress,
+            { from: blockchain.publicKey }
+        );
+
+        let receipt;
+        let previousTxGasPrice;
+        let simulationSucceeded = false;
+        let transactionRetried = false;
+
+        while (receipt === undefined) {
+            try {
+                const tx = await this.prepareTransaction(
+                    contractInstance,
+                    functionName,
+                    args,
+                    blockchain,
+                );
+                previousTxGasPrice = tx.gasPrice;
+                simulationSucceeded = true;
+
+                const createdTransaction = await web3Instance.eth.accounts.signTransaction(
+                    tx,
+                    blockchain.privateKey,
+                );
+
+                receipt = await web3Instance.eth.sendSignedTransaction(
+                    createdTransaction.rawTransaction,
+                );
+                if (blockchain.name.startsWith('otp') && blockchain.waitNeurowebTxFinalization) {
+                    receipt = await this.waitForTransactionFinalization(receipt, blockchain);
+                }
+            } catch (error) {
+                if (
+                    simulationSucceeded &&
+                    !transactionRetried &&
+                    blockchain.handleNotMinedError &&
+                    TRANSACTION_RETRY_ERRORS.some((errorMsg) =>
+                        error.message.toLowerCase().includes(errorMsg),
+                    )
+                ) {
+                    transactionRetried = true;
+                    blockchain.retryTx = true;
+                    blockchain.previousTxGasPrice = previousTxGasPrice;
+                } else if (!transactionRetried && /revert|VM Exception/i.test(error.message)) {
+                    let status;
+                    try {
+                        status = await contractInstance.methods.status().call();
+                    } catch (_) {
+                        status = false;
+                    }
+
+                    if (!status) {
+                        // We can't update the contract instance like in the regular method
+                        // since we're using a direct address, but we can retry the transaction
+                        transactionRetried = true;
+                        blockchain.retryTx = true;
+                    } else {
+                        throw error;
+                    }
+                } else {
+                    throw error;
+                }
+            }
+        }
+
+        return receipt;
     }
 }

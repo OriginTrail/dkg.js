@@ -91,18 +91,14 @@ export default class AssetOperationsManager {
      */
     async increaseAllowance(tokenAmount, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
+        const spenderAddress = this.inputService.getSpenderAddress(options);
 
         this.validationService.validateIncreaseAllowance(blockchain);
-
-        const knowledgeCollectionAddress = await this.blockchainService.getContractAddress(
-            'KnowledgeCollection',
-            blockchain,
-        );
 
         const receipt = await this.blockchainService.executeContractFunction(
             'Token',
             'increaseAllowance',
-            [knowledgeCollectionAddress, tokenAmount],
+            [spenderAddress, tokenAmount],
             blockchain,
         );
 
