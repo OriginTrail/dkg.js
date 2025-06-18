@@ -457,18 +457,14 @@ class AssetOperationsManager {
      */
     async increaseAllowance(tokenAmount, options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
+        const spenderAddress = this.inputService.getSpenderAddress(options);
 
         this.validationService.validateIncreaseAllowance(blockchain);
-
-        const knowledgeCollectionAddress = await this.blockchainService.getContractAddress(
-            'KnowledgeCollection',
-            blockchain,
-        );
 
         const receipt = await this.blockchainService.executeContractFunction(
             'Token',
             'increaseAllowance',
-            [knowledgeCollectionAddress, tokenAmount],
+            [spenderAddress, tokenAmount],
             blockchain,
         );
 
@@ -1294,6 +1290,166 @@ class BlockchainOperationsManager {
     async getWeb3Instance(options = {}) {
         const blockchain = this.inputService.getBlockchain(options);
         return this.blockchainService.getWeb3Instance(blockchain);
+    }
+
+    /**
+     * Deploy and retrieve the owner and address of a new Paymaster contract.
+     * @async
+     * @param {Object} [options={}] - Optional parameters for blockchain service.
+     * @returns {Promise<Object>} - A promise that resolves to and object containing Paymaster deployer and address.
+     */
+    async createPaymaster(options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        const { deployer, paymasterAddress } = await this.blockchainService.createPaymaster(blockchain);
+
+        return { deployer, paymasterAddress };
+    }
+
+    /**
+     * Add an allowed address to a Paymaster contract.
+     * @async
+     * @param {string} address - The address to add to the allowed list.
+     * @param {string} paymasterAddress - The address of the Paymaster contract.
+     * @param {Object} [options={}] - Optional parameters for blockchain service.
+     * @returns {Promise<Object>} - A promise that resolves to the transaction result.
+     */
+    async addAllowedAddressPaymaster(address, paymasterAddress, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        return this.blockchainService.addAllowedAddressPaymaster(address, paymasterAddress, blockchain);
+    }
+
+    /**
+     * Remove an allowed address from a Paymaster contract
+     * @param {string} address - The address to remove from allowed list
+     * @param {string} paymasterAddress - The address of the Paymaster contract
+     * @param {Object} [options={}] - Optional parameters for blockchain service
+     * @returns {Promise<Object>} - The transaction receipt
+     */
+    async removeAllowedAddressPaymaster(address, paymasterAddress, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        return this.blockchainService.removeAllowedAddressPaymaster(
+            address,
+            paymasterAddress,
+            blockchain
+        );
+    }
+
+    /**
+     * Fund a Paymaster contract with tokens
+     * @param {string} paymasterAddress - The address of the Paymaster contract
+     * @param {string|number} amount - The amount of tokens to fund
+     * @param {Object} [options={}] - Optional parameters for blockchain service
+     * @returns {Promise<Object>} - The transaction receipt
+     */
+    async fundPaymaster(paymasterAddress, amount, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        return this.blockchainService.fundPaymaster(
+            paymasterAddress,
+            amount,
+            blockchain
+        );
+    }
+
+    /**
+     * Withdraw tokens from a Paymaster contract (only callable by owner)
+     * @param {string} paymasterAddress - The address of the Paymaster contract
+     * @param {string} recipient - The address to receive the tokens
+     * @param {string|number} amount - The amount of tokens to withdraw
+     * @param {Object} [options={}] - Optional parameters for blockchain service
+     * @returns {Promise<Object>} - The transaction receipt
+     */
+    async withdrawFromPaymaster(paymasterAddress, recipient, amount, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        return this.blockchainService.withdrawFromPaymaster(
+            paymasterAddress,
+            recipient,
+            amount,
+            blockchain
+        );
+    }
+
+    /**
+     * Check if an address is allowed to use a Paymaster
+     * @param {string} address - The address to check
+     * @param {string} paymasterAddress - The address of the Paymaster contract
+     * @param {Object} [options={}] - Optional parameters for blockchain service
+     * @returns {Promise<boolean>} - Whether the address is allowed
+     */
+    async isAddressAllowedPaymaster(address, paymasterAddress, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        return this.blockchainService.isAddressAllowedPaymaster(
+            address,
+            paymasterAddress,
+            blockchain
+        );
+    }
+
+    /**
+     * Get the owner of a Paymaster contract
+     * @param {string} paymasterAddress - The address of the Paymaster contract
+     * @param {Object} [options={}] - Optional parameters for blockchain service
+     * @returns {Promise<string>} - The owner address
+     */
+    async getPaymasterOwner(paymasterAddress, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        return this.blockchainService.getPaymasterOwner(
+            paymasterAddress,
+            blockchain
+        );
+    }
+
+    /**
+     * Get the token balance of a Paymaster contract
+     * @param {string} paymasterAddress - The address of the Paymaster contract
+     * @param {Object} [options={}] - Optional parameters for blockchain service
+     * @returns {Promise<string>} - The token balance
+     */
+    async getPaymasterBalance(paymasterAddress, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        return this.blockchainService.getPaymasterBalance(
+            paymasterAddress,
+            blockchain
+        );
+    }
+
+    /**
+     * Execute a contract function using the contract's address directly instead of its name
+     * @param {string} contractAddress - The address of the contract
+     * @param {string} contractType - The type of contract (to determine ABI, e.g., 'Paymaster')
+     * @param {string} functionName - The name of the function to execute
+     * @param {Array} args - The arguments to pass to the function
+     * @param {Object} [options={}] - Optional parameters for blockchain service
+     * @returns {Promise<Object>} - The transaction receipt
+     */
+    async executeContractFunctionByAddress(contractAddress, contractType, functionName, args, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        return this.blockchainService.executeContractFunctionByAddress(
+            contractAddress,
+            contractType,
+            functionName,
+            args,
+            blockchain
+        );
+    }
+
+    /**
+     * Call (read-only) a contract function using the contract's address directly instead of its name
+     * @param {string} contractAddress - The address of the contract
+     * @param {string} contractType - The type of contract (to determine ABI, e.g., 'Paymaster')
+     * @param {string} functionName - The name of the function to call
+     * @param {Array} args - The arguments to pass to the function
+     * @param {Object} [options={}] - Optional parameters for blockchain service
+     * @returns {Promise<any>} - The function return value
+     */
+    async callContractFunctionByAddress(contractAddress, contractType, functionName, args, options = {}) {
+        const blockchain = this.inputService.getBlockchain(options);
+        return this.blockchainService.callContractFunctionByAddress(
+            contractAddress,
+            contractType,
+            functionName,
+            args,
+            blockchain
+        );
     }
 
     /**
@@ -3336,6 +3492,8 @@ const KnowledgeCollectionStorageAbi = require$1('dkg-evm-module/abi/KnowledgeCol
 const AskStorageAbi = require$1('dkg-evm-module/abi/AskStorage.json');
 const ChronosAbi = require$1('dkg-evm-module/abi/Chronos.json');
 const IERC20ExtendedAbi = require$1('dkg-evm-module/abi/IERC20Extended.json');
+const PaymasterManagerAbi = require$1('dkg-evm-module/abi/PaymasterManager.json');
+const PaymasterAbi = require$1('dkg-evm-module/abi/Paymaster.json');
 
 class BlockchainServiceBase {
     constructor(config = {}) {
@@ -3357,10 +3515,24 @@ class BlockchainServiceBase {
         this.abis.Chronos = ChronosAbi;
         this.abis.ParanetStagingRegistry = ParanetStagingRegistryAbi;
         this.abis.IERC20Extended = IERC20ExtendedAbi;
+        this.abis.PaymasterManager = PaymasterManagerAbi;
+        this.abis.Paymaster = PaymasterAbi;
+
+        // Register events from KnowledgeCollectionStorage
         this.abis.KnowledgeCollectionStorage.filter((obj) => obj.type === 'event').forEach(
             (event) => {
                 const concatInputs = event.inputs.map((input) => input.internalType);
+                this.events[event.name] = {
+                    hash: Web3.utils.keccak256(`${event.name}(${concatInputs})`),
+                    inputs: event.inputs,
+                };
+            },
+        );
 
+        // Register events from PaymasterManager
+        this.abis.PaymasterManager.filter((obj) => obj.type === 'event').forEach(
+            (event) => {
+                const concatInputs = event.inputs.map((input) => input.internalType);
                 this.events[event.name] = {
                     hash: Web3.utils.keccak256(`${event.name}(${concatInputs})`),
                     inputs: event.inputs,
@@ -3723,6 +3895,106 @@ class BlockchainServiceBase {
             allowanceIncreased: false,
             allowanceGap,
         };
+    }
+
+    // Paymaster operations
+
+    async createPaymaster(blockchain) {
+        let receipt = await this.executeContractFunction(
+            'PaymasterManager',
+            'deployPaymaster',
+            [],
+            blockchain,
+        );
+
+        const { deployer, paymasterAddress } = await this.decodeEventLogs(
+            receipt,
+            'PaymasterDeployed',
+            blockchain,
+        );
+
+        return { deployer, paymasterAddress};
+    }
+
+    async addAllowedAddressPaymaster(address, paymasterAddress, blockchain) {
+        return this.executeContractFunctionByAddress(
+            paymasterAddress,
+            'Paymaster',
+            'addAllowedAddress',
+            [address],
+            blockchain
+        );
+    }
+
+    async removeAllowedAddressPaymaster(address, paymasterAddress, blockchain) {
+        return this.executeContractFunctionByAddress(
+            paymasterAddress,
+            'Paymaster',
+            'removeAllowedAddress',
+            [address],
+            blockchain
+        );
+    }
+
+    async fundPaymaster(paymasterAddress, amount, blockchain) {
+        return this.executeContractFunctionByAddress(
+            paymasterAddress,
+            'Paymaster',
+            'fundPaymaster',
+            [amount],
+            blockchain
+        );
+    }
+
+    async withdrawFromPaymaster(paymasterAddress, recipient, amount, blockchain) {
+        return this.executeContractFunctionByAddress(
+            paymasterAddress,
+            'Paymaster',
+            'withdraw',
+            [recipient, amount],
+            blockchain
+        );
+    }
+
+    async isAddressAllowedPaymaster(address, paymasterAddress, blockchain) {
+        return this.callContractFunctionByAddress(
+            paymasterAddress,
+            'Paymaster',
+            'allowedAddresses',
+            [address],
+            blockchain
+        );
+    }
+
+    async getPaymasterOwner(paymasterAddress, blockchain) {
+        return this.callContractFunctionByAddress(
+            paymasterAddress,
+            'Paymaster',
+            'owner',
+            [],
+            blockchain
+        );
+    }
+
+    async getPaymasterBalance(paymasterAddress, blockchain) {
+        const tokenAddress = await this.getPaymasterTokenContract(paymasterAddress, blockchain);
+        return this.callContractFunctionByAddress(
+            tokenAddress,
+            'Token',
+            'balanceOf',
+            [paymasterAddress],
+            blockchain
+        );
+    }
+
+    async getPaymasterTokenContract(paymasterAddress, blockchain) {
+        return this.callContractFunctionByAddress(
+            paymasterAddress,
+            'Paymaster',
+            'tokenContract',
+            [],
+            blockchain
+        );
     }
 
     // Knowledge assets operations
@@ -4724,6 +4996,102 @@ class BlockchainServiceBase {
             }
         }
     }
+
+    /**
+     * Execute a contract function using the contract's address directly instead of its name
+     * @param {string} contractAddress - The address of the contract
+     * @param {string} contractType - The type of contract (to determine ABI, e.g., 'Paymaster')
+     * @param {string} functionName - The name of the function to execute
+     * @param {Array} args - The arguments to pass to the function
+     * @param {Object} blockchain - The blockchain configuration
+     * @returns {Promise<Object>} - The transaction receipt
+     */
+    async executeContractFunctionByAddress(contractAddress, contractType, functionName, args, blockchain) {
+        await this.ensureBlockchainInfo(blockchain);
+        const web3Instance = await this.getWeb3Instance(blockchain);
+
+        // Create a contract instance directly with the provided address
+        const contractInstance = new web3Instance.eth.Contract(
+            this.abis[contractType],
+            contractAddress,
+            { from: blockchain.publicKey }
+        );
+
+        let tx;
+
+        try {
+            tx = await this.prepareTransaction(contractInstance, functionName, args, blockchain);
+
+            let receipt = await contractInstance.methods[functionName](...args).send(tx);
+            if (blockchain.name.startsWith('otp') && blockchain.waitNeurowebTxFinalization) {
+                receipt = await this.waitForTransactionFinalization(receipt, blockchain);
+            }
+            return receipt;
+        } catch (error) {
+            if (/revert|VM Exception/i.test(error.message)) {
+                let status;
+                try {
+                    status = await contractInstance.methods.status().call();
+                } catch (_) {
+                    status = false;
+                }
+
+                if (!status) {
+                    await web3Instance.eth.call({
+                        to: contractAddress,
+                        data: tx.data,
+                        from: tx.from,
+                    });
+
+                    return contractInstance.methods[functionName](...args).send(tx);
+                }
+            }
+
+            throw error;
+        }
+    }
+
+    /**
+     * Call (read-only) a contract function using the contract's address directly instead of its name
+     * @param {string} contractAddress - The address of the contract
+     * @param {string} contractType - The type of contract (to determine ABI, e.g., 'Paymaster')
+     * @param {string} functionName - The name of the function to call
+     * @param {Array} args - The arguments to pass to the function
+     * @param {Object} blockchain - The blockchain configuration
+     * @returns {Promise<any>} - The function return value
+     */
+    async callContractFunctionByAddress(contractAddress, contractType, functionName, args, blockchain) {
+        await this.ensureBlockchainInfo(blockchain);
+        const web3Instance = await this.getWeb3Instance(blockchain);
+
+        // Create a contract instance directly with the provided address
+        const contractInstance = new web3Instance.eth.Contract(
+            this.abis[contractType],
+            contractAddress,
+            { from: blockchain.publicKey }
+        );
+
+        try {
+            return await contractInstance.methods[functionName](...args).call();
+        } catch (error) {
+            if (/revert|VM Exception/i.test(error.message)) {
+                let status;
+                try {
+                    status = await contractInstance.methods.status().call();
+                } catch (_) {
+                    status = false;
+                }
+
+                if (!status) {
+                    // Try again
+                    return contractInstance.methods[functionName](...args).call();
+                }
+            }
+
+            throw error;
+        }
+    }
+
 }
 
 /* eslint-disable no-await-in-loop */
@@ -4852,6 +5220,61 @@ class BrowserBlockchainService extends BlockchainServiceBase {
             blockchain,
         );
     }
+
+    /**
+     * Execute a contract function using the contract's address directly instead of its name
+     * @param {string} contractAddress - The address of the contract
+     * @param {string} contractType - The type of contract (to determine ABI, e.g., 'Paymaster')
+     * @param {string} functionName - The name of the function to execute
+     * @param {Array} args - The arguments to pass to the function
+     * @param {Object} blockchain - The blockchain configuration
+     * @returns {Promise<Object>} - The transaction receipt
+     */
+    async executeContractFunctionByAddress(contractAddress, contractType, functionName, args, blockchain) {
+        await this.ensureBlockchainInfo(blockchain);
+        const web3Instance = await this.getWeb3Instance(blockchain);
+
+        // Create a contract instance directly with the provided address
+        const contractInstance = new web3Instance.eth.Contract(
+            this.abis[contractType],
+            contractAddress,
+            { from: await this.getAccount() }
+        );
+
+        let tx;
+
+        try {
+            tx = await this.prepareTransaction(contractInstance, functionName, args, blockchain);
+
+            let receipt = await contractInstance.methods[functionName](...args).send(tx);
+            if (blockchain.name.startsWith('otp') && blockchain.waitNeurowebTxFinalization) {
+                receipt = await this.waitForTransactionFinalization(receipt, blockchain);
+            }
+            return receipt;
+        } catch (error) {
+            if (/revert|VM Exception/i.test(error.message)) {
+                let status;
+                try {
+                    status = await contractInstance.methods.status().call();
+                } catch (_) {
+                    status = false;
+                }
+
+                if (!status) {
+                    // Since we're using direct address, we'll just retry with the same instance
+                    await web3Instance.eth.call({
+                        to: contractAddress,
+                        data: tx.data,
+                        from: tx.from,
+                    });
+
+                    return contractInstance.methods[functionName](...args).send(tx);
+                }
+            }
+
+            throw error;
+        }
+    }
 }
 
 /* eslint-disable no-param-reassign */
@@ -4863,10 +5286,21 @@ class NodeBlockchainService extends BlockchainServiceBase {
         this.config = config;
         this.events = {};
 
+        // Register events from KnowledgeCollectionStorage
         this.abis.KnowledgeCollectionStorage.filter((obj) => obj.type === 'event').forEach(
             (event) => {
                 const concatInputs = event.inputs.map((input) => input.internalType);
+                this.events[event.name] = {
+                    hash: Web3.utils.keccak256(`${event.name}(${concatInputs})`),
+                    inputs: event.inputs,
+                };
+            },
+        );
 
+        // Register events from PaymasterManager
+        this.abis.PaymasterManager.filter((obj) => obj.type === 'event').forEach(
+            (event) => {
+                const concatInputs = event.inputs.map((input) => input.internalType);
                 this.events[event.name] = {
                     hash: Web3.utils.keccak256(`${event.name}(${concatInputs})`),
                     inputs: event.inputs,
@@ -4988,6 +5422,90 @@ class NodeBlockchainService extends BlockchainServiceBase {
             [blockchain.publicKey, to, tokenId, 1, '0x'],
             blockchain,
         );
+    }
+
+    /**
+     * Execute a contract function using the contract's address directly instead of its name
+     * @param {string} contractAddress - The address of the contract
+     * @param {string} contractType - The type of contract (to determine ABI, e.g., 'Paymaster')
+     * @param {string} functionName - The name of the function to execute
+     * @param {Array} args - The arguments to pass to the function
+     * @param {Object} blockchain - The blockchain configuration
+     * @returns {Promise<Object>} - The transaction receipt
+     */
+    async executeContractFunctionByAddress(contractAddress, contractType, functionName, args, blockchain) {
+        await this.ensureBlockchainInfo(blockchain);
+        const web3Instance = await this.getWeb3Instance(blockchain);
+
+        // Create a contract instance directly with the provided address
+        const contractInstance = new web3Instance.eth.Contract(
+            this.abis[contractType],
+            contractAddress,
+            { from: blockchain.publicKey }
+        );
+
+        let receipt;
+        let previousTxGasPrice;
+        let simulationSucceeded = false;
+        let transactionRetried = false;
+
+        while (receipt === undefined) {
+            try {
+                const tx = await this.prepareTransaction(
+                    contractInstance,
+                    functionName,
+                    args,
+                    blockchain,
+                );
+                previousTxGasPrice = tx.gasPrice;
+                simulationSucceeded = true;
+
+                const createdTransaction = await web3Instance.eth.accounts.signTransaction(
+                    tx,
+                    blockchain.privateKey,
+                );
+
+                receipt = await web3Instance.eth.sendSignedTransaction(
+                    createdTransaction.rawTransaction,
+                );
+                if (blockchain.name.startsWith('otp') && blockchain.waitNeurowebTxFinalization) {
+                    receipt = await this.waitForTransactionFinalization(receipt, blockchain);
+                }
+            } catch (error) {
+                if (
+                    simulationSucceeded &&
+                    !transactionRetried &&
+                    blockchain.handleNotMinedError &&
+                    TRANSACTION_RETRY_ERRORS.some((errorMsg) =>
+                        error.message.toLowerCase().includes(errorMsg),
+                    )
+                ) {
+                    transactionRetried = true;
+                    blockchain.retryTx = true;
+                    blockchain.previousTxGasPrice = previousTxGasPrice;
+                } else if (!transactionRetried && /revert|VM Exception/i.test(error.message)) {
+                    let status;
+                    try {
+                        status = await contractInstance.methods.status().call();
+                    } catch (_) {
+                        status = false;
+                    }
+
+                    if (!status) {
+                        // We can't update the contract instance like in the regular method
+                        // since we're using a direct address, but we can retry the transaction
+                        transactionRetried = true;
+                        blockchain.retryTx = true;
+                    } else {
+                        throw error;
+                    }
+                } else {
+                    throw error;
+                }
+            }
+        }
+
+        return receipt;
     }
 }
 
@@ -6094,6 +6612,10 @@ class InputService {
         return blockchainConfig;
     }
 
+    getSpenderAddress(options) {
+        return options.spenderAddress ?? null;
+    }
+
     getGraphLocation(options) {
         return (
             options.graphLocation ??
@@ -6209,7 +6731,7 @@ class InputService {
     }
 
     getPayer(options) {
-        return options.payer ?? this.config.payer ?? ZERO_ADDRESS;
+        return options.paymaster ?? this.config.paymaster ?? ZERO_ADDRESS;
     }
 
     getMinimumNumberOfFinalizationConfirmations(options) {
