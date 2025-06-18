@@ -57,7 +57,7 @@ export default class BlockchainOperationsManager {
         const blockchain = this.inputService.getBlockchain(options);
         const { deployer, paymasterAddress } = await this.blockchainService.createPaymaster(blockchain);
 
-        return { deployer, paymasterAddress};
+        return { deployer, paymasterAddress };
     }
 
     /**
@@ -205,7 +205,8 @@ export default class BlockchainOperationsManager {
             args,
             blockchain
         );
-      
+    }
+
     /**
      * Retrieve the wallet.
      * @async
