@@ -2,22 +2,6 @@ import fs from 'fs';
 import { Client } from 'pg';
 import 'dotenv/config';
 
-const db = new Client({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    port: process.env.DB_PORT || 5432,
-});
-
-try {
-    await db.connect();
-    console.log('✅ Connected to PostgreSQL DB');
-} catch (err) {
-    console.error('❌ Failed to connect to DB:', err.message);
-    process.exit(1);
-}
-
 const files = process.argv.slice(2);
 
 // Match only if blockchain_name ends with exactly one of these full port tokens
@@ -45,6 +29,23 @@ for (const file of files) {
     }
 
     const tableName = isMainnet ? 'publish_mainnet_summary' : 'publish_testnet_summary';
+    const dbHost = isMainnet ? process.env.DB_HOST_MAINNET : process.env.DB_HOST_TESTNET;
+
+    const db = new Client({
+        host: dbHost,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+        port: process.env.DB_PORT || 5432,
+    });
+
+    try {
+        await db.connect();
+        console.log(`✅ Connected to DB (${isMainnet ? 'mainnet' : 'testnet'})`);
+    } catch (err) {
+        console.error('❌ Failed to connect to DB:', err.message);
+        continue;
+    }
 
     try {
         const query = `
@@ -75,13 +76,12 @@ for (const file of files) {
         console.log(`✅ Inserted ${file} into table '${tableName}'`);
     } catch (err) {
         console.error(`❌ Failed to insert ${file} into DB (table '${tableName}'):`, err.message);
-        continue;
     }
-}
 
-try {
-    await db.end();
-    console.log('✅ DB connection closed');
-} catch (err) {
-    console.error('❌ Failed to close DB connection:', err.message);
+    try {
+        await db.end();
+        console.log('✅ DB connection closed');
+    } catch (err) {
+        console.error('❌ Failed to close DB connection:', err.message);
+    }
 }
