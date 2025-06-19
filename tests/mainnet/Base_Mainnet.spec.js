@@ -174,7 +174,7 @@ describe('DKG Asset Lifecycle on Base Mainnet', function () {
               const create_result = await DkgClient.asset.create(content, {
                 epochsNum: 2,
                 minimumNumberOfFinalizationConfirmations: 1,
-                minimumNumberOfNodeReplications: 3,
+                minimumNumberOfNodeReplications: 1,
               });
 
               const publishEnd = Date.now();
