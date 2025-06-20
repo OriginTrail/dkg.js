@@ -245,26 +245,24 @@ describe('DKG Asset Lifecycle on Base Testnet', function () {
         try {
           step = 'querying';
           const queryStart = Date.now();
-          await Promise.race([
-            (async () => {
-              const queryResult = await DkgClient.graph.query(
-                `PREFIX schema: <http://schema.org/>
-                 SELECT ?s ?name ?description
-                 WHERE {
-                   ?s schema:name ?name ; schema:description ?description .
-                 }`,
-                'SELECT'
-              );
-              const queryEnd = Date.now();
-              queryDurations.push(queryEnd - queryStart);
-              assert.ok(queryResult?.data?.length > 0);
-              console.log(`✅ Query succeeded`);
-              querySuccess++;
-            })(),
+          const queryResult = await Promise.race([
+            DkgClient.graph.query(
+              `PREFIX schema: <http://schema.org/>
+               SELECT ?s ?name ?description
+               WHERE {
+                 ?s schema:name ?name ; schema:description ?description .
+               }`,
+              'SELECT'
+            ),
             new Promise((_, reject) =>
               setTimeout(() => reject(new Error(`Timeout after 3 minutes during "${step}" on ${stepNodeName}`)), 3 * 60 * 1000)
             ),
           ]);
+          const queryEnd = Date.now();
+          queryDurations.push(queryEnd - queryStart);
+          assert.ok(queryResult?.data?.length > 0);
+          console.log(`✅ Query succeeded`);
+          querySuccess++;
         } catch (error) {
           logError(error, stepNodeName, step);
           const reason = `Query failed — UAL: ${ual}`;
@@ -275,19 +273,17 @@ describe('DKG Asset Lifecycle on Base Testnet', function () {
         try {
           step = 'local get';
           const localGetStart = Date.now();
-          await Promise.race([
-            (async () => {
-              const getResult = await DkgClient.asset.get(ual);
-              const localGetEnd = Date.now();
-              localGetDurations.push(localGetEnd - localGetStart);
-              assert.ok(getResult?.assertion);
-              console.log(`✅ Local Get Succeeded`);
-              localGetSuccess++;
-            })(),
+          const localGetResult = await Promise.race([
+            DkgClient.asset.get(ual),
             new Promise((_, reject) =>
               setTimeout(() => reject(new Error(`Timeout after 3 minutes during "${step}" on ${stepNodeName}`)), 3 * 60 * 1000)
             ),
           ]);
+          const localGetEnd = Date.now();
+          localGetDurations.push(localGetEnd - localGetStart);
+          assert.ok(localGetResult?.assertion);
+          console.log(`✅ Local Get Succeeded`);
+          localGetSuccess++;
         } catch (error) {
           logError(error, stepNodeName, step);
           const reason = `Local Get failed — UAL: ${ual}`;
@@ -295,40 +291,41 @@ describe('DKG Asset Lifecycle on Base Testnet', function () {
           localGetFail++;
         }
 
+        // Prepare for remote get operation
+        step = 'get';
+        const otherIndexes = nodes.map((_, i) => i).filter(i => i !== currentIndex);
+        const remoteNode = nodes[otherIndexes[Math.floor(Math.random() * otherIndexes.length)]];
+        const originalStepNodeName = stepNodeName; // Preserve original node name for error tracking
+        stepNodeName = remoteNode.name;
+
         try {
-          step = 'get';
-          const otherIndexes = nodes.map((_, i) => i).filter(i => i !== currentIndex);
-          const remoteNode = nodes[otherIndexes[Math.floor(Math.random() * otherIndexes.length)]];
-          stepNodeName = remoteNode.name;
+          const RemoteDkgClient = new DKG({
+            endpoint: remoteNode.hostname,
+            port: OT_NODE_PORT,
+            blockchain: {
+              name: BLOCKCHAIN_IDS.BASE_TESTNET,
+              publicKey: nodeKeys[remoteNode.name].publicKey,
+              privateKey: nodeKeys[remoteNode.name].privateKey,
+            },
+            maxNumberOfRetries: 300,
+            frequency: 2,
+            contentType: 'all',
+            nodeApiVersion: '/v1',
+          });
           const remoteGetStart = Date.now();
-          await Promise.race([
-            (async () => {
-              const RemoteDkgClient = new DKG({
-                endpoint: remoteNode.hostname,
-                port: OT_NODE_PORT,
-                blockchain: {
-                  name: BLOCKCHAIN_IDS.BASE_TESTNET,
-                  publicKey: nodeKeys[remoteNode.name].publicKey,
-                  privateKey: nodeKeys[remoteNode.name].privateKey,
-                },
-                maxNumberOfRetries: 300,
-                frequency: 2,
-                contentType: 'all',
-                nodeApiVersion: '/v1',
-              });
-              const remoteGetResult = await RemoteDkgClient.asset.get(ual);
-              const remoteGetEnd = Date.now();
-              remoteGetDurations.push(remoteGetEnd - remoteGetStart);
-              assert.ok(remoteGetResult?.assertion);
-              console.log(`✅ Get Succeeded on ${remoteNode.name}`);
-              remoteGetSuccess++;
-            })(),
+          const remoteGetResult = await Promise.race([
+            RemoteDkgClient.asset.get(ual),
             new Promise((_, reject) =>
               setTimeout(() => reject(new Error(`Timeout after 3 minutes during "${step}" on ${stepNodeName}`)), 3 * 60 * 1000)
             ),
           ]);
+          const remoteGetEnd = Date.now();
+          remoteGetDurations.push(remoteGetEnd - remoteGetStart);
+          assert.ok(remoteGetResult?.assertion);
+          console.log(`✅ Get Succeeded on ${remoteNode.name}`);
+          remoteGetSuccess++;
         } catch (error) {
-          logError(error, stepNodeName, step);
+          logError(error, originalStepNodeName, step); // Use original node name for error tracking
           const reason = `Get failed — UAL: ${ual}`;
           failedAssets.push(`KA #${i + 1} (${reason})`);
           remoteGetFail++;
