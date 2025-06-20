@@ -89,7 +89,7 @@ function safeRate(success, fail) {
   return total === 0 ? '0.00' : ((success / total) * 100).toFixed(2);
 }
 
-function logError(error, nodeName, step = 'unknown') {
+function logError(error, nodeName, step = 'unknown', remoteNodeName = null) {
   console.log(`\n❌ Error on ${nodeName} during ${step}`);
   console.log(`🔺 Type: ${error.name}`);
   console.log(`🧵 Message: ${error.message}`);
@@ -101,7 +101,10 @@ function logError(error, nodeName, step = 'unknown') {
 
   if (!errorStats[nodeName]) errorStats[nodeName] = {};
 
-  const key = `${step} — ${error.name}: ${error.message.split('\n')[0]}`;
+  let key = `${step} — ${error.name}: ${error.message.split('\n')[0]}`;
+  if (remoteNodeName) {
+    key += ` on ${remoteNodeName}`;
+  }
   errorStats[nodeName][key] = (errorStats[nodeName][key] || 0) + 1;
 }
 
@@ -291,7 +294,7 @@ describe('DKG Asset Lifecycle on Base Mainnet', function () {
           console.log(`✅ Get Succeeded on ${remoteNode.name}`);
           remoteGetSuccess++;
         } catch (error) {
-          logError(error, originalStepNodeName, step); // Use original node name for error tracking
+          logError(error, originalStepNodeName, step, remoteNode.name);
           const reason = `Get failed — UAL: ${ual}`;
           failedAssets.push(`KA #${i + 1} (${reason})`);
           remoteGetFail++;
