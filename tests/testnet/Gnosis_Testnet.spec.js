@@ -123,8 +123,8 @@ function safeRate(success, fail) {
   return total === 0 ? '0.00' : ((success / total) * 100).toFixed(2);
 }
 
-function logError(error, nodeName) {
-  console.log(`\n❌ Error on ${nodeName}`);
+function logError(error, nodeName, step = 'unknown') {
+  console.log(`\n❌ Error on ${nodeName} during ${step}`);
   console.log(`🔺 Type: ${error.name}`);
   console.log(`🧵 Message: ${error.message}`);
   if (error.stack) {
@@ -132,8 +132,10 @@ function logError(error, nodeName) {
     const lastRelevant = stackLines[1] || stackLines[0];
     if (lastRelevant) console.log(`📍 Location: ${lastRelevant.trim()}`);
   }
+
   if (!errorStats[nodeName]) errorStats[nodeName] = {};
-  const key = `${error.name}: ${error.message.split('\n')[0]}`;
+
+  const key = `${step} — ${error.name}: ${error.message.split('\n')[0]}`;
   errorStats[nodeName][key] = (errorStats[nodeName][key] || 0) + 1;
 }
 
@@ -231,7 +233,7 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
             ),
           ]);
         } catch (error) {
-          logError(error, stepNodeName);
+          logError(error, stepNodeName, 'publishing');
           const reason = 'Publish failed — No UAL';
           failedAssets.push(`KA #${i + 1} (${reason})`);
           publishFail++;
@@ -264,7 +266,7 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
             ),
           ]);
         } catch (error) {
-          logError(error, stepNodeName);
+          logError(error, stepNodeName, 'querying');
           const reason = `Query failed — UAL: ${ual}`;
           failedAssets.push(`KA #${i + 1} (${reason})`);
           queryFail++;
@@ -287,7 +289,7 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
             ),
           ]);
         } catch (error) {
-          logError(error, stepNodeName);
+          logError(error, stepNodeName, 'local get');
           const reason = `Local Get failed — UAL: ${ual}`;
           failedAssets.push(`KA #${i + 1} (${reason})`);
           localGetFail++;
@@ -326,7 +328,7 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
             ),
           ]);
         } catch (error) {
-          logError(error, stepNodeName);
+          logError(error, stepNodeName, 'sync get');
           const reason = `Get failed — UAL: ${ual}`;
           failedAssets.push(`KA #${i + 1} (${reason})`);
           remoteGetFail++;
