@@ -199,7 +199,7 @@ describe('DKG Asset Lifecycle on Neuroweb Mainnet', function () {
             ),
           ]);
         } catch (error) {
-          logError(error, stepNodeName, 'publishing');
+          logError(error, stepNodeName, step);
           const reason = 'Publish failed — No UAL';
           failedAssets.push(`KA #${i + 1} (${reason})`);
           publishFail++;
@@ -210,9 +210,9 @@ describe('DKG Asset Lifecycle on Neuroweb Mainnet', function () {
         // Continue with query, local get, and remote get regardless of publish status
         try {
           step = 'querying';
+          const queryStart = Date.now();
           await Promise.race([
             (async () => {
-              const queryStart = Date.now();
               const queryResult = await DkgClient.graph.query(
                 `PREFIX schema: <http://schema.org/>
                  SELECT ?s ?name ?description
@@ -232,7 +232,7 @@ describe('DKG Asset Lifecycle on Neuroweb Mainnet', function () {
             ),
           ]);
         } catch (error) {
-          logError(error, stepNodeName, 'querying');
+          logError(error, stepNodeName, step);
           const reason = `Query failed — UAL: ${ual}`;
           failedAssets.push(`KA #${i + 1} (${reason})`);
           queryFail++;
@@ -240,9 +240,9 @@ describe('DKG Asset Lifecycle on Neuroweb Mainnet', function () {
 
         try {
           step = 'local get';
+          const localGetStart = Date.now();
           await Promise.race([
             (async () => {
-              const localGetStart = Date.now();
               const getResult = await DkgClient.asset.get(ual);
               const localGetEnd = Date.now();
               localGetDurations.push(localGetEnd - localGetStart);
@@ -255,7 +255,7 @@ describe('DKG Asset Lifecycle on Neuroweb Mainnet', function () {
             ),
           ]);
         } catch (error) {
-          logError(error, stepNodeName, 'local get');
+          logError(error, stepNodeName, step);
           const reason = `Local Get failed — UAL: ${ual}`;
           failedAssets.push(`KA #${i + 1} (${reason})`);
           localGetFail++;
@@ -266,6 +266,7 @@ describe('DKG Asset Lifecycle on Neuroweb Mainnet', function () {
           const otherIndexes = nodes.map((_, i) => i).filter(i => i !== currentIndex);
           const remoteNode = nodes[otherIndexes[Math.floor(Math.random() * otherIndexes.length)]];
           stepNodeName = remoteNode.name;
+          const remoteGetStart = Date.now();
           await Promise.race([
             (async () => {
               const RemoteDkgClient = new DKG({
@@ -281,7 +282,6 @@ describe('DKG Asset Lifecycle on Neuroweb Mainnet', function () {
                 contentType: 'all',
                 nodeApiVersion: '/v1',
               });
-              const remoteGetStart = Date.now();
               const remoteGetResult = await RemoteDkgClient.asset.get(ual);
               const remoteGetEnd = Date.now();
               remoteGetDurations.push(remoteGetEnd - remoteGetStart);
@@ -294,7 +294,7 @@ describe('DKG Asset Lifecycle on Neuroweb Mainnet', function () {
             ),
           ]);
         } catch (error) {
-          logError(error, stepNodeName, 'sync get');
+          logError(error, stepNodeName, step);
           const reason = `Get failed — UAL: ${ual}`;
           failedAssets.push(`KA #${i + 1} (${reason})`);
           remoteGetFail++;
