@@ -12,56 +12,56 @@ const OT_NODE_PORT = '8900';
 
 const nodeKeys = {
   'Node 01': {
-    publicKey: process.env.TESTNET_GNOSIS_NODE01_PUBLIC_KEY,
-    privateKey: process.env.TESTNET_GNOSIS_NODE01_PRIVATE_KEY
+    publicKey: process.env.JS_TESTNET_GNOSIS_NODE01_PUBLIC_KEY,
+    privateKey: process.env.JS_TESTNET_GNOSIS_NODE01_PRIVATE_KEY
   },
   'Node 04': {
-    publicKey: process.env.TESTNET_GNOSIS_NODE04_PUBLIC_KEY,
-    privateKey: process.env.TESTNET_GNOSIS_NODE04_PRIVATE_KEY
+    publicKey: process.env.JS_TESTNET_GNOSIS_NODE04_PUBLIC_KEY,
+    privateKey: process.env.JS_TESTNET_GNOSIS_NODE04_PRIVATE_KEY
   },
   'Node 05': {
-    publicKey: process.env.TESTNET_GNOSIS_NODE05_PUBLIC_KEY,
-    privateKey: process.env.TESTNET_GNOSIS_NODE05_PRIVATE_KEY
+    publicKey: process.env.JS_TESTNET_GNOSIS_NODE05_PUBLIC_KEY,
+    privateKey: process.env.JS_TESTNET_GNOSIS_NODE05_PRIVATE_KEY
   },
   'Node 06': {
-    publicKey: process.env.TESTNET_GNOSIS_NODE06_PUBLIC_KEY,
-    privateKey: process.env.TESTNET_GNOSIS_NODE06_PRIVATE_KEY
+    publicKey: process.env.JS_TESTNET_GNOSIS_NODE06_PUBLIC_KEY,
+    privateKey: process.env.JS_TESTNET_GNOSIS_NODE06_PRIVATE_KEY
   },
   'Node 07': {
-    publicKey: process.env.TESTNET_GNOSIS_NODE07_PUBLIC_KEY,
-    privateKey: process.env.TESTNET_GNOSIS_NODE07_PRIVATE_KEY
+    publicKey: process.env.JS_TESTNET_GNOSIS_NODE07_PUBLIC_KEY,
+    privateKey: process.env.JS_TESTNET_GNOSIS_NODE07_PRIVATE_KEY
   },
   'Node 08': {
-    publicKey: process.env.TESTNET_GNOSIS_NODE08_PUBLIC_KEY,
-    privateKey: process.env.TESTNET_GNOSIS_NODE08_PRIVATE_KEY
+    publicKey: process.env.JS_TESTNET_GNOSIS_NODE08_PUBLIC_KEY,
+    privateKey: process.env.JS_TESTNET_GNOSIS_NODE08_PRIVATE_KEY
   },
   'Node 09': {
-    publicKey: process.env.TESTNET_GNOSIS_NODE09_PUBLIC_KEY,
-    privateKey: process.env.TESTNET_GNOSIS_NODE09_PRIVATE_KEY
+    publicKey: process.env.JS_TESTNET_GNOSIS_NODE09_PUBLIC_KEY,
+    privateKey: process.env.JS_TESTNET_GNOSIS_NODE09_PRIVATE_KEY
   },
   'Node 10': {
-    publicKey: process.env.TESTNET_GNOSIS_NODE10_PUBLIC_KEY,
-    privateKey: process.env.TESTNET_GNOSIS_NODE10_PRIVATE_KEY
+    publicKey: process.env.JS_TESTNET_GNOSIS_NODE10_PUBLIC_KEY,
+    privateKey: process.env.JS_TESTNET_GNOSIS_NODE10_PRIVATE_KEY
   },
   'Node 13': {
-    publicKey: process.env.TESTNET_GNOSIS_NODE13_PUBLIC_KEY,
-    privateKey: process.env.TESTNET_GNOSIS_NODE13_PRIVATE_KEY
+    publicKey: process.env.JS_TESTNET_GNOSIS_NODE13_PUBLIC_KEY,
+    privateKey: process.env.JS_TESTNET_GNOSIS_NODE13_PRIVATE_KEY
   },
   'Node 14': {
-    publicKey: process.env.TESTNET_GNOSIS_NODE14_PUBLIC_KEY,
-    privateKey: process.env.TESTNET_GNOSIS_NODE14_PRIVATE_KEY
+    publicKey: process.env.JS_TESTNET_GNOSIS_NODE14_PUBLIC_KEY,
+    privateKey: process.env.JS_TESTNET_GNOSIS_NODE14_PRIVATE_KEY
   },
   'Node 21': {
-    publicKey: process.env.TESTNET_GNOSIS_NODE21_PUBLIC_KEY,
-    privateKey: process.env.TESTNET_GNOSIS_NODE21_PRIVATE_KEY
+    publicKey: process.env.JS_TESTNET_GNOSIS_NODE21_PUBLIC_KEY,
+    privateKey: process.env.JS_TESTNET_GNOSIS_NODE21_PRIVATE_KEY
   },
   'Node 23': {
-    publicKey: process.env.TESTNET_GNOSIS_NODE23_PUBLIC_KEY,
-    privateKey: process.env.TESTNET_GNOSIS_NODE23_PRIVATE_KEY
+    publicKey: process.env.JS_TESTNET_GNOSIS_NODE23_PUBLIC_KEY,
+    privateKey: process.env.JS_TESTNET_GNOSIS_NODE23_PRIVATE_KEY
   },
   'Node 37': {
-    publicKey: process.env.TESTNET_GNOSIS_NODE37_PUBLIC_KEY,
-    privateKey: process.env.TESTNET_GNOSIS_NODE37_PRIVATE_KEY
+    publicKey: process.env.JS_TESTNET_GNOSIS_NODE37_PUBLIC_KEY,
+    privateKey: process.env.JS_TESTNET_GNOSIS_NODE37_PRIVATE_KEY
   }
 };
 

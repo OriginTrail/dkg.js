@@ -22,28 +22,28 @@ const nodes = [
 
 const nodeKeys = {
   'Node 25': {
-    publicKey: process.env.MAINNET_GNOSIS_NODE25_PUBLIC_KEY,
-    privateKey: process.env.MAINNET_GNOSIS_NODE25_PRIVATE_KEY
+    publicKey: process.env.JS_MAINNET_GNOSIS_NODE25_PUBLIC_KEY,
+    privateKey: process.env.JS_MAINNET_GNOSIS_NODE25_PRIVATE_KEY
   },
   'Node 26': {
-    publicKey: process.env.MAINNET_GNOSIS_NODE26_PUBLIC_KEY,
-    privateKey: process.env.MAINNET_GNOSIS_NODE26_PRIVATE_KEY
+    publicKey: process.env.JS_MAINNET_GNOSIS_NODE26_PUBLIC_KEY,
+    privateKey: process.env.JS_MAINNET_GNOSIS_NODE26_PRIVATE_KEY
   },
   'Node 27': {
-    publicKey: process.env.MAINNET_GNOSIS_NODE27_PUBLIC_KEY,
-    privateKey: process.env.MAINNET_GNOSIS_NODE27_PRIVATE_KEY
+    publicKey: process.env.JS_MAINNET_GNOSIS_NODE27_PUBLIC_KEY,
+    privateKey: process.env.JS_MAINNET_GNOSIS_NODE27_PRIVATE_KEY
   },
   'Node 28': {
-    publicKey: process.env.MAINNET_GNOSIS_NODE28_PUBLIC_KEY,
-    privateKey: process.env.MAINNET_GNOSIS_NODE28_PRIVATE_KEY
+    publicKey: process.env.JS_MAINNET_GNOSIS_NODE28_PUBLIC_KEY,
+    privateKey: process.env.JS_MAINNET_GNOSIS_NODE28_PRIVATE_KEY
   },
   'Node 29': {
-    publicKey: process.env.MAINNET_GNOSIS_NODE29_PUBLIC_KEY,
-    privateKey: process.env.MAINNET_GNOSIS_NODE29_PRIVATE_KEY
+    publicKey: process.env.JS_MAINNET_GNOSIS_NODE29_PUBLIC_KEY,
+    privateKey: process.env.JS_MAINNET_GNOSIS_NODE29_PRIVATE_KEY
   },
   'Node 30': {
-    publicKey: process.env.MAINNET_GNOSIS_NODE30_PUBLIC_KEY,
-    privateKey: process.env.MAINNET_GNOSIS_NODE30_PRIVATE_KEY
+    publicKey: process.env.JS_MAINNET_GNOSIS_NODE30_PUBLIC_KEY,
+    privateKey: process.env.JS_MAINNET_GNOSIS_NODE30_PRIVATE_KEY
   }
 };
 
