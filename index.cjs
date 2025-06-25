@@ -785,18 +785,15 @@ class AssetOperationsManager {
         if (tokenAmount) {
             estimatedPublishingCost = tokenAmount;
         } else {
-            const timeUntilNextEpoch = await this.blockchainService.timeUntilNextEpoch(blockchain);
-            const epochLength = await this.blockchainService.epochLength(blockchain);
             const stakeWeightedAverageAsk = await this.blockchainService.getStakeWeightedAverageAsk(
                 blockchain,
             );
+
             estimatedPublishingCost =
-                (BigInt(stakeWeightedAverageAsk) *
-                    (BigInt(epochsNum) * BigInt(1e18) +
-                        (BigInt(timeUntilNextEpoch) * BigInt(1e18)) / BigInt(epochLength)) *
-                    BigInt(datasetSize)) /
-                BigInt(1024) /
-                BigInt(1e18);
+                BigInt(stakeWeightedAverageAsk) *
+                BigInt(epochsNum) *
+                BigInt(datasetSize) /
+                BigInt(1024);
         }
         let knowledgeCollectionId;
         let mintKnowledgeCollectionReceipt;
