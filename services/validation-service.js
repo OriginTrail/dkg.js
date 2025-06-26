@@ -704,9 +704,9 @@ export default class ValidationService {
         if (nodeSupported()) {
             this.validateRequiredParam('blockchain rpc', blockchain.rpc);
 
-            if (operation !== OPERATIONS.GET) {
-                this.validateRequiredParam('blockchain public key', blockchain.publicKey);
+            if (![OPERATIONS.GET, OPERATIONS.QUERY, OPERATIONS.FINALITY].includes(operation)) {
                 this.validateRequiredParam('blockchain private key', blockchain.privateKey);
+                this.validateRequiredParam('blockchain public key', blockchain.publicKey);
             }
         }
     }

@@ -36,10 +36,6 @@ export default class BaseServiceManager {
             } catch (error) {
                 throw new Error(`Failed to derive public key from private key: ${error.message}`);
             }
-        } else {
-            throw new Error(
-                'Private key is required to derive public key. Please set it manually when creating the DKG instance.',
-            );
         }
 
         this.initializeServices(config);
