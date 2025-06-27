@@ -190,7 +190,10 @@ const WEBSOCKET_PROVIDER_OPTIONS = {
 const OPERATIONS = {
     PUBLISH: 'publish',
     GET: 'get',
-    LOCAL_STORE: 'local-store'};
+    LOCAL_STORE: 'local-store',
+    QUERY: 'query',
+    FINALITY: 'finality',
+};
 
 const OPERATION_STATUSES$1 = {
     PENDING: 'PENDING',
@@ -785,18 +788,15 @@ class AssetOperationsManager {
         if (tokenAmount) {
             estimatedPublishingCost = tokenAmount;
         } else {
-            const timeUntilNextEpoch = await this.blockchainService.timeUntilNextEpoch(blockchain);
-            const epochLength = await this.blockchainService.epochLength(blockchain);
             const stakeWeightedAverageAsk = await this.blockchainService.getStakeWeightedAverageAsk(
                 blockchain,
             );
+
             estimatedPublishingCost =
-                (BigInt(stakeWeightedAverageAsk) *
-                    (BigInt(epochsNum) * BigInt(1e18) +
-                        (BigInt(timeUntilNextEpoch) * BigInt(1e18)) / BigInt(epochLength)) *
-                    BigInt(datasetSize)) /
-                BigInt(1024) /
-                BigInt(1e18);
+                BigInt(stakeWeightedAverageAsk) *
+                BigInt(epochsNum) *
+                BigInt(datasetSize) /
+                BigInt(1024);
         }
         let knowledgeCollectionId;
         let mintKnowledgeCollectionReceipt;
@@ -5690,9 +5690,9 @@ class ValidationService {
         if (nodeSupported()) {
             this.validateRequiredParam('blockchain rpc', blockchain.rpc);
 
-            if (operation !== OPERATIONS.GET) {
-                this.validateRequiredParam('blockchain public key', blockchain.publicKey);
+            if (![OPERATIONS.GET, OPERATIONS.QUERY, OPERATIONS.FINALITY].includes(operation)) {
                 this.validateRequiredParam('blockchain private key', blockchain.privateKey);
+                this.validateRequiredParam('blockchain public key', blockchain.publicKey);
             }
         }
     }
@@ -6330,10 +6330,6 @@ class BaseServiceManager {
             } catch (error) {
                 throw new Error(`Failed to derive public key from private key: ${error.message}`);
             }
-        } else {
-            throw new Error(
-                'Private key is required to derive public key. Please set it manually when creating the DKG instance.',
-            );
         }
 
         this.initializeServices(config);
