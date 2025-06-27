@@ -16,3 +16,7 @@ client-d-n.js
 mochawesome-report
 errors_Node_01.json
 summary_Node_01.json
+assets
+mainnet_base.html
+mainnet_base.json
+mochawesome-report
