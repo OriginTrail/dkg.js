@@ -4,9 +4,15 @@ on:
   push:
     branches:
       - v8/develop
+  pull_request:
+    branches:
+      - v8/develop
+    types:
+      - closed
 
 jobs:
   merge-develop-into-feature:
+    if: github.event.pull_request.merged == true || github.event_name == 'push'
     runs-on: ubuntu-latest
 
     steps:
@@ -25,7 +31,8 @@ jobs:
         run: git fetch origin v8/develop
 
       - name: Merge v8/develop into Test_Publish_Query
-        run: git merge origin/v8/develop --no-edit || true
+        run: |
+          git merge origin/v8/develop --no-edit || echo "Merge failed but continuing"
 
       - name: Push updated branch
         run: git push origin HEAD:Test_Publish_Query
