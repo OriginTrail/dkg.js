@@ -3445,8 +3445,8 @@ class BlockchainServiceBase {
     async getGnosisGasPrice(blockchain) {
         try {
             const response = await axios.get(blockchain.gasPriceOracleLink);
-            const averageGasPrice = Number(response?.data?.average) * 1e9;
-            return averageGasPrice || DEFAULT_GAS_PRICE_WEI.GNOSIS;
+            const fastGasPrice = Number(response?.data?.fast) * 1e9;
+            return fastGasPrice || DEFAULT_GAS_PRICE_WEI.GNOSIS;
         } catch (error) {
             console.warn(`Failed to fetch gas price from Gnosis oracle: ${error}`);
             return DEFAULT_GAS_PRICE_WEI.GNOSIS;
@@ -4613,7 +4613,7 @@ class BlockchainServiceBase {
                 if (blockchain.name.split(':')[1] === '100') {
                     gasPrice = Number(response.result, 10);
                 } else if (blockchain.name.split(':')[1] === '10200') {
-                    gasPrice = Math.round(response.data.average * 1e9);
+                    gasPrice = Math.round((response.data.fast) * 1e9);
                 }
             } else {
                 gasPrice = Web3.utils.toWei(
