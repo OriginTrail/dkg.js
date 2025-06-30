@@ -254,6 +254,7 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
                SELECT ?s ?name ?description
                WHERE {
                  ?s schema:name ?name ; schema:description ?description .
+                 FILTER(?s = <${ual}>)
                }`,
               'SELECT'
             ),

@@ -252,6 +252,7 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
                SELECT ?s ?name ?description
                WHERE {
                  ?s schema:name ?name ; schema:description ?description .
+                 FILTER(?s = <${ual}>)
                }`,
               'SELECT'
             ),

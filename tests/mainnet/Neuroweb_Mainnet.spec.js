@@ -220,6 +220,7 @@ describe('DKG Asset Lifecycle on Neuroweb Mainnet', function () {
                SELECT ?s ?name ?description
                WHERE {
                  ?s schema:name ?name ; schema:description ?description .
+                 FILTER(?s = <${ual}>)
                }`,
               'SELECT'
             ),
