@@ -220,7 +220,6 @@ describe('DKG Asset Lifecycle on Gnosis Mainnet', function () {
                SELECT ?s ?name ?description
                WHERE {
                  ?s schema:name ?name ; schema:description ?description .
-                 FILTER(?s = <${ual}>)
                }`,
               'SELECT'
             ),
