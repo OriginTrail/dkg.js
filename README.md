@@ -47,7 +47,7 @@
     </li>
     <li><a href="#-license">📄 License</a></li>
     <li><a href="#-contributing">🤝 Contributing</a></li>
-    <li><a href="#-thanks-to-all-contributors">❤️ Contributors</a></li>
+    <li><a href="#-thanks-to-all-contributors!">❤️ Contributors</a></li>
     <li><a href="#-social-media">📰 Social Media</a></li>
   </ol>
 </details>
