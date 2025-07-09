@@ -82,7 +82,8 @@ export default class BlockchainServiceBase {
         if (!this[blockchain.name]) {
             this[blockchain.name] = {
                 contracts: {
-                    [blockchain.hubContract]: {} },
+                    [blockchain.hubContract]: {}
+                },
                 contractAddresses: {
                     [blockchain.hubContract]: {
                         Hub: blockchain.hubContract,
@@ -142,11 +143,16 @@ export default class BlockchainServiceBase {
     async getGnosisGasPrice(blockchain) {
         try {
             const response = await axios.get(blockchain.gasPriceOracleLink);
-            const fastGasPrice = Number(response ? .data ? .fast) * 1e9;
-            return fastGasPrice || DEFAULT_GAS_PRICE_WEI.GNOSIS;
+            let fastGasPrice = Number(response ? .data ? .fast) * 1e9;
+            const minGnosisGasPrice = 1100000000; // 1.1 Gwei
+            // Enforce minimum
+            if (!fastGasPrice || fastGasPrice < minGnosisGasPrice) {
+                fastGasPrice = minGnosisGasPrice;
+            }
+            return fastGasPrice;
         } catch (error) {
             console.warn(`Failed to fetch gas price from Gnosis oracle: ${error}`);
-            return DEFAULT_GAS_PRICE_WEI.GNOSIS;
+            return 1100000000; // fallback to 1.1 Gwei
         }
     }
 
@@ -236,22 +242,7 @@ export default class BlockchainServiceBase {
                 }
             }
         } else {
-            // gasPrice = blockchain.gasPrice || (await this.getNetworkGasPrice(blockchain));
-
-            // PATCH: Force minimum gas price for Gnosis
-            // TODO: Switch to EIP-1559 (maxFeePerGas, maxPriorityFeePerGas) for Gnosis Chain
-            // Gnosis currently supports legacy gasPrice, but EIP-1559 is recommended and may become required.
-            if (this.isGnosis(blockchain.name)) {
-                const minGnosisGasPrice = 1100000000; // 1.1 Gwei
-                if (!blockchain.gasPrice || Number(blockchain.gasPrice) < minGnosisGasPrice) {
-                    gasPrice = minGnosisGasPrice;
-                } else {
-                    gasPrice = Number(blockchain.gasPrice);
-                }
-            } else {
-                gasPrice = blockchain.gasPrice || (await this.getNetworkGasPrice(blockchain));
-            }
-
+            gasPrice = blockchain.gasPrice || (await this.getNetworkGasPrice(blockchain));
         }
 
         if (blockchain.simulateTxs) {
