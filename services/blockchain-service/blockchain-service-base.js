@@ -14,7 +14,8 @@ import {
 import emptyHooks from '../../util/empty-hooks.js';
 import { sleepForMilliseconds } from '../utilities.js';
 
-const require = createRequire(import.meta.url);
+const require = createRequire(
+    import.meta.url);
 
 const HubAbi = require('dkg-evm-module/abi/Hub.json');
 const TokenAbi = require('dkg-evm-module/abi/Token.json');
@@ -80,7 +81,9 @@ export default class BlockchainServiceBase {
     async ensureBlockchainInfo(blockchain) {
         if (!this[blockchain.name]) {
             this[blockchain.name] = {
-                contracts: { [blockchain.hubContract]: {} },
+                contracts: {
+                    [blockchain.hubContract]: {}
+                },
                 contractAddresses: {
                     [blockchain.hubContract]: {
                         Hub: blockchain.hubContract,
@@ -140,7 +143,7 @@ export default class BlockchainServiceBase {
     async getGnosisGasPrice(blockchain) {
         try {
             const response = await axios.get(blockchain.gasPriceOracleLink);
-            const fastGasPrice = Number(response?.data?.fast) * 1e9;
+            const fastGasPrice = Number(response ? .data ? .fast) * 1e9;
             return fastGasPrice || DEFAULT_GAS_PRICE_WEI.GNOSIS;
         } catch (error) {
             console.warn(`Failed to fetch gas price from Gnosis oracle: ${error}`);
@@ -218,8 +221,8 @@ export default class BlockchainServiceBase {
                 // Search for pending tx in the pending block
                 const pendingTx = Object.values(pendingBlock.transactions).find(
                     (tx) =>
-                        tx.from.toLowerCase() === publicKey.toLowerCase() &&
-                        tx.nonce === confirmedNonce,
+                    tx.from.toLowerCase() === publicKey.toLowerCase() &&
+                    tx.nonce === confirmedNonce,
                 );
 
                 if (pendingTx) {
@@ -234,7 +237,16 @@ export default class BlockchainServiceBase {
                 }
             }
         } else {
-            gasPrice = blockchain.gasPrice || (await this.getNetworkGasPrice(blockchain));
+            if (this.isGnosis(blockchain.name)) {
+                const minGnosisGasPrice = 1100000000; // 1.1 Gwei
+                if (!blockchain.gasPrice || Number(blockchain.gasPrice) < minGnosisGasPrice) {
+                    gasPrice = minGnosisGasPrice;
+                } else {
+                    gasPrice = Number(blockchain.gasPrice);
+                }
+            } else {
+                gasPrice = blockchain.gasPrice || (await this.getNetworkGasPrice(blockchain));
+            }
         }
 
         if (blockchain.simulateTxs) {
@@ -266,8 +278,7 @@ export default class BlockchainServiceBase {
         let finalized = false;
 
         try {
-            while (
-                !finalized &&
+            while (!finalized &&
                 Date.now() - startTime + reminingTime < blockchain.transactionFinalityMaxWaitTime
             ) {
                 try {
@@ -292,10 +303,9 @@ export default class BlockchainServiceBase {
                         } else {
                             // Transaction is no longer mined, wait for it to be mined again
                             const reminingStartTime = Date.now();
-                            while (
-                                !currentReceipt &&
+                            while (!currentReceipt &&
                                 Date.now() - reminingStartTime <
-                                    blockchain.transactionReminingMaxWaitTime
+                                blockchain.transactionReminingMaxWaitTime
                             ) {
                                 await sleepForMilliseconds(
                                     blockchain.transactionReminingPollingInterval,
@@ -341,10 +351,9 @@ export default class BlockchainServiceBase {
                 await this.callContractFunction(
                     'Hub',
                     contractName.includes('AssetStorage') ||
-                        contractName.includes('CollectionStorage')
-                        ? 'getAssetStorageAddress'
-                        : 'getContractAddress',
-                    [contractName],
+                    contractName.includes('CollectionStorage') ?
+                    'getAssetStorageAddress' :
+                    'getContractAddress', [contractName],
                     blockchain,
                 );
         }
@@ -360,8 +369,7 @@ export default class BlockchainServiceBase {
             this[blockchain.name].contracts[blockchain.hubContract][contractName] =
                 await new web3Instance.eth.Contract(
                     this.abis[contractName],
-                    this[blockchain.name].contractAddresses[blockchain.hubContract][contractName],
-                    { from: blockchain.publicKey },
+                    this[blockchain.name].contractAddresses[blockchain.hubContract][contractName], { from: blockchain.publicKey },
                 );
         }
     }
@@ -379,8 +387,7 @@ export default class BlockchainServiceBase {
 
         await this.executeContractFunction(
             'Token',
-            'decreaseAllowance',
-            [knowledgeCollectionAddress, allowanceGap],
+            'decreaseAllowance', [knowledgeCollectionAddress, allowanceGap],
             blockchain,
         );
     }
@@ -393,8 +400,7 @@ export default class BlockchainServiceBase {
 
         const allowance = await this.callContractFunction(
             'Token',
-            'allowance',
-            [sender, knowledgeCollectionAddress],
+            'allowance', [sender, knowledgeCollectionAddress],
             blockchain,
         );
 
@@ -403,8 +409,7 @@ export default class BlockchainServiceBase {
         if (allowanceGap > 0) {
             await this.executeContractFunction(
                 'Token',
-                'increaseAllowance',
-                [knowledgeCollectionAddress, allowanceGap],
+                'increaseAllowance', [knowledgeCollectionAddress, allowanceGap],
                 blockchain,
             );
 
@@ -434,7 +439,7 @@ export default class BlockchainServiceBase {
         let allowanceGap = 0;
 
         try {
-            if (requestData?.paymaster && requestData?.paymaster !== ZERO_ADDRESS) {
+            if (requestData ? .paymaster && requestData ? .paymaster !== ZERO_ADDRESS) {
                 // Handle the case when payer is passed
             } else {
                 ({ allowanceIncreased, allowanceGap } =
@@ -453,15 +458,13 @@ export default class BlockchainServiceBase {
             if (paranetKaContract == null && paranetTokenId == null) {
                 receipt = await this.executeContractFunction(
                     'KnowledgeCollection',
-                    'createKnowledgeCollection',
-                    [...Object.values(requestData)],
+                    'createKnowledgeCollection', [...Object.values(requestData)],
                     blockchain,
                 );
             } else {
                 receipt = await this.executeContractFunction(
                     'Paranet',
-                    'mintKnowledgeCollection',
-                    [paranetKaContract, paranetTokenId, Object.values(requestData)],
+                    'mintKnowledgeCollection', [paranetKaContract, paranetTokenId, Object.values(requestData)],
                     blockchain,
                 );
             }
@@ -491,8 +494,7 @@ export default class BlockchainServiceBase {
     async hasPendingUpdate(tokenId, blockchain) {
         return this.callContractFunction(
             'UnfinalizedStateStorage',
-            'hasPendingUpdate',
-            [tokenId],
+            'hasPendingUpdate', [tokenId],
             blockchain,
         );
     }
@@ -500,8 +502,7 @@ export default class BlockchainServiceBase {
     async cancelAssetUpdate(tokenId, blockchain) {
         return this.executeContractFunction(
             'ContentAsset',
-            'cancelAssetStateUpdate',
-            [tokenId],
+            'cancelAssetStateUpdate', [tokenId],
             blockchain,
         );
     }
@@ -509,8 +510,7 @@ export default class BlockchainServiceBase {
     async getLatestAssertionId(tokenId, blockchain) {
         return this.callContractFunction(
             'ContentAssetStorage',
-            'getLatestAssertionId',
-            [tokenId],
+            'getLatestAssertionId', [tokenId],
             blockchain,
         );
     }
@@ -518,8 +518,7 @@ export default class BlockchainServiceBase {
     async getUnfinalizedState(tokenId, blockchain) {
         return this.callContractFunction(
             'UnfinalizedStateStorage',
-            'getUnfinalizedState',
-            [tokenId],
+            'getUnfinalizedState', [tokenId],
             blockchain,
         );
     }
@@ -649,8 +648,7 @@ export default class BlockchainServiceBase {
     async getAssertionIdByIndex(tokenId, index, blockchain) {
         return this.callContractFunction(
             'ContentAssetStorage',
-            'getAssertionIdByIndex',
-            [tokenId, index],
+            'getAssertionIdByIndex', [tokenId, index],
             blockchain,
         );
     }
@@ -658,8 +656,7 @@ export default class BlockchainServiceBase {
     async getAssertionIds(tokenId, blockchain) {
         return this.callContractFunction(
             'ContentAssetStorage',
-            'getAssertionIds',
-            [tokenId],
+            'getAssertionIds', [tokenId],
             blockchain,
         );
     }
@@ -667,8 +664,7 @@ export default class BlockchainServiceBase {
     async getAssertionIssuer(tokenId, assertionId, assertionIndex, blockchain) {
         return this.callContractFunction(
             'ContentAssetStorage',
-            'getAssertionIssuer',
-            [tokenId, assertionId, assertionIndex],
+            'getAssertionIssuer', [tokenId, assertionId, assertionIndex],
             blockchain,
         );
     }
@@ -676,8 +672,7 @@ export default class BlockchainServiceBase {
     async getAgreementData(agreementId, blockchain) {
         const result = await this.callContractFunction(
             'ServiceAgreementStorageProxy',
-            'getAgreementData',
-            [agreementId],
+            'getAgreementData', [agreementId],
             blockchain,
         );
 
@@ -695,8 +690,7 @@ export default class BlockchainServiceBase {
     async getAssertionSize(assertionId, blockchain) {
         return this.callContractFunction(
             'AssertionStorage',
-            'getAssertionSize',
-            [assertionId],
+            'getAssertionSize', [assertionId],
             blockchain,
         );
     }
@@ -958,8 +952,7 @@ export default class BlockchainServiceBase {
     async getParanetIncentivesPoolAddress(blockchain) {
         return this.callContractFunction(
             'ParanetIncentivesPoolStorage',
-            'paranetIncentivesPoolAddress',
-            [],
+            'paranetIncentivesPoolAddress', [],
             blockchain,
         );
     }
@@ -1009,8 +1002,7 @@ export default class BlockchainServiceBase {
                 this.abis['ParanetIncentivesPoolStorage'],
                 this[blockchain.name].contractAddresses[blockchain.hubContract][
                     'ParanetIncentivesPoolStorage'
-                ],
-                { from: blockchain.publicKey },
+                ], { from: blockchain.publicKey },
             );
         }
     }
@@ -1027,8 +1019,7 @@ export default class BlockchainServiceBase {
 
         // If storage address is not provided, get it from pool name
         if (!incentivesPoolStorageAddress) {
-            const incentivesPool = await this.getIncentivesPoolByPoolName(
-                { paranetId, incentivesPoolName },
+            const incentivesPool = await this.getIncentivesPoolByPoolName({ paranetId, incentivesPoolName },
                 blockchain,
             );
             incentivesPoolStorageAddress = incentivesPool.storageAddr;
@@ -1055,8 +1046,7 @@ export default class BlockchainServiceBase {
                     this.abis['ParanetIncentivesPool'],
                     this[blockchain.name].contractAddresses[blockchain.hubContract][
                         'ParanetIncentivesPool'
-                    ],
-                    { from: blockchain.publicKey },
+                    ], { from: blockchain.publicKey },
                 );
         }
     }
@@ -1066,8 +1056,7 @@ export default class BlockchainServiceBase {
         const { incentivesPoolName } = options;
 
         if (!incentivesPoolAddress) {
-            const incentivesPool = await this.getIncentivesPoolByPoolName(
-                { paranetId, incentivesPoolName },
+            const incentivesPool = await this.getIncentivesPoolByPoolName({ paranetId, incentivesPoolName },
                 blockchain,
             );
             return incentivesPool.storageAddr;
@@ -1077,8 +1066,7 @@ export default class BlockchainServiceBase {
 
         return this.callContractFunction(
             'ParanetIncentivesPool',
-            'paranetIncentivesPoolStorage',
-            [],
+            'paranetIncentivesPoolStorage', [],
             blockchain,
         );
     }
@@ -1093,8 +1081,7 @@ export default class BlockchainServiceBase {
 
         return this.executeContractFunction(
             'ParanetIncentivesPool',
-            'claimKnowledgeMinerReward',
-            [amount],
+            'claimKnowledgeMinerReward', [amount],
             blockchain,
         );
     }
@@ -1109,8 +1096,7 @@ export default class BlockchainServiceBase {
 
         return this.executeContractFunction(
             'ParanetIncentivesPool',
-            'claimIncentivizationProposalVoterReward',
-            [],
+            'claimIncentivizationProposalVoterReward', [],
             blockchain,
         );
     }
@@ -1125,8 +1111,7 @@ export default class BlockchainServiceBase {
 
         return this.executeContractFunction(
             'ParanetIncentivesPool',
-            'claimParanetOperatorReward',
-            [],
+            'claimParanetOperatorReward', [],
             blockchain,
         );
     }
@@ -1141,8 +1126,7 @@ export default class BlockchainServiceBase {
 
         return this.callContractFunction(
             'ParanetIncentivesPool',
-            'getClaimableKnowledgeMinerRewardAmount',
-            [],
+            'getClaimableKnowledgeMinerRewardAmount', [],
             blockchain,
         );
     }
@@ -1157,8 +1141,7 @@ export default class BlockchainServiceBase {
 
         return this.callContractFunction(
             'ParanetIncentivesPool',
-            'getClaimableAllKnowledgeMinersRewardAmount',
-            [],
+            'getClaimableAllKnowledgeMinersRewardAmount', [],
             blockchain,
         );
     }
@@ -1173,8 +1156,7 @@ export default class BlockchainServiceBase {
 
         return this.callContractFunction(
             'ParanetIncentivesPool',
-            'getClaimableProposalVoterRewardAmount',
-            [],
+            'getClaimableProposalVoterRewardAmount', [],
             blockchain,
         );
     }
@@ -1189,8 +1171,7 @@ export default class BlockchainServiceBase {
 
         return this.callContractFunction(
             'ParanetIncentivesPool',
-            'getClaimableAllProposalVotersRewardAmount',
-            [],
+            'getClaimableAllProposalVotersRewardAmount', [],
             blockchain,
         );
     }
@@ -1205,8 +1186,7 @@ export default class BlockchainServiceBase {
 
         return this.callContractFunction(
             'ParanetIncentivesPool',
-            'getClaimableParanetOperatorRewardAmount',
-            [],
+            'getClaimableParanetOperatorRewardAmount', [],
             blockchain,
         );
     }
@@ -1221,8 +1201,7 @@ export default class BlockchainServiceBase {
 
         return this.callContractFunction(
             'ParanetIncentivesPool',
-            'isKnowledgeMiner',
-            [address],
+            'isKnowledgeMiner', [address],
             blockchain,
         );
     }
@@ -1237,8 +1216,7 @@ export default class BlockchainServiceBase {
 
         return this.callContractFunction(
             'ParanetIncentivesPool',
-            'isParanetOperator',
-            [address],
+            'isParanetOperator', [address],
             blockchain,
         );
     }
@@ -1253,8 +1231,7 @@ export default class BlockchainServiceBase {
 
         return this.callContractFunction(
             'ParanetIncentivesPool',
-            'isProposalVoter',
-            [address],
+            'isProposalVoter', [address],
             blockchain,
         );
     }
@@ -1263,8 +1240,7 @@ export default class BlockchainServiceBase {
     async getIdentityId(operationalWallet, blockchain) {
         return this.callContractFunction(
             'IdentityStorage',
-            'getIdentityId',
-            [operationalWallet],
+            'getIdentityId', [operationalWallet],
             blockchain,
         );
     }
@@ -1274,8 +1250,7 @@ export default class BlockchainServiceBase {
     async getStakeWeightedAverageAsk(blockchain) {
         return this.callContractFunction(
             'AskStorage',
-            'getStakeWeightedAverageAsk',
-            [],
+            'getStakeWeightedAverageAsk', [],
             blockchain,
         );
     }
@@ -1312,9 +1287,9 @@ export default class BlockchainServiceBase {
                 }
             } else {
                 gasPrice = Web3.utils.toWei(
-                    blockchain.name.startsWith('otp')
-                        ? DEFAULT_GAS_PRICE.OTP
-                        : DEFAULT_GAS_PRICE.GNOSIS,
+                    blockchain.name.startsWith('otp') ?
+                    DEFAULT_GAS_PRICE.OTP :
+                    DEFAULT_GAS_PRICE.GNOSIS,
                     'Gwei',
                 );
             }
@@ -1344,8 +1319,7 @@ export default class BlockchainServiceBase {
         const blockchainTokenBalance = await web3Instance.eth.getBalance(publicKey);
         const tracBalance = await this.callContractFunction(
             'Token',
-            'balanceOf',
-            [await this.getPublicKey(blockchain)],
+            'balanceOf', [await this.getPublicKey(blockchain)],
             blockchain,
         );
 
@@ -1374,8 +1348,7 @@ export default class BlockchainServiceBase {
     async keyIsOperationalWallet(blockchain, identityId, signer) {
         const result = await this.callContractFunction(
             'IdentityStorage',
-            'keyHasPurpose',
-            [
+            'keyHasPurpose', [
                 identityId,
                 solidityPackedKeccak256(['address'], [signer]),
                 2, // IdentityLib.OPERATIONAL_KEY
