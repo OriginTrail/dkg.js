@@ -1288,20 +1288,8 @@ export default class BlockchainServiceBase {
             let gasPrice;
             if (blockchain.name.startsWith('otp') || blockchain.name.startsWith('base')) {
                 gasPrice = await web3Instance.eth.getGasPrice();
-            } else if (blockchain.name.startsWith('gnosis')) {
-                const response = await axios.get(blockchain.gasPriceOracleLink);
-                if (blockchain.name.split(':')[1] === '100') {
-                    gasPrice = Number(response.result, 10);
-                } else if (blockchain.name.split(':')[1] === '10200') {
-                    gasPrice = Math.round(response.data.fast * 1e9);
-                }
             } else {
-                gasPrice = Web3.utils.toWei(
-                    blockchain.name.startsWith('otp')
-                        ? DEFAULT_GAS_PRICE.OTP
-                        : DEFAULT_GAS_PRICE.GNOSIS,
-                    'Gwei',
-                );
+                gasPrice = Web3.utils.toWei(DEFAULT_GAS_PRICE.GNOSIS, 'Gwei');
             }
             return gasPrice;
         } catch (error) {
