@@ -222,7 +222,7 @@ export const DEFAULT_PARAMETERS = {
 };
 
 export const DEFAULT_GAS_PRICE = {
-    GNOSIS: '6',
+    GNOSIS: '1.5',
     OTP: '0.001',
     BASE: '0.086',
 };

@@ -116,10 +116,6 @@ export default class BlockchainServiceBase {
                 return await web3Instance.eth.getGasPrice();
             }
 
-            if (this.isGnosis(blockchain.name)) {
-                return await this.getGnosisGasPrice(blockchain);
-            }
-
             return this.getDefaultGasPrice(blockchain.name);
         } catch (error) {
             console.warn(
@@ -135,22 +131,6 @@ export default class BlockchainServiceBase {
 
     isGnosis(name) {
         return name.startsWith('gnosis');
-    }
-
-    async getGnosisGasPrice(blockchain) {
-        try {
-            const response = await axios.get(blockchain.gasPriceOracleLink);
-            let fastGasPrice = Number(response?.data?.fast) * 1e9;
-            const minGnosisGasPrice = 1100000000; // 1.1 Gwei
-            // Enforce minimum
-            if (!fastGasPrice || fastGasPrice < minGnosisGasPrice) {
-                fastGasPrice = minGnosisGasPrice;
-            }
-            return fastGasPrice;
-        } catch (error) {
-            console.warn(`Failed to fetch gas price from Gnosis oracle: ${error}`);
-            return 1100000000; // fallback to 1.1 Gwei
-        }
     }
 
     getDefaultGasPrice(name) {
@@ -1313,7 +1293,7 @@ export default class BlockchainServiceBase {
                 if (blockchain.name.split(':')[1] === '100') {
                     gasPrice = Number(response.result, 10);
                 } else if (blockchain.name.split(':')[1] === '10200') {
-                    gasPrice = Math.round((response.data.fast) * 1e9);
+                    gasPrice = Math.round(response.data.fast * 1e9);
                 }
             } else {
                 gasPrice = Web3.utils.toWei(
