@@ -29,14 +29,14 @@ for (const file of files) {
     }
 
     const tableName = isMainnet ? 'publish_mainnet_summary' : 'publish_testnet_summary';
-    const dbHost = isMainnet ? process.env.DB_HOST_MAINNET : process.env.DB_HOST_TESTNET;
+    const dbHost = isMainnet ? process.env.DB_HOST_PUBLISH_MAINNET : process.env.DB_HOST_PUBLISH_TESTNET;
 
     const db = new Client({
         host: dbHost,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME,
-        port: process.env.DB_PORT || 5432,
+        user: process.env.DB_USER_PUBLISH,
+        password: process.env.DB_PASSWORD_PUBLISH,
+        database: process.env.DB_NAME_PUBLISH,
+        port: 5432,
     });
 
     try {
