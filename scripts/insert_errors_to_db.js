@@ -32,19 +32,35 @@ for (const file of files) {
     }
 
     const nodeName = match[1].replace('_', ' ');
-    const isMainnet = file.includes('mainnet');
-
-    const matchedNetwork = Object.keys(networkConfig).find(key => {
-        const [network, mainnetFlag] = key.split(':');
-        return file.toLowerCase().includes(network) && String(isMainnet) === mainnetFlag;
-    });
-
-    if (!matchedNetwork) {
-        console.error(`❌ Could not determine network config for file: ${file}`);
-        continue;
+    
+    // Determine network from content like summary script does
+    let isMainnet = false;
+    
+    // Look for blockchain_name in the error data structure
+    // Since errors don't have blockchain_name, we'll need to infer from context
+    // For now, let's assume testnet unless we can determine otherwise
+    isMainnet = false; // Default to testnet
+    
+    // Try to determine from filename if it contains network info
+    if (file.toLowerCase().includes('mainnet')) {
+        isMainnet = true;
+    } else if (file.toLowerCase().includes('testnet')) {
+        isMainnet = false;
     }
-
-    const { blockchainId, tableName, dbHost } = networkConfig[matchedNetwork];
+    
+    // Determine blockchain based on filename or default to neuroweb
+    let blockchainId;
+    if (file.toLowerCase().includes('base')) {
+        blockchainId = isMainnet ? 'base:8453' : 'base:84531';
+    } else if (file.toLowerCase().includes('gnosis')) {
+        blockchainId = isMainnet ? 'gnosis:100' : 'gnosis:10200';
+    } else {
+        // Default to neuroweb
+        blockchainId = isMainnet ? 'neuroweb:2043' : 'neuroweb:20432';
+    }
+    
+    const tableName = isMainnet ? 'error_messages_mainnet_js' : 'error_messages_testnet_js';
+    const dbHost = isMainnet ? process.env.DB_HOST_PUBLISH_MAINNET : process.env.DB_HOST_PUBLISH_TESTNET;
 
     const db = new Client({
         host: dbHost,
