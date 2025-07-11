@@ -33,32 +33,31 @@ for (const file of files) {
 
     const nodeName = match[1].replace('_', ' ');
     
-    // Determine network from content like summary script does
+    // Try to get blockchain_id from file content (array or object)
+    let blockchainIdFromContent = null;
+    if (Array.isArray(errors) && errors.length > 0 && errors[0].blockchain_id) {
+        blockchainIdFromContent = errors[0].blockchain_id;
+    } else if (!Array.isArray(errors)) {
+        // For old object format, try to find a blockchain_id property at the top level
+        if (errors.blockchain_id) {
+            blockchainIdFromContent = errors.blockchain_id;
+        }
+    }
+
+    // Determine isMainnet from blockchain_id if present, otherwise fallback to filename
     let isMainnet = false;
-    
-    // Look for blockchain_name in the error data structure
-    // Since errors don't have blockchain_name, we'll need to infer from context
-    // For now, let's assume testnet unless we can determine otherwise
-    isMainnet = false; // Default to testnet
-    
-    // Try to determine from filename if it contains network info
-    if (file.toLowerCase().includes('mainnet')) {
+    if (blockchainIdFromContent) {
+        isMainnet = (
+            blockchainIdFromContent === 'base:8453' ||
+            blockchainIdFromContent === 'gnosis:100' ||
+            blockchainIdFromContent === 'neuroweb:2043'
+        );
+    } else if (file.toLowerCase().includes('mainnet')) {
         isMainnet = true;
     } else if (file.toLowerCase().includes('testnet')) {
         isMainnet = false;
     }
-    
-    // Determine blockchain based on filename or default to neuroweb
-    let blockchainId;
-    if (file.toLowerCase().includes('base')) {
-        blockchainId = isMainnet ? 'base:8453' : 'base:84531';
-    } else if (file.toLowerCase().includes('gnosis')) {
-        blockchainId = isMainnet ? 'gnosis:100' : 'gnosis:10200';
-    } else {
-        // Default to neuroweb
-        blockchainId = isMainnet ? 'neuroweb:2043' : 'neuroweb:20432';
-    }
-    
+
     const tableName = isMainnet ? 'error_messages_mainnet_js' : 'error_messages_testnet_js';
     const dbHost = isMainnet ? process.env.DB_HOST_PUBLISH_MAINNET : process.env.DB_HOST_PUBLISH_TESTNET;
 
@@ -78,46 +77,102 @@ for (const file of files) {
         continue;
     }
 
-    for (const [kaLabel, details] of Object.entries(errors)) {
-        const row = {
-            node_name: nodeName,
-            blockchain_id: blockchainId,
-            ka_label: kaLabel,
-            publish_error: null,
-            query_error: null,
-            publisher_get_error: null,
-            non_publisher_get_error: null,
-            time_stamp: new Date().toISOString(),
-        };
+    // Group errors by KA number
+    const kaMap = {}; // { 'KA #5': { publish_error: ..., query_error: ..., ... } }
 
-        if (kaLabel.toLowerCase().includes('publish')) row.publish_error = kaLabel;
-        else if (kaLabel.toLowerCase().includes('query')) row.query_error = kaLabel;
-        else if (kaLabel.toLowerCase().includes('local get')) row.publisher_get_error = kaLabel;
-        else if (kaLabel.toLowerCase().includes('get')) row.non_publisher_get_error = kaLabel;
+    if (Array.isArray(errors)) {
+        for (const attempt of errors) {
+            const row = {
+                node_name: nodeName,
+                blockchain_id: blockchainIdFromContent || 'neuroweb:20432', // Use the determined blockchainId or default
+                ka_label: attempt.ka_label || 'Unknown KA',
+                publish_error: attempt.publish_error || null,
+                query_error: attempt.query_error || null,
+                publisher_get_error: attempt.publisher_get_error || null,
+                non_publisher_get_error: attempt.non_publisher_get_error || null,
+                time_stamp: new Date().toISOString(),
+            };
 
-        const insertQuery = `
-            INSERT INTO ${tableName} (
-                node_name, blockchain_id, ka_label,
-                publish_error, query_error,
-                publisher_get_error, non_publisher_get_error,
-                time_stamp
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        `;
+            const insertQuery = `
+                INSERT INTO ${tableName} (
+                    node_name, blockchain_id, ka_label,
+                    publish_error, query_error,
+                    publisher_get_error, non_publisher_get_error,
+                    time_stamp
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            `;
 
-        try {
-            await db.query(insertQuery, [
-                row.node_name,
-                row.blockchain_id,
-                row.ka_label,
-                row.publish_error,
-                row.query_error,
-                row.publisher_get_error,
-                row.non_publisher_get_error,
-                row.time_stamp
-            ]);
-            console.log(`✅ Inserted KA ${row.ka_label} for ${row.node_name}`);
-        } catch (err) {
-            console.error(`❌ Failed to insert KA ${row.ka_label}:`, err.message);
+            try {
+                await db.query(insertQuery, [
+                    row.node_name,
+                    row.blockchain_id,
+                    row.ka_label,
+                    row.publish_error,
+                    row.query_error,
+                    row.publisher_get_error,
+                    row.non_publisher_get_error,
+                    row.time_stamp
+                ]);
+                console.log(`✅ Inserted KA ${row.ka_label} for ${row.node_name}`);
+            } catch (err) {
+                console.error(`❌ Failed to insert KA ${row.ka_label}:`, err.message);
+            }
+        }
+    } else {
+        // fallback to old logic if needed
+        for (const [errorMsg, count] of Object.entries(errors)) {
+            // Extract KA number (e.g., "KA #5") from the error message
+            let kaNumber = null;
+            const kaMatch = errorMsg.match(/KA\s*#?(\d+)/i);
+            if (kaMatch) {
+                kaNumber = `KA #${kaMatch[1]}`;
+            } else {
+                kaNumber = 'Unknown KA';
+            }
+
+            for (let i = 0; i < count; i++) {
+                const row = {
+                    node_name: nodeName,
+                    blockchain_id: blockchainIdFromContent || 'neuroweb:20432', // Use the determined blockchainId or default
+                    ka_label: kaNumber, // Only the KA number
+                    publish_error: null,
+                    query_error: null,
+                    publisher_get_error: null,
+                    non_publisher_get_error: null,
+                    time_stamp: new Date().toISOString(),
+                };
+
+                // Put the full error message in the correct error field
+                if (errorMsg.toLowerCase().includes('publish')) row.publish_error = errorMsg;
+                else if (errorMsg.toLowerCase().includes('query')) row.query_error = errorMsg;
+                else if (errorMsg.toLowerCase().includes('local get')) row.publisher_get_error = errorMsg;
+                else if (errorMsg.toLowerCase().includes('get')) row.non_publisher_get_error = errorMsg;
+
+                const insertQuery = `
+                    INSERT INTO ${tableName} (
+                        node_name, blockchain_id, ka_label,
+                        publish_error, query_error,
+                        publisher_get_error, non_publisher_get_error,
+                        time_stamp
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                `;
+
+                try {
+                    await db.query(insertQuery, [
+                        row.node_name,
+                        row.blockchain_id,
+                        row.ka_label,
+                        row.publish_error,
+                        row.query_error,
+                        row.publisher_get_error,
+                        row.non_publisher_get_error,
+                        row.time_stamp
+                    ]);
+                    console.log(`✅ Inserted KA ${row.ka_label} for ${row.node_name} (${i + 1}/${count})`);
+                } catch (err) {
+                    console.error(`❌ Failed to insert KA ${row.ka_label}:`, err.message);
+                }
+            }
         }
     }
 
