@@ -276,13 +276,9 @@ const DEFAULT_PARAMETERS = {
 };
 
 const DEFAULT_GAS_PRICE = {
-    GNOSIS: '6',
+    GNOSIS: '1.5',
     OTP: '0.001',
     BASE: '0.086',
-};
-
-const DEFAULT_GAS_PRICE_WEI = {
-    GNOSIS: '6000000000',
 };
 
 const CHUNK_BYTE_SIZE$1 = 32;
@@ -3421,10 +3417,6 @@ class BlockchainServiceBase {
                 return await web3Instance.eth.getGasPrice();
             }
 
-            if (this.isGnosis(blockchain.name)) {
-                return await this.getGnosisGasPrice(blockchain);
-            }
-
             return this.getDefaultGasPrice(blockchain.name);
         } catch (error) {
             console.warn(
@@ -3440,17 +3432,6 @@ class BlockchainServiceBase {
 
     isGnosis(name) {
         return name.startsWith('gnosis');
-    }
-
-    async getGnosisGasPrice(blockchain) {
-        try {
-            const response = await axios.get(blockchain.gasPriceOracleLink);
-            const fastGasPrice = Number(response?.data?.fast) * 1e9;
-            return fastGasPrice || DEFAULT_GAS_PRICE_WEI.GNOSIS;
-        } catch (error) {
-            console.warn(`Failed to fetch gas price from Gnosis oracle: ${error}`);
-            return DEFAULT_GAS_PRICE_WEI.GNOSIS;
-        }
     }
 
     getDefaultGasPrice(name) {
@@ -4608,20 +4589,8 @@ class BlockchainServiceBase {
             let gasPrice;
             if (blockchain.name.startsWith('otp') || blockchain.name.startsWith('base')) {
                 gasPrice = await web3Instance.eth.getGasPrice();
-            } else if (blockchain.name.startsWith('gnosis')) {
-                const response = await axios.get(blockchain.gasPriceOracleLink);
-                if (blockchain.name.split(':')[1] === '100') {
-                    gasPrice = Number(response.result, 10);
-                } else if (blockchain.name.split(':')[1] === '10200') {
-                    gasPrice = Math.round((response.data.fast) * 1e9);
-                }
             } else {
-                gasPrice = Web3.utils.toWei(
-                    blockchain.name.startsWith('otp')
-                        ? DEFAULT_GAS_PRICE.OTP
-                        : DEFAULT_GAS_PRICE.GNOSIS,
-                    'Gwei',
-                );
+                gasPrice = Web3.utils.toWei(DEFAULT_GAS_PRICE.GNOSIS, 'Gwei');
             }
             return gasPrice;
         } catch (error) {
