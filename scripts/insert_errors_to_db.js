@@ -206,6 +206,15 @@ for (const file of files) {
 
     console.log(`✅ Inserted ${insertedCount} error records for ${nodeName} into ${tableName}`);
 
+    // Verify the insertion by querying the database
+    try {
+        const verifyQuery = `SELECT COUNT(*) as count FROM ${tableName} WHERE node_name = $1 AND time_stamp >= $2`;
+        const verifyResult = await db.query(verifyQuery, [nodeName, new Date(Date.now() - 60000).toISOString()]); // Check last minute
+        console.log(`✅ Verification: Found ${verifyResult.rows[0].count} records for ${nodeName} in the last minute`);
+    } catch (err) {
+        console.error('❌ Failed to verify insertion:', err.message);
+    }
+
     try {
         await db.end();
         console.log('✅ DB connection closed');
