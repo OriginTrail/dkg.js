@@ -61,6 +61,19 @@ for (const file of files) {
     const tableName = isMainnet ? 'error_messages_mainnet_js' : 'error_messages_testnet_js';
     const dbHost = isMainnet ? process.env.DB_HOST_PUBLISH_MAINNET : process.env.DB_HOST_PUBLISH_TESTNET;
 
+    // Determine blockchain_id to use
+    let blockchainId;
+    if (blockchainIdFromContent) {
+        blockchainId = blockchainIdFromContent;
+    } else if (file.toLowerCase().includes('base')) {
+        blockchainId = isMainnet ? 'base:8453' : 'base:84531';
+    } else if (file.toLowerCase().includes('gnosis')) {
+        blockchainId = isMainnet ? 'gnosis:100' : 'gnosis:10200';
+    } else {
+        // Default to neuroweb
+        blockchainId = isMainnet ? 'neuroweb:2043' : 'neuroweb:20432';
+    }
+
     const db = new Client({
         host: dbHost,
         user: process.env.DB_USER_PUBLISH,
@@ -77,14 +90,13 @@ for (const file of files) {
         continue;
     }
 
-    // Group errors by KA number
-    const kaMap = {}; // { 'KA #5': { publish_error: ..., query_error: ..., ... } }
+    let insertedCount = 0;
 
     if (Array.isArray(errors)) {
         for (const attempt of errors) {
             const row = {
                 node_name: nodeName,
-                blockchain_id: blockchainIdFromContent || 'neuroweb:20432', // Use the determined blockchainId or default
+                blockchain_id: blockchainId,
                 ka_label: attempt.ka_label || 'Unknown KA',
                 publish_error: attempt.publish_error || null,
                 query_error: attempt.query_error || null,
@@ -113,7 +125,7 @@ for (const file of files) {
                     row.non_publisher_get_error,
                     row.time_stamp
                 ]);
-                console.log(`✅ Inserted KA ${row.ka_label} for ${row.node_name}`);
+                insertedCount++;
             } catch (err) {
                 console.error(`❌ Failed to insert KA ${row.ka_label}:`, err.message);
             }
@@ -133,7 +145,7 @@ for (const file of files) {
             for (let i = 0; i < count; i++) {
                 const row = {
                     node_name: nodeName,
-                    blockchain_id: blockchainIdFromContent || 'neuroweb:20432', // Use the determined blockchainId or default
+                    blockchain_id: blockchainId,
                     ka_label: kaNumber, // Only the KA number
                     publish_error: null,
                     query_error: null,
@@ -168,13 +180,15 @@ for (const file of files) {
                         row.non_publisher_get_error,
                         row.time_stamp
                     ]);
-                    console.log(`✅ Inserted KA ${row.ka_label} for ${row.node_name} (${i + 1}/${count})`);
+                    insertedCount++;
                 } catch (err) {
                     console.error(`❌ Failed to insert KA ${row.ka_label}:`, err.message);
                 }
             }
         }
     }
+
+    console.log(`✅ Inserted ${insertedCount} error records for ${nodeName} into ${tableName}`);
 
     try {
         await db.end();
