@@ -98,10 +98,40 @@ for (const file of files) {
 
     if (Array.isArray(errors)) {
         for (const attempt of errors) {
+            // Determine blockchain_id for this row
+            let rowBlockchainId = attempt.blockchain_id || blockchainId;
+            if (!rowBlockchainId) {
+                // Fallback to filename-based logic
+                if (file.toLowerCase().includes('base')) {
+                    rowBlockchainId = isMainnet ? 'base:8453' : 'base:84531';
+                } else if (file.toLowerCase().includes('gnosis')) {
+                    rowBlockchainId = isMainnet ? 'gnosis:100' : 'gnosis:10200';
+                } else {
+                    rowBlockchainId = isMainnet ? 'neuroweb:2043' : 'neuroweb:20432';
+                }
+            }
+
+            // Determine ka_label for this row
+            let rowKaLabel = attempt.ka_label;
+            if (!rowKaLabel) {
+                // Try to extract KA number from any error field
+                const errorFields = [attempt.publish_error, attempt.query_error, attempt.publisher_get_error, attempt.non_publisher_get_error];
+                for (const msg of errorFields) {
+                    if (typeof msg === 'string') {
+                        const kaMatch = msg.match(/KA\s*#?(\d+)/i);
+                        if (kaMatch) {
+                            rowKaLabel = `KA #${kaMatch[1]}`;
+                            break;
+                        }
+                    }
+                }
+                if (!rowKaLabel) rowKaLabel = 'Unknown KA';
+            }
+
             const row = {
                 node_name: nodeName,
-                blockchain_id: blockchainId,
-                ka_label: attempt.ka_label || 'Unknown KA',
+                blockchain_id: rowBlockchainId,
+                ka_label: rowKaLabel,
                 publish_error: attempt.publish_error || null,
                 query_error: attempt.query_error || null,
                 publisher_get_error: attempt.publisher_get_error || null,
