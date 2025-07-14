@@ -85,6 +85,10 @@ for (const file of files) {
     try {
         await db.connect();
         console.log(`✅ Connected to DB (${tableName})`);
+        
+        // Start transaction
+        await db.query('BEGIN');
+        console.log('✅ Transaction started');
     } catch (err) {
         console.error('❌ Failed to connect to DB:', err.message);
         continue;
@@ -115,7 +119,7 @@ for (const file of files) {
             `;
 
             try {
-                await db.query(insertQuery, [
+                const result = await db.query(insertQuery, [
                     row.node_name,
                     row.blockchain_id,
                     row.ka_label,
@@ -126,6 +130,7 @@ for (const file of files) {
                     row.time_stamp
                 ]);
                 insertedCount++;
+                console.log(`✅ Inserted row ${insertedCount}: ${row.ka_label} for ${row.node_name}`);
             } catch (err) {
                 console.error(`❌ Failed to insert KA ${row.ka_label}:`, err.message);
             }
@@ -170,7 +175,7 @@ for (const file of files) {
                 `;
 
                 try {
-                    await db.query(insertQuery, [
+                    const result = await db.query(insertQuery, [
                         row.node_name,
                         row.blockchain_id,
                         row.ka_label,
@@ -181,11 +186,22 @@ for (const file of files) {
                         row.time_stamp
                     ]);
                     insertedCount++;
+                    console.log(`✅ Inserted row ${insertedCount}: ${row.ka_label} for ${row.node_name}`);
                 } catch (err) {
                     console.error(`❌ Failed to insert KA ${row.ka_label}:`, err.message);
                 }
             }
         }
+    }
+
+    // Commit transaction
+    try {
+        await db.query('COMMIT');
+        console.log('✅ Transaction committed');
+    } catch (err) {
+        console.error('❌ Failed to commit transaction:', err.message);
+        await db.query('ROLLBACK');
+        console.log('❌ Transaction rolled back');
     }
 
     console.log(`✅ Inserted ${insertedCount} error records for ${nodeName} into ${tableName}`);
