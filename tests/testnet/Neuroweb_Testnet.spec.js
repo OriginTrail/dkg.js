@@ -136,7 +136,10 @@ function logError(error, nodeName, step = 'unknown', remoteNodeName = null, kaNu
   // Create aggregated key (without KA number for counting)
   let aggregatedKey = `${step} — ${error.name}: ${error.message.split('\n')[0]}`;
   if (remoteNodeName) {
-    aggregatedKey += ` on ${remoteNodeName}`;
+    // Only add remote node name if it's not already in the error message
+    if (!error.message.includes(`on ${remoteNodeName}`)) {
+      aggregatedKey += ` on ${remoteNodeName}`;
+    }
   }
   
   // Create detailed key (with KA number for database processing)
