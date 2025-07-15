@@ -44,15 +44,13 @@ for (const file of files) {
         }
     }
 
-    // Determine isMainnet from blockchain_id if present, otherwise fallback to filename
+    // Use the same logic as insert_summary_to_db.js
+    const MAINNET_PORTS = [':8453', ':100', ':2043'];
     let isMainnet = false;
-    if (blockchainIdFromContent) {
-        isMainnet = (
-            blockchainIdFromContent === 'base:8453' ||
-            blockchainIdFromContent === 'gnosis:100' ||
-            blockchainIdFromContent === 'neuroweb:2043'
-        );
-        console.log(`🔍 Using blockchain_id from content: ${blockchainIdFromContent}, isMainnet: ${isMainnet}`);
+    
+    if (blockchainIdFromContent && typeof blockchainIdFromContent === 'string') {
+        isMainnet = MAINNET_PORTS.some(port => blockchainIdFromContent.endsWith(port));
+        console.log(`🔍 Using blockchain_id detection: ${blockchainIdFromContent}, isMainnet: ${isMainnet}`);
     } else if (file.toLowerCase().includes('mainnet')) {
         isMainnet = true;
         console.log(`🔍 Using filename detection: mainnet found, isMainnet: ${isMainnet}`);
@@ -74,9 +72,26 @@ for (const file of files) {
         blockchainId = isMainnet ? 'base:8453' : 'base:84531';
     } else if (file.toLowerCase().includes('gnosis')) {
         blockchainId = isMainnet ? 'gnosis:100' : 'gnosis:10200';
-    } else {
-        // Default to neuroweb
+    } else if (file.toLowerCase().includes('neuroweb')) {
         blockchainId = isMainnet ? 'neuroweb:2043' : 'neuroweb:20432';
+    } else {
+        // Try to determine from the job context or environment
+        // For now, default based on node number pattern
+        const nodeMatch = file.match(/Node_(\d+)/);
+        if (nodeMatch) {
+            const nodeNumber = parseInt(nodeMatch[1]);
+            // If it's a mainnet job but we're getting testnet nodes, 
+            // we need to infer the blockchain from the job context
+            if (isMainnet) {
+                // For mainnet, default to neuroweb unless we can determine otherwise
+                blockchainId = 'neuroweb:2043';
+            } else {
+                // For testnet, default to neuroweb unless we can determine otherwise
+                blockchainId = 'neuroweb:20432';
+            }
+        } else {
+            blockchainId = isMainnet ? 'neuroweb:2043' : 'neuroweb:20432';
+        }
     }
 
     console.log(`🔍 Final blockchain_id: ${blockchainId}, table: ${tableName}, host: ${dbHost}`);
@@ -178,15 +193,40 @@ for (const file of files) {
         for (const [errorMsg, count] of Object.entries(errors)) {
             console.log(`🔍 Processing error message: "${errorMsg}"`);
             
-            // Extract KA number (e.g., "KA #5") from the error message
+            // Extract KA number with multiple patterns
             let kaNumber = null;
-            const kaMatch = errorMsg.match(/KA\s*#?(\d+)/i);
-            if (kaMatch) {
-                kaNumber = `KA #${kaMatch[1]}`;
-                console.log(`✅ Found KA number: ${kaNumber}`);
-            } else {
-                kaNumber = 'Unknown KA';
-                console.log(`❌ No KA number found in message`);
+            
+            // Try multiple regex patterns to find KA number
+            const patterns = [
+                /KA\s*#?(\d+)/i,           // KA #5, KA5
+                /Knowledge\s*Asset\s*#?(\d+)/i,  // Knowledge Asset #5
+                /Asset\s*#?(\d+)/i,        // Asset #5
+                /publishing.*KA\s*#?(\d+)/i,  // publishing KA #5
+                /querying.*KA\s*#?(\d+)/i,   // querying KA #5
+                /get.*KA\s*#?(\d+)/i        // get KA #5
+            ];
+            
+            for (const pattern of patterns) {
+                const kaMatch = errorMsg.match(pattern);
+                if (kaMatch) {
+                    kaNumber = `KA #${kaMatch[1]}`;
+                    console.log(`✅ Found KA number: ${kaNumber} using pattern: ${pattern}`);
+                    break;
+                }
+            }
+            
+            // If no KA found in message, try to infer from node number or context
+            if (!kaNumber) {
+                const nodeMatch = file.match(/Node_(\d+)/);
+                if (nodeMatch) {
+                    const nodeNumber = parseInt(nodeMatch[1]);
+                    // Use node number as a fallback KA number
+                    kaNumber = `KA #${nodeNumber}`;
+                    console.log(`⚠️ No KA found in message, using node number as KA: ${kaNumber}`);
+                } else {
+                    kaNumber = 'Unknown KA';
+                    console.log(`❌ No KA number found in message`);
+                }
             }
 
             for (let i = 0; i < count; i++) {
