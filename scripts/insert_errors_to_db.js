@@ -51,7 +51,6 @@ for (const file of files) {
     // Also check for blockchain_id in environment variable
     if (!blockchainIdFromContent && process.env.BLOCKCHAIN_ID) {
         blockchainIdFromContent = process.env.BLOCKCHAIN_ID;
-        console.log(`🔍 Using blockchain_id from environment: ${blockchainIdFromContent}`);
     }
 
     // Use the same logic as insert_summary_to_db.js
@@ -60,13 +59,10 @@ for (const file of files) {
     
     if (blockchainIdFromContent && typeof blockchainIdFromContent === 'string') {
         isMainnet = MAINNET_PORTS.some(port => blockchainIdFromContent.endsWith(port));
-        console.log(`🔍 Using blockchain_id detection: ${blockchainIdFromContent}, isMainnet: ${isMainnet}`);
     } else if (file.toLowerCase().includes('mainnet')) {
         isMainnet = true;
-        console.log(`🔍 Using filename detection: mainnet found, isMainnet: ${isMainnet}`);
     } else if (file.toLowerCase().includes('testnet')) {
         isMainnet = false;
-        console.log(`🔍 Using filename detection: testnet found, isMainnet: ${isMainnet}`);
     } else {
         // Try to determine from node numbers and file patterns
         const nodeMatch = file.match(/Node_(\d+)/);
@@ -75,13 +71,9 @@ for (const file of files) {
             // Mainnet uses Node 25-30, testnet uses Node 01, 04, 05, etc.
             if (nodeNumber >= 25 && nodeNumber <= 30) {
                 isMainnet = true;
-                console.log(`🔍 Using node number detection: Node ${nodeNumber} is mainnet`);
             } else {
                 isMainnet = false;
-                console.log(`🔍 Using node number detection: Node ${nodeNumber} is testnet`);
             }
-        } else {
-            console.log(`🔍 No blockchain_id in content and no mainnet/testnet in filename, defaulting to testnet`);
         }
     }
 
@@ -114,9 +106,6 @@ for (const file of files) {
         }
     }
 
-    console.log(`🔍 Final blockchain_id: ${blockchainId}, table: ${tableName}, host: ${dbHost}`);
-    console.log(`🔍 File: ${file}, isMainnet: ${isMainnet}, blockchainIdFromContent: ${blockchainIdFromContent}`);
-
     const db = new Client({
         host: dbHost,
         user: process.env.DB_USER_PUBLISH,
@@ -127,11 +116,10 @@ for (const file of files) {
 
     try {
         await db.connect();
-        console.log(`✅ Connected to DB (${tableName})`);
+        console.log(`✅ Connected to DB (${isMainnet ? 'mainnet' : 'testnet'})`);
         
         // Start transaction
         await db.query('BEGIN');
-        console.log('✅ Transaction started');
     } catch (err) {
         console.error('❌ Failed to connect to DB:', err.message);
         continue;
@@ -203,7 +191,7 @@ for (const file of files) {
                     row.time_stamp
                 ]);
                 insertedCount++;
-                console.log(`✅ Inserted row ${insertedCount}: ${row.ka_label} for ${row.node_name}`);
+                console.log(`✅ Inserted ${row.ka_label} (attempt ${insertedCount}) for ${row.node_name}`);
             } catch (err) {
                 console.error(`❌ Failed to insert KA ${row.ka_label}:`, err.message);
             }
@@ -213,8 +201,6 @@ for (const file of files) {
         const kaErrors = {};
         
         for (const [errorMsg, count] of Object.entries(errors)) {
-            console.log(`🔍 Processing error message: "${errorMsg}"`);
-            
             // Extract KA number with multiple patterns
             let kaNumber = null;
             
@@ -236,7 +222,6 @@ for (const file of files) {
                 const kaMatch = errorMsg.match(pattern);
                 if (kaMatch) {
                     kaNumber = `KA #${kaMatch[1]}`;
-                    console.log(`✅ Found KA number: ${kaNumber} using pattern: ${pattern}`);
                     break;
                 }
             }
@@ -250,14 +235,11 @@ for (const file of files) {
                     // Only use if it's a reasonable KA number (1-20)
                     if (num >= 1 && num <= 20) {
                         kaNumber = `KA #${num}`;
-                        console.log(`⚠️ Extracted KA number from context: ${kaNumber}`);
                     } else {
                         kaNumber = 'Unknown KA';
-                        console.log(`❌ No valid KA number found in message`);
                     }
                 } else {
                     kaNumber = 'Unknown KA';
-                    console.log(`❌ No KA number found in message`);
                 }
             }
 
@@ -317,7 +299,7 @@ for (const file of files) {
                     row.time_stamp
                 ]);
                 insertedCount++;
-                console.log(`✅ Inserted row ${insertedCount}: ${row.ka_label} for ${row.node_name}`);
+                console.log(`✅ Inserted ${row.ka_label} (attempt ${insertedCount}) for ${row.node_name}`);
             } catch (err) {
                 console.error(`❌ Failed to insert KA ${row.ka_label}:`, err.message);
             }
@@ -327,22 +309,9 @@ for (const file of files) {
     // Commit transaction
     try {
         await db.query('COMMIT');
-        console.log('✅ Transaction committed');
     } catch (err) {
         console.error('❌ Failed to commit transaction:', err.message);
         await db.query('ROLLBACK');
-        console.log('❌ Transaction rolled back');
-    }
-
-    console.log(`✅ Inserted ${insertedCount} error records for ${nodeName} into ${tableName}`);
-
-    // Verify the insertion by querying the database
-    try {
-        const verifyQuery = `SELECT COUNT(*) as count FROM ${tableName} WHERE node_name = $1 AND time_stamp >= $2`;
-        const verifyResult = await db.query(verifyQuery, [nodeName, new Date(Date.now() - 60000).toISOString()]); // Check last minute
-        console.log(`✅ Verification: Found ${verifyResult.rows[0].count} records for ${nodeName} in the last minute`);
-    } catch (err) {
-        console.error('❌ Failed to verify insertion:', err.message);
     }
 
     try {
