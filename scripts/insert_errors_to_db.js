@@ -52,10 +52,15 @@ for (const file of files) {
             blockchainIdFromContent === 'gnosis:100' ||
             blockchainIdFromContent === 'neuroweb:2043'
         );
+        console.log(`🔍 Using blockchain_id from content: ${blockchainIdFromContent}, isMainnet: ${isMainnet}`);
     } else if (file.toLowerCase().includes('mainnet')) {
         isMainnet = true;
+        console.log(`🔍 Using filename detection: mainnet found, isMainnet: ${isMainnet}`);
     } else if (file.toLowerCase().includes('testnet')) {
         isMainnet = false;
+        console.log(`🔍 Using filename detection: testnet found, isMainnet: ${isMainnet}`);
+    } else {
+        console.log(`🔍 No blockchain_id in content and no mainnet/testnet in filename, defaulting to testnet`);
     }
 
     const tableName = isMainnet ? 'error_messages_mainnet_js' : 'error_messages_testnet_js';
@@ -73,6 +78,8 @@ for (const file of files) {
         // Default to neuroweb
         blockchainId = isMainnet ? 'neuroweb:2043' : 'neuroweb:20432';
     }
+
+    console.log(`🔍 Final blockchain_id: ${blockchainId}, table: ${tableName}, host: ${dbHost}`);
 
     const db = new Client({
         host: dbHost,
