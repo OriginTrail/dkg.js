@@ -64,7 +64,21 @@ for (const file of files) {
         isMainnet = false;
         console.log(`🔍 Using filename detection: testnet found, isMainnet: ${isMainnet}`);
     } else {
-        console.log(`🔍 No blockchain_id in content and no mainnet/testnet in filename, defaulting to testnet`);
+        // Try to determine from node numbers and file patterns
+        const nodeMatch = file.match(/Node_(\d+)/);
+        if (nodeMatch) {
+            const nodeNumber = parseInt(nodeMatch[1]);
+            // Mainnet uses Node 25-30, testnet uses Node 01, 04, 05, etc.
+            if (nodeNumber >= 25 && nodeNumber <= 30) {
+                isMainnet = true;
+                console.log(`🔍 Using node number detection: Node ${nodeNumber} is mainnet`);
+            } else {
+                isMainnet = false;
+                console.log(`🔍 Using node number detection: Node ${nodeNumber} is testnet`);
+            }
+        } else {
+            console.log(`🔍 No blockchain_id in content and no mainnet/testnet in filename, defaulting to testnet`);
+        }
     }
 
     const tableName = isMainnet ? 'error_messages_mainnet_js' : 'error_messages_testnet_js';
@@ -74,29 +88,25 @@ for (const file of files) {
     let blockchainId;
     if (blockchainIdFromContent) {
         blockchainId = blockchainIdFromContent;
-    } else if (file.toLowerCase().includes('base')) {
-        blockchainId = isMainnet ? 'base:8453' : 'base:84531';
-    } else if (file.toLowerCase().includes('gnosis')) {
-        blockchainId = isMainnet ? 'gnosis:100' : 'gnosis:10200';
-    } else if (file.toLowerCase().includes('neuroweb')) {
-        blockchainId = isMainnet ? 'neuroweb:2043' : 'neuroweb:20432';
     } else {
-        // Try to determine from the job context or environment
-        // For now, default based on node number pattern
+        // Try to determine from the file name and node numbers
         const nodeMatch = file.match(/Node_(\d+)/);
-        if (nodeMatch) {
-            const nodeNumber = parseInt(nodeMatch[1]);
-            // If it's a mainnet job but we're getting testnet nodes, 
-            // we need to infer the blockchain from the job context
-            if (isMainnet) {
-                // For mainnet, default to neuroweb unless we can determine otherwise
-                blockchainId = 'neuroweb:2043';
-            } else {
-                // For testnet, default to neuroweb unless we can determine otherwise
-                blockchainId = 'neuroweb:20432';
-            }
+        const nodeNumber = nodeMatch ? parseInt(nodeMatch[1]) : null;
+        
+        // Determine blockchain based on file patterns and node numbers
+        if (file.toLowerCase().includes('base')) {
+            blockchainId = isMainnet ? 'base:8453' : 'base:84532';
+        } else if (file.toLowerCase().includes('gnosis')) {
+            blockchainId = isMainnet ? 'gnosis:100' : 'gnosis:10200';
+        } else if (file.toLowerCase().includes('neuroweb')) {
+            blockchainId = isMainnet ? 'otp:2043' : 'otp:20430';
         } else {
-            blockchainId = isMainnet ? 'neuroweb:2043' : 'neuroweb:20432';
+            // Default based on node numbers and mainnet/testnet detection
+            if (isMainnet) {
+                blockchainId = 'otp:2043'; // Default to neuroweb mainnet
+            } else {
+                blockchainId = 'otp:20430'; // Default to neuroweb testnet
+            }
         }
     }
 
@@ -132,11 +142,11 @@ for (const file of files) {
             if (!rowBlockchainId) {
                 // Fallback to filename-based logic
                 if (file.toLowerCase().includes('base')) {
-                    rowBlockchainId = isMainnet ? 'base:8453' : 'base:84531';
+                    rowBlockchainId = isMainnet ? 'base:8453' : 'base:84532';
                 } else if (file.toLowerCase().includes('gnosis')) {
                     rowBlockchainId = isMainnet ? 'gnosis:100' : 'gnosis:10200';
                 } else {
-                    rowBlockchainId = isMainnet ? 'neuroweb:2043' : 'neuroweb:20432';
+                    rowBlockchainId = isMainnet ? 'otp:2043' : 'otp:20430';
                 }
             }
 
