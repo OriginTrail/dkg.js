@@ -393,8 +393,13 @@ const summaryFileName = `summary_${name.replace(' ', '_')}.json`;
 fs.writeFileSync(summaryFileName, JSON.stringify(summary, null, 2));
 console.log(`✅ Saved summary to ${summaryFileName}`);
 const errorsFileName = `errors_${name.replace(' ', '_')}.json`;
-// Use detailed errors for database processing (with KA numbers)
-fs.writeFileSync(errorsFileName, JSON.stringify(errorStats[name]?.detailed || {}, null, 2));
+// Include blockchain information in error file for proper blockchain detection
+const errorData = {
+    blockchain_id: BLOCKCHAIN_IDS.NEUROWEB_TESTNET,
+    aggregated: errorStats[name]?.aggregated || {},
+    detailed: errorStats[name]?.detailed || {}
+};
+fs.writeFileSync(errorsFileName, JSON.stringify(errorData, null, 2));
 console.log(`✅ Saved errors to ${errorsFileName}`);
     }
   });

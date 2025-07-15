@@ -20,9 +20,14 @@ for (const file of errorFiles) {
         if (Object.keys(errors).length === 0) {
             console.log('  ✅ No errors');
         } else {
-            // Handle new structure with aggregated/detailed sections
-            if (errors.aggregated && errors.detailed) {
-                // New structure - use aggregated for summary
+            // Handle new structure with blockchain_id and aggregated/detailed sections
+            if (errors.blockchain_id && errors.aggregated) {
+                // New structure - use aggregated section (without KA numbers)
+                Object.entries(errors.aggregated).forEach(([message, count]) => {
+                    console.log(`  • ${count}x ${message}`);
+                });
+            } else if (errors.aggregated && errors.detailed) {
+                // Old structure with aggregated/detailed sections
                 Object.entries(errors.aggregated).forEach(([message, count]) => {
                     console.log(`  • ${count}x ${message}`);
                 });

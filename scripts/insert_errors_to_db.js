@@ -38,8 +38,12 @@ for (const file of files) {
     if (Array.isArray(errors) && errors.length > 0 && errors[0].blockchain_id) {
         blockchainIdFromContent = errors[0].blockchain_id;
     } else if (!Array.isArray(errors)) {
-        // For old object format, try to find a blockchain_id property at the top level
+        // For new structure with blockchain_id and detailed sections
         if (errors.blockchain_id) {
+            blockchainIdFromContent = errors.blockchain_id;
+            // Update errors to use the detailed section (with KA numbers for database)
+            errors = errors.detailed || {};
+        } else if (errors.blockchain_id) {
             blockchainIdFromContent = errors.blockchain_id;
         }
     }
