@@ -133,8 +133,21 @@ function logError(error, nodeName, step = 'unknown', remoteNodeName = null, kaNu
 
   if (!errorStats[nodeName]) errorStats[nodeName] = {};
 
-  // Create aggregated key (without KA number for counting)
-  let aggregatedKey = `${step} — ${error.name}: ${error.message.split('\n')[0]}`;
+  // Clean up error message for aggregation (truncate long hex strings)
+  let cleanErrorMessage = error.message.split('\n')[0];
+  
+  // Handle long blockchain error messages
+  if (cleanErrorMessage.includes('Returned error:') && cleanErrorMessage.includes('0x')) {
+    // Extract the error type and truncate the long hex part
+    const match = cleanErrorMessage.match(/Returned error: ([^(]+)/);
+    if (match) {
+      const errorType = match[1].trim();
+      cleanErrorMessage = `Returned error: ${errorType}`;
+    }
+  }
+  
+  // Create aggregated key (without KA number for counting) - use clean message
+  let aggregatedKey = `${step} — ${error.name}: ${cleanErrorMessage}`;
   if (remoteNodeName) {
     // Only add remote node name if it's not already in the error message
     if (!error.message.includes(`on ${remoteNodeName}`)) {
@@ -142,8 +155,14 @@ function logError(error, nodeName, step = 'unknown', remoteNodeName = null, kaNu
     }
   }
   
-  // Create detailed key (with KA number for database processing)
-  let detailedKey = aggregatedKey;
+  // Create detailed key (with KA number for database processing) - keep full message for DB
+  let detailedKey = `${step} — ${error.name}: ${error.message.split('\n')[0]}`;
+  if (remoteNodeName) {
+    // Only add remote node name if it's not already in the error message
+    if (!error.message.includes(`on ${remoteNodeName}`)) {
+      detailedKey += ` on ${remoteNodeName}`;
+    }
+  }
   if (kaNumber) {
     detailedKey += ` for KA #${kaNumber}`;
   }

@@ -201,28 +201,34 @@ for (const file of files) {
         const kaErrors = {};
         
         for (const [errorMsg, count] of Object.entries(errors)) {
-            // Extract KA number with multiple patterns
+            // Extract KA number from the error message key (which includes KA number)
             let kaNumber = null;
             
-            // Try multiple regex patterns to find KA number
-            const patterns = [
-                /KA\s*#?(\d+)/i,           // KA #5, KA5
-                /Knowledge\s*Asset\s*#?(\d+)/i,  // Knowledge Asset #5
-                /Asset\s*#?(\d+)/i,        // Asset #5
-                /publishing.*KA\s*#?(\d+)/i,  // publishing KA #5
-                /querying.*KA\s*#?(\d+)/i,   // querying KA #5
-                /get.*KA\s*#?(\d+)/i,       // get KA #5
-                /KA\s*#?(\d+)\s*on/i,       // KA #5 on
-                /KA\s*#?(\d+)\s*during/i,   // KA #5 during
-                /(\d+)\s*KA/i,              // 5 KA
-                /KA\s*(\d+)/i               // KA 5
-            ];
-            
-            for (const pattern of patterns) {
-                const kaMatch = errorMsg.match(pattern);
-                if (kaMatch) {
-                    kaNumber = `KA #${kaMatch[1]}`;
-                    break;
+            // First try to extract KA number from the error message key itself
+            const kaMatch = errorMsg.match(/for KA #(\d+)/);
+            if (kaMatch) {
+                kaNumber = `KA #${kaMatch[1]}`;
+            } else {
+                // Fallback: Try multiple regex patterns to find KA number in the message content
+                const patterns = [
+                    /KA\s*#?(\d+)/i,           // KA #5, KA5
+                    /Knowledge\s*Asset\s*#?(\d+)/i,  // Knowledge Asset #5
+                    /Asset\s*#?(\d+)/i,        // Asset #5
+                    /publishing.*KA\s*#?(\d+)/i,  // publishing KA #5
+                    /querying.*KA\s*#?(\d+)/i,   // querying KA #5
+                    /get.*KA\s*#?(\d+)/i,       // get KA #5
+                    /KA\s*#?(\d+)\s*on/i,       // KA #5 on
+                    /KA\s*#?(\d+)\s*during/i,   // KA #5 during
+                    /(\d+)\s*KA/i,              // 5 KA
+                    /KA\s*(\d+)/i               // KA 5
+                ];
+                
+                for (const pattern of patterns) {
+                    const match = errorMsg.match(pattern);
+                    if (match) {
+                        kaNumber = `KA #${match[1]}`;
+                        break;
+                    }
                 }
             }
             
