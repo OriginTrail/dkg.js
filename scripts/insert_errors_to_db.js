@@ -80,6 +80,7 @@ for (const file of files) {
     }
 
     console.log(`🔍 Final blockchain_id: ${blockchainId}, table: ${tableName}, host: ${dbHost}`);
+    console.log(`🔍 File: ${file}, isMainnet: ${isMainnet}, blockchainIdFromContent: ${blockchainIdFromContent}`);
 
     const db = new Client({
         host: dbHost,
@@ -175,13 +176,17 @@ for (const file of files) {
     } else {
         // fallback to old logic if needed
         for (const [errorMsg, count] of Object.entries(errors)) {
+            console.log(`🔍 Processing error message: "${errorMsg}"`);
+            
             // Extract KA number (e.g., "KA #5") from the error message
             let kaNumber = null;
             const kaMatch = errorMsg.match(/KA\s*#?(\d+)/i);
             if (kaMatch) {
                 kaNumber = `KA #${kaMatch[1]}`;
+                console.log(`✅ Found KA number: ${kaNumber}`);
             } else {
                 kaNumber = 'Unknown KA';
+                console.log(`❌ No KA number found in message`);
             }
 
             for (let i = 0; i < count; i++) {
