@@ -211,7 +211,7 @@ describe('DKG Asset Lifecycle on Neuroweb Mainnet', function () {
 
             })(),
             new Promise((_, reject) =>
-              setTimeout(() => reject(new Error(`Timeout after 3 minutes during "publishing" on ${stepNodeName} for KA #${i + 1}`)), 3 * 60 * 1000)
+              setTimeout(() => reject(new Error(`Timeout after 3 minutes during "publishing" on ${stepNodeName}`)), 3 * 60 * 1000)
             ),
           ]);
         } catch (error) {
@@ -237,7 +237,7 @@ describe('DKG Asset Lifecycle on Neuroweb Mainnet', function () {
               'SELECT'
             ),
             new Promise((_, reject) =>
-              setTimeout(() => reject(new Error(`Timeout after 3 minutes during "querying" on ${stepNodeName} for KA #${i + 1}`)), 3 * 60 * 1000)
+              setTimeout(() => reject(new Error(`Timeout after 3 minutes during "querying" on ${stepNodeName}`)), 3 * 60 * 1000)
             ),
           ]);
           const queryEnd = Date.now();
@@ -258,7 +258,7 @@ describe('DKG Asset Lifecycle on Neuroweb Mainnet', function () {
           const localGetResult = await Promise.race([
             DkgClient.asset.get(ual),
             new Promise((_, reject) =>
-              setTimeout(() => reject(new Error(`Timeout after 3 minutes during "local get" on ${stepNodeName} for KA #${i + 1}`)), 3 * 60 * 1000)
+              setTimeout(() => reject(new Error(`Timeout after 3 minutes during "local get" on ${stepNodeName}`)), 3 * 60 * 1000)
             ),
           ]);
           const localGetEnd = Date.now();
@@ -298,7 +298,7 @@ describe('DKG Asset Lifecycle on Neuroweb Mainnet', function () {
           const remoteGetResult = await Promise.race([
             RemoteDkgClient.asset.get(ual),
             new Promise((_, reject) =>
-              setTimeout(() => reject(new Error(`Timeout after 3 minutes during "get" on ${stepNodeName} for KA #${i + 1}`)), 3 * 60 * 1000)
+              setTimeout(() => reject(new Error(`Timeout after 3 minutes during "get" on ${stepNodeName}`)), 3 * 60 * 1000)
             ),
           ]);
           const remoteGetEnd = Date.now();
@@ -393,11 +393,40 @@ describe('DKG Asset Lifecycle on Neuroweb Mainnet', function () {
     console.log(`\n\n📊 Error Breakdown by Node:`);
     Object.entries(errorStats).forEach(([nodeName, errors]) => {
       console.log(`\n🔧 ${nodeName}`);
-      // Show aggregated errors (without KA numbers) for summary
-      if (errors.aggregated) {
+      
+      // Handle both new format (aggregated section) and old format (direct errors)
+      if (errors.aggregated && Object.keys(errors.aggregated).length > 0) {
+        // New format - use aggregated section
         Object.entries(errors.aggregated).forEach(([message, count]) => {
           console.log(`  • ${count}x ${message}`);
         });
+      } else if (errors.detailed && Object.keys(errors.detailed).length > 0) {
+        // New format but only detailed available - aggregate the detailed errors
+        const groupedErrors = {};
+        
+        Object.entries(errors.detailed).forEach(([message, count]) => {
+          // Remove KA numbers and node-specific details for aggregation
+          let aggregatedMessage = message;
+          
+          // Remove "for KA #X" patterns
+          aggregatedMessage = aggregatedMessage.replace(/\s+for\s+KA\s*#\d+/gi, '');
+          
+          // Remove "on Node X" patterns (keep the error type)
+          aggregatedMessage = aggregatedMessage.replace(/\s+on\s+Node\s+\d+/gi, '');
+          
+          // Group by the cleaned message
+          if (groupedErrors[aggregatedMessage]) {
+            groupedErrors[aggregatedMessage] += count;
+          } else {
+            groupedErrors[aggregatedMessage] = count;
+          }
+        });
+        
+        Object.entries(groupedErrors).forEach(([message, count]) => {
+          console.log(`  • ${count}x ${message}`);
+        });
+      } else {
+        console.log(`  ✅ No errors`);
       }
     });
   });

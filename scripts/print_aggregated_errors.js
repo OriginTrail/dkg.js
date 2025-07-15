@@ -32,8 +32,28 @@ for (const file of errorFiles) {
                     console.log(`  • ${count}x ${message}`);
                 });
             } else {
-                // Old structure - direct error object
+                // Old structure - direct error object - group similar errors
+                const groupedErrors = {};
+                
                 Object.entries(errors).forEach(([message, count]) => {
+                    // Remove KA numbers and node-specific details for aggregation
+                    let aggregatedMessage = message;
+                    
+                    // Remove "for KA #X" patterns
+                    aggregatedMessage = aggregatedMessage.replace(/\s+for\s+KA\s*#\d+/gi, '');
+                    
+                    // Remove "on Node X" patterns (keep the error type)
+                    aggregatedMessage = aggregatedMessage.replace(/\s+on\s+Node\s+\d+/gi, '');
+                    
+                    // Group by the cleaned message
+                    if (groupedErrors[aggregatedMessage]) {
+                        groupedErrors[aggregatedMessage] += count;
+                    } else {
+                        groupedErrors[aggregatedMessage] = count;
+                    }
+                });
+                
+                Object.entries(groupedErrors).forEach(([message, count]) => {
                     console.log(`  • ${count}x ${message}`);
                 });
             }
