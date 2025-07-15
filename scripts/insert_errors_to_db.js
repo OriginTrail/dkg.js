@@ -209,7 +209,9 @@ for (const file of files) {
             }
         }
     } else {
-        // fallback to old logic if needed
+        // Process detailed errors and group by KA number
+        const kaErrors = {};
+        
         for (const [errorMsg, count] of Object.entries(errors)) {
             console.log(`🔍 Processing error message: "${errorMsg}"`);
             
@@ -259,49 +261,65 @@ for (const file of files) {
                 }
             }
 
-            for (let i = 0; i < count; i++) {
-                const row = {
-                    node_name: nodeName,
-                    blockchain_id: blockchainId,
-                    ka_label: kaNumber, // Only the KA number
+            // Initialize KA entry if it doesn't exist
+            if (!kaErrors[kaNumber]) {
+                kaErrors[kaNumber] = {
                     publish_error: null,
                     query_error: null,
                     publisher_get_error: null,
-                    non_publisher_get_error: null,
-                    time_stamp: new Date().toISOString(),
+                    non_publisher_get_error: null
                 };
+            }
 
-                // Put the full error message in the correct error field
-                if (errorMsg.toLowerCase().includes('publish')) row.publish_error = errorMsg;
-                else if (errorMsg.toLowerCase().includes('query')) row.query_error = errorMsg;
-                else if (errorMsg.toLowerCase().includes('local get')) row.publisher_get_error = errorMsg;
-                else if (errorMsg.toLowerCase().includes('get')) row.non_publisher_get_error = errorMsg;
+            // Put the error message in the correct field based on content
+            if (errorMsg.toLowerCase().includes('publish')) {
+                kaErrors[kaNumber].publish_error = errorMsg;
+            } else if (errorMsg.toLowerCase().includes('query')) {
+                kaErrors[kaNumber].query_error = errorMsg;
+            } else if (errorMsg.toLowerCase().includes('local get')) {
+                kaErrors[kaNumber].publisher_get_error = errorMsg;
+            } else if (errorMsg.toLowerCase().includes('get')) {
+                kaErrors[kaNumber].non_publisher_get_error = errorMsg;
+            }
+        }
 
-                const insertQuery = `
-                    INSERT INTO ${tableName} (
-                        node_name, blockchain_id, ka_label,
-                        publish_error, query_error,
-                        publisher_get_error, non_publisher_get_error,
-                        time_stamp
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-                `;
+        // Insert one row per KA with all its errors
+        for (const [kaLabel, errorFields] of Object.entries(kaErrors)) {
+            const row = {
+                node_name: nodeName,
+                blockchain_id: blockchainId,
+                ka_label: kaLabel,
+                publish_error: errorFields.publish_error,
+                query_error: errorFields.query_error,
+                publisher_get_error: errorFields.publisher_get_error,
+                non_publisher_get_error: errorFields.non_publisher_get_error,
+                time_stamp: new Date().toISOString(),
+            };
 
-                try {
-                    const result = await db.query(insertQuery, [
-                        row.node_name,
-                        row.blockchain_id,
-                        row.ka_label,
-                        row.publish_error,
-                        row.query_error,
-                        row.publisher_get_error,
-                        row.non_publisher_get_error,
-                        row.time_stamp
-                    ]);
-                    insertedCount++;
-                    console.log(`✅ Inserted row ${insertedCount}: ${row.ka_label} for ${row.node_name}`);
-                } catch (err) {
-                    console.error(`❌ Failed to insert KA ${row.ka_label}:`, err.message);
-                }
+            const insertQuery = `
+                INSERT INTO ${tableName} (
+                    node_name, blockchain_id, ka_label,
+                    publish_error, query_error,
+                    publisher_get_error, non_publisher_get_error,
+                    time_stamp
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            `;
+
+            try {
+                const result = await db.query(insertQuery, [
+                    row.node_name,
+                    row.blockchain_id,
+                    row.ka_label,
+                    row.publish_error,
+                    row.query_error,
+                    row.publisher_get_error,
+                    row.non_publisher_get_error,
+                    row.time_stamp
+                ]);
+                insertedCount++;
+                console.log(`✅ Inserted row ${insertedCount}: ${row.ka_label} for ${row.node_name}`);
+            } catch (err) {
+                console.error(`❌ Failed to insert KA ${row.ka_label}:`, err.message);
             }
         }
     }
