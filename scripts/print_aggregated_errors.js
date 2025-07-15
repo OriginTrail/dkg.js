@@ -20,9 +20,18 @@ for (const file of errorFiles) {
         if (Object.keys(errors).length === 0) {
             console.log('  ✅ No errors');
         } else {
-            Object.entries(errors).forEach(([message, count]) => {
-                console.log(`  • ${count}x ${message}`);
-            });
+            // Handle new structure with aggregated/detailed sections
+            if (errors.aggregated && errors.detailed) {
+                // New structure - use aggregated for summary
+                Object.entries(errors.aggregated).forEach(([message, count]) => {
+                    console.log(`  • ${count}x ${message}`);
+                });
+            } else {
+                // Old structure - direct error object
+                Object.entries(errors).forEach(([message, count]) => {
+                    console.log(`  • ${count}x ${message}`);
+                });
+            }
         }
     } catch (err) {
         console.log(`  ⚠️ Failed to read or parse ${file}: ${err.message}`);

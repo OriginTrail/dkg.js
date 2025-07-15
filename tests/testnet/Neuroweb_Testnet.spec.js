@@ -121,7 +121,7 @@ function safeRate(success, fail) {
   const total = success + fail;
   return total === 0 ? '0.00' : ((success / total) * 100).toFixed(2);
 }
-function logError(error, nodeName, step = 'unknown', remoteNodeName = null) {
+function logError(error, nodeName, step = 'unknown', remoteNodeName = null, kaNumber = null) {
   console.log(`\n❌ Error on ${nodeName} during ${step}`);
   console.log(`🔺 Type: ${error.name}`);
   console.log(`🧵 Message: ${error.message}`);
@@ -133,11 +133,24 @@ function logError(error, nodeName, step = 'unknown', remoteNodeName = null) {
 
   if (!errorStats[nodeName]) errorStats[nodeName] = {};
 
-  let key = `${step} — ${error.name}: ${error.message.split('\n')[0]}`;
+  // Create aggregated key (without KA number for counting)
+  let aggregatedKey = `${step} — ${error.name}: ${error.message.split('\n')[0]}`;
   if (remoteNodeName) {
-    key += ` on ${remoteNodeName}`;
+    aggregatedKey += ` on ${remoteNodeName}`;
   }
-  errorStats[nodeName][key] = (errorStats[nodeName][key] || 0) + 1;
+  
+  // Create detailed key (with KA number for database processing)
+  let detailedKey = aggregatedKey;
+  if (kaNumber) {
+    detailedKey += ` for KA #${kaNumber}`;
+  }
+
+  // Store both aggregated and detailed versions
+  if (!errorStats[nodeName].aggregated) errorStats[nodeName].aggregated = {};
+  if (!errorStats[nodeName].detailed) errorStats[nodeName].detailed = {};
+  
+  errorStats[nodeName].aggregated[aggregatedKey] = (errorStats[nodeName].aggregated[aggregatedKey] || 0) + 1;
+  errorStats[nodeName].detailed[detailedKey] = (errorStats[nodeName].detailed[detailedKey] || 0) + 1;
 }
 
 describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
@@ -230,11 +243,11 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
 
             })(),
             new Promise((_, reject) =>
-              setTimeout(() => reject(new Error(`Timeout after 3 minutes during "${step}" on ${stepNodeName}`)), 3 * 60 * 1000)
+              setTimeout(() => reject(new Error(`Timeout after 3 minutes during "publishing" on ${stepNodeName} for KA #${i + 1}`)), 3 * 60 * 1000)
             ),
           ]);
         } catch (error) {
-          logError(error, stepNodeName, step);
+          logError(error, stepNodeName, step, null, i + 1);
           const reason = 'Publish failed — No UAL';
           failedAssets.push(`KA #${i + 1} (${reason})`);
           publishFail++;
@@ -256,7 +269,7 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
               'SELECT'
             ),
             new Promise((_, reject) =>
-              setTimeout(() => reject(new Error(`Timeout after 3 minutes during "${step}" on ${stepNodeName}`)), 3 * 60 * 1000)
+              setTimeout(() => reject(new Error(`Timeout after 3 minutes during "querying" on ${stepNodeName} for KA #${i + 1}`)), 3 * 60 * 1000)
             ),
           ]);
           const queryEnd = Date.now();
@@ -265,7 +278,7 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
           console.log(`✅ Query succeeded`);
           querySuccess++;
         } catch (error) {
-          logError(error, stepNodeName, step);
+          logError(error, stepNodeName, step, null, i + 1);
           const reason = `Query failed — UAL: ${ual}`;
           failedAssets.push(`KA #${i + 1} (${reason})`);
           queryFail++;
@@ -277,7 +290,7 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
           const localGetResult = await Promise.race([
             DkgClient.asset.get(ual),
             new Promise((_, reject) =>
-              setTimeout(() => reject(new Error(`Timeout after 3 minutes during "${step}" on ${stepNodeName}`)), 3 * 60 * 1000)
+              setTimeout(() => reject(new Error(`Timeout after 3 minutes during "local get" on ${stepNodeName} for KA #${i + 1}`)), 3 * 60 * 1000)
             ),
           ]);
           const localGetEnd = Date.now();
@@ -286,7 +299,7 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
           console.log(`✅ Local Get Succeeded`);
           localGetSuccess++;
         } catch (error) {
-          logError(error, stepNodeName, step);
+          logError(error, stepNodeName, step, null, i + 1);
           const reason = `Local Get failed — UAL: ${ual}`;
           failedAssets.push(`KA #${i + 1} (${reason})`);
           localGetFail++;
@@ -317,7 +330,7 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
           const remoteGetResult = await Promise.race([
             RemoteDkgClient.asset.get(ual),
             new Promise((_, reject) =>
-              setTimeout(() => reject(new Error(`Timeout after 3 minutes during "${step}" on ${stepNodeName}`)), 3 * 60 * 1000)
+              setTimeout(() => reject(new Error(`Timeout after 3 minutes during "get" on ${stepNodeName} for KA #${i + 1}`)), 3 * 60 * 1000)
             ),
           ]);
           const remoteGetEnd = Date.now();
@@ -326,7 +339,7 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
           console.log(`✅ Get Succeeded on ${remoteNode.name}`);
           remoteGetSuccess++;
         } catch (error) {
-          logError(error, originalStepNodeName, step, remoteNode.name);
+          logError(error, originalStepNodeName, step, remoteNode.name, i + 1);
           const reason = `Get failed — UAL: ${ual}`;
           failedAssets.push(`KA #${i + 1} (${reason})`);
           remoteGetFail++;
@@ -380,7 +393,8 @@ const summaryFileName = `summary_${name.replace(' ', '_')}.json`;
 fs.writeFileSync(summaryFileName, JSON.stringify(summary, null, 2));
 console.log(`✅ Saved summary to ${summaryFileName}`);
 const errorsFileName = `errors_${name.replace(' ', '_')}.json`;
-fs.writeFileSync(errorsFileName, JSON.stringify(errorStats[name] || {}, null, 2));
+// Use detailed errors for database processing (with KA numbers)
+fs.writeFileSync(errorsFileName, JSON.stringify(errorStats[name]?.detailed || {}, null, 2));
 console.log(`✅ Saved errors to ${errorsFileName}`);
     }
   });
@@ -404,9 +418,12 @@ console.log(`✅ Saved errors to ${errorsFileName}`);
     console.log(`\n\n📊 Error Breakdown by Node:`);
     Object.entries(errorStats).forEach(([nodeName, errors]) => {
       console.log(`\n🔧 ${nodeName}`);
-      Object.entries(errors).forEach(([message, count]) => {
-        console.log(`  • ${count}x ${message}`);
-      });
+      // Show aggregated errors (without KA numbers) for summary
+      if (errors.aggregated) {
+        Object.entries(errors.aggregated).forEach(([message, count]) => {
+          console.log(`  • ${count}x ${message}`);
+        });
+      }
     });
   });
 });
