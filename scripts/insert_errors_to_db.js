@@ -43,6 +43,12 @@ for (const file of files) {
             blockchainIdFromContent = errors.blockchain_id;
         }
     }
+    
+    // Also check for blockchain_id in environment variable
+    if (!blockchainIdFromContent && process.env.BLOCKCHAIN_ID) {
+        blockchainIdFromContent = process.env.BLOCKCHAIN_ID;
+        console.log(`🔍 Using blockchain_id from environment: ${blockchainIdFromContent}`);
+    }
 
     // Use the same logic as insert_summary_to_db.js
     const MAINNET_PORTS = [':8453', ':100', ':2043'];
@@ -203,7 +209,11 @@ for (const file of files) {
                 /Asset\s*#?(\d+)/i,        // Asset #5
                 /publishing.*KA\s*#?(\d+)/i,  // publishing KA #5
                 /querying.*KA\s*#?(\d+)/i,   // querying KA #5
-                /get.*KA\s*#?(\d+)/i        // get KA #5
+                /get.*KA\s*#?(\d+)/i,       // get KA #5
+                /KA\s*#?(\d+)\s*on/i,       // KA #5 on
+                /KA\s*#?(\d+)\s*during/i,   // KA #5 during
+                /(\d+)\s*KA/i,              // 5 KA
+                /KA\s*(\d+)/i               // KA 5
             ];
             
             for (const pattern of patterns) {
@@ -215,14 +225,20 @@ for (const file of files) {
                 }
             }
             
-            // If no KA found in message, try to infer from node number or context
+            // If no KA found in message, try to infer from context
             if (!kaNumber) {
-                const nodeMatch = file.match(/Node_(\d+)/);
-                if (nodeMatch) {
-                    const nodeNumber = parseInt(nodeMatch[1]);
-                    // Use node number as a fallback KA number
-                    kaNumber = `KA #${nodeNumber}`;
-                    console.log(`⚠️ No KA found in message, using node number as KA: ${kaNumber}`);
+                // Check if we can extract from the error message context
+                const contextMatch = errorMsg.match(/(\d+)/);
+                if (contextMatch) {
+                    const num = parseInt(contextMatch[1]);
+                    // Only use if it's a reasonable KA number (1-20)
+                    if (num >= 1 && num <= 20) {
+                        kaNumber = `KA #${num}`;
+                        console.log(`⚠️ Extracted KA number from context: ${kaNumber}`);
+                    } else {
+                        kaNumber = 'Unknown KA';
+                        console.log(`❌ No valid KA number found in message`);
+                    }
                 } else {
                     kaNumber = 'Unknown KA';
                     console.log(`❌ No KA number found in message`);
