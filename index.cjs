@@ -3518,6 +3518,8 @@ class BlockchainServiceBase {
                         (blockchain.gasPrice || (await this.getNetworkGasPrice(blockchain))) * 1.2,
                     );
                 }
+            } else {
+                gasPrice = blockchain.gasPrice || (await this.getNetworkGasPrice(blockchain));
             }
         } else {
             gasPrice = blockchain.gasPrice || (await this.getNetworkGasPrice(blockchain));
