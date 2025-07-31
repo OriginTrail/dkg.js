@@ -1,6 +1,6 @@
 {
     "name": "dkg.js",
-    "version": "8.1.1-rc.3",
+    "version": "8.1.1-rc.4",
     "description": "Javascript library for interaction with the OriginTrail Decentralized Knowledge Graph",
     "main": "index.js",
     "exports": {
