@@ -350,11 +350,17 @@ export default class BlockchainServiceBase {
 
                 const idMatches =
                     expectedEventId == null ||
-                    (eventData && parseInt(eventData.id, 10) === parseInt(expectedEventId, 10));
+                    (eventData && eventData.id != null && eventData.id.toString() === expectedEventId.toString());
 
                 if (eventData && idMatches) {
                     return { receipt: currentReceipt, eventData };
                 }
+                // Event is missing or ID does not match after reaching the required confirmations.
+                // This is not a re-org scenario – treat as irrecoverable fault.
+                throw new Error(
+                    `Event validation failed: expected KnowledgeCollectionCreated id ${expectedEventId},` +
+                        ` got ${eventData ? eventData.id : 'undefined'}.`,
+                );
             }
 
             // 3. Re-org detected: wait for tx to appear again
