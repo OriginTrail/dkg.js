@@ -367,11 +367,16 @@ export default class BlockchainServiceBase {
             // If the transaction is no longer in the canonical chain, or the event data differs,
             // wait for it to be mined again and repeat the process.
             let newReceipt = null;
+            const timeoutMs = 60 * 1000; // 1 minute
+            const startTime = Date.now();
             // eslint-disable-next-line no-await-in-loop
             while (!newReceipt) {
+                if (Date.now() - startTime >= timeoutMs) {
+                    throw new Error(
+                        `Timeout: Transaction receipt for ${receipt.transactionHash} not found after 1 minute of remining polling.`,
+                    );
+                }
                 await sleepForMilliseconds(reminingPollingInterval);
-                // Assumption is that the transaction is still in the canonical chain
-                // and will be fetched eventually
                 newReceipt = await web3Instance.eth.getTransactionReceipt(receipt.transactionHash);
             }
             receipt = newReceipt; // Continue loop with updated receipt
