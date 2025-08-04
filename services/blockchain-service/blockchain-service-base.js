@@ -315,25 +315,24 @@ export default class BlockchainServiceBase {
         }
     }
 
-    async waitForEventFinality(initialReceipt, eventName, expectedEventId, blockchain, maxChecks = 1) {
+    async waitForEventFinality(initialReceipt, eventName, expectedEventId, blockchain, confirmations = 1) {
         await this.ensureBlockchainInfo(blockchain);
         const web3Instance = await this.getWeb3Instance(blockchain);
 
-        // Fallback values if polling intervals are not configured for the chain
-        // Handle the undefined values??
+        // Guaranteed to be defined for OTP chains
         const polling = blockchain.transactionFinalityPollingInterval;
         const reminingPollingInterval = blockchain.transactionReminingPollingInterval;
 
         let receipt = initialReceipt;
-        let eventData = null;
 
-        // eslint-disable-next-line no-await-in-loop
-        for (let tries = 1; tries <= maxChecks; tries++) {
-            while (await web3Instance.eth.getBlockNumber() < receipt.blockNumber + tries) {
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+            // 1. Wait until the block containing the tx is at the required depth
+            while (await web3Instance.eth.getBlockNumber() < receipt.blockNumber + confirmations) {
                 await sleepForMilliseconds(polling);
             }
 
-            // Fetch the block that supposedly contains the tx
+            // 2. Verify the tx is still in that block
             const block = await web3Instance.eth.getBlock(receipt.blockNumber, true);
 
             const txStillIncluded =
@@ -343,17 +342,11 @@ export default class BlockchainServiceBase {
                 );
 
             if (txStillIncluded) {
-                // Re-fetch receipt to work with the canonical chain data
                 const currentReceipt = await web3Instance.eth.getTransactionReceipt(
                     receipt.transactionHash,
                 );
 
-                // Decode event and verify ID (if provided)
-                eventData = await this.decodeEventLogs(
-                    currentReceipt,
-                    eventName,
-                    blockchain,
-                );
+                const eventData = await this.decodeEventLogs(currentReceipt, eventName, blockchain);
 
                 const idMatches =
                     expectedEventId == null ||
@@ -364,29 +357,22 @@ export default class BlockchainServiceBase {
                 }
             }
 
-            // If the transaction is no longer in the canonical chain, or the event data differs,
-            // wait for it to be mined again and repeat the process.
-            let newReceipt = null;
+            // 3. Re-org detected: wait for tx to appear again
             const timeoutMs = 60 * 1000; // 1 minute
             const startTime = Date.now();
+            let newReceipt = null;
             // eslint-disable-next-line no-await-in-loop
             while (!newReceipt) {
                 if (Date.now() - startTime >= timeoutMs) {
                     throw new Error(
-                        `Timeout: Transaction receipt for ${receipt.transactionHash} not found after 1 minute of remining polling.`,
+                        `Timeout: Transaction receipt for ${receipt.transactionHash} not found after 1 minute of re-mining polling.`,
                     );
                 }
                 await sleepForMilliseconds(reminingPollingInterval);
                 newReceipt = await web3Instance.eth.getTransactionReceipt(receipt.transactionHash);
             }
-            receipt = newReceipt; // Continue loop with updated receipt
+            receipt = newReceipt;
         }
-
-        if (!eventData) {
-            eventData = await this.decodeEventLogs(receipt, eventName, blockchain);
-        }
-
-        return { receipt, eventData };
     }
 
     async getContractAddress(contractName, blockchain, force = false) {
