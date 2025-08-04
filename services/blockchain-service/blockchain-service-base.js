@@ -317,6 +317,72 @@ export default class BlockchainServiceBase {
         }
     }
 
+    async waitForEventFinality(initialReceipt, eventName, expectedEventId, blockchain, confirmations = 1) {
+        await this.ensureBlockchainInfo(blockchain);
+        const web3Instance = await this.getWeb3Instance(blockchain);
+
+        // Guaranteed to be defined for OTP chains
+        const polling = blockchain.transactionFinalityPollingInterval;
+        const reminingPollingInterval = blockchain.transactionReminingPollingInterval;
+
+        let receipt = initialReceipt;
+
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+            // 1. Wait until the block containing the tx is at the required depth
+            while (await web3Instance.eth.getBlockNumber() < receipt.blockNumber + confirmations) {
+                await sleepForMilliseconds(polling);
+            }
+
+            // 2. Verify the tx is still in that block
+            const block = await web3Instance.eth.getBlock(receipt.blockNumber, true);
+
+            const txStillIncluded =
+                block &&
+                block.transactions.some(
+                    (tx) => tx.hash.toLowerCase() === receipt.transactionHash.toLowerCase(),
+                );
+
+            if (txStillIncluded) {
+                const currentReceipt = await web3Instance.eth.getTransactionReceipt(
+                    receipt.transactionHash,
+                );
+
+                const eventData = await this.decodeEventLogs(currentReceipt, eventName, blockchain);
+
+                const idMatches =
+                    expectedEventId == null ||
+                    (eventData && eventData.id != null && eventData.id.toString() === expectedEventId.toString());
+
+                if (eventData && idMatches) {
+                    return { receipt: currentReceipt, eventData };
+                }
+                // Event is missing or ID does not match after reaching the required confirmations.
+                // This is not a re-org scenario – treat as irrecoverable fault.
+                throw new Error(
+                    `Event validation failed: expected KnowledgeCollectionCreated id ${expectedEventId},` +
+                        ` got ${eventData ? eventData.id : 'undefined'}.`,
+                );
+            }
+
+            // 3. Re-org detected: wait for tx to appear again
+            const timeoutMs = 60 * 1000; // 1 minute
+            const startTime = Date.now();
+            let newReceipt = null;
+            // eslint-disable-next-line no-await-in-loop
+            while (!newReceipt) {
+                if (Date.now() - startTime >= timeoutMs) {
+                    throw new Error(
+                        `Timeout: Transaction receipt for ${receipt.transactionHash} not found after 1 minute of re-mining polling.`,
+                    );
+                }
+                await sleepForMilliseconds(reminingPollingInterval);
+                newReceipt = await web3Instance.eth.getTransactionReceipt(receipt.transactionHash);
+            }
+            receipt = newReceipt;
+        }
+    }
+
     async getContractAddress(contractName, blockchain, force = false) {
         await this.ensureBlockchainInfo(blockchain);
 
