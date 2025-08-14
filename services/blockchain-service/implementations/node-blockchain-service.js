@@ -75,7 +75,7 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
             // Check for timeout
             if (Date.now() - startTime >= maxWaitTime) {
                 throw new Error(
-                    `Timeout: Contract function execution for ${contractName}.${functionName} exceeded maximum wait time of ${maxWaitTime}ms`
+                    `Timeout: Operation exceeded maximum wait time`
                 );
             }
 

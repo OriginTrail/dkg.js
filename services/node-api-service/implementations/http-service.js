@@ -190,7 +190,7 @@ export default class HttpService {
             // Check for total timeout
             if (Date.now() - startTime >= maxTotalTime) {
                 throw Error(
-                    `Timeout: Finality status check for ${ual} exceeded maximum total time of ${maxTotalTime}ms. Last finality: ${finality}, Required: ${requiredConfirmations}`
+                    `Timeout: Operation exceeded maximum wait time`
                 );
             }
 
@@ -248,7 +248,7 @@ export default class HttpService {
                     ...response.data,
                     data: {
                         errorType: 'DKG_CLIENT_ERROR',
-                        errorMessage: `Timeout: Operation ${operation}/${operationId} exceeded maximum total time of ${maxTotalTime}ms.`,
+                        errorMessage: `Timeout: Operation exceeded maximum wait time`,
                     },
                 };
                 break;
