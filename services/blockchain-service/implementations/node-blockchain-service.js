@@ -68,8 +68,17 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
         let previousTxGasPrice;
         let simulationSucceeded = false;
         let transactionRetried = false;
+        const startTime = Date.now();
+        const maxWaitTime = 300_000; // 5 minutes total timeout
 
         while (receipt === undefined) {
+            // Check for timeout
+            if (Date.now() - startTime >= maxWaitTime) {
+                throw new Error(
+                    `Timeout: Operation exceeded maximum wait time`
+                );
+            }
+
             try {
                 const tx = await this.prepareTransaction(
                     contractInstance,

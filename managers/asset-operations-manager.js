@@ -456,6 +456,27 @@ export default class AssetOperationsManager {
                 stepHooks,
             ));
 
+        // ------------------------------------------------------------------
+        // Ensure KC minting transaction is reorg-safe by waiting until it is
+        // included in a block with the desired depth (default = 1).
+        // ------------------------------------------------------------------
+
+        const minimumBlockConfirmations = options.minimumBlockConfirmations ?? 1;
+
+        if (blockchain.name && blockchain.name.startsWith('otp') && minimumBlockConfirmations > 0) {
+            const { receipt: finalizedMintReceipt, eventData } =
+                await this.blockchainService.waitForEventFinality(
+                    mintKnowledgeCollectionReceipt,
+                    'KnowledgeCollectionCreated',
+                    knowledgeCollectionId,
+                    blockchain,
+                    minimumBlockConfirmations,
+                );
+
+            mintKnowledgeCollectionReceipt = finalizedMintReceipt;
+            knowledgeCollectionId = parseInt(eventData.id, 10);
+        }
+
         const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, knowledgeCollectionId);
 
         let finalityStatusResult = 0;
