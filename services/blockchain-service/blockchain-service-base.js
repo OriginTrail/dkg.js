@@ -324,13 +324,28 @@ export default class BlockchainServiceBase {
         // Guaranteed to be defined for OTP chains
         const polling = blockchain.transactionFinalityPollingInterval;
         const reminingPollingInterval = blockchain.transactionReminingPollingInterval;
+        const maxWaitTime = blockchain.transactionFinalityMaxWaitTime || 60_000; // Default 60 seconds
 
         let receipt = initialReceipt;
+        const startTime = Date.now();
 
         // eslint-disable-next-line no-constant-condition
         while (true) {
+            // Check for timeout
+            if (Date.now() - startTime >= maxWaitTime) {
+                throw new Error(
+                    `Timeout: Event finality check for ${receipt.transactionHash} exceeded maximum wait time of ${maxWaitTime}ms. Event: ${eventName}, Expected ID: ${expectedEventId}`
+                );
+            }
+
             // 1. Wait until the block containing the tx is at the required depth
             while (await web3Instance.eth.getBlockNumber() < receipt.blockNumber + confirmations) {
+                // Check for timeout during block waiting
+                if (Date.now() - startTime >= maxWaitTime) {
+                    throw new Error(
+                        `Timeout: Block confirmation wait for ${receipt.transactionHash} exceeded maximum wait time of ${maxWaitTime}ms`
+                    );
+                }
                 await sleepForMilliseconds(polling);
             }
 
@@ -361,11 +376,11 @@ export default class BlockchainServiceBase {
 
             // 3. Re-org detected: wait for tx to appear again
             const timeoutMs = 60 * 1000; // 1 minute
-            const startTime = Date.now();
+            const reorgStartTime = Date.now();
             let newReceipt = null;
             // eslint-disable-next-line no-await-in-loop
             while (!newReceipt) {
-                if (Date.now() - startTime >= timeoutMs) {
+                if (Date.now() - reorgStartTime >= timeoutMs) {
                     throw new Error(
                         `Timeout: Transaction receipt for ${receipt.transactionHash} not found after 1 minute of re-mining polling.`,
                     );
