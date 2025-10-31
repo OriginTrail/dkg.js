@@ -279,7 +279,7 @@ export default class AssetOperationsManager {
             dataset.private = kcTools.generateMissingIdsForBlankNodes(dataset.private);
 
             // Group private triples by subject and flatten
-            const privateTriplesGrouped = kcTools.groupNquadsBySubject(dataset.private, true);
+            const privateTriplesGrouped = kcTools.groupNquadsBySubject(dataset.private, false).sort();
             dataset.private = privateTriplesGrouped.flat();
 
             // Compute private root and add to public
