@@ -329,11 +329,11 @@ export default class AssetOperationsManager {
                 publicTriplesGrouped.push([triple]);
             }
 
-            dataset.public = publicTriplesGrouped.flat();
+            dataset.public = publicTriplesGrouped.map((t) => t.sort()).flat();
         } else {
             // No private triples, just group and flatten public
             publicTriplesGrouped = kcTools.groupNquadsBySubject(dataset.public, true);
-            dataset.public = publicTriplesGrouped.flat();
+            dataset.public = publicTriplesGrouped.map((t) => t.sort()).flat();
         }
 
         const numberOfChunks = kcTools.calculateNumberOfChunks(dataset.public, CHUNK_BYTE_SIZE);
