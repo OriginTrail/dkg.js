@@ -4,6 +4,17 @@ node_modules/
 
 .DS_Store
 
+# Synpress cache (MetaMask testing)
+.synpress/
+.synpress-cache/
+test/wallet-setup/.cache/
+
+# Playwright test results
+test-results/
+playwright-report/
+playwright-results.json
+playwright/.cache/
+
 assets-demo.js
 frontendMock.html
 native-demo.js
@@ -32,3 +43,4 @@ errors_Node_29.json
 summary_Node_29.json
 errors_Node_30.json
 summary_Node_30.json
+.cache-synpress

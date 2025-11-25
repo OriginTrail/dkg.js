@@ -91,7 +91,11 @@
         "test:neuroweb:node27:mainnet": "NODE_TO_TEST=\"Node 27\" mocha tests/mainnet/Neuroweb_Mainnet.spec.js --reporter mochawesome --reporter-options reportFilename=mainnet_neuroweb",
         "test:neuroweb:node28:mainnet": "NODE_TO_TEST=\"Node 28\" mocha tests/mainnet/Neuroweb_Mainnet.spec.js --reporter mochawesome --reporter-options reportFilename=mainnet_neuroweb",
         "test:neuroweb:node29:mainnet": "NODE_TO_TEST=\"Node 29\" mocha tests/mainnet/Neuroweb_Mainnet.spec.js --reporter mochawesome --reporter-options reportFilename=mainnet_neuroweb",
-        "test:neuroweb:node30:mainnet": "NODE_TO_TEST=\"Node 30\" mocha tests/mainnet/Neuroweb_Mainnet.spec.js --reporter mochawesome --reporter-options reportFilename=mainnet_neuroweb"
+        "test:neuroweb:node30:mainnet": "NODE_TO_TEST=\"Node 30\" mocha tests/mainnet/Neuroweb_Mainnet.spec.js --reporter mochawesome --reporter-options reportFilename=mainnet_neuroweb",
+        "test:metamask:setup": "synpress",
+        "test:metamask": "playwright test --config=playwright.config.js",
+        "test:metamask:headed": "playwright test --config=playwright.config.js --headed",
+        "test:metamask:ui": "playwright test --config=playwright.config.js --ui"
     },
     "repository": {
         "type": "git",
@@ -124,6 +128,8 @@
         "web3": "^1.7.3"
     },
     "devDependencies": {
+        "@playwright/test": "^1.48.2",
+        "@synthetixio/synpress": "^4.1.1",
         "assert": "^2.0.0",
         "buffer": "^6.0.3",
         "chai": "^5.2.0",

@@ -1,0 +1,18 @@
+# Playwright test results
+test-results/
+playwright-report/
+playwright-results.json
+playwright/.cache/
+
+# Playwright cache
+.cache/
+
+# Synpress cache (MetaMask state)
+.synpress/
+.synpress-cache/
+
+# Screenshots and videos
+screenshots/
+videos/
+traces/
+
