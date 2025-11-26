@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const teamsHookBaseURL = process.env.TEAMS_HOOK_BASE_URL || process.env.TEAMS_HOOK_METAMASK;
-const jenkinsUrl = process.env.JENKINS_URL || 'http://your-jenkins-url';
+const jenkinsUrl = process.env.JENKINS_URL
 
 const targets = [];
 
@@ -11,7 +11,7 @@ const targets = [];
 if (teamsHookBaseURL) {
   targets.push({
     name: 'teams',
-    //condition: 'fail',
+    condition: 'fail',
     inputs: {
       url: teamsHookBaseURL,
       only_failures: true,
@@ -29,7 +29,7 @@ if (teamsHookBaseURL) {
           links: [
             {
               text: 'MetaMask Tests HTML Report',
-              url: `${jenkinsUrl}/view/Tests/job/MetaMask-Tests/MetaMask_20Tests_20Report/`,
+              url: `${jenkinsUrl}/view/Tests/job/MetaMask-Tests/MetaMask_20Tests_20Report/*zip*/MetaMask_20Tests_20Report.zip`,
             },
           ],
         },
