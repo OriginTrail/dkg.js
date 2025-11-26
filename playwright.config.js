@@ -20,14 +20,15 @@ export default defineConfig({
   reporter: [
     ['html', { outputFolder: 'playwright-report' }],
     ['list'],
-    ['json', { outputFile: 'playwright-results.json' }]
+    ['json', { outputFile: 'playwright-results.json' }],
+    ['junit', { outputFile: 'playwright-junit-results.xml' }]
   ],
   
   // Shared settings for all projects
   use: {
     // No baseURL - tests will navigate manually when needed
     // Set baseURL here when testing with a real dApp: baseURL: 'http://localhost:3000'
-    headless: false,
+    headless: !!process.env.CI, // Run headless in CI, headed locally
     
     // Collect trace when retrying the failed test
     trace: 'on-first-retry',

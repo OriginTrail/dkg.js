@@ -95,7 +95,8 @@
         "test:metamask:setup": "synpress",
         "test:metamask": "playwright test --config=playwright.config.js",
         "test:metamask:headed": "playwright test --config=playwright.config.js --headed",
-        "test:metamask:ui": "playwright test --config=playwright.config.js --ui"
+        "test:metamask:ui": "playwright test --config=playwright.config.js --ui",
+        "generate:metamask:report": "node report-MetaMask-config.js"
     },
     "repository": {
         "type": "git",
