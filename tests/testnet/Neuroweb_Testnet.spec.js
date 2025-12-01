@@ -214,6 +214,7 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
           name: BLOCKCHAIN_IDS.NEUROWEB_TESTNET,
           publicKey: nodeKeys[name].publicKey,
           privateKey: nodeKeys[name].privateKey,
+          transactionFinalityMaxWaitTime: 10 * 60 * 1000, // 10 minutes timeout for finality
         },
         maxNumberOfRetries: 300,
         frequency: 2,
@@ -342,6 +343,7 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
               name: BLOCKCHAIN_IDS.NEUROWEB_TESTNET,
               publicKey: nodeKeys[remoteNode.name].publicKey,
               privateKey: nodeKeys[remoteNode.name].privateKey,
+              transactionFinalityMaxWaitTime: 10 * 60 * 1000, // 10 minutes timeout for finality
             },
             maxNumberOfRetries: 300,
             frequency: 2,
