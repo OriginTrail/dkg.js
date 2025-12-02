@@ -66,9 +66,9 @@ const nodeKeys = {
 };
 
 const nodes = [
-  { name: 'Node 01', hostname: 'https://v6-pegasus-node-01.origin-trail.network' },
-  { name: 'Node 04', hostname: 'https://v6-pegasus-node-04.origin-trail.network' },
-  { name: 'Node 05', hostname: 'https://v6-pegasus-node-05.origin-trail.network' },
+  { name: 'Node 01', hostname: 'https://cosmic-one.origin-trail.network' },
+  { name: 'Node 04', hostname: 'https://cosmic-two.origin-trail.network' },
+  { name: 'Node 05', hostname: 'https://cosmic-three.origin-trail.network' },
   { name: 'Node 06', hostname: 'https://v6-pegasus-node-06.origin-trail.network' },
   { name: 'Node 07', hostname: 'https://v6-pegasus-node-07.origin-trail.network' },
   { name: 'Node 08', hostname: 'https://v6-pegasus-node-08.origin-trail.network' },
