@@ -214,7 +214,7 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
           name: BLOCKCHAIN_IDS.NEUROWEB_TESTNET,
           publicKey: nodeKeys[name].publicKey,
           privateKey: nodeKeys[name].privateKey,
-          transactionFinalityMaxWaitTime: 10 * 60 * 1000, // 10 minutes timeout for finality
+          transactionFinalityMaxWaitTime: 3 * 60 * 1000, // 3 minutes timeout for finality
         },
         maxNumberOfRetries: 300,
         frequency: 2,
@@ -266,7 +266,7 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
 
             })(),
             new Promise((_, reject) =>
-              setTimeout(() => reject(new Error(`Timeout after 10 minutes during "publishing" on ${stepNodeName}`)), 10 * 60 * 1000)
+              setTimeout(() => reject(new Error(`Timeout after 3 minutes during "publishing" on ${stepNodeName}`)), 3 * 60 * 1000)
             ),
           ]);
         } catch (error) {
@@ -292,7 +292,7 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
               'SELECT'
             ),
             new Promise((_, reject) =>
-              setTimeout(() => reject(new Error(`Timeout after 10 minutes during "querying" on ${stepNodeName}`)), 10 * 60 * 1000)
+              setTimeout(() => reject(new Error(`Timeout after 3 minutes during "querying" on ${stepNodeName}`)), 3 * 60 * 1000)
             ),
           ]);
           const queryEnd = Date.now();
@@ -313,7 +313,7 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
           const localGetResult = await Promise.race([
             DkgClient.asset.get(ual),
             new Promise((_, reject) =>
-              setTimeout(() => reject(new Error(`Timeout after 10 minutes during "local get" on ${stepNodeName}`)), 10 * 60 * 1000)
+              setTimeout(() => reject(new Error(`Timeout after 3 minutes during "local get" on ${stepNodeName}`)), 3 * 60 * 1000)
             ),
           ]);
           const localGetEnd = Date.now();
@@ -343,7 +343,7 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
               name: BLOCKCHAIN_IDS.NEUROWEB_TESTNET,
               publicKey: nodeKeys[remoteNode.name].publicKey,
               privateKey: nodeKeys[remoteNode.name].privateKey,
-              transactionFinalityMaxWaitTime: 10 * 60 * 1000, // 10 minutes timeout for finality
+              transactionFinalityMaxWaitTime: 3 * 60 * 1000, // 3 minutes timeout for finality
             },
             maxNumberOfRetries: 300,
             frequency: 2,
@@ -354,7 +354,7 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
           const remoteGetResult = await Promise.race([
             RemoteDkgClient.asset.get(ual),
             new Promise((_, reject) =>
-              setTimeout(() => reject(new Error(`Timeout after 10 minutes during "get" on ${stepNodeName}`)), 10 * 60 * 1000)
+              setTimeout(() => reject(new Error(`Timeout after 3 minutes during "get" on ${stepNodeName}`)), 3 * 60 * 1000)
             ),
           ]);
           const remoteGetEnd = Date.now();
