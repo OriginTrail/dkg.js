@@ -66,7 +66,7 @@ const nodeKeys = {
 };
 
 const nodes = [
-  { name: 'Node 01', hostname: 'https://cosmic-obe.origin-trail.network' },
+  { name: 'Node 01', hostname: 'https://cosmic-one.origin-trail.network' },
   { name: 'Node 04', hostname: 'https://cosmic-two.origin-trail.network' },
   { name: 'Node 05', hostname: 'https://cosmic-three.origin-trail.network' },
   { name: 'Node 06', hostname: 'https://v6-pegasus-node-06.origin-trail.network' },
