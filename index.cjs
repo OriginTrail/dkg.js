@@ -3500,26 +3500,51 @@ class BlockchainServiceBase {
         const publicKey = await this.getPublicKey(blockchain);
         const encodedABI = await contractInstance.methods[functionName](...args).encodeABI();
 
+        console.log('\n==================== PREPARING TRANSACTION ==========================');
+        console.log('Estimating gas...');
+
         let gasLimit = Number(
             await contractInstance.methods[functionName](...args).estimateGas({
                 from: publicKey,
             }),
         );
+        const originalGasEstimate = gasLimit;
         gasLimit = Math.round(gasLimit * blockchain.gasLimitMultiplier);
 
+        console.log('Gas Estimation:', originalGasEstimate);
+        console.log('Gas Limit Multiplier:', blockchain.gasLimitMultiplier);
+        console.log('Final Gas Limit:', gasLimit);
+
         let gasPrice;
+        console.log('\nCalculating gas price...');
         if (blockchain.previousTxGasPrice && blockchain.retryTx) {
             // Increase previous tx gas price by 20%
+            console.log('Gas Price Strategy: RETRY (increasing previous by 20%)');
+            console.log(
+                'Previous Gas Price:',
+                blockchain.previousTxGasPrice,
+                `(${Web3.utils.fromWei(blockchain.previousTxGasPrice.toString(), 'Gwei')} Gwei)`,
+            );
             gasPrice = Math.round(blockchain.previousTxGasPrice * 1.2);
+            console.log(
+                'New Gas Price:',
+                gasPrice,
+                `(${Web3.utils.fromWei(gasPrice.toString(), 'Gwei')} Gwei)`,
+            );
         } else if (blockchain.forceReplaceTxs) {
+            console.log('Gas Price Strategy: FORCE REPLACE (checking for pending transactions)');
             // Get the current transaction count (nonce) of the wallet, including pending transactions
             const currentNonce = await web3Instance.eth.getTransactionCount(publicKey, 'pending');
 
             // Get the transaction count of the wallet excluding pending transactions
             const confirmedNonce = await web3Instance.eth.getTransactionCount(publicKey, 'latest');
 
+            console.log('Current Nonce (pending):', currentNonce);
+            console.log('Confirmed Nonce (latest):', confirmedNonce);
+
             // If there are any pending transactions
             if (currentNonce > confirmedNonce) {
+                console.log('Pending transactions detected:', currentNonce - confirmedNonce);
                 const pendingBlock = await web3Instance.eth.getBlock('pending', true);
 
                 // Search for pending tx in the pending block
@@ -3531,30 +3556,77 @@ class BlockchainServiceBase {
 
                 if (pendingTx) {
                     // If found, increase gas price of pending tx by 20%
+                    console.log('Found pending transaction with nonce:', confirmedNonce);
+                    console.log(
+                        'Pending tx gas price:',
+                        pendingTx.gasPrice,
+                        `(${Web3.utils.fromWei(pendingTx.gasPrice.toString(), 'Gwei')} Gwei)`,
+                    );
                     gasPrice = Math.round(Number(pendingTx.gasPrice) * 1.2);
+                    console.log(
+                        'Replacing with increased gas price:',
+                        gasPrice,
+                        `(${Web3.utils.fromWei(gasPrice.toString(), 'Gwei')} Gwei)`,
+                    );
                 } else {
                     // If not found, use default/network gas price increased by 20%
                     // Theoretically this should never happen
-                    gasPrice = Math.round(
-                        (blockchain.gasPrice || (await this.getNetworkGasPrice(blockchain))) * 1.2,
+                    console.log(
+                        'No pending transaction found in block, using network gas price + 20%',
+                    );
+                    const baseGasPrice =
+                        blockchain.gasPrice || (await this.getNetworkGasPrice(blockchain));
+                    gasPrice = Math.round(baseGasPrice * 1.2);
+                    console.log(
+                        'Base Gas Price:',
+                        baseGasPrice,
+                        `(${Web3.utils.fromWei(baseGasPrice.toString(), 'Gwei')} Gwei)`,
+                    );
+                    console.log(
+                        'Gas Price (20% increase):',
+                        gasPrice,
+                        `(${Web3.utils.fromWei(gasPrice.toString(), 'Gwei')} Gwei)`,
                     );
                 }
             } else {
+                console.log('No pending transactions');
                 gasPrice = blockchain.gasPrice || (await this.getNetworkGasPrice(blockchain));
+                console.log(
+                    'Using network gas price:',
+                    gasPrice,
+                    `(${Web3.utils.fromWei(gasPrice.toString(), 'Gwei')} Gwei)`,
+                );
             }
         } else {
+            console.log('Gas Price Strategy: NORMAL (using network gas price)');
             gasPrice = blockchain.gasPrice || (await this.getNetworkGasPrice(blockchain));
+            console.log(
+                'Gas Price:',
+                gasPrice,
+                `(${Web3.utils.fromWei(gasPrice.toString(), 'Gwei')} Gwei)`,
+            );
         }
 
         if (blockchain.simulateTxs) {
-            await web3Instance.eth.call({
-                to: contractInstance.options.address,
-                data: encodedABI,
-                from: publicKey,
-                gasPrice,
-                gas: gasLimit,
-            });
+            console.log('\nSimulating transaction...');
+            try {
+                await web3Instance.eth.call({
+                    to: contractInstance.options.address,
+                    data: encodedABI,
+                    from: publicKey,
+                    gasPrice,
+                    gas: gasLimit,
+                });
+                console.log('Transaction simulation: SUCCESS');
+            } catch (error) {
+                console.log('Transaction simulation: FAILED');
+                console.log('Simulation error:', error.message);
+                throw error;
+            }
         }
+
+        console.log('\nTransaction prepared successfully');
+        console.log('=====================================================================\n');
 
         return {
             from: publicKey,
@@ -3639,7 +3711,13 @@ class BlockchainServiceBase {
         }
     }
 
-    async waitForEventFinality(initialReceipt, eventName, expectedEventId, blockchain, confirmations = 1) {
+    async waitForEventFinality(
+        initialReceipt,
+        eventName,
+        expectedEventId,
+        blockchain,
+        confirmations = 1,
+    ) {
         await this.ensureBlockchainInfo(blockchain);
         const web3Instance = await this.getWeb3Instance(blockchain);
 
@@ -3652,7 +3730,10 @@ class BlockchainServiceBase {
         // eslint-disable-next-line no-constant-condition
         while (true) {
             // 1. Wait until the block containing the tx is at the required depth
-            while (await web3Instance.eth.getBlockNumber() < receipt.blockNumber + confirmations) {
+            while (
+                (await web3Instance.eth.getBlockNumber()) <
+                receipt.blockNumber + confirmations
+            ) {
                 await sleepForMilliseconds(polling);
             }
 
@@ -3674,7 +3755,9 @@ class BlockchainServiceBase {
 
                 const idMatches =
                     expectedEventId == null ||
-                    (eventData && eventData.id != null && eventData.id.toString() === expectedEventId.toString());
+                    (eventData &&
+                        eventData.id != null &&
+                        eventData.id.toString() === expectedEventId.toString());
 
                 if (eventData && idMatches) {
                     return { receipt: currentReceipt, eventData };
@@ -4842,12 +4925,114 @@ class BrowserBlockchainService extends BlockchainServiceBase {
         try {
             tx = await this.prepareTransaction(contractInstance, functionName, args, blockchain);
 
+            // Log transaction details before sending
+            console.log('\n======================== SENDING TRANSACTION ========================');
+            console.log('Contract:', contractName);
+            console.log('Function:', functionName);
+            console.log('Contract Address:', contractInstance.options.address);
+            console.log('Blockchain:', blockchain.name);
+            console.log('From:', tx.from);
+            console.log('To:', tx.to);
+            console.log('Gas Limit:', tx.gas);
+            console.log(
+                'Gas Price:',
+                tx.gasPrice,
+                `(${Web3.utils.fromWei(tx.gasPrice.toString(), 'Gwei')} Gwei)`,
+            );
+            
+            // Log function arguments with parameter names
+            try {
+                const methodAbi = contractInstance.options.jsonInterface.find(
+                    item => item.name === functionName && item.type === 'function'
+                );
+                if (methodAbi && methodAbi.inputs) {
+                    console.log('Function Arguments:');
+                    methodAbi.inputs.forEach((input, index) => {
+                        const value = args[index];
+                        const displayValue = typeof value === 'bigint' ? value.toString() : 
+                                           Array.isArray(value) ? `[${value.length} items]` : value;
+                        console.log(`  ${input.name} (${input.type}):`, displayValue);
+                    });
+                } else {
+                    console.log(
+                        'Function Arguments:',
+                        JSON.stringify(
+                            args,
+                            (key, value) => (typeof value === 'bigint' ? value.toString() : value),
+                            2,
+                        ),
+                    );
+                }
+            } catch (err) {
+                console.log(
+                    'Function Arguments:',
+                    JSON.stringify(
+                        args,
+                        (key, value) => (typeof value === 'bigint' ? value.toString() : value),
+                        2,
+                    ),
+                );
+            }
+            
+            console.log('Encoded Data:', tx.data);
+            console.log('=====================================================================\n');
+
             let receipt = await contractInstance.methods[functionName](...args).send(tx);
+
+            // Log transaction receipt
+            console.log('\n===================== TRANSACTION SUCCESSFUL ========================');
+            console.log('Transaction Hash:', receipt.transactionHash);
+            console.log('Block Number:', receipt.blockNumber);
+            console.log('Gas Used:', receipt.gasUsed);
+            console.log('Status:', receipt.status ? 'Success' : 'Failed');
+            console.log('=====================================================================\n');
+
             if (blockchain.name.startsWith('otp') && blockchain.waitNeurowebTxFinalization) {
                 receipt = await this.waitForTransactionFinalization(receipt, blockchain);
             }
             return receipt;
         } catch (error) {
+            console.log('\n======================= TRANSACTION ERROR ===========================');
+            console.log('Contract:', contractName);
+            console.log('Function:', functionName);
+            console.log('Error Type:', error.constructor.name);
+            console.log('Error Message:', error.message);
+            
+            // Log revert reason if available
+            if (error.reason) {
+                console.log('Revert Reason:', error.reason);
+            }
+            
+            // Log error code if available
+            if (error.code) {
+                console.log('Error Code:', error.code);
+            }
+            
+            // Log transaction hash if it exists (for mined but reverted transactions)
+            if (error.receipt?.transactionHash) {
+                console.log('Transaction Hash:', error.receipt.transactionHash);
+                console.log('Block Number:', error.receipt.blockNumber);
+                console.log('Gas Used:', error.receipt.gasUsed);
+            }
+            
+            // Log inner error if available
+            if (error.innerError) {
+                console.log('Inner Error:', error.innerError.message || error.innerError);
+            }
+            
+            // Log error data if available (can contain revert data)
+            if (error.data) {
+                console.log('Error Data:', typeof error.data === 'string' ? error.data : JSON.stringify(error.data));
+            }
+            
+            // Log full stack trace for debugging
+            if (error.stack) {
+                console.log('\nStack Trace:');
+                console.log(error.stack);
+            }
+            
+            console.log('=====================================================================\n');
+
             if (/revert|VM Exception/i.test(error.message)) {
                 let status;
                 try {
@@ -4857,6 +5042,9 @@ class BrowserBlockchainService extends BlockchainServiceBase {
                 }
 
                 if (!status) {
+                    console.log(
+                        'Contract status check failed. Updating contract instance and retrying...\n',
+                    );
                     await this.updateContractInstance(contractName, blockchain, true);
                     contractInstance = await this.getContractInstance(contractName, blockchain);
                     const web3Instance = await this.getWeb3Instance(blockchain);
@@ -4867,7 +5055,34 @@ class BrowserBlockchainService extends BlockchainServiceBase {
                         from: tx.from,
                     });
 
-                    return contractInstance.methods[functionName](...args).send(tx);
+                    // Log retry transaction
+                    console.log(
+                        '\n===================== RETRYING TRANSACTION ==========================',
+                    );
+                    console.log('Contract:', contractName);
+                    console.log('Function:', functionName);
+                    console.log('New Contract Address:', contractInstance.options.address);
+                    console.log(
+                        '=====================================================================\n',
+                    );
+
+                    const retryReceipt = await contractInstance.methods[functionName](...args).send(
+                        tx,
+                    );
+
+                    // Log retry transaction receipt
+                    console.log(
+                        '\n===================== RETRY TRANSACTION SUCCESSFUL ==================',
+                    );
+                    console.log('Transaction Hash:', retryReceipt.transactionHash);
+                    console.log('Block Number:', retryReceipt.blockNumber);
+                    console.log('Gas Used:', retryReceipt.gasUsed);
+                    console.log('Status:', retryReceipt.status ? 'Success' : 'Failed');
+                    console.log(
+                        '=====================================================================\n',
+                    );
+
+                    return retryReceipt;
                 }
             }
 
@@ -4985,6 +5200,71 @@ class NodeBlockchainService extends BlockchainServiceBase {
                 previousTxGasPrice = tx.gasPrice;
                 simulationSucceeded = true;
 
+                // Log transaction details before sending
+                console.log(
+                    '\n======================== SENDING TRANSACTION ========================',
+                );
+                console.log('Contract:', contractName);
+                console.log('Function:', functionName);
+                console.log('Contract Address:', contractInstance.options.address);
+                console.log('Blockchain:', blockchain.name);
+                console.log('From:', tx.from);
+                console.log('To:', tx.to);
+                console.log('Gas Limit:', tx.gas);
+                console.log(
+                    'Gas Price:',
+                    tx.gasPrice,
+                    `(${Web3.utils.fromWei(tx.gasPrice.toString(), 'Gwei')} Gwei)`,
+                );
+                
+                // Log function arguments with parameter names
+                try {
+                    const methodAbi = contractInstance.options.jsonInterface.find(
+                        item => item.name === functionName && item.type === 'function'
+                    );
+                    if (methodAbi && methodAbi.inputs) {
+                        console.log('Function Arguments:');
+                        methodAbi.inputs.forEach((input, index) => {
+                            const value = args[index];
+                            const displayValue = typeof value === 'bigint' ? value.toString() : 
+                                               Array.isArray(value) ? `[${value.length} items]` : value;
+                            console.log(`  ${input.name} (${input.type}):`, displayValue);
+                        });
+                    } else {
+                        console.log(
+                            'Function Arguments:',
+                            JSON.stringify(
+                                args,
+                                (key, value) => (typeof value === 'bigint' ? value.toString() : value),
+                                2,
+                            ),
+                        );
+                    }
+                } catch (err) {
+                    console.log(
+                        'Function Arguments:',
+                        JSON.stringify(
+                            args,
+                            (key, value) => (typeof value === 'bigint' ? value.toString() : value),
+                            2,
+                        ),
+                    );
+                }
+                
+                console.log('Encoded Data:', tx.data);
+                console.log('Retry Transaction:', transactionRetried ? 'Yes' : 'No');
+                if (transactionRetried) {
+                    console.log(
+                        'Previous Gas Price:',
+                        previousTxGasPrice,
+                        `(${Web3.utils.fromWei(previousTxGasPrice.toString(), 'Gwei')} Gwei)`,
+                    );
+                    console.log('Gas Price Increased By: 20%');
+                }
+                console.log(
+                    '=====================================================================\n',
+                );
+
                 const createdTransaction = await web3Instance.eth.accounts.signTransaction(
                     tx,
                     blockchain.privateKey,
@@ -4993,10 +5273,68 @@ class NodeBlockchainService extends BlockchainServiceBase {
                 receipt = await web3Instance.eth.sendSignedTransaction(
                     createdTransaction.rawTransaction,
                 );
+
+                // Log transaction receipt
+                console.log(
+                    '\n===================== TRANSACTION SUCCESSFUL ========================',
+                );
+                console.log('Transaction Hash:', receipt.transactionHash);
+                console.log('Block Number:', receipt.blockNumber);
+                console.log('Gas Used:', receipt.gasUsed);
+                console.log('Status:', receipt.status ? 'Success' : 'Failed');
+                console.log(
+                    '=====================================================================\n',
+                );
+
                 if (blockchain.name.startsWith('otp') && blockchain.waitNeurowebTxFinalization) {
                     receipt = await this.waitForTransactionFinalization(receipt, blockchain);
                 }
             } catch (error) {
+                console.log(
+                    '\n======================= TRANSACTION ERROR ===========================',
+                );
+                console.log('Contract:', contractName);
+                console.log('Function:', functionName);
+                console.log('Error Type:', error.constructor.name);
+                console.log('Error Message:', error.message);
+                
+                // Log revert reason if available
+                if (error.reason) {
+                    console.log('Revert Reason:', error.reason);
+                }
+                
+                // Log error code if available
+                if (error.code) {
+                    console.log('Error Code:', error.code);
+                }
+                
+                // Log transaction hash if it exists (for mined but reverted transactions)
+                if (error.receipt?.transactionHash) {
+                    console.log('Transaction Hash:', error.receipt.transactionHash);
+                    console.log('Block Number:', error.receipt.blockNumber);
+                    console.log('Gas Used:', error.receipt.gasUsed);
+                }
+                
+                // Log inner error if available
+                if (error.innerError) {
+                    console.log('Inner Error:', error.innerError.message || error.innerError);
+                }
+                
+                // Log error data if available (can contain revert data)
+                if (error.data) {
+                    console.log('Error Data:', typeof error.data === 'string' ? error.data : JSON.stringify(error.data));
+                }
+                
+                // Log full stack trace for debugging
+                if (error.stack) {
+                    console.log('\nStack Trace:');
+                    console.log(error.stack);
+                }
+                
+                console.log(
+                    '=====================================================================\n',
+                );
+
                 if (
                     simulationSucceeded &&
                     !transactionRetried &&
@@ -5005,6 +5343,7 @@ class NodeBlockchainService extends BlockchainServiceBase {
                         error.message.toLowerCase().includes(errorMsg),
                     )
                 ) {
+                    console.log('Retrying transaction with increased gas price...\n');
                     transactionRetried = true;
                     blockchain.retryTx = true;
                     blockchain.previousTxGasPrice = previousTxGasPrice;
@@ -5017,6 +5356,9 @@ class NodeBlockchainService extends BlockchainServiceBase {
                     }
 
                     if (!status && contractName !== 'ParanetIncentivesPool') {
+                        console.log(
+                            'Contract status check failed. Updating contract instance and retrying...\n',
+                        );
                         await this.updateContractInstance(contractName, blockchain, true);
                         contractInstance = await this.getContractInstance(contractName, blockchain);
                         transactionRetried = true;

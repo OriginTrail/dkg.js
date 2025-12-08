@@ -1,7 +1,10 @@
 /* eslint-disable no-param-reassign */
 /* eslint-disable no-await-in-loop */
 import Web3 from 'web3';
-import { TRANSACTION_RETRY_ERRORS, WEBSOCKET_PROVIDER_OPTIONS } from '../../../constants/constants.js';
+import {
+    TRANSACTION_RETRY_ERRORS,
+    WEBSOCKET_PROVIDER_OPTIONS,
+} from '../../../constants/constants.js';
 import BlockchainServiceBase from '../blockchain-service-base.js';
 
 export default class NodeBlockchainService extends BlockchainServiceBase {
@@ -80,6 +83,76 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
                 previousTxGasPrice = tx.gasPrice;
                 simulationSucceeded = true;
 
+                // Log transaction details before sending
+                console.log(
+                    '\n======================== SENDING TRANSACTION ========================',
+                );
+                console.log('Contract:', contractName);
+                console.log('Function:', functionName);
+                console.log('Contract Address:', contractInstance.options.address);
+                console.log('Blockchain:', blockchain.name);
+                console.log('From:', tx.from);
+                console.log('To:', tx.to);
+                console.log('Gas Limit:', tx.gas);
+                console.log(
+                    'Gas Price:',
+                    tx.gasPrice,
+                    `(${Web3.utils.fromWei(tx.gasPrice.toString(), 'Gwei')} Gwei)`,
+                );
+
+                // Log function arguments with parameter names
+                try {
+                    const methodAbi = contractInstance.options.jsonInterface.find(
+                        (item) => item.name === functionName && item.type === 'function',
+                    );
+                    if (methodAbi && methodAbi.inputs) {
+                        console.log('Function Arguments:');
+                        methodAbi.inputs.forEach((input, index) => {
+                            const value = args[index];
+                            const displayValue =
+                                typeof value === 'bigint'
+                                    ? value.toString()
+                                    : Array.isArray(value)
+                                    ? `[${value.length} items]`
+                                    : value;
+                            console.log(`  ${input.name} (${input.type}):`, displayValue);
+                        });
+                    } else {
+                        console.log(
+                            'Function Arguments:',
+                            JSON.stringify(
+                                args,
+                                (key, value) =>
+                                    typeof value === 'bigint' ? value.toString() : value,
+                                2,
+                            ),
+                        );
+                    }
+                } catch (err) {
+                    console.log(
+                        'Function Arguments:',
+                        JSON.stringify(
+                            args,
+                            (key, value) => (typeof value === 'bigint' ? value.toString() : value),
+                            2,
+                        ),
+                    );
+                }
+
+                console.log('Encoded Data:', tx.data);
+                console.log('Retry Transaction:', transactionRetried ? 'Yes' : 'No');
+                if (transactionRetried) {
+                    console.log(
+                        'Previous Gas Price:',
+                        previousTxGasPrice,
+                        `(${Web3.utils.fromWei(previousTxGasPrice.toString(), 'Gwei')} Gwei)`,
+                    );
+                    console.log('Gas Price Increased By: 20%');
+                }
+                console.log(
+                    '=====================================================================\n',
+                );
+
                 const createdTransaction = await web3Instance.eth.accounts.signTransaction(
                     tx,
                     blockchain.privateKey,
@@ -88,10 +161,71 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
                 receipt = await web3Instance.eth.sendSignedTransaction(
                     createdTransaction.rawTransaction,
                 );
+
+                // Log transaction receipt
+                console.log(
+                    '\n===================== TRANSACTION SUCCESSFUL ========================',
+                );
+                console.log('Transaction Hash:', receipt.transactionHash);
+                console.log('Block Number:', receipt.blockNumber);
+                console.log('Gas Used:', receipt.gasUsed);
+                console.log('Status:', receipt.status ? 'Success' : 'Failed');
+                console.log(
+                    '=====================================================================\n',
+                );
+
                 if (blockchain.name.startsWith('otp') && blockchain.waitNeurowebTxFinalization) {
                     receipt = await this.waitForTransactionFinalization(receipt, blockchain);
                 }
             } catch (error) {
+                console.log(
+                    '\n======================= TRANSACTION ERROR ===========================',
+                );
+                console.log('Contract:', contractName);
+                console.log('Function:', functionName);
+                console.log('Error Type:', error.constructor.name);
+                console.log('Error Message:', error.message);
+
+                // Log revert reason if available
+                if (error.reason) {
+                    console.log('Revert Reason:', error.reason);
+                }
+
+                // Log error code if available
+                if (error.code) {
+                    console.log('Error Code:', error.code);
+                }
+
+                // Log transaction hash if it exists (for mined but reverted transactions)
+                if (error.receipt?.transactionHash) {
+                    console.log('Transaction Hash:', error.receipt.transactionHash);
+                    console.log('Block Number:', error.receipt.blockNumber);
+                    console.log('Gas Used:', error.receipt.gasUsed);
+                }
+
+                // Log inner error if available
+                if (error.innerError) {
+                    console.log('Inner Error:', error.innerError.message || error.innerError);
+                }
+
+                // Log error data if available (can contain revert data)
+                if (error.data) {
+                    console.log(
+                        'Error Data:',
+                        typeof error.data === 'string' ? error.data : JSON.stringify(error.data),
+                    );
+                }
+
+                // Log full stack trace for debugging
+                if (error.stack) {
+                    console.log('\nStack Trace:');
+                    console.log(error.stack);
+                }
+
+                console.log(
+                    '=====================================================================\n',
+                );
+
                 if (
                     simulationSucceeded &&
                     !transactionRetried &&
@@ -100,6 +234,7 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
                         error.message.toLowerCase().includes(errorMsg),
                     )
                 ) {
+                    console.log('Retrying transaction with increased gas price...\n');
                     transactionRetried = true;
                     blockchain.retryTx = true;
                     blockchain.previousTxGasPrice = previousTxGasPrice;
@@ -112,6 +247,9 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
                     }
 
                     if (!status && contractName !== 'ParanetIncentivesPool') {
+                        console.log(
+                            'Contract status check failed. Updating contract instance and retrying...\n',
+                        );
                         await this.updateContractInstance(contractName, blockchain, true);
                         contractInstance = await this.getContractInstance(contractName, blockchain);
                         transactionRetried = true;
