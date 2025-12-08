@@ -181,17 +181,102 @@ export default class BlockchainServiceBase {
         console.log('\n==================== PREPARING TRANSACTION ==========================');
         console.log('Estimating gas...');
 
-        let gasLimit = Number(
-            await contractInstance.methods[functionName](...args).estimateGas({
-                from: publicKey,
-            }),
-        );
-        const originalGasEstimate = gasLimit;
-        gasLimit = Math.round(gasLimit * blockchain.gasLimitMultiplier);
+        let gasLimit;
+        let originalGasEstimate;
 
-        console.log('Gas Estimation:', originalGasEstimate);
-        console.log('Gas Limit Multiplier:', blockchain.gasLimitMultiplier);
-        console.log('Final Gas Limit:', gasLimit);
+        try {
+            gasLimit = Number(
+                await contractInstance.methods[functionName](...args).estimateGas({
+                    from: publicKey,
+                }),
+            );
+            originalGasEstimate = gasLimit;
+            gasLimit = Math.round(gasLimit * blockchain.gasLimitMultiplier);
+
+            console.log('Gas Estimation:', originalGasEstimate);
+            console.log('Gas Limit Multiplier:', blockchain.gasLimitMultiplier);
+            console.log('Final Gas Limit:', gasLimit);
+        } catch (error) {
+            console.log('\n=============== GAS ESTIMATION FAILED ===============================');
+            console.log('Contract:', contractInstance.options.address);
+            console.log('Function:', functionName);
+            console.log('From:', publicKey);
+            console.log('Error Type:', error.constructor.name);
+            console.log('Error Message:', error.message);
+
+            // Try to decode custom error
+            if (error.data && typeof error.data === 'string' && error.data.startsWith('0x')) {
+                console.log('\nError Data (hex):', error.data);
+                const errorSelector = error.data.slice(0, 10);
+                console.log('Error Selector:', errorSelector);
+
+                // Common custom error selectors
+                const knownErrors = {
+                    '0x7000ca77': 'InsufficientAllowance(address,uint256,uint256)',
+                    '0x08c379a0': 'Error(string)', // Standard revert
+                    '0x4e487b71': 'Panic(uint256)', // Solidity panic
+                };
+
+                if (knownErrors[errorSelector]) {
+                    console.log('Known Error Type:', knownErrors[errorSelector]);
+                }
+
+                // Try to decode the parameters if it's InsufficientAllowance
+                if (errorSelector === '0x7000ca77' && error.data.length >= 202) {
+                    try {
+                        const tokenAddress = '0x' + error.data.slice(34, 74);
+                        const available = BigInt('0x' + error.data.slice(74, 138));
+                        const required = BigInt('0x' + error.data.slice(138, 202));
+                        console.log('\nDecoded Error Parameters:');
+                        console.log('  Token Address:', tokenAddress);
+                        console.log('  Available Allowance:', available.toString());
+                        console.log('  Required Allowance:', required.toString());
+                        console.log('  Shortfall:', (required - available).toString());
+                    } catch (decodeErr) {
+                        console.log('Could not decode error parameters:', decodeErr.message);
+                    }
+                }
+            }
+
+            // Log the function arguments that caused the issue
+            console.log('\nFunction Arguments:');
+            try {
+                const methodAbi = contractInstance.options.jsonInterface.find(
+                    (item) => item.name === functionName && item.type === 'function',
+                );
+                if (methodAbi && methodAbi.inputs) {
+                    methodAbi.inputs.forEach((input, index) => {
+                        const value = args[index];
+                        const displayValue =
+                            typeof value === 'bigint'
+                                ? value.toString()
+                                : Array.isArray(value)
+                                ? `[${value.length} items]`
+                                : value;
+                        console.log(`  ${input.name} (${input.type}):`, displayValue);
+                    });
+                } else {
+                    console.log(
+                        JSON.stringify(
+                            args,
+                            (key, value) => (typeof value === 'bigint' ? value.toString() : value),
+                            2,
+                        ),
+                    );
+                }
+            } catch (err) {
+                console.log(
+                    JSON.stringify(
+                        args,
+                        (key, value) => (typeof value === 'bigint' ? value.toString() : value),
+                        2,
+                    ),
+                );
+            }
+
+            console.log('=====================================================================\n');
+            throw error;
+        }
 
         let gasPrice;
         console.log('\nCalculating gas price...');
