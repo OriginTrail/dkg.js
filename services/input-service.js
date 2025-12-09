@@ -186,6 +186,10 @@ export default class InputService {
             options.blockchain?.forceReplaceTxs ??
             this.config.blockchain?.forceReplaceTxs ??
             DEFAULT_PARAMETERS.FORCE_REPLACE_TXS;
+        const replacementGasPriceMultiplier =
+            options.blockchain?.replacementGasPriceMultiplier ??
+            this.config.blockchain?.replacementGasPriceMultiplier ??
+            DEFAULT_PARAMETERS.REPLACEMENT_GAS_PRICE_MULTIPLIER;
         const gasPriceOracleLink =
             options.blockchain?.gasPriceOracleLink ??
             this.config.blockchain?.gasPriceOracleLink ??
@@ -204,6 +208,7 @@ export default class InputService {
             handleNotMinedError,
             simulateTxs,
             forceReplaceTxs,
+            replacementGasPriceMultiplier,
             gasPriceOracleLink,
         };
 

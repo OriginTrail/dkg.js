@@ -10,6 +10,7 @@ import {
     DEFAULT_GAS_PRICE_WEI,
     ZERO_ADDRESS,
     NEUROWEB_INCENTIVE_TYPE_CHAINS,
+    DEFAULT_PARAMETERS,
 } from '../../constants/constants.js';
 import emptyHooks from '../../util/empty-hooks.js';
 import { sleepForMilliseconds } from '../utilities.js';
@@ -186,9 +187,13 @@ export default class BlockchainServiceBase {
         gasLimit = Math.round(gasLimit * blockchain.gasLimitMultiplier);
 
         let gasPrice;
+        let nonce;
+        const gasPriceMultiplier =
+            blockchain.replacementGasPriceMultiplier ||
+            DEFAULT_PARAMETERS.REPLACEMENT_GAS_PRICE_MULTIPLIER;
         if (blockchain.previousTxGasPrice && blockchain.retryTx) {
-            // Increase previous tx gas price by 20%
-            gasPrice = Math.round(blockchain.previousTxGasPrice * 1.2);
+            // Increase previous tx gas price by configured multiplier (default 20%)
+            gasPrice = Math.round(blockchain.previousTxGasPrice * gasPriceMultiplier);
         } else if (blockchain.forceReplaceTxs) {
             // Get the current transaction count (nonce) of the wallet, including pending transactions
             const currentNonce = await web3Instance.eth.getTransactionCount(publicKey, 'pending');
@@ -198,6 +203,9 @@ export default class BlockchainServiceBase {
 
             // If there are any pending transactions
             if (currentNonce > confirmedNonce) {
+                // Set nonce explicitly to replace the stuck transaction
+                nonce = confirmedNonce;
+
                 const pendingBlock = await web3Instance.eth.getBlock('pending', true);
 
                 // Search for pending tx in the pending block
@@ -208,13 +216,14 @@ export default class BlockchainServiceBase {
                 );
 
                 if (pendingTx) {
-                    // If found, increase gas price of pending tx by 20%
-                    gasPrice = Math.round(Number(pendingTx.gasPrice) * 1.2);
+                    // If found, increase gas price of pending tx by configured multiplier
+                    gasPrice = Math.round(Number(pendingTx.gasPrice) * gasPriceMultiplier);
                 } else {
-                    // If not found, use default/network gas price increased by 20%
+                    // If not found, use default/network gas price increased by configured multiplier
                     // Theoretically this should never happen
                     gasPrice = Math.round(
-                        (blockchain.gasPrice || (await this.getNetworkGasPrice(blockchain))) * 1.2,
+                        (blockchain.gasPrice || (await this.getNetworkGasPrice(blockchain))) *
+                            gasPriceMultiplier,
                     );
                 }
             } else {
@@ -240,6 +249,7 @@ export default class BlockchainServiceBase {
             data: encodedABI,
             gasPrice,
             gas: gasLimit,
+            ...(nonce !== undefined && { nonce }),
         };
     }
 
@@ -317,7 +327,13 @@ export default class BlockchainServiceBase {
         }
     }
 
-    async waitForEventFinality(initialReceipt, eventName, expectedEventId, blockchain, confirmations = 1) {
+    async waitForEventFinality(
+        initialReceipt,
+        eventName,
+        expectedEventId,
+        blockchain,
+        confirmations = 1,
+    ) {
         await this.ensureBlockchainInfo(blockchain);
         const web3Instance = await this.getWeb3Instance(blockchain);
 
@@ -330,7 +346,10 @@ export default class BlockchainServiceBase {
         // eslint-disable-next-line no-constant-condition
         while (true) {
             // 1. Wait until the block containing the tx is at the required depth
-            while (await web3Instance.eth.getBlockNumber() < receipt.blockNumber + confirmations) {
+            while (
+                (await web3Instance.eth.getBlockNumber()) <
+                receipt.blockNumber + confirmations
+            ) {
                 await sleepForMilliseconds(polling);
             }
 
@@ -352,7 +371,9 @@ export default class BlockchainServiceBase {
 
                 const idMatches =
                     expectedEventId == null ||
-                    (eventData && eventData.id != null && eventData.id.toString() === expectedEventId.toString());
+                    (eventData &&
+                        eventData.id != null &&
+                        eventData.id.toString() === expectedEventId.toString());
 
                 if (eventData && idMatches) {
                     return { receipt: currentReceipt, eventData };
