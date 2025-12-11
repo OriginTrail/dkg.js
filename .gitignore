@@ -32,3 +32,14 @@ errors_Node_29.json
 summary_Node_29.json
 errors_Node_30.json
 summary_Node_30.json
+
+# Test log files with timestamps
+*-test-*.log
+*-node-test-*.log
+pegasus-*.log
+mainnet-*.log
+custom-*.log
+ual-verification.log
+
+# All log files from test runs
+*.log
