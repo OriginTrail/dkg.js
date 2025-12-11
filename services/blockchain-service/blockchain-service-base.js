@@ -1361,28 +1361,48 @@ export default class BlockchainServiceBase {
     async getGasPrice(blockchain) {
         await this.ensureBlockchainInfo(blockchain);
         const web3Instance = await this.getWeb3Instance(blockchain);
+        
+        // Get the default/minimum gas price for this network
+        let defaultGasPrice;
+        if (blockchain.name.startsWith('otp')) {
+            defaultGasPrice = DEFAULT_GAS_PRICE.OTP;
+        } else if (blockchain.name.startsWith('base')) {
+            defaultGasPrice = DEFAULT_GAS_PRICE.BASE;
+        } else {
+            defaultGasPrice = DEFAULT_GAS_PRICE.GNOSIS;
+        }
+        const minimumGasPriceWei = Web3.utils.toWei(defaultGasPrice, 'Gwei');
+
         try {
             let gasPrice;
             if (blockchain.name.startsWith('otp') || blockchain.name.startsWith('base')) {
-                gasPrice = await web3Instance.eth.getGasPrice();
+                // Fetch gas price from network
+                const networkGasPrice = await web3Instance.eth.getGasPrice();
+                
+                // Use the higher of network gas price or minimum threshold
+                gasPrice = BigInt(networkGasPrice) > BigInt(minimumGasPriceWei) 
+                    ? networkGasPrice 
+                    : minimumGasPriceWei;
+                
+                // Log if we're overriding a low gas price
+                if (BigInt(networkGasPrice) < BigInt(minimumGasPriceWei)) {
+                    // eslint-disable-next-line no-console
+                    console.warn(
+                        `⚠️  Network gas price (${Web3.utils.fromWei(networkGasPrice.toString(), 'Gwei')} Gwei) is below minimum threshold. ` +
+                        `Using minimum safe gas price: ${defaultGasPrice} Gwei`
+                    );
+                }
             } else {
-                gasPrice = Web3.utils.toWei(DEFAULT_GAS_PRICE.GNOSIS, 'Gwei');
+                gasPrice = minimumGasPriceWei;
             }
             return gasPrice;
         } catch (error) {
             // eslint-disable-next-line no-console
-            console.warn(`Failed to fetch the gas price from the network: ${error}. `);
-            let defaultGasPrice;
-
-            if (blockchain.name.startsWith('otp')) {
-                defaultGasPrice = DEFAULT_GAS_PRICE.OTP;
-            } else if (blockchain.name.startsWith('base')) {
-                defaultGasPrice = DEFAULT_GAS_PRICE.BASE;
-            } else {
-                defaultGasPrice = DEFAULT_GAS_PRICE.GNOSIS;
-            }
-
-            return Web3.utils.toWei(defaultGasPrice, 'Gwei');
+            console.warn(
+                `Failed to fetch the gas price from the network: ${error}. ` +
+                `Using default gas price: ${defaultGasPrice} Gwei`
+            );
+            return minimumGasPriceWei;
         }
     }
 

@@ -223,7 +223,7 @@ export const DEFAULT_PARAMETERS = {
 
 export const DEFAULT_GAS_PRICE = {
     GNOSIS: '1.5',
-    OTP: '0.001',
+    OTP: '1.0', // Increased from 0.001 to prevent "underprice" errors
     BASE: '0.086',
 };
 

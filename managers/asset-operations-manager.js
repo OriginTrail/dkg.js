@@ -468,12 +468,14 @@ export default class AssetOperationsManager {
                 await this.blockchainService.waitForEventFinality(
                     mintKnowledgeCollectionReceipt,
                     'KnowledgeCollectionCreated',
-                    knowledgeCollectionId,
+                    null, // Don't validate expected ID - extract actual ID from finalized event
                     blockchain,
                     minimumBlockConfirmations,
                 );
 
             mintKnowledgeCollectionReceipt = finalizedMintReceipt;
+            // Always use the actual token ID from the finalized blockchain event
+            // This prevents mismatches when concurrent transactions change the expected ID
             knowledgeCollectionId = parseInt(eventData.id, 10);
         }
 
