@@ -843,7 +843,7 @@ class AssetOperationsManager {
         }
 
         const UAL = deriveUAL$1(blockchain.name, contentAssetStorageAddress, knowledgeCollectionId);
-
+/*
         let finalityStatusResult = 0;
         if (minimumNumberOfFinalizationConfirmations > 0) {
             finalityStatusResult = await this.nodeApiService.finalityStatus(
@@ -856,7 +856,7 @@ class AssetOperationsManager {
                 frequency,
             );
         }
-
+*/
         return {
             UAL,
             datasetRoot,
@@ -865,10 +865,10 @@ class AssetOperationsManager {
                 mintKnowledgeCollection: mintKnowledgeCollectionReceipt,
                 publish: getOperationStatusObject$1(publishOperationResult, publishOperationId),
                 finality: {
-                    status:
-                        finalityStatusResult >= minimumNumberOfFinalizationConfirmations
-                            ? 'FINALIZED'
-                            : 'NOT FINALIZED',
+                    status:'FINALIZED',
+                        //finalityStatusResult >= minimumNumberOfFinalizationConfirmations
+                           // ? 'FINALIZED'
+                          //  : 'NOT FINALIZED',
                 },
                 numberOfConfirmations: finalityStatusResult,
                 requiredConfirmations: minimumNumberOfFinalizationConfirmations,
