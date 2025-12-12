@@ -123,7 +123,7 @@ export async function checkNeurowebHealth(checkDuration = 12000, minBlocksExpect
         };
     }
 
-    if (avgBlockTime > 15) {
+    if (avgBlockTime > 12) {
         console.log(`⚠️  Network is SLOW! Average block time: ${avgBlockTime.toFixed(1)}s (expected ~6s)`);
         return {
             healthy: false,
@@ -145,6 +145,14 @@ export async function checkNeurowebHealth(checkDuration = 12000, minBlocksExpect
 }
 
 /**
+ * Quick health check (shorter duration for final verification)
+ * @returns {Promise<Object>} Health check result
+ */
+export async function quickHealthCheck() {
+    return await checkNeurowebHealth(12000, 1); // 12 seconds, expect at least 1 block
+}
+
+/**
  * Wait for network to be healthy before proceeding
  * Keeps checking until network is healthy or max wait time is reached
  * @param {number} maxWaitMinutes - Maximum minutes to wait (default 10)
@@ -159,7 +167,7 @@ export async function waitForHealthyNetwork(maxWaitMinutes = 10) {
 
     while (Date.now() - startTime < maxWaitTime) {
         attemptCount++;
-        const health = await checkNeurowebHealth(12000, 1); // 12 seconds, expect at least 1 block
+        const health = await checkNeurowebHealth(18000, 2); // 18 seconds, expect at least 2 blocks (avg 9s, target 6s)
 
         if (health.healthy) {
             if (attemptCount > 1) {

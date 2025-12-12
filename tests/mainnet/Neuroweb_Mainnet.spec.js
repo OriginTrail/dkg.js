@@ -7,7 +7,7 @@ import { BLOCKCHAIN_IDS } from '../../constants/constants.js';
 import 'dotenv/config';
 import { randomUUID } from 'crypto';
 import fs from 'fs';
-import { waitForHealthyNetwork } from '../utilities/network-health-check.js';
+import { waitForHealthyNetwork, quickHealthCheck } from '../utilities/network-health-check.js';
 
 const OT_NODE_PORT = '8900';
 
@@ -211,6 +211,14 @@ describe('DKG Asset Lifecycle on Neuroweb Mainnet', function () {
         let stepNodeName = name;
 
         try {
+          // Final health check right before publishing
+          const finalCheck = await quickHealthCheck();
+          if (!finalCheck.healthy) {
+            console.log(`⚠️  Network became unhealthy right before publish: ${finalCheck.reason}`);
+            console.log(`   Waiting 30 seconds before retry...`);
+            await new Promise(resolve => setTimeout(resolve, 30000));
+          }
+
           // Measure publish time:
           const publishStart = Date.now();
 
