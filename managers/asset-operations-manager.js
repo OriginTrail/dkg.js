@@ -486,7 +486,7 @@ export default class AssetOperationsManager {
         // This is needed because OTP chains wait for blockchain finality before constructing the UAL,
         // and the node needs time to process the finalized transaction
         if (blockchain.name && blockchain.name.startsWith('otp')) {
-            await sleepForMilliseconds(5000); // 5 second delay for Neuroweb
+            await sleepForMilliseconds(2000); // 2 second delay for Neuroweb
         }
 
         let finalityStatusResult = 0;

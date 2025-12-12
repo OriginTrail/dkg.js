@@ -244,7 +244,7 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
           const create_result = await DkgClient.asset.create(content, {
             epochsNum: 2,
             minimumNumberOfFinalizationConfirmations: 1,
-            minimumNumberOfNodeReplications: 3,
+            minimumNumberOfNodeReplications: 1, // Reduced from 3 due to Neuroweb testnet connectivity issues
           });
 
           const publishEnd = Date.now();
