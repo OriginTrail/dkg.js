@@ -75,7 +75,7 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
             // Check for timeout
             if (Date.now() - startTime >= maxWaitTime) {
                 throw new Error(
-                    `Timeout: Operation exceeded maximum wait time`
+                    `Timeout: Blockchain transaction receipt not received within maximum wait time (5 minutes)`
                 );
             }
 

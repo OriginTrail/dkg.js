@@ -334,7 +334,7 @@ export default class BlockchainServiceBase {
             // Check for timeout
             if (Date.now() - startTime >= maxWaitTime) {
                 throw new Error(
-                    `Timeout: Operation exceeded maximum wait time`
+                    `Timeout: Blockchain finality exceeded maximum wait time (${maxWaitTime / 1000}s)`
                 );
             }
 
@@ -343,7 +343,7 @@ export default class BlockchainServiceBase {
                 // Check for timeout during block waiting
                 if (Date.now() - startTime >= maxWaitTime) {
                     throw new Error(
-                        `Timeout: Operation exceeded maximum wait time`
+                        `Timeout: Blockchain finality exceeded maximum wait time (${maxWaitTime / 1000}s) - waiting for block confirmations`
                     );
                 }
                 await sleepForMilliseconds(polling);

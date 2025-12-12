@@ -190,7 +190,7 @@ export default class HttpService {
             // Check for total timeout
             if (Date.now() - startTime >= maxTotalTime) {
                 throw Error(
-                    `Timeout: Operation exceeded maximum wait time`
+                    `Timeout: DKG finality exceeded maximum wait time (5 minutes) - Last finality: ${finality}, Required: ${requiredConfirmations}`
                 );
             }
 
@@ -248,7 +248,7 @@ export default class HttpService {
                     ...response.data,
                     data: {
                         errorType: 'DKG_CLIENT_ERROR',
-                        errorMessage: `Timeout: Operation exceeded maximum wait time`,
+                        errorMessage: `Timeout: OT-node operation polling exceeded maximum wait time (5 minutes) - Operation: ${operation}, ID: ${operationId}`,
                     },
                 };
                 break;
