@@ -521,7 +521,8 @@ describe('DKG Asset Lifecycle on Base Testnet', function () {
       const errorData = {
           blockchain_id: BLOCKCHAIN_IDS.BASE_TESTNET,
           aggregated: errorStats[name]?.aggregated || {},
-          detailed: errorStats[name]?.detailed || {}
+          detailed: errorStats[name]?.detailed || {},
+          services: errorStats[name]?.services || {}
       };
       fs.writeFileSync(errorsFileName, JSON.stringify(errorData, null, 2));
       console.log(`✅ Saved errors to ${errorsFileName}`);

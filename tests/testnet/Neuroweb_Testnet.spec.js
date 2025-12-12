@@ -520,7 +520,8 @@ const errorsFileName = `errors_${name.replace(' ', '_')}.json`;
 const errorData = {
     blockchain_id: BLOCKCHAIN_IDS.NEUROWEB_TESTNET,
     aggregated: errorStats[name]?.aggregated || {},
-    detailed: errorStats[name]?.detailed || {}
+    detailed: errorStats[name]?.detailed || {},
+    services: errorStats[name]?.services || {}
 };
 fs.writeFileSync(errorsFileName, JSON.stringify(errorData, null, 2));
 console.log(`✅ Saved errors to ${errorsFileName}`);

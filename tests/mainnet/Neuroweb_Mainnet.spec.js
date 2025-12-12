@@ -488,7 +488,8 @@ describe('DKG Asset Lifecycle on Neuroweb Mainnet', function () {
       const errorData = {
           blockchain_id: BLOCKCHAIN_IDS.NEUROWEB_MAINNET,
           aggregated: errorStats[name]?.aggregated || {},
-          detailed: errorStats[name]?.detailed || {}
+          detailed: errorStats[name]?.detailed || {},
+          services: errorStats[name]?.services || {}
       };
       fs.writeFileSync(errorsFileName, JSON.stringify(errorData, null, 2));
       console.log(`✅ Saved errors to ${errorsFileName}`);

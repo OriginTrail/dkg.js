@@ -43,3 +43,4 @@ ual-verification.log
 
 # All log files from test runs
 *.log
+*.md
