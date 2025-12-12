@@ -123,14 +123,81 @@ function safeRate(success, fail) {
   return total === 0 ? '0.00' : ((success / total) * 100).toFixed(2);
 }
 
+/**
+ * Categorize error by service/component using stack trace analysis
+ */
+function categorizeErrorService(error) {
+  const stack = error.stack || '';
+  const message = error.message.toLowerCase();
+  
+  // Check stack trace first (most reliable)
+  if (stack.includes('blockchain-service')) {
+    return 'blockchain-service';
+  }
+  if (stack.includes('node-api-service') || stack.includes('http-service')) {
+    return 'node-api-service';
+  }
+  if (stack.includes('graph-operations-manager')) {
+    return 'graph-operations';
+  }
+  if (stack.includes('asset-operations-manager')) {
+    return 'asset-operations';
+  }
+  if (stack.includes('assertion-operations-manager')) {
+    return 'assertion-operations';
+  }
+  
+  // Fallback to message analysis if stack doesn't help
+  
+  // Blockchain errors (from RPC/smart contracts)
+  if (message.includes('vm exception') || message.includes('revert')) {
+    return 'blockchain-rpc';
+  }
+  if (message.includes('already known') || message.includes('nonce too low') || message.includes('replacement transaction underpriced')) {
+    return 'blockchain-rpc';
+  }
+  if (message.includes('insufficient funds') || message.includes('gas required exceeds')) {
+    return 'blockchain-rpc';
+  }
+  
+  // ot-node API errors
+  if (message.includes('operation exceeded maximum wait time')) {
+    return 'ot-node-api';
+  }
+  if (message.includes('unable to get assertion') || message.includes('connect etimedout')) {
+    return 'ot-node-api';
+  }
+  if (message.includes('publish_replicate_start') || (message.includes('finality') && !message.includes('blockchain'))) {
+    return 'ot-node-finality';
+  }
+  
+  // Query/Blazegraph errors
+  if (message.includes('query') || message.includes('sparql')) {
+    return 'blazegraph';
+  }
+  
+  // Test timeouts (from test suite)
+  if (message.includes('timeout after 3 minutes')) {
+    return 'test-timeout';
+  }
+  
+  // Network errors
+  if (message.includes('econnrefused') || message.includes('econnreset') || message.includes('etimedout')) {
+    return 'network';
+  }
+  
+  // Unknown/Other
+  return 'other';
+}
+
 function logError(error, nodeName, step = 'unknown', remoteNodeName = null, kaNumber = null) {
   console.log(`\n❌ Error on ${nodeName} during ${step}`);
-  console.log(`🔺 Type: ${error.name}`);
-  console.log(`🧵 Message: ${error.message}`);
+  console.log(`Type: ${error.name}`);
+  console.log(`Message: ${error.message}`);
   if (error.stack) {
     const stackLines = error.stack.split('\n').filter(line => !line.includes('node_modules'));
     const lastRelevant = stackLines[1] || stackLines[0];
-    if (lastRelevant) console.log(`📍 Location: ${lastRelevant.trim()}`);
+    if (lastRelevant) console.log(`Location: ${lastRelevant.trim()}`);
   }
 
   if (!errorStats[nodeName]) errorStats[nodeName] = {};
@@ -147,6 +214,9 @@ function logError(error, nodeName, step = 'unknown', remoteNodeName = null, kaNu
       cleanErrorMessage = `Returned error: ${errorType}`;
     }
   }
+  
+  // Categorize error by service using stack trace
+  const service = categorizeErrorService(error);
   
   // Create aggregated key (without KA number for counting) - use clean message
   let aggregatedKey = `${step} — ${error.name}: ${cleanErrorMessage}`;
@@ -169,12 +239,14 @@ function logError(error, nodeName, step = 'unknown', remoteNodeName = null, kaNu
     detailedKey += ` for KA #${kaNumber}`;
   }
 
-  // Store both aggregated and detailed versions
+  // Store both aggregated and detailed versions with service info
   if (!errorStats[nodeName].aggregated) errorStats[nodeName].aggregated = {};
   if (!errorStats[nodeName].detailed) errorStats[nodeName].detailed = {};
+  if (!errorStats[nodeName].services) errorStats[nodeName].services = {};
   
   errorStats[nodeName].aggregated[aggregatedKey] = (errorStats[nodeName].aggregated[aggregatedKey] || 0) + 1;
   errorStats[nodeName].detailed[detailedKey] = (errorStats[nodeName].detailed[detailedKey] || 0) + 1;
+  errorStats[nodeName].services[aggregatedKey] = service; // Store service for this error
 }
 
 describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
@@ -187,7 +259,7 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
       ? nodes.filter((node) => node.name === NODE_TO_TEST)
       : nodes;
 
-    console.log(`\n🚀 Running test for node: ${nodesToRun.map((n) => n.name).join(', ')}`);
+    console.log(`\nRunning test for node: ${nodesToRun.map((n) => n.name).join(', ')}`);
 
     for (let currentIndex = 0; currentIndex < nodesToRun.length; currentIndex++) {
       const { name, hostname } = nodesToRun[currentIndex];
@@ -224,7 +296,7 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
       });
 
       for (let i = 0; i < 10; i++) {
-        console.log(`\n📡 Publishing KA #${i + 1} on ${name}`);
+        console.log(`\nPublishing KA #${i + 1} on ${name}`);
         const content = {
           public: {
             '@context': 'https://www.schema.org',
@@ -260,10 +332,11 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
               assert.ok(create_result.operation.finality);
               assert.strictEqual(create_result.operation.finality.status, 'FINALIZED');
 
-              ual = create_result.UAL;
-              assert.ok(ual);
-              console.log(`✅ Published KA #${i + 1} with UAL: ${ual}`);
-              publishSuccess++;
+          ual = create_result.UAL;
+          const operationId = create_result.operationId || create_result.operation?.operationId || 'N/A';
+          assert.ok(ual);
+          console.log(`✅ Published KA #${i + 1} | UAL: ${ual} | Operation ID: ${operationId}`);
+          publishSuccess++;
 
             })(),
             new Promise((_, reject) =>
@@ -272,11 +345,34 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
           ]);
         } catch (error) {
           logError(error, stepNodeName, step, null, i + 1);
-          const reason = 'Publish failed — No UAL';
+          
+          // Try to extract operation ID and UAL from error/partial result
+          let operationId = 'N/A';
+          let actualUal = null;
+          
+          // Check if error object has operation info
+          if (error.operationId) {
+            operationId = error.operationId;
+          } else if (error.operation?.operationId) {
+            operationId = error.operation.operationId;
+          }
+          
+          // Check if UAL was generated before failure
+          if (error.UAL) {
+            actualUal = error.UAL;
+          }
+          
+          if (actualUal) {
+            console.log(`❌ Publish failed but got UAL: ${actualUal} | Operation ID: ${operationId}`);
+            ual = actualUal;
+          } else {
+            console.log(`❌ Publish failed | No UAL | Operation ID: ${operationId}`);
+            ual = 'did:dkg:gnosis:10200/0x592aae7abeed0ecf399c2628b3d18f769c544383/57402';
+          }
+          
+          const reason = actualUal ? 'Publish failed but UAL exists' : 'Publish failed — No UAL';
           failedAssets.push(`KA #${i + 1} (${reason})`);
           publishFail++;
-          ual = 'did:dkg:gnosis:10200/0x592aae7abeed0ecf399c2628b3d18f769c544383/57402';
-          console.log(`⚠️ Using fallback UAL: ${ual}`);
         }
 
         // Continue with query, local get, and remote get regardless of publish status
@@ -430,31 +526,33 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
   });
 
   after(() => {
-    console.log(`\n\n📊 Global Publish Summary:`);
+    console.log(`\n\nGlobal Publish Summary:`);
     Object.entries(globalStats).forEach(([blockchain, nodeStats]) => {
       console.log(`\n🔗 Blockchain: ${blockchain}`);
       Object.entries(nodeStats).forEach(([nodeName, stats]) => {
         console.log(`  • ${nodeName}:`);
-        console.log(`    🔸 Publish: ✅ ${stats.publishSuccess} / ❌ ${stats.publishFail} -> ${safeRate(stats.publishSuccess, stats.publishFail)}%`);
-        console.log(`    🔸 Query:   ✅ ${stats.querySuccess} / ❌ ${stats.queryFail} -> ${safeRate(stats.querySuccess, stats.queryFail)}%`);
-        console.log(`    🔸 Local Get: ✅ ${stats.localGetSuccess} / ❌ ${stats.localGetFail} -> ${safeRate(stats.localGetSuccess, stats.localGetFail)}%`);
-        console.log(`    🔸 Get: ✅ ${stats.remoteGetSuccess} / ❌ ${stats.remoteGetFail} -> ${safeRate(stats.remoteGetSuccess, stats.remoteGetFail)}%`);
-        console.log(`    ⏱️ Avg Publish Time: ${formatDuration(stats.avgPublishMs)}`);
-        console.log(`    ⏱️ Avg Query Time: ${formatDuration(stats.avgQueryMs)}`);
-        console.log(`    ⏱️ Avg Local Get Time: ${formatDuration(stats.avgLocalGetMs)}`);
-        console.log(`    ⏱️ Avg Get Time: ${formatDuration(stats.avgRemoteGetMs)}`);
+        console.log(`    Publish: ✅ ${stats.publishSuccess} / ❌ ${stats.publishFail} -> ${safeRate(stats.publishSuccess, stats.publishFail)}%`);
+        console.log(`    Query:   ✅ ${stats.querySuccess} / ❌ ${stats.queryFail} -> ${safeRate(stats.querySuccess, stats.queryFail)}%`);
+        console.log(`    Local Get: ✅ ${stats.localGetSuccess} / ❌ ${stats.localGetFail} -> ${safeRate(stats.localGetSuccess, stats.localGetFail)}%`);
+        console.log(`    Get: ✅ ${stats.remoteGetSuccess} / ❌ ${stats.remoteGetFail} -> ${safeRate(stats.remoteGetSuccess, stats.remoteGetFail)}%`);
+        console.log(`    Avg Publish Time: ${formatDuration(stats.avgPublishMs)}`);
+        console.log(`    Avg Query Time: ${formatDuration(stats.avgQueryMs)}`);
+        console.log(`    Avg Local Get Time: ${formatDuration(stats.avgLocalGetMs)}`);
+        console.log(`    Avg Get Time: ${formatDuration(stats.avgRemoteGetMs)}`);
       });
     });
 
-    console.log(`\n\n📊 Error Breakdown by Node:`);
+    console.log(`\n\nError Breakdown by Node:`);
     Object.entries(errorStats).forEach(([nodeName, errors]) => {
-      console.log(`\n🔧 ${nodeName}`);
+      console.log(`\n${nodeName}`);
       
       // Handle both new format (aggregated section) and old format (direct errors)
       if (errors.aggregated && Object.keys(errors.aggregated).length > 0) {
-        // New format - use aggregated section
+        // New format - use aggregated section with service info
         Object.entries(errors.aggregated).forEach(([message, count]) => {
-          console.log(`  • ${count}x ${message}`);
+          const service = errors.services && errors.services[message] ? errors.services[message] : '';
+          const serviceLabel = service ? ` [${service}]` : '';
+          console.log(`  • ${count}x ${message}${serviceLabel}`);
         });
       } else if (errors.detailed && Object.keys(errors.detailed).length > 0) {
         // New format but only detailed available - aggregate the detailed errors
