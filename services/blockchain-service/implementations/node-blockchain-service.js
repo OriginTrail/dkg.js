@@ -101,6 +101,11 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
                     receipt = await this.waitForTransactionFinalization(receipt, blockchain);
                 }
             } catch (error) {
+                // Log error data hex if available (for decoding revert reasons)
+                if (error.data && typeof error.data === 'string' && error.data.startsWith('0x')) {
+                    console.log(`Error Data (hex): ${error.data}`);
+                }
+
                 if (
                     simulationSucceeded &&
                     !transactionRetried &&
