@@ -312,7 +312,7 @@ describe('DKG Asset Lifecycle on Neuroweb Mainnet', function () {
 
               create_result = await DkgClient.asset.create(content, {
                 epochsNum: 2,
-                minimumNumberOfFinalizationConfirmations: 0, // Skip finality, verify with GET instead
+                minimumNumberOfFinalizationConfirmations: 1,
                 minimumNumberOfNodeReplications: 1,
               });
 
@@ -322,7 +322,8 @@ describe('DKG Asset Lifecycle on Neuroweb Mainnet', function () {
               assert.ok(create_result);
               assert.ok(create_result.operation);
               assert.strictEqual(create_result.operation.publish.status, 'COMPLETED');
-              // Skip finality assertions - we'll verify with GET instead
+              assert.ok(create_result.operation.finality);
+              assert.strictEqual(create_result.operation.finality.status, 'FINALIZED');
 
               ual = create_result.UAL;
               // Try multiple paths for operation ID
