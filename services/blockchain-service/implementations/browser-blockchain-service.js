@@ -71,11 +71,6 @@ export default class BrowserBlockchainService extends BlockchainServiceBase {
             }
             return receipt;
         } catch (error) {
-            // Log error data hex if available (for decoding revert reasons)
-            if (error.data && typeof error.data === 'string' && error.data.startsWith('0x')) {
-                console.log(`Error Data (hex): ${error.data}`);
-            }
-
             if (/revert|VM Exception/i.test(error.message)) {
                 let status;
                 try {
