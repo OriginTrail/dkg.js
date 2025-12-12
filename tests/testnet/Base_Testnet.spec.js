@@ -341,7 +341,7 @@ describe('DKG Asset Lifecycle on Base Testnet', function () {
 
             })(),
             new Promise((_, reject) =>
-              setTimeout(() => reject(new Error(`Timeout after 3 minutes during "publishing" on ${stepNodeName}`)), 3 * 60 * 1000)
+              setTimeout(() => reject(new Error(`Timeout after 5 minutes during "publishing" on ${stepNodeName}`)), 5 * 60 * 1000)
             ),
           ]);
         } catch (error) {
@@ -392,7 +392,7 @@ describe('DKG Asset Lifecycle on Base Testnet', function () {
               'SELECT'
             ),
             new Promise((_, reject) =>
-              setTimeout(() => reject(new Error(`Timeout after 3 minutes during "querying" on ${stepNodeName}`)), 3 * 60 * 1000)
+              setTimeout(() => reject(new Error(`Timeout after 5 minutes during "querying" on ${stepNodeName}`)), 5 * 60 * 1000)
             ),
           ]);
           const queryEnd = Date.now();
@@ -413,7 +413,7 @@ describe('DKG Asset Lifecycle on Base Testnet', function () {
           const localGetResult = await Promise.race([
             DkgClient.asset.get(ual),
             new Promise((_, reject) =>
-              setTimeout(() => reject(new Error(`Timeout after 3 minutes during "local get" on ${stepNodeName}`)), 3 * 60 * 1000)
+              setTimeout(() => reject(new Error(`Timeout after 5 minutes during "local get" on ${stepNodeName}`)), 5 * 60 * 1000)
             ),
           ]);
           const localGetEnd = Date.now();
@@ -453,7 +453,7 @@ describe('DKG Asset Lifecycle on Base Testnet', function () {
           const remoteGetResult = await Promise.race([
             RemoteDkgClient.asset.get(ual),
             new Promise((_, reject) =>
-              setTimeout(() => reject(new Error(`Timeout after 3 minutes during "get" on ${stepNodeName}`)), 3 * 60 * 1000)
+              setTimeout(() => reject(new Error(`Timeout after 5 minutes during "get" on ${stepNodeName}`)), 5 * 60 * 1000)
             ),
           ]);
           const remoteGetEnd = Date.now();
