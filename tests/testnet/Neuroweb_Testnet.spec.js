@@ -346,7 +346,7 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
               create_result = await DkgClient.asset.create(content, {
                 epochsNum: 2,
                 minimumNumberOfFinalizationConfirmations: 0, // Skip finality, verify with GET instead
-                minimumNumberOfNodeReplications: 3,
+                minimumNumberOfNodeReplications: 1,
               });
 
               const publishEnd = Date.now();
