@@ -187,8 +187,10 @@ export default class BlockchainServiceBase {
 
         let gasPrice;
         if (blockchain.previousTxGasPrice && blockchain.retryTx) {
-            // Increase previous tx gas price by 20%
-            gasPrice = Math.round(blockchain.previousTxGasPrice * 1.2);
+            // For retry transactions, double the gas price to guarantee replacement
+            // 2.0x multiplier ensures it works on all EVM chains while keeping Neuroweb costs low
+            // (0.00016 Gwei × 2 = 0.00032 Gwei - still very cheap!)
+            gasPrice = Math.round(blockchain.previousTxGasPrice * 2.0);
         } else if (blockchain.forceReplaceTxs) {
             // Get the current transaction count (nonce) of the wallet, including pending transactions
             const currentNonce = await web3Instance.eth.getTransactionCount(publicKey, 'pending');
@@ -208,13 +210,12 @@ export default class BlockchainServiceBase {
                 );
 
                 if (pendingTx) {
-                    // If found, increase gas price of pending tx by 20%
-                    gasPrice = Math.round(Number(pendingTx.gasPrice) * 1.2);
+                    // For replacement transactions, double the gas price
+                    gasPrice = Math.round(Number(pendingTx.gasPrice) * 2.0);
                 } else {
-                    // If not found, use default/network gas price increased by 20%
-                    // Theoretically this should never happen
+                    // If not found, double the network gas price for safety
                     gasPrice = Math.round(
-                        (blockchain.gasPrice || (await this.getNetworkGasPrice(blockchain))) * 1.2,
+                        (blockchain.gasPrice || (await this.getNetworkGasPrice(blockchain))) * 2.0,
                     );
                 }
             } else {
