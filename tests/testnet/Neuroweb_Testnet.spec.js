@@ -238,36 +238,28 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
         let stepNodeName = name;
 
         try {
-          await Promise.race([
-            (async () => {
-              // Measure publish time:
-              const publishStart = Date.now();
+          // Measure publish time:
+          const publishStart = Date.now();
 
-              const create_result = await DkgClient.asset.create(content, {
-                epochsNum: 2,
-                minimumNumberOfFinalizationConfirmations: 1,
-                minimumNumberOfNodeReplications: 3,
-              });
+          const create_result = await DkgClient.asset.create(content, {
+            epochsNum: 2,
+            minimumNumberOfFinalizationConfirmations: 1,
+            minimumNumberOfNodeReplications: 3,
+          });
 
-              const publishEnd = Date.now();
-              publishDurations.push(publishEnd - publishStart);
+          const publishEnd = Date.now();
+          publishDurations.push(publishEnd - publishStart);
 
-              assert.ok(create_result);
-              assert.ok(create_result.operation);
-              assert.strictEqual(create_result.operation.publish.status, 'COMPLETED');
-              assert.ok(create_result.operation.finality);
-              assert.strictEqual(create_result.operation.finality.status, 'FINALIZED');
+          assert.ok(create_result);
+          assert.ok(create_result.operation);
+          assert.strictEqual(create_result.operation.publish.status, 'COMPLETED');
+          assert.ok(create_result.operation.finality);
+          assert.strictEqual(create_result.operation.finality.status, 'FINALIZED');
 
-              ual = create_result.UAL;
-              assert.ok(ual);
-              console.log(`✅ Published KA #${i + 1} with UAL: ${ual}`);
-              publishSuccess++;
-
-            })(),
-            new Promise((_, reject) =>
-              setTimeout(() => reject(new Error(`Timeout after 3 minutes during "publishing" on ${stepNodeName}`)), 3 * 60 * 1000)
-            ),
-          ]);
+          ual = create_result.UAL;
+          assert.ok(ual);
+          console.log(`✅ Published KA #${i + 1} with UAL: ${ual}`);
+          publishSuccess++;
         } catch (error) {
           logError(error, stepNodeName, step, null, i + 1);
           const reason = 'Publish failed — No UAL';
@@ -281,19 +273,14 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
         try {
           step = 'querying';
           const queryStart = Date.now();
-          const queryResult = await Promise.race([
-            DkgClient.graph.query(
-              `PREFIX schema: <http://schema.org/>
-               SELECT ?s ?name ?description
-               WHERE {
-                 ?s schema:name ?name ; schema:description ?description .
-               }`,
-              'SELECT'
-            ),
-            new Promise((_, reject) =>
-              setTimeout(() => reject(new Error(`Timeout after 3 minutes during "querying" on ${stepNodeName}`)), 3 * 60 * 1000)
-            ),
-          ]);
+          const queryResult = await DkgClient.graph.query(
+            `PREFIX schema: <http://schema.org/>
+             SELECT ?s ?name ?description
+             WHERE {
+               ?s schema:name ?name ; schema:description ?description .
+             }`,
+            'SELECT'
+          );
           const queryEnd = Date.now();
           queryDurations.push(queryEnd - queryStart);
           assert.ok(queryResult?.data?.length > 0);
@@ -309,12 +296,7 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
         try {
           step = 'local get';
           const localGetStart = Date.now();
-          const localGetResult = await Promise.race([
-            DkgClient.asset.get(ual),
-            new Promise((_, reject) =>
-              setTimeout(() => reject(new Error(`Timeout after 3 minutes during "local get" on ${stepNodeName}`)), 3 * 60 * 1000)
-            ),
-          ]);
+          const localGetResult = await DkgClient.asset.get(ual);
           const localGetEnd = Date.now();
           localGetDurations.push(localGetEnd - localGetStart);
           assert.ok(localGetResult?.assertion);
@@ -349,12 +331,7 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
             nodeApiVersion: '/v1',
           });
           const remoteGetStart = Date.now();
-          const remoteGetResult = await Promise.race([
-            RemoteDkgClient.asset.get(ual),
-            new Promise((_, reject) =>
-              setTimeout(() => reject(new Error(`Timeout after 3 minutes during "get" on ${stepNodeName}`)), 3 * 60 * 1000)
-            ),
-          ]);
+          const remoteGetResult = await RemoteDkgClient.asset.get(ual);
           const remoteGetEnd = Date.now();
           remoteGetDurations.push(remoteGetEnd - remoteGetStart);
           assert.ok(remoteGetResult?.assertion);
