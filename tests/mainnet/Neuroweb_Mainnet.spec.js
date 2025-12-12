@@ -160,6 +160,12 @@ function logError(error, nodeName, step = 'unknown', remoteNodeName = null, kaNu
   console.log(`\n❌ Error on ${nodeName} during ${step}`);
   console.log(`Type: ${error.name}`);
   console.log(`Message: ${error.message}`);
+  
+  // Log error data hex if available (for decoding revert reasons)
+  if (error.data && typeof error.data === 'string' && error.data.startsWith('0x')) {
+    console.log(`Error Data (hex): ${error.data}`);
+  }
+  
   if (error.stack) {
     const stackLines = error.stack.split('\n').filter(line => !line.includes('node_modules'));
     const lastRelevant = stackLines[1] || stackLines[0];
@@ -181,8 +187,14 @@ function logError(error, nodeName, step = 'unknown', remoteNodeName = null, kaNu
     }
   }
   
+  // Append error data hex to message if available (for aggregation)
+  let errorDataSuffix = '';
+  if (error.data && typeof error.data === 'string' && error.data.startsWith('0x')) {
+    errorDataSuffix = ` | Error Data: ${error.data}`;
+  }
+  
   // Create aggregated key (without KA number for counting) - use clean message
-  let aggregatedKey = `${step} — ${error.name}: ${cleanErrorMessage}`;
+  let aggregatedKey = `${step} — ${error.name}: ${cleanErrorMessage}${errorDataSuffix}`;
   if (remoteNodeName) {
     // Only add remote node name if it's not already in the error message
     if (!error.message.includes(`on ${remoteNodeName}`)) {
