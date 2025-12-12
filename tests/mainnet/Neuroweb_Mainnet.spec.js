@@ -159,7 +159,16 @@ function categorizeErrorService(error) {
 function logError(error, nodeName, step = 'unknown', remoteNodeName = null, kaNumber = null) {
   console.log(`\n❌ Error on ${nodeName} during ${step}`);
   console.log(`Type: ${error.name}`);
-  console.log(`Message: ${error.message}`);
+  
+  // Clean up message for revert errors (remove ugly transaction receipt JSON)
+  let cleanMessage = error.message;
+  if (error.data && typeof error.data === 'string' && error.data.startsWith('0x')) {
+    // For revert errors with data, just show a clean message
+    if (cleanMessage.includes('Transaction has been reverted') || cleanMessage.includes('VM Exception')) {
+      cleanMessage = cleanMessage.split('\n')[0]; // Only first line
+    }
+  }
+  console.log(`Message: ${cleanMessage}`);
   
   // Log error data hex if available (for decoding revert reasons)
   if (error.data && typeof error.data === 'string' && error.data.startsWith('0x')) {
