@@ -123,8 +123,9 @@ export async function checkNeurowebHealth(checkDuration = 12000, minBlocksExpect
         };
     }
 
-    if (avgBlockTime > 12) {
-        console.log(`⚠️  Network is SLOW! Average block time: ${avgBlockTime.toFixed(1)}s (expected ~6s)`);
+    // More lenient: Accept up to 15s average (2.5x target), as long as blocks are being produced consistently
+    if (avgBlockTime > 15) {
+        console.log(`⚠️  Network is TOO SLOW! Average block time: ${avgBlockTime.toFixed(1)}s (expected ~6s)`);
         return {
             healthy: false,
             reason: `Network too slow - ${avgBlockTime.toFixed(1)}s per block`,
@@ -132,6 +133,56 @@ export async function checkNeurowebHealth(checkDuration = 12000, minBlocksExpect
             avgBlockTime,
             skipTests: true,
         };
+    }
+
+    // Additional check: Get timestamps of first and last block to check for stalls
+    // If the last block took significantly longer than average, we might be entering a stall
+    if (blocksProduced >= 2) {
+        const firstBlockRes = await checkRPC(
+            hostname,
+            path,
+            'eth_getBlockByNumber',
+            [`0x${initialBlock.toString(16)}`, false],
+        );
+        const lastBlockRes = await checkRPC(
+            hostname,
+            path,
+            'eth_getBlockByNumber',
+            [`0x${finalBlock.toString(16)}`, false],
+        );
+
+        if (firstBlockRes.success && lastBlockRes.success && firstBlockRes.data?.result && lastBlockRes.data?.result) {
+            const firstBlockTime = parseInt(firstBlockRes.data.result.timestamp, 16);
+            const lastBlockTime = parseInt(lastBlockRes.data.result.timestamp, 16);
+            
+            // Get second-to-last block to calculate most recent block interval
+            const secondLastBlockRes = await checkRPC(
+                hostname,
+                path,
+                'eth_getBlockByNumber',
+                [`0x${(finalBlock - 1).toString(16)}`, false],
+            );
+            
+            if (secondLastBlockRes.success && secondLastBlockRes.data?.result) {
+                const secondLastBlockTime = parseInt(secondLastBlockRes.data.result.timestamp, 16);
+                const lastBlockInterval = lastBlockTime - secondLastBlockTime;
+                
+                console.log(`🔍 Most recent block interval: ${lastBlockInterval}s`);
+                
+                // If the most recent block took > 18 seconds, network might be entering a stall
+                if (lastBlockInterval > 18) {
+                    console.log(`⚠️  Last block was slow (${lastBlockInterval}s) - possible stall beginning!`);
+                    return {
+                        healthy: false,
+                        reason: `Last block took ${lastBlockInterval}s - possible stall`,
+                        blocksProduced,
+                        avgBlockTime,
+                        lastBlockInterval,
+                        skipTests: true,
+                    };
+                }
+            }
+        }
     }
 
     console.log(`✅ Network is HEALTHY! Block production is normal.`);
