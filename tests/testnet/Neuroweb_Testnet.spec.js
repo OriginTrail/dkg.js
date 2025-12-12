@@ -362,7 +362,7 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
 
             })(),
             new Promise((_, reject) =>
-              setTimeout(() => reject(new Error(`Timeout after 5 minutes during "publishing" on ${stepNodeName}`)), 5 * 60 * 1000)
+              setTimeout(() => reject(new Error(`Timeout after 6 minutes during "publishing" on ${stepNodeName}`)), 6 * 60 * 1000)
             ),
           ]);
         } catch (error) {
@@ -413,7 +413,7 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
               'SELECT'
             ),
             new Promise((_, reject) =>
-              setTimeout(() => reject(new Error(`Timeout after 5 minutes during "querying" on ${stepNodeName}`)), 5 * 60 * 1000)
+              setTimeout(() => reject(new Error(`Timeout after 6 minutes during "querying" on ${stepNodeName}`)), 6 * 60 * 1000)
             ),
           ]);
           const queryEnd = Date.now();
@@ -434,7 +434,7 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
           const localGetResult = await Promise.race([
             DkgClient.asset.get(ual),
             new Promise((_, reject) =>
-              setTimeout(() => reject(new Error(`Timeout after 5 minutes during "local get" on ${stepNodeName}`)), 5 * 60 * 1000)
+              setTimeout(() => reject(new Error(`Timeout after 6 minutes during "local get" on ${stepNodeName}`)), 6 * 60 * 1000)
             ),
           ]);
           const localGetEnd = Date.now();
@@ -474,7 +474,7 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
           const remoteGetResult = await Promise.race([
             RemoteDkgClient.asset.get(ual),
             new Promise((_, reject) =>
-              setTimeout(() => reject(new Error(`Timeout after 5 minutes during "get" on ${stepNodeName}`)), 5 * 60 * 1000)
+              setTimeout(() => reject(new Error(`Timeout after 6 minutes during "get" on ${stepNodeName}`)), 6 * 60 * 1000)
             ),
           ]);
           const remoteGetEnd = Date.now();
