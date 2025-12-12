@@ -223,7 +223,7 @@ export const DEFAULT_PARAMETERS = {
 
 export const DEFAULT_GAS_PRICE = {
     GNOSIS: '1.5',
-    OTP: '1.0', // Increased from 0.001 to prevent "underprice" errors
+    OTP: '0.001', // Neuroweb's actual gas price is much lower (~0.00016 Gwei)
     BASE: '0.086',
 };
 

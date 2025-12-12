@@ -186,16 +186,9 @@ export default class BlockchainServiceBase {
         gasLimit = Math.round(gasLimit * blockchain.gasLimitMultiplier);
 
         let gasPrice;
-        // Get minimum safe gas price for this network
-        const minimumGasPrice = await this.getGasPrice(blockchain);
-        
         if (blockchain.previousTxGasPrice && blockchain.retryTx) {
             // Increase previous tx gas price by 20%
-            const calculatedGasPrice = Math.round(blockchain.previousTxGasPrice * 1.2);
-            // Enforce minimum gas price
-            gasPrice = BigInt(calculatedGasPrice) > BigInt(minimumGasPrice) 
-                ? calculatedGasPrice 
-                : minimumGasPrice;
+            gasPrice = Math.round(blockchain.previousTxGasPrice * 1.2);
         } else if (blockchain.forceReplaceTxs) {
             // Get the current transaction count (nonce) of the wallet, including pending transactions
             const currentNonce = await web3Instance.eth.getTransactionCount(publicKey, 'pending');
@@ -216,27 +209,19 @@ export default class BlockchainServiceBase {
 
                 if (pendingTx) {
                     // If found, increase gas price of pending tx by 20%
-                    const calculatedGasPrice = Math.round(Number(pendingTx.gasPrice) * 1.2);
-                    // Enforce minimum gas price
-                    gasPrice = BigInt(calculatedGasPrice) > BigInt(minimumGasPrice) 
-                        ? calculatedGasPrice 
-                        : minimumGasPrice;
+                    gasPrice = Math.round(Number(pendingTx.gasPrice) * 1.2);
                 } else {
                     // If not found, use default/network gas price increased by 20%
                     // Theoretically this should never happen
-                    const calculatedGasPrice = Math.round(
-                        (blockchain.gasPrice || minimumGasPrice) * 1.2,
+                    gasPrice = Math.round(
+                        (blockchain.gasPrice || (await this.getNetworkGasPrice(blockchain))) * 1.2,
                     );
-                    // Enforce minimum gas price
-                    gasPrice = BigInt(calculatedGasPrice) > BigInt(minimumGasPrice) 
-                        ? calculatedGasPrice 
-                        : minimumGasPrice;
                 }
             } else {
-                gasPrice = blockchain.gasPrice || minimumGasPrice;
+                gasPrice = blockchain.gasPrice || (await this.getNetworkGasPrice(blockchain));
             }
         } else {
-            gasPrice = blockchain.gasPrice || minimumGasPrice;
+            gasPrice = blockchain.gasPrice || (await this.getNetworkGasPrice(blockchain));
         }
 
         if (blockchain.simulateTxs) {

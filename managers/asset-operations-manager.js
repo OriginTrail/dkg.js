@@ -6,6 +6,7 @@ import {
     resolveUAL,
     toNQuads,
     toJSONLD,
+    sleepForMilliseconds,
 } from '../services/utilities.js';
 import {
     OPERATIONS,
@@ -480,6 +481,13 @@ export default class AssetOperationsManager {
         }
 
         const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, knowledgeCollectionId);
+
+        // For OTP chains, add a brief delay to allow the node to update its finality counter
+        // This is needed because OTP chains wait for blockchain finality before constructing the UAL,
+        // and the node needs time to process the finalized transaction
+        if (blockchain.name && blockchain.name.startsWith('otp')) {
+            await sleepForMilliseconds(5000); // 5 second delay for Neuroweb
+        }
 
         let finalityStatusResult = 0;
         if (minimumNumberOfFinalizationConfirmations > 0) {
