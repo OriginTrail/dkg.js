@@ -7,6 +7,7 @@ import { BLOCKCHAIN_IDS } from '../../constants/constants.js';
 import 'dotenv/config';
 import { randomUUID } from 'crypto';
 import fs from 'fs';
+import { waitForHealthyNetwork } from '../utilities/network-health-check.js';
 
 const OT_NODE_PORT = '8900';
 
@@ -176,7 +177,7 @@ function logError(error, nodeName, step = 'unknown', remoteNodeName = null, kaNu
 }
 
 describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
-  this.timeout(130 * 60 * 1000);
+  this.timeout(200 * 60 * 1000); // 200 minutes to accommodate network waiting periods
 
   it('should sequentially test selected node(s)', async () => {
     const NODE_TO_TEST = process.env.NODE_TO_TEST;
@@ -223,6 +224,10 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
 
       for (let i = 0; i < 10; i++) {
         console.log(`\n📡 Publishing KA #${i + 1} on ${name}`);
+        
+        // Wait for network to be healthy before publishing
+        await waitForHealthyNetwork(5); // Wait up to 5 minutes for network to be healthy
+        
         const content = {
           public: {
             '@context': 'https://www.schema.org',
