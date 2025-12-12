@@ -276,6 +276,7 @@ describe('DKG Asset Lifecycle on Neuroweb Mainnet', function () {
         let ual = null;
         let step = 'publishing';
         let stepNodeName = name;
+        let create_result = null; // Store result to access even on timeout
 
         try {
           await Promise.race([
@@ -283,7 +284,7 @@ describe('DKG Asset Lifecycle on Neuroweb Mainnet', function () {
               // Measure publish time:
               const publishStart = Date.now();
 
-              const create_result = await DkgClient.asset.create(content, {
+              create_result = await DkgClient.asset.create(content, {
                 epochsNum: 2,
                 minimumNumberOfFinalizationConfirmations: 1,
                 minimumNumberOfNodeReplications: 1,
@@ -298,11 +299,12 @@ describe('DKG Asset Lifecycle on Neuroweb Mainnet', function () {
               assert.ok(create_result.operation.finality);
               assert.strictEqual(create_result.operation.finality.status, 'FINALIZED');
 
-          ual = create_result.UAL;
-          const operationId = create_result.operationId || create_result.operation?.operationId || 'N/A';
-          assert.ok(ual);
-          console.log(`✅ Published KA #${i + 1} | UAL: ${ual} | Operation ID: ${operationId}`);
-          publishSuccess++;
+              ual = create_result.UAL;
+              // Try multiple paths for operation ID
+              const operationId = create_result.operation?.operationId || create_result.operationId || (create_result.operation?.publish?.operationId) || 'N/A';
+              assert.ok(ual);
+              console.log(`✅ Published KA #${i + 1} | UAL: ${ual} | Operation ID: ${operationId}`);
+              publishSuccess++;
 
             })(),
             new Promise((_, reject) =>
@@ -312,20 +314,22 @@ describe('DKG Asset Lifecycle on Neuroweb Mainnet', function () {
         } catch (error) {
           logError(error, stepNodeName, step, null, i + 1);
           
-          // Try to extract operation ID and UAL from error/partial result
+          // Try to extract operation ID and UAL from partial result (if available) or error
           let operationId = 'N/A';
           let actualUal = null;
           
-          // Check if error object has operation info
-          if (error.operationId) {
-            operationId = error.operationId;
-          } else if (error.operation?.operationId) {
-            operationId = error.operation.operationId;
+          // If create_result exists (operation started but timed out), extract from it
+          if (create_result) {
+            actualUal = create_result.UAL || null;
+            operationId = create_result.operation?.operationId || create_result.operationId || (create_result.operation?.publish?.operationId) || 'N/A';
           }
           
-          // Check if UAL was generated before failure
-          if (error.UAL) {
+          // Fallback: check if error object has operation info
+          if (!actualUal && error.UAL) {
             actualUal = error.UAL;
+          }
+          if (operationId === 'N/A' && (error.operationId || error.operation?.operationId)) {
+            operationId = error.operationId || error.operation?.operationId;
           }
           
           if (actualUal) {

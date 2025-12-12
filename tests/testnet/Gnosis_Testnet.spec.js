@@ -308,6 +308,7 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
         };
 
         let ual = null;
+        let create_result = null; // Store result to access even on timeout
         let step = 'publishing';
         let stepNodeName = name;
 
@@ -317,7 +318,7 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
               // Measure publish time:
               const publishStart = Date.now();
 
-              const create_result = await DkgClient.asset.create(content, {
+              create_result = await DkgClient.asset.create(content, {
                 epochsNum: 2,
                 minimumNumberOfFinalizationConfirmations: 1,
                 minimumNumberOfNodeReplications: 3,
@@ -333,7 +334,7 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
               assert.strictEqual(create_result.operation.finality.status, 'FINALIZED');
 
           ual = create_result.UAL;
-          const operationId = create_result.operationId || create_result.operation?.operationId || 'N/A';
+          const operationId = create_result.operation?.operationId || create_result.operationId || (create_result.operation?.publish?.operationId) || 'N/A';
           assert.ok(ual);
           console.log(`✅ Published KA #${i + 1} | UAL: ${ual} | Operation ID: ${operationId}`);
           publishSuccess++;
@@ -350,16 +351,18 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
           let operationId = 'N/A';
           let actualUal = null;
           
-          // Check if error object has operation info
-          if (error.operationId) {
-            operationId = error.operationId;
-          } else if (error.operation?.operationId) {
-            operationId = error.operation.operationId;
+          // If create_result exists (operation started but timed out), extract from it
+          if (create_result) {
+            actualUal = create_result.UAL || null;
+            operationId = create_result.operation?.operationId || create_result.operationId || (create_result.operation?.publish?.operationId) || 'N/A';
           }
           
-          // Check if UAL was generated before failure
-          if (error.UAL) {
+          // Fallback: check if error object has operation info
+          if (!actualUal && error.UAL) {
             actualUal = error.UAL;
+          }
+          if (operationId === 'N/A' && (error.operationId || error.operation?.operationId)) {
+            operationId = error.operationId || error.operation?.operationId;
           }
           
           if (actualUal) {
