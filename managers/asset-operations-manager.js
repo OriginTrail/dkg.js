@@ -463,7 +463,7 @@ export default class AssetOperationsManager {
 
         const minimumBlockConfirmations = options.minimumBlockConfirmations ?? 1;
 
-        if (false && blockchain.name && blockchain.name.startsWith('otp') && minimumBlockConfirmations > 0) {
+        if (blockchain.name && blockchain.name.startsWith('otp') && minimumBlockConfirmations > 0) {
             const { receipt: finalizedMintReceipt, eventData } =
                 await this.blockchainService.waitForEventFinality(
                     mintKnowledgeCollectionReceipt,

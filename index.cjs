@@ -250,9 +250,9 @@ const DEFAULT_PROXIMITY_SCORE_FUNCTIONS_PAIR_IDS = {
 const DEFAULT_NEUROWEB_FINALITY_PARAMETERS = {
     WAIT_NEUROWEB_TX_FINALIZATION: false,
     TX_FINALITY_POLLING_INTERVAL: 6_000,
-    TX_FINALITY_MAX_WAIT_TIME: 300_000,
+    TX_FINALITY_MAX_WAIT_TIME: 60_000,
     TX_REMINING_POLLING_INTERVAL: 6_000,
-    TX_REMINING_MAX_WAIT_TIME: 300_000, 
+    TX_REMINING_MAX_WAIT_TIME: 60_000,
 };
 
 const DEFAULT_PARAMETERS = {
@@ -826,7 +826,21 @@ class AssetOperationsManager {
         // included in a block with the desired depth (default = 1).
         // ------------------------------------------------------------------
 
-        options.minimumBlockConfirmations ?? 1;
+        const minimumBlockConfirmations = options.minimumBlockConfirmations ?? 1;
+
+        if (blockchain.name && blockchain.name.startsWith('otp') && minimumBlockConfirmations > 0) {
+            const { receipt: finalizedMintReceipt, eventData } =
+                await this.blockchainService.waitForEventFinality(
+                    mintKnowledgeCollectionReceipt,
+                    'KnowledgeCollectionCreated',
+                    knowledgeCollectionId,
+                    blockchain,
+                    minimumBlockConfirmations,
+                );
+
+            mintKnowledgeCollectionReceipt = finalizedMintReceipt;
+            knowledgeCollectionId = parseInt(eventData.id, 10);
+        }
 
         const UAL = deriveUAL$1(blockchain.name, contentAssetStorageAddress, knowledgeCollectionId);
 
@@ -3215,8 +3229,6 @@ class HttpService {
     ) {
         let retries = 0;
         let finality = 0;
-        const startTime = Date.now();
-        const maxTotalTime = 300_000; // 5 minutes total timeout
 
         const axios_config = {
             method: 'get',
@@ -3226,16 +3238,9 @@ class HttpService {
         };
 
         do {
-            // Check for total timeout
-            if (Date.now() - startTime >= maxTotalTime) {
-                throw Error(
-                    `Timeout: DKG finality exceeded maximum wait time (5 minutes) - Last finality: ${finality}, Required: ${requiredConfirmations}`
-                );
-            }
-
             if (retries > maxNumberOfRetries) {
                 throw Error(
-                    `Unable to achieve required confirmations. Max number of retries (${maxNumberOfRetries}) reached. Last finality: ${finality}, Required: ${requiredConfirmations}`,
+                    `Unable to achieve required confirmations. Max number of retries (${maxNumberOfRetries}) reached.`,
                 );
             }
 
@@ -3249,10 +3254,7 @@ class HttpService {
                 const response = await axios(axios_config);
                 finality = response.data.finality || 0;
             } catch (e) {
-                // Don't reset finality to 0 on network errors, keep the last known value
-                // Only reset if we get a successful response with 0 finality
-                console.warn(`Warning: Network error during finality check for ${ual}: ${e.message}`);
-                // Don't increment finality, keep the last known value
+                finality = 0;
             }
         } while (finality < requiredConfirmations && retries <= maxNumberOfRetries);
 
@@ -3272,8 +3274,6 @@ class HttpService {
             status: OPERATION_STATUSES$1.PENDING,
         };
         let retries = 0;
-        const startTime = Date.now();
-        const maxTotalTime = 300_000; // 5 minutes total timeout
 
         const axios_config = {
             method: 'get',
@@ -3281,18 +3281,6 @@ class HttpService {
             headers: this.prepareRequestConfig(authToken),
         };
         do {
-            // Check for total timeout
-            if (Date.now() - startTime >= maxTotalTime) {
-                response.data = {
-                    ...response.data,
-                    data: {
-                        errorType: 'DKG_CLIENT_ERROR',
-                        errorMessage: `Timeout: OT-node operation polling exceeded maximum wait time (5 minutes) - Operation: ${operation}, ID: ${operationId}`,
-                    },
-                };
-                break;
-            }
-
             if (retries > maxNumberOfRetries) {
                 response.data = {
                     ...response.data,
@@ -3486,11 +3474,6 @@ class BlockchainServiceBase {
         try {
             return await contractInstance.methods[functionName](...args).call();
         } catch (error) {
-            // Log error data hex if available (for decoding revert reasons)
-            if (error.data && typeof error.data === 'string' && error.data.startsWith('0x')) {
-                console.log(`Error Data (hex): ${error.data}`);
-            }
-
             if (/revert|VM Exception/i.test(error.message)) {
                 let status;
                 try {
@@ -3663,28 +3646,13 @@ class BlockchainServiceBase {
         // Guaranteed to be defined for OTP chains
         const polling = blockchain.transactionFinalityPollingInterval;
         const reminingPollingInterval = blockchain.transactionReminingPollingInterval;
-        const maxWaitTime = blockchain.transactionFinalityMaxWaitTime || 60_000; // Default 60 seconds
 
         let receipt = initialReceipt;
-        const startTime = Date.now();
 
         // eslint-disable-next-line no-constant-condition
         while (true) {
-            // Check for timeout
-            if (Date.now() - startTime >= maxWaitTime) {
-                throw new Error(
-                    `Timeout: Blockchain finality exceeded maximum wait time (${maxWaitTime / 1000}s)`
-                );
-            }
-
             // 1. Wait until the block containing the tx is at the required depth
             while (await web3Instance.eth.getBlockNumber() < receipt.blockNumber + confirmations) {
-                // Check for timeout during block waiting
-                if (Date.now() - startTime >= maxWaitTime) {
-                    throw new Error(
-                        `Timeout: Blockchain finality exceeded maximum wait time (${maxWaitTime / 1000}s) - waiting for block confirmations`
-                    );
-                }
                 await sleepForMilliseconds(polling);
             }
 
@@ -3715,11 +3683,11 @@ class BlockchainServiceBase {
 
             // 3. Re-org detected: wait for tx to appear again
             const timeoutMs = 60 * 1000; // 1 minute
-            const reorgStartTime = Date.now();
+            const startTime = Date.now();
             let newReceipt = null;
             // eslint-disable-next-line no-await-in-loop
             while (!newReceipt) {
-                if (Date.now() - reorgStartTime >= timeoutMs) {
+                if (Date.now() - startTime >= timeoutMs) {
                     throw new Error(
                         `Timeout: Transaction receipt for ${receipt.transactionHash} not found after 1 minute of re-mining polling.`,
                     );
@@ -4880,11 +4848,6 @@ class BrowserBlockchainService extends BlockchainServiceBase {
             }
             return receipt;
         } catch (error) {
-            // Log error data hex if available (for decoding revert reasons)
-            if (error.data && typeof error.data === 'string' && error.data.startsWith('0x')) {
-                console.log(`Error Data (hex): ${error.data}`);
-            }
-
             if (/revert|VM Exception/i.test(error.message)) {
                 let status;
                 try {
@@ -5010,17 +4973,8 @@ class NodeBlockchainService extends BlockchainServiceBase {
         let previousTxGasPrice;
         let simulationSucceeded = false;
         let transactionRetried = false;
-        const startTime = Date.now();
-        const maxWaitTime = 300_000; // 5 minutes total timeout
 
         while (receipt === undefined) {
-            // Check for timeout
-            if (Date.now() - startTime >= maxWaitTime) {
-                throw new Error(
-                    `Timeout: Blockchain transaction receipt not received within maximum wait time (5 minutes)`
-                );
-            }
-
             try {
                 const tx = await this.prepareTransaction(
                     contractInstance,
@@ -5043,11 +4997,6 @@ class NodeBlockchainService extends BlockchainServiceBase {
                     receipt = await this.waitForTransactionFinalization(receipt, blockchain);
                 }
             } catch (error) {
-                // Log error data hex if available (for decoding revert reasons)
-                if (error.data && typeof error.data === 'string' && error.data.startsWith('0x')) {
-                    console.log(`Error Data (hex): ${error.data}`);
-                }
-
                 if (
                     simulationSucceeded &&
                     !transactionRetried &&
