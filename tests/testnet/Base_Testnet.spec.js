@@ -359,11 +359,11 @@ describe('DKG Asset Lifecycle on Base Testnet', function () {
               assert.ok(create_result.operation.finality);
               assert.strictEqual(create_result.operation.finality.status, 'FINALIZED');
 
-          ual = create_result.UAL;
+              ual = create_result.UAL;
           const operationId = create_result.operation?.operationId || create_result.operationId || (create_result.operation?.publish?.operationId) || 'N/A';
-          assert.ok(ual);
+              assert.ok(ual);
           console.log(`✅ Published KA #${i + 1} | UAL: ${ual} | Operation ID: ${operationId}`);
-          publishSuccess++;
+              publishSuccess++;
 
             })(),
             new Promise((_, reject) =>

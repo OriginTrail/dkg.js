@@ -179,11 +179,11 @@ export default class BlockchainServiceBase {
         const encodedABI = await contractInstance.methods[functionName](...args).encodeABI();
 
         let gasLimit = Number(
-            await contractInstance.methods[functionName](...args).estimateGas({
-                from: publicKey,
-            }),
-        );
-        gasLimit = Math.round(gasLimit * blockchain.gasLimitMultiplier);
+                await contractInstance.methods[functionName](...args).estimateGas({
+                    from: publicKey,
+                }),
+            );
+            gasLimit = Math.round(gasLimit * blockchain.gasLimitMultiplier);
 
         let gasPrice;
         if (blockchain.previousTxGasPrice && blockchain.retryTx) {
@@ -225,13 +225,13 @@ export default class BlockchainServiceBase {
         }
 
         if (blockchain.simulateTxs) {
-            await web3Instance.eth.call({
-                to: contractInstance.options.address,
-                data: encodedABI,
-                from: publicKey,
-                gasPrice,
-                gas: gasLimit,
-            });
+                await web3Instance.eth.call({
+                    to: contractInstance.options.address,
+                    data: encodedABI,
+                    from: publicKey,
+                    gasPrice,
+                    gas: gasLimit,
+                });
         }
 
         return {

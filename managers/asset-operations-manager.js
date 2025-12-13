@@ -433,29 +433,29 @@ export default class AssetOperationsManager {
         let mintKnowledgeCollectionReceipt;
 
         try {
-            ({ knowledgeCollectionId, receipt: mintKnowledgeCollectionReceipt } =
-                await this.blockchainService.createKnowledgeCollection(
-                    {
-                        publishOperationId,
-                        merkleRoot: datasetRoot,
-                        knowledgeAssetsAmount: kcTools.countDistinctSubjects(dataset.public),
-                        byteSize: datasetSize,
-                        epochs: epochsNum,
-                        tokenAmount: estimatedPublishingCost.toString(),
-                        isImmutable: immutable,
-                        paymaster: payer,
-                        publisherNodeIdentityId,
-                        publisherNodeR,
-                        publisherNodeVS,
-                        identityIds,
-                        r,
-                        vs,
-                    },
-                    null,
-                    null,
-                    blockchain,
-                    stepHooks,
-                ));
+        ({ knowledgeCollectionId, receipt: mintKnowledgeCollectionReceipt } =
+            await this.blockchainService.createKnowledgeCollection(
+                {
+                    publishOperationId,
+                    merkleRoot: datasetRoot,
+                    knowledgeAssetsAmount: kcTools.countDistinctSubjects(dataset.public),
+                    byteSize: datasetSize,
+                    epochs: epochsNum,
+                    tokenAmount: estimatedPublishingCost.toString(),
+                    isImmutable: immutable,
+                    paymaster: payer,
+                    publisherNodeIdentityId,
+                    publisherNodeR,
+                    publisherNodeVS,
+                    identityIds,
+                    r,
+                    vs,
+                },
+                null,
+                null,
+                blockchain,
+                stepHooks,
+            ));
         } catch (error) {
             // Attach operationId to blockchain transaction errors (no UAL yet at this stage)
             error.operationId = publishOperationId;
@@ -471,17 +471,17 @@ export default class AssetOperationsManager {
 
         if (blockchain.name && blockchain.name.startsWith('otp') && minimumBlockConfirmations > 0) {
             try {
-                const { receipt: finalizedMintReceipt, eventData } =
-                    await this.blockchainService.waitForEventFinality(
-                        mintKnowledgeCollectionReceipt,
-                        'KnowledgeCollectionCreated',
-                        knowledgeCollectionId,
-                        blockchain,
-                        minimumBlockConfirmations,
-                    );
+            const { receipt: finalizedMintReceipt, eventData } =
+                await this.blockchainService.waitForEventFinality(
+                    mintKnowledgeCollectionReceipt,
+                    'KnowledgeCollectionCreated',
+                    knowledgeCollectionId,
+                    blockchain,
+                    minimumBlockConfirmations,
+                );
 
-                mintKnowledgeCollectionReceipt = finalizedMintReceipt;
-                knowledgeCollectionId = parseInt(eventData.id, 10);
+            mintKnowledgeCollectionReceipt = finalizedMintReceipt;
+            knowledgeCollectionId = parseInt(eventData.id, 10);
             } catch (error) {
                 // Generate UAL with available data and attach it along with operationId
                 const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, knowledgeCollectionId);
@@ -496,15 +496,15 @@ export default class AssetOperationsManager {
         let finalityStatusResult = 0;
         if (minimumNumberOfFinalizationConfirmations > 0) {
             try {
-                finalityStatusResult = await this.nodeApiService.finalityStatus(
-                    endpoint,
-                    port,
-                    authToken,
-                    UAL,
-                    minimumNumberOfFinalizationConfirmations,
-                    maxNumberOfRetries,
-                    frequency,
-                );
+            finalityStatusResult = await this.nodeApiService.finalityStatus(
+                endpoint,
+                port,
+                authToken,
+                UAL,
+                minimumNumberOfFinalizationConfirmations,
+                maxNumberOfRetries,
+                frequency,
+            );
             } catch (error) {
                 // Attach UAL and operationId to the error so they can be logged even when finality fails
                 error.UAL = UAL;
