@@ -432,29 +432,35 @@ export default class AssetOperationsManager {
         let knowledgeCollectionId;
         let mintKnowledgeCollectionReceipt;
 
-        ({ knowledgeCollectionId, receipt: mintKnowledgeCollectionReceipt } =
-            await this.blockchainService.createKnowledgeCollection(
-                {
-                    publishOperationId,
-                    merkleRoot: datasetRoot,
-                    knowledgeAssetsAmount: kcTools.countDistinctSubjects(dataset.public),
-                    byteSize: datasetSize,
-                    epochs: epochsNum,
-                    tokenAmount: estimatedPublishingCost.toString(),
-                    isImmutable: immutable,
-                    paymaster: payer,
-                    publisherNodeIdentityId,
-                    publisherNodeR,
-                    publisherNodeVS,
-                    identityIds,
-                    r,
-                    vs,
-                },
-                null,
-                null,
-                blockchain,
-                stepHooks,
-            ));
+        try {
+            ({ knowledgeCollectionId, receipt: mintKnowledgeCollectionReceipt } =
+                await this.blockchainService.createKnowledgeCollection(
+                    {
+                        publishOperationId,
+                        merkleRoot: datasetRoot,
+                        knowledgeAssetsAmount: kcTools.countDistinctSubjects(dataset.public),
+                        byteSize: datasetSize,
+                        epochs: epochsNum,
+                        tokenAmount: estimatedPublishingCost.toString(),
+                        isImmutable: immutable,
+                        paymaster: payer,
+                        publisherNodeIdentityId,
+                        publisherNodeR,
+                        publisherNodeVS,
+                        identityIds,
+                        r,
+                        vs,
+                    },
+                    null,
+                    null,
+                    blockchain,
+                    stepHooks,
+                ));
+        } catch (error) {
+            // Attach operationId to blockchain transaction errors (no UAL yet at this stage)
+            error.operationId = publishOperationId;
+            throw error;
+        }
 
         // ------------------------------------------------------------------
         // Ensure KC minting transaction is reorg-safe by waiting until it is
@@ -464,17 +470,25 @@ export default class AssetOperationsManager {
         const minimumBlockConfirmations = options.minimumBlockConfirmations ?? 1;
 
         if (blockchain.name && blockchain.name.startsWith('otp') && minimumBlockConfirmations > 0) {
-            const { receipt: finalizedMintReceipt, eventData } =
-                await this.blockchainService.waitForEventFinality(
-                    mintKnowledgeCollectionReceipt,
-                    'KnowledgeCollectionCreated',
-                    knowledgeCollectionId,
-                    blockchain,
-                    minimumBlockConfirmations,
-                );
+            try {
+                const { receipt: finalizedMintReceipt, eventData } =
+                    await this.blockchainService.waitForEventFinality(
+                        mintKnowledgeCollectionReceipt,
+                        'KnowledgeCollectionCreated',
+                        knowledgeCollectionId,
+                        blockchain,
+                        minimumBlockConfirmations,
+                    );
 
-            mintKnowledgeCollectionReceipt = finalizedMintReceipt;
-            knowledgeCollectionId = parseInt(eventData.id, 10);
+                mintKnowledgeCollectionReceipt = finalizedMintReceipt;
+                knowledgeCollectionId = parseInt(eventData.id, 10);
+            } catch (error) {
+                // Generate UAL with available data and attach it along with operationId
+                const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, knowledgeCollectionId);
+                error.UAL = UAL;
+                error.operationId = publishOperationId;
+                throw error;
+            }
         }
 
         const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, knowledgeCollectionId);
