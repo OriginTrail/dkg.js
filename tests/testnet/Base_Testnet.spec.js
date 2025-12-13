@@ -373,22 +373,24 @@ describe('DKG Asset Lifecycle on Base Testnet', function () {
         } catch (error) {
           logError(error, stepNodeName, step, null, i + 1);
           
-          // Try to extract operation ID and UAL from error/partial result
+          // Try to extract operation ID and UAL from error object (if DKG finality failed after blockchain success)
           let operationId = 'N/A';
           let actualUal = null;
           
-          // If create_result exists (operation started but timed out), extract from it
-          if (create_result) {
-            actualUal = create_result.UAL || null;
-            operationId = create_result.operation?.operationId || create_result.operationId || (create_result.operation?.publish?.operationId) || 'N/A';
-          }
-          
-          // Fallback: check if error object has operation info
-          if (!actualUal && error.UAL) {
+          // Check if error object has UAL and operationId (attached when DKG finality fails)
+          if (error.UAL) {
             actualUal = error.UAL;
           }
-          if (operationId === 'N/A' && (error.operationId || error.operation?.operationId)) {
-            operationId = error.operationId || error.operation?.operationId;
+          if (error.operationId) {
+            operationId = error.operationId;
+          }
+          
+          // Fallback: If create_result exists (test wrapper timeout), extract from it
+          if (!actualUal && create_result) {
+            actualUal = create_result.UAL || null;
+            if (operationId === 'N/A') {
+              operationId = create_result.operation?.operationId || create_result.operationId || (create_result.operation?.publish?.operationId) || 'N/A';
+            }
           }
           
           if (actualUal) {

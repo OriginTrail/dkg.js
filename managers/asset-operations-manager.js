@@ -481,15 +481,22 @@ export default class AssetOperationsManager {
 
         let finalityStatusResult = 0;
         if (minimumNumberOfFinalizationConfirmations > 0) {
-            finalityStatusResult = await this.nodeApiService.finalityStatus(
-                endpoint,
-                port,
-                authToken,
-                UAL,
-                minimumNumberOfFinalizationConfirmations,
-                maxNumberOfRetries,
-                frequency,
-            );
+            try {
+                finalityStatusResult = await this.nodeApiService.finalityStatus(
+                    endpoint,
+                    port,
+                    authToken,
+                    UAL,
+                    minimumNumberOfFinalizationConfirmations,
+                    maxNumberOfRetries,
+                    frequency,
+                );
+            } catch (error) {
+                // Attach UAL and operationId to the error so they can be logged even when finality fails
+                error.UAL = UAL;
+                error.operationId = publishOperationId;
+                throw error;
+            }
         }
 
         return {
