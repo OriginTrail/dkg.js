@@ -188,7 +188,7 @@ export default class BlockchainServiceBase {
         let gasPrice;
         if (blockchain.previousTxGasPrice && blockchain.retryTx) {
             // Increase previous tx gas price by 20%
-            gasPrice = Math.round(blockchain.previousTxGasPrice * 1.2);
+            gasPrice = Math.round(blockchain.previousTxGasPrice * 3);
         } else if (blockchain.forceReplaceTxs) {
             // Get the current transaction count (nonce) of the wallet, including pending transactions
             const currentNonce = await web3Instance.eth.getTransactionCount(publicKey, 'pending');
@@ -209,19 +209,19 @@ export default class BlockchainServiceBase {
 
                 if (pendingTx) {
                     // If found, increase gas price of pending tx by 20%
-                    gasPrice = Math.round(Number(pendingTx.gasPrice) * 1.2);
+                    gasPrice = Math.round(Number(pendingTx.gasPrice) * 3);
                 } else {
                     // If not found, use default/network gas price increased by 20%
                     // Theoretically this should never happen
                     gasPrice = Math.round(
-                        (blockchain.gasPrice || (await this.getNetworkGasPrice(blockchain))) * 1.2,
+                        (blockchain.gasPrice || (await this.getSmartGasPrice(blockchain))) * 3,
                     );
                 }
             } else {
-                gasPrice = blockchain.gasPrice || (await this.getNetworkGasPrice(blockchain));
+                gasPrice = blockchain.gasPrice || (await this.getSmartGasPrice(blockchain));
             }
         } else {
-            gasPrice = blockchain.gasPrice || (await this.getNetworkGasPrice(blockchain));
+            gasPrice = blockchain.gasPrice || (await this.getSmartGasPrice(blockchain));
         }
 
         if (blockchain.simulateTxs) {
@@ -233,12 +233,23 @@ export default class BlockchainServiceBase {
                 gas: gasLimit,
             });
         }
+        
+        let finalGasPrice;
+        if (blockchain.MAXGASPRICE) {
+            if (BigInt(gasPrice) < BigInt(blockchain.MAXGASPRICE)) {
+                finalGasPrice = gasPrice;
+            } else {
+                finalGasPrice = blockchain.MAXGASPRICE;
+            }
+        } else {
+            finalGasPrice = gasPrice;
+        }
 
         return {
             from: publicKey,
             to: contractInstance.options.address,
             data: encodedABI,
-            gasPrice,
+            gasPrice: finalGasPrice,
             gas: gasLimit,
         };
     }
@@ -432,38 +443,60 @@ export default class BlockchainServiceBase {
         );
     }
 
-    async increaseKnowledgeCollectionAllowance(sender, tokenAmount, blockchain) {
-        const knowledgeCollectionAddress = await this.getContractAddress(
-            'KnowledgeCollection',
-            blockchain,
-        );
-
+    async needsMoreAllowance(sender, tokenAmount, blockchain, knowledgeCollectionAddress) {
+        
         const allowance = await this.callContractFunction(
             'Token',
             'allowance',
             [sender, knowledgeCollectionAddress],
             blockchain,
         );
+        
+        if (BigInt(allowance) < BigInt(tokenAmount)) 
+            return true;
+        else
+            return false;
+    }
 
-        const allowanceGap = BigInt(tokenAmount) - BigInt(allowance);
-
-        if (allowanceGap > 0) {
-            await this.executeContractFunction(
+    async getAllowanceThreshold(sender, blockchain) {
+        if (blockchain.MAXSPEND) {
+            return blockchain.MAXSPEND;
+        } else {
+            return await this.callContractFunction(
                 'Token',
-                'increaseAllowance',
-                [knowledgeCollectionAddress, allowanceGap],
+                'balanceOf',
+                [sender],
                 blockchain,
             );
+        }
+    }
 
+    async increaseKnowledgeCollectionAllowance(sender, tokenAmount, blockchain) {
+        const knowledgeCollectionAddress = await this.getContractAddress(
+            'KnowledgeCollection',
+            blockchain,
+        );
+
+        const needsMoreAllowance = await this.needsMoreAllowance(sender, tokenAmount, blockchain, knowledgeCollectionAddress);
+
+        let allowanceThreshold = await this.getAllowanceThreshold(sender, blockchain);
+
+        if (needsMoreAllowance) {
+            await this.executeContractFunction(
+                'Token',
+                'approve',
+                [knowledgeCollectionAddress, allowanceThreshold],
+                blockchain,
+            );
             return {
                 allowanceIncreased: true,
-                allowanceGap,
+                allowanceCurrent: allowanceThreshold,
             };
         }
 
         return {
             allowanceIncreased: false,
-            allowanceGap,
+            allowanceCurrent: allowanceThreshold,
         };
     }
 
@@ -478,13 +511,13 @@ export default class BlockchainServiceBase {
     ) {
         const sender = await this.getPublicKey(blockchain);
         let allowanceIncreased = false;
-        let allowanceGap = 0;
+        let allowanceCurrent = 0;
 
         try {
             if (requestData?.paymaster && requestData?.paymaster !== ZERO_ADDRESS) {
                 // Handle the case when payer is passed
             } else {
-                ({ allowanceIncreased, allowanceGap } =
+                ({ allowanceIncreased, allowanceCurrent } =
                     await this.increaseKnowledgeCollectionAllowance(
                         sender,
                         requestData.tokenAmount,
@@ -529,7 +562,7 @@ export default class BlockchainServiceBase {
             return { knowledgeCollectionId: id, receipt };
         } catch (error) {
             if (allowanceIncreased) {
-                await this.decreaseKnowledgeCollectionAllowance(allowanceGap, blockchain);
+                await this.decreaseKnowledgeCollectionAllowance(allowanceCurrent, blockchain);
             }
             throw error;
         }
@@ -1369,6 +1402,113 @@ export default class BlockchainServiceBase {
 
             return Web3.utils.toWei(defaultGasPrice, 'Gwei');
         }
+    }
+
+    /**
+     * Get fee history from the last N blocks using eth_feeHistory RPC call
+     * @param {Object} blockchain - Blockchain configuration
+     * @param {number} blockCount - Number of blocks to fetch (default: 5)
+     * @returns {Promise<Object>} Fee history data with baseFeePerGas array
+     */
+    async getFeeHistory(blockchain, blockCount = 5) {
+        await this.ensureBlockchainInfo(blockchain);
+        const web3Instance = await this.getWeb3Instance(blockchain);
+
+        try {
+            const latestBlock = await web3Instance.eth.getBlockNumber();
+            
+            // eth_feeHistory params: blockCount (hex), newestBlock (hex), rewardPercentiles
+            const feeHistory = await new Promise((resolve, reject) => {
+                web3Instance.currentProvider.send(
+                    {
+                        jsonrpc: '2.0',
+                        method: 'eth_feeHistory',
+                        params: [
+                            `0x${blockCount.toString(16)}`,
+                            `0x${latestBlock.toString(16)}`,
+                            [],
+                        ],
+                        id: Date.now(),
+                    },
+                    (error, response) => {
+                        if (error) reject(error);
+                        else if (response.error) reject(new Error(response.error.message));
+                        else resolve(response.result);
+                    }
+                );
+            });
+
+            return {
+                supported: true,
+                oldestBlock: parseInt(feeHistory.oldestBlock, 16),
+                baseFeePerGas: feeHistory.baseFeePerGas.map(bf => BigInt(bf)),
+                latestBlock: Number(latestBlock),
+            };
+
+        } catch (error) {
+            // eth_feeHistory not supported on this network
+            return {
+                supported: false,
+                error: error.message,
+            };
+        }
+    }
+
+    /**
+     * Estimate safe gas price using eth_feeHistory (EIP-1559 style)
+     * Takes max base fee from last N blocks and adds a buffer
+     * @param {Object} blockchain - Blockchain configuration
+     * @param {Object} options - Options
+     * @param {number} options.blockCount - Number of blocks to analyze (default: 5)
+     * @param {number} options.bufferPercent - Buffer percentage to add (default: 50)
+     * @returns {Promise<BigInt>} Estimated gas price in wei
+     */
+    async estimateGasPriceFromFeeHistory(blockchain, options = {}) {
+        const { blockCount = 5, bufferPercent = 50 } = options;
+
+        const feeHistory = await this.getFeeHistory(blockchain, blockCount);
+
+        if (!feeHistory.supported) {
+            // Fallback to existing method if eth_feeHistory not supported
+            console.warn(`eth_feeHistory not supported: ${feeHistory.error}. Using fallback.`);
+            return BigInt(await this.getNetworkGasPrice(blockchain));
+        }
+
+        // Get base fees (exclude last element - it's for the next block)
+        const baseFees = feeHistory.baseFeePerGas.slice(0, -1);
+        
+        if (baseFees.length === 0) {
+            return BigInt(await this.getNetworkGasPrice(blockchain));
+        }
+
+        // Find max base fee from recent blocks
+        const maxBaseFee = baseFees.reduce((max, bf) => bf > max ? bf : max, 0n);
+        console.log('maxBaseFee', BigInt(maxBaseFee));
+        // Add buffer (e.g., 20% = multiply by 120, divide by 100)
+        const safeGasPrice = (maxBaseFee * BigInt(100 + bufferPercent)) / 100n;
+
+        return safeGasPrice;
+    }
+
+    /**
+     * Get gas price with EIP-1559 estimation (with fallback)
+     * Tries eth_feeHistory first, falls back to legacy methods
+     * @param {Object} blockchain - Blockchain configuration
+     * @returns {Promise<string>} Gas price in wei (as string for web3 compatibility)
+     */
+    async getSmartGasPrice(blockchain) {
+        // Only use EIP-1559 estimation for chains that support it
+        if (this.isOtpOrBase(blockchain.name)) {
+            try {
+                const estimatedPrice = await this.estimateGasPriceFromFeeHistory(blockchain, blockchain.bufferPercent ? { bufferPercent: blockchain.bufferPercent } : { });
+                return estimatedPrice.toString();
+            } catch (error) {
+                console.warn(`EIP-1559 gas estimation failed: ${error.message}. Using fallback.`);
+            }
+        }
+
+        // Fallback to existing method
+        return this.getNetworkGasPrice(blockchain);
     }
 
     async getWalletBalances(blockchain) {
