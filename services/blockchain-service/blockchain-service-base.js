@@ -187,8 +187,8 @@ export default class BlockchainServiceBase {
 
         let gasPrice;
         if (blockchain.previousTxGasPrice && blockchain.retryTx) {
-            // Increase previous tx gas price by 20%
-            gasPrice = Math.round(blockchain.previousTxGasPrice * 3);
+            // Increase previous tx gas price by retryTxGasPriceMultiplier
+            gasPrice = Math.round(blockchain.previousTxGasPrice * blockchain.retryTxGasPriceMultiplier);
         } else if (blockchain.forceReplaceTxs) {
             // Get the current transaction count (nonce) of the wallet, including pending transactions
             const currentNonce = await web3Instance.eth.getTransactionCount(publicKey, 'pending');
@@ -208,13 +208,13 @@ export default class BlockchainServiceBase {
                 );
 
                 if (pendingTx) {
-                    // If found, increase gas price of pending tx by 20%
-                    gasPrice = Math.round(Number(pendingTx.gasPrice) * 3);
+                    // If found, increase gas price of pending tx by retryTxGasPriceMultiplier
+                    gasPrice = Math.round(Number(pendingTx.gasPrice) * blockchain.retryTxGasPriceMultiplier);
                 } else {
-                    // If not found, use default/network gas price increased by 20%
+                    // If not found, use default/network gas price increased by retryTxGasPriceMultiplier
                     // Theoretically this should never happen
                     gasPrice = Math.round(
-                        (blockchain.gasPrice || (await this.getSmartGasPrice(blockchain))) * 3,
+                        (blockchain.gasPrice || (await this.getSmartGasPrice(blockchain))) * blockchain.retryTxGasPriceMultiplier,
                     );
                 }
             } else {
@@ -1483,7 +1483,7 @@ export default class BlockchainServiceBase {
 
         // Find max base fee from recent blocks
         const maxBaseFee = baseFees.reduce((max, bf) => bf > max ? bf : max, 0n);
-        console.log('maxBaseFee', BigInt(maxBaseFee));
+
         // Add buffer (e.g., 20% = multiply by 120, divide by 100)
         const safeGasPrice = (maxBaseFee * BigInt(100 + bufferPercent)) / 100n;
 
