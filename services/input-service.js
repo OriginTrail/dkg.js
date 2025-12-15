@@ -192,6 +192,19 @@ export default class InputService {
             BLOCKCHAINS[environment][name]?.gasPriceOracleLink ??
             undefined;
 
+        const maxSpend =
+            options.blockchain?.maxSpend ?? this.config.blockchain?.maxSpend ?? undefined;
+        const maxGasPrice =
+            options.blockchain?.maxGasPrice ?? this.config.blockchain?.maxGasPrice ?? undefined;
+        const bufferPercent =
+            options.blockchain?.bufferPercent ?? 
+            this.config.blockchain?.bufferPercent ?? 
+            DEFAULT_PARAMETERS.BUFFER_PERCENT;  // e.g., 50
+        const retryTxGasPriceMultiplier =
+            options.blockchain?.retryTxGasPriceMultiplier ?? 
+            this.config.blockchain?.retryTxGasPriceMultiplier ?? 
+            DEFAULT_PARAMETERS.RETRY_TX_GAS_PRICE_MULTIPLIER;  // e.g., 1.2
+        
         const blockchainConfig = {
             name,
             rpc,
@@ -205,6 +218,10 @@ export default class InputService {
             simulateTxs,
             forceReplaceTxs,
             gasPriceOracleLink,
+            maxSpend,
+            maxGasPrice,  // Note: blockchain-service-base uses MAXGASPRICE - might want to normalize
+            bufferPercent,
+            retryTxGasPriceMultiplier
         };
 
         if (name && name.startsWith('otp')) {

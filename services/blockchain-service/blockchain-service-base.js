@@ -233,7 +233,7 @@ export default class BlockchainServiceBase {
                 gas: gasLimit,
             });
         }
-        
+
         let finalGasPrice;
         if (blockchain.MAXGASPRICE) {
             if (BigInt(gasPrice) < BigInt(blockchain.MAXGASPRICE)) {
@@ -293,7 +293,7 @@ export default class BlockchainServiceBase {
                             while (
                                 !currentReceipt &&
                                 Date.now() - reminingStartTime <
-                                    blockchain.transactionReminingMaxWaitTime
+                                blockchain.transactionReminingMaxWaitTime
                             ) {
                                 await sleepForMilliseconds(
                                     blockchain.transactionReminingPollingInterval,
@@ -444,15 +444,15 @@ export default class BlockchainServiceBase {
     }
 
     async needsMoreAllowance(sender, tokenAmount, blockchain, knowledgeCollectionAddress) {
-        
+
         const allowance = await this.callContractFunction(
             'Token',
             'allowance',
             [sender, knowledgeCollectionAddress],
             blockchain,
         );
-        
-        if (BigInt(allowance) < BigInt(tokenAmount)) 
+
+        if (BigInt(allowance) < BigInt(tokenAmount))
             return true;
         else
             return false;
@@ -1076,7 +1076,7 @@ export default class BlockchainServiceBase {
 
         if (
             this[blockchain.name].contractAddresses[blockchain.hubContract][
-                'ParanetIncentivesPoolStorage'
+            'ParanetIncentivesPoolStorage'
             ] !== contractAddress
         ) {
             this[blockchain.name].contractAddresses[blockchain.hubContract][
@@ -1088,7 +1088,7 @@ export default class BlockchainServiceBase {
             ] = await new web3Instance.eth.Contract(
                 this.abis['ParanetIncentivesPoolStorage'],
                 this[blockchain.name].contractAddresses[blockchain.hubContract][
-                    'ParanetIncentivesPoolStorage'
+                'ParanetIncentivesPoolStorage'
                 ],
                 { from: blockchain.publicKey },
             );
@@ -1123,7 +1123,7 @@ export default class BlockchainServiceBase {
 
         if (
             this[blockchain.name].contractAddresses[blockchain.hubContract][
-                'ParanetIncentivesPool'
+            'ParanetIncentivesPool'
             ] !== contractAddress
         ) {
             this[blockchain.name].contractAddresses[blockchain.hubContract][
@@ -1134,7 +1134,7 @@ export default class BlockchainServiceBase {
                 await new web3Instance.eth.Contract(
                     this.abis['ParanetIncentivesPool'],
                     this[blockchain.name].contractAddresses[blockchain.hubContract][
-                        'ParanetIncentivesPool'
+                    'ParanetIncentivesPool'
                     ],
                     { from: blockchain.publicKey },
                 );
@@ -1416,7 +1416,7 @@ export default class BlockchainServiceBase {
 
         try {
             const latestBlock = await web3Instance.eth.getBlockNumber();
-            
+
             // eth_feeHistory params: blockCount (hex), newestBlock (hex), rewardPercentiles
             const feeHistory = await new Promise((resolve, reject) => {
                 web3Instance.currentProvider.send(
@@ -1476,7 +1476,7 @@ export default class BlockchainServiceBase {
 
         // Get base fees (exclude last element - it's for the next block)
         const baseFees = feeHistory.baseFeePerGas.slice(0, -1);
-        
+
         if (baseFees.length === 0) {
             return BigInt(await this.getNetworkGasPrice(blockchain));
         }
@@ -1498,17 +1498,13 @@ export default class BlockchainServiceBase {
      */
     async getSmartGasPrice(blockchain) {
         // Only use EIP-1559 estimation for chains that support it
-        if (this.isOtpOrBase(blockchain.name)) {
-            try {
-                const estimatedPrice = await this.estimateGasPriceFromFeeHistory(blockchain, blockchain.bufferPercent ? { bufferPercent: blockchain.bufferPercent } : { });
-                return estimatedPrice.toString();
-            } catch (error) {
-                console.warn(`EIP-1559 gas estimation failed: ${error.message}. Using fallback.`);
-            }
-        }
 
-        // Fallback to existing method
-        return this.getNetworkGasPrice(blockchain);
+        try {
+            const estimatedPrice = await this.estimateGasPriceFromFeeHistory(blockchain, blockchain.bufferPercent ? { bufferPercent: blockchain.bufferPercent } : {});
+            return estimatedPrice.toString();
+        } catch (error) {
+            console.warn(`EIP-1559 gas estimation failed: ${error.message}. Using fallback.`);
+        }
     }
 
     async getWalletBalances(blockchain) {
