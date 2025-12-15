@@ -192,10 +192,8 @@ export default class InputService {
             BLOCKCHAINS[environment][name]?.gasPriceOracleLink ??
             undefined;
 
-        const maxSpend =
-            options.blockchain?.maxSpend ?? this.config.blockchain?.maxSpend ?? undefined;
-        const maxGasPrice =
-            options.blockchain?.maxGasPrice ?? this.config.blockchain?.maxGasPrice ?? undefined;
+        const maxAllowance =
+            options.blockchain?.maxAllowance ?? this.config.blockchain?.maxAllowance ?? undefined;
         const bufferPercent =
             options.blockchain?.bufferPercent ?? 
             this.config.blockchain?.bufferPercent ?? 
@@ -218,8 +216,7 @@ export default class InputService {
             simulateTxs,
             forceReplaceTxs,
             gasPriceOracleLink,
-            maxSpend,
-            maxGasPrice,  // Note: blockchain-service-base uses MAXGASPRICE - might want to normalize
+            maxAllowance,
             bufferPercent,
             retryTxGasPriceMultiplier
         };
