@@ -194,8 +194,10 @@ export default class InputService {
 
         const maxAllowance =
             options.blockchain?.maxAllowance ?? this.config.blockchain?.maxAllowance ?? undefined;
-        const bufferPercent =
-            options.blockchain?.bufferPercent ?? this.config.blockchain?.bufferPercent ?? undefined;
+        const gasPriceBufferPercent =
+            options.blockchain?.gasPriceBufferPercent ??
+            this.config.blockchain?.gasPriceBufferPercent ??
+            undefined;
         const retryTxGasPriceMultiplier =
             options.blockchain?.retryTxGasPriceMultiplier ??
             this.config.blockchain?.retryTxGasPriceMultiplier ??
@@ -215,7 +217,7 @@ export default class InputService {
             forceReplaceTxs,
             gasPriceOracleLink,
             maxAllowance,
-            bufferPercent,
+            gasPriceBufferPercent,
             retryTxGasPriceMultiplier,
         };
 

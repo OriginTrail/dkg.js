@@ -1427,12 +1427,12 @@ export default class BlockchainServiceBase {
     /**
      * Apply buffer percentage to a gas price
      * @param {BigInt} gasPrice - Gas price in wei
-     * @param {number} bufferPercent - Buffer percentage to add
+     * @param {number} gasPriceBufferPercent - Buffer percentage to add
      * @returns {BigInt} Gas price with buffer applied
      */
-    applyGasPriceBuffer(gasPrice, bufferPercent) {
-        if (!bufferPercent) return gasPrice;
-        return (gasPrice * BigInt(100 + Number(bufferPercent))) / 100n;
+    applyGasPriceBuffer(gasPrice, gasPriceBufferPercent) {
+        if (!gasPriceBufferPercent) return gasPrice;
+        return (gasPrice * BigInt(100 + Number(gasPriceBufferPercent))) / 100n;
     }
 
     /**
@@ -1443,14 +1443,14 @@ export default class BlockchainServiceBase {
      * @returns {Promise<BigInt>} Estimated gas price in wei
      */
     async estimateGasPriceFromFeeHistory(blockchain) {
-        const { bufferPercent } = blockchain;
+        const { gasPriceBufferPercent } = blockchain;
         const feeHistory = await this.getFeeHistory(blockchain, FEE_HISTORY_BLOCK_COUNT);
 
         // Fallback to network gas price if feeHistory not supported or empty
         if (!feeHistory.supported) {
             return this.applyGasPriceBuffer(
                 BigInt(await this.getNetworkGasPrice(blockchain)),
-                bufferPercent,
+                gasPriceBufferPercent,
             );
         }
 
@@ -1460,7 +1460,7 @@ export default class BlockchainServiceBase {
         if (baseFees.length === 0 || priorityFees.length === 0) {
             return this.applyGasPriceBuffer(
                 BigInt(await this.getNetworkGasPrice(blockchain)),
-                bufferPercent,
+                gasPriceBufferPercent,
             );
         }
 
@@ -1468,7 +1468,7 @@ export default class BlockchainServiceBase {
         const maxBaseFee = baseFees.reduce((max, bf) => (bf > max ? bf : max), 0n);
         const maxPriorityFee = priorityFees.reduce((max, pf) => (pf > max ? pf : max), 0n);
 
-        return this.applyGasPriceBuffer(maxBaseFee + maxPriorityFee, bufferPercent);
+        return this.applyGasPriceBuffer(maxBaseFee + maxPriorityFee, gasPriceBufferPercent);
     }
 
     /**
