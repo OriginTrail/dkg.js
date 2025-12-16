@@ -7,7 +7,6 @@ import { createRequire } from 'module';
 import {
     OPERATIONS_STEP_STATUS,
     DEFAULT_GAS_PRICE,
-    DEFAULT_GAS_PRICE_WEI,
     ZERO_ADDRESS,
     NEUROWEB_INCENTIVE_TYPE_CHAINS,
     FEE_HISTORY_BLOCK_COUNT,
@@ -455,7 +454,8 @@ export default class BlockchainServiceBase {
         );
 
         if (BigInt(allowance) < BigInt(tokenAmount)) return true;
-        else return false;
+
+        return false;
     }
 
     async maxAllowancePerTransaction(sender, blockchain) {
@@ -1393,20 +1393,27 @@ export default class BlockchainServiceBase {
      * Get fee history from the last N blocks using eth_feeHistory RPC call
      * @param {Object} blockchain - Blockchain configuration
      * @param {number} blockCount - Number of blocks to fetch (default: 5)
-     * @returns {Promise<Object>} Fee history data with baseFeePerGas array
+     * @returns {Promise<Object>} Fee history data with baseFeePerGas and priorityFees arrays
      */
     async getFeeHistory(blockchain, blockCount = 5) {
         await this.ensureBlockchainInfo(blockchain);
         const web3Instance = await this.getWeb3Instance(blockchain);
 
         try {
-            // eth_feeHistory params: blockCount (hex), newestBlock (hex), rewardPercentiles
-            const feeHistory = await web3Instance.eth.getFeeHistory(blockCount, 'latest', []);
+            // eth_feeHistory params: blockCount, newestBlock, rewardPercentiles
+            // [50] = median priority fee per block
+            const feeHistory = await web3Instance.eth.getFeeHistory(blockCount, 'latest', [50]);
+
+            // Extract median priority fees from each block (reward[blockIndex][percentileIndex])
+            const priorityFees = feeHistory.reward
+                ? feeHistory.reward.map((blockRewards) => BigInt(blockRewards[0] || 0))
+                : [];
 
             return {
                 supported: true,
                 oldestBlock: parseInt(feeHistory.oldestBlock, 16),
                 baseFeePerGas: feeHistory.baseFeePerGas.map((bf) => BigInt(bf)),
+                priorityFees,
             };
         } catch (error) {
             // eth_feeHistory not supported on this network
@@ -1419,16 +1426,13 @@ export default class BlockchainServiceBase {
 
     /**
      * Estimate safe gas price using eth_feeHistory (EIP-1559 style)
-     * Takes max base fee from last N blocks and adds a buffer
+     * Takes max base fee from last N blocks, adds a buffer for volatility,
+     * and includes the priority fee (tip) for validator incentive
      * @param {Object} blockchain - Blockchain configuration
-     * @param {Object} options - Options
-     * @param {number} options.blockCount - Number of blocks to analyze (default: 5)
-     * @param {number} options.bufferPercent - Buffer percentage to add (default: 10)
      * @returns {Promise<BigInt>} Estimated gas price in wei
      */
     async estimateGasPriceFromFeeHistory(blockchain) {
         const blockCount = FEE_HISTORY_BLOCK_COUNT;
-        const bufferPercent = blockchain.bufferPercent;
 
         const feeHistory = await this.getFeeHistory(blockchain, blockCount);
 
@@ -1440,20 +1444,17 @@ export default class BlockchainServiceBase {
 
         // Get base fees
         const baseFees = Array.from(feeHistory.baseFeePerGas);
+        const priorityFees = Array.from(feeHistory.priorityFees);
 
-        if (baseFees.length === 0) {
+        if (baseFees.length === 0 || priorityFees.length === 0) {
             return BigInt(await this.getNetworkGasPrice(blockchain));
         }
 
-        // Find max base fee from recent blocks
+        // Find max base fee from recent blocks and compare it to the network gas price
         let maxBaseFee = baseFees.reduce((max, bf) => (bf > max ? bf : max), 0n);
+        let maxPriorityFee = priorityFees.reduce((max, pf) => (pf > max ? pf : max), 0n);
 
-        // Add buffer (e.g., 20% = multiply by 120, divide by 100)
-        let safeGasPrice = (maxBaseFee * BigInt(100 + Number(bufferPercent))) / 100n;
-
-        if (this.isGnosis(blockchain.name)) {
-            safeGasPrice = safeGasPrice + 1n;
-        }
+        const safeGasPrice = maxBaseFee + maxPriorityFee;
 
         return safeGasPrice;
     }
@@ -1465,16 +1466,10 @@ export default class BlockchainServiceBase {
      * @returns {Promise<string>} Gas price in wei (as string for web3 compatibility)
      */
     async getSmartGasPrice(blockchain) {
-        // Only use EIP-1559 estimation for chains that support it
-        let eip1559Error = null;
-
         try {
             const estimatedPrice = await this.estimateGasPriceFromFeeHistory(blockchain);
             return estimatedPrice.toString();
-        } catch (error) {
-            eip1559Error = error;
-            console.warn(`EIP-1559 gas estimation failed: ${error.message}. Using fallback.`);
-
+        } catch (eip1559Error) {
             try {
                 return await this.getNetworkGasPrice(blockchain);
             } catch (fallbackError) {
