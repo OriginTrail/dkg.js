@@ -557,7 +557,6 @@ export default class BlockchainServiceBase {
 
             return { knowledgeCollectionId: id, receipt };
         } catch (error) {
-            console.error('createKnowledgeCollection failed:', error);
             throw error;
         }
     }
