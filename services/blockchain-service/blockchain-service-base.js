@@ -10,6 +10,7 @@ import {
     DEFAULT_GAS_PRICE_WEI,
     ZERO_ADDRESS,
     NEUROWEB_INCENTIVE_TYPE_CHAINS,
+    FEE_HISTORY_BLOCK_COUNT,
 } from '../../constants/constants.js';
 import emptyHooks from '../../util/empty-hooks.js';
 import { sleepForMilliseconds } from '../utilities.js';
@@ -1425,8 +1426,9 @@ export default class BlockchainServiceBase {
      * @param {number} options.bufferPercent - Buffer percentage to add (default: 10)
      * @returns {Promise<BigInt>} Estimated gas price in wei
      */
-    async estimateGasPriceFromFeeHistory(blockchain, options = {}) {
-        const { blockCount = 5, bufferPercent = 10 } = options;
+    async estimateGasPriceFromFeeHistory(blockchain) {
+        const blockCount = FEE_HISTORY_BLOCK_COUNT;
+        const bufferPercent = blockchain.bufferPercent;
 
         const feeHistory = await this.getFeeHistory(blockchain, blockCount);
 
@@ -1467,10 +1469,7 @@ export default class BlockchainServiceBase {
         let eip1559Error = null;
 
         try {
-            const estimatedPrice = await this.estimateGasPriceFromFeeHistory(
-                blockchain,
-                blockchain.bufferPercent ? { bufferPercent: blockchain.bufferPercent } : {},
-            );
+            const estimatedPrice = await this.estimateGasPriceFromFeeHistory(blockchain);
             return estimatedPrice.toString();
         } catch (error) {
             eip1559Error = error;
