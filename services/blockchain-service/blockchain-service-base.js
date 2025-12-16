@@ -1399,8 +1399,6 @@ export default class BlockchainServiceBase {
         const web3Instance = await this.getWeb3Instance(blockchain);
 
         try {
-            const latestBlock = await web3Instance.eth.getBlockNumber();
-
             // eth_feeHistory params: blockCount (hex), newestBlock (hex), rewardPercentiles
             const feeHistory = await web3Instance.eth.getFeeHistory(blockCount, 'latest', []);
 
