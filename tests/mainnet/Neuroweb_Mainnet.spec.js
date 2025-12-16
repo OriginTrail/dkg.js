@@ -280,7 +280,7 @@ describe('DKG Asset Lifecycle on Neuroweb Mainnet', function () {
           name: BLOCKCHAIN_IDS.NEUROWEB_MAINNET,
           publicKey: nodeKeys[name].publicKey,
           privateKey: nodeKeys[name].privateKey,
-          gasPriceBufferPercent: 10,
+          gasPriceBufferPercent: 20,
         },
         maxNumberOfRetries: 300,
         frequency: 2,
