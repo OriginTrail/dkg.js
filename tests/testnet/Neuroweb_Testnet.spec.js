@@ -313,6 +313,7 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
           name: BLOCKCHAIN_IDS.NEUROWEB_TESTNET,
           publicKey: nodeKeys[name].publicKey,
           privateKey: nodeKeys[name].privateKey,
+          gasPriceBufferPercent: 200,
         },
         maxNumberOfRetries: 300,
         frequency: 2,
