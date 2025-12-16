@@ -437,6 +437,7 @@ describe('DKG Asset Lifecycle on Base Mainnet', function () {
               name: BLOCKCHAIN_IDS.BASE_MAINNET,
               publicKey: nodeKeys[remoteNode.name].publicKey,
               privateKey: nodeKeys[remoteNode.name].privateKey,
+              gasPriceBufferPercent: 10,
             },
             maxNumberOfRetries: 300,
             frequency: 2,
