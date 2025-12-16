@@ -195,14 +195,12 @@ export default class InputService {
         const maxAllowance =
             options.blockchain?.maxAllowance ?? this.config.blockchain?.maxAllowance ?? undefined;
         const bufferPercent =
-            options.blockchain?.bufferPercent ?? 
-            this.config.blockchain?.bufferPercent ?? 
-            DEFAULT_PARAMETERS.BUFFER_PERCENT;  // e.g., 50
+            options.blockchain?.bufferPercent ?? this.config.blockchain?.bufferPercent ?? undefined;
         const retryTxGasPriceMultiplier =
-            options.blockchain?.retryTxGasPriceMultiplier ?? 
-            this.config.blockchain?.retryTxGasPriceMultiplier ?? 
-            DEFAULT_PARAMETERS.RETRY_TX_GAS_PRICE_MULTIPLIER;  // e.g., 1.2
-        
+            options.blockchain?.retryTxGasPriceMultiplier ??
+            this.config.blockchain?.retryTxGasPriceMultiplier ??
+            DEFAULT_PARAMETERS.RETRY_TX_GAS_PRICE_MULTIPLIER; // e.g., 1.2
+
         const blockchainConfig = {
             name,
             rpc,
@@ -218,7 +216,7 @@ export default class InputService {
             gasPriceOracleLink,
             maxAllowance,
             bufferPercent,
-            retryTxGasPriceMultiplier
+            retryTxGasPriceMultiplier,
         };
 
         if (name && name.startsWith('otp')) {

@@ -1425,6 +1425,17 @@ export default class BlockchainServiceBase {
     }
 
     /**
+     * Apply buffer percentage to a gas price
+     * @param {BigInt} gasPrice - Gas price in wei
+     * @param {number} bufferPercent - Buffer percentage to add
+     * @returns {BigInt} Gas price with buffer applied
+     */
+    applyGasPriceBuffer(gasPrice, bufferPercent) {
+        if (!bufferPercent) return gasPrice;
+        return (gasPrice * BigInt(100 + Number(bufferPercent))) / 100n;
+    }
+
+    /**
      * Estimate safe gas price using eth_feeHistory (EIP-1559 style)
      * Takes max base fee from last N blocks, adds a buffer for volatility,
      * and includes the priority fee (tip) for validator incentive
@@ -1432,31 +1443,32 @@ export default class BlockchainServiceBase {
      * @returns {Promise<BigInt>} Estimated gas price in wei
      */
     async estimateGasPriceFromFeeHistory(blockchain) {
-        const blockCount = FEE_HISTORY_BLOCK_COUNT;
+        const { bufferPercent } = blockchain;
+        const feeHistory = await this.getFeeHistory(blockchain, FEE_HISTORY_BLOCK_COUNT);
 
-        const feeHistory = await this.getFeeHistory(blockchain, blockCount);
-
+        // Fallback to network gas price if feeHistory not supported or empty
         if (!feeHistory.supported) {
-            // Fallback to existing method if eth_feeHistory not supported
-            console.warn(`eth_feeHistory not supported: ${feeHistory.error}. Using fallback.`);
-            return BigInt(await this.getNetworkGasPrice(blockchain));
+            return this.applyGasPriceBuffer(
+                BigInt(await this.getNetworkGasPrice(blockchain)),
+                bufferPercent,
+            );
         }
 
-        // Get base fees
         const baseFees = Array.from(feeHistory.baseFeePerGas);
         const priorityFees = Array.from(feeHistory.priorityFees);
 
         if (baseFees.length === 0 || priorityFees.length === 0) {
-            return BigInt(await this.getNetworkGasPrice(blockchain));
+            return this.applyGasPriceBuffer(
+                BigInt(await this.getNetworkGasPrice(blockchain)),
+                bufferPercent,
+            );
         }
 
-        // Find max base fee from recent blocks and compare it to the network gas price
-        let maxBaseFee = baseFees.reduce((max, bf) => (bf > max ? bf : max), 0n);
-        let maxPriorityFee = priorityFees.reduce((max, pf) => (pf > max ? pf : max), 0n);
+        // Find max base fee and priority fee from recent blocks
+        const maxBaseFee = baseFees.reduce((max, bf) => (bf > max ? bf : max), 0n);
+        const maxPriorityFee = priorityFees.reduce((max, pf) => (pf > max ? pf : max), 0n);
 
-        const safeGasPrice = maxBaseFee + maxPriorityFee;
-
-        return safeGasPrice;
+        return this.applyGasPriceBuffer(maxBaseFee + maxPriorityFee, bufferPercent);
     }
 
     /**
