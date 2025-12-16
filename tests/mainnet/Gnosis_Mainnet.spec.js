@@ -312,8 +312,6 @@ describe('DKG Asset Lifecycle on Gnosis Mainnet', function () {
 
               create_result = await DkgClient.asset.create(content, {
                 epochsNum: 2,
-                minimumNumberOfFinalizationConfirmations: 1,
-                minimumNumberOfNodeReplications: 1,
               });
 
               const publishEnd = Date.now();
@@ -342,7 +340,7 @@ describe('DKG Asset Lifecycle on Gnosis Mainnet', function () {
           // Try to extract operation ID and UAL from error object (if DKG finality failed after blockchain success)
           let operationId = 'N/A';
           let actualUal = null;
-          
+
           // Check if error object has UAL and operationId (attached when DKG finality fails)
           if (error.UAL) {
             actualUal = error.UAL;
