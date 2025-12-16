@@ -284,7 +284,7 @@ export default class BlockchainServiceBase {
                             while (
                                 !currentReceipt &&
                                 Date.now() - reminingStartTime <
-                                blockchain.transactionReminingMaxWaitTime
+                                    blockchain.transactionReminingMaxWaitTime
                             ) {
                                 await sleepForMilliseconds(
                                     blockchain.transactionReminingPollingInterval,
@@ -319,7 +319,13 @@ export default class BlockchainServiceBase {
         }
     }
 
-    async waitForEventFinality(initialReceipt, eventName, expectedEventId, blockchain, confirmations = 1) {
+    async waitForEventFinality(
+        initialReceipt,
+        eventName,
+        expectedEventId,
+        blockchain,
+        confirmations = 1,
+    ) {
         await this.ensureBlockchainInfo(blockchain);
         const web3Instance = await this.getWeb3Instance(blockchain);
 
@@ -332,7 +338,10 @@ export default class BlockchainServiceBase {
         // eslint-disable-next-line no-constant-condition
         while (true) {
             // 1. Wait until the block containing the tx is at the required depth
-            while (await web3Instance.eth.getBlockNumber() < receipt.blockNumber + confirmations) {
+            while (
+                (await web3Instance.eth.getBlockNumber()) <
+                receipt.blockNumber + confirmations
+            ) {
                 await sleepForMilliseconds(polling);
             }
 
@@ -354,7 +363,9 @@ export default class BlockchainServiceBase {
 
                 const idMatches =
                     expectedEventId == null ||
-                    (eventData && eventData.id != null && eventData.id.toString() === expectedEventId.toString());
+                    (eventData &&
+                        eventData.id != null &&
+                        eventData.id.toString() === expectedEventId.toString());
 
                 if (eventData && idMatches) {
                     return { receipt: currentReceipt, eventData };
@@ -435,7 +446,6 @@ export default class BlockchainServiceBase {
     }
 
     async needsMoreAllowance(sender, tokenAmount, blockchain, knowledgeCollectionAddress) {
-
         const allowance = await this.callContractFunction(
             'Token',
             'allowance',
@@ -443,22 +453,15 @@ export default class BlockchainServiceBase {
             blockchain,
         );
 
-        if (BigInt(allowance) < BigInt(tokenAmount))
-            return true;
-        else
-            return false;
+        if (BigInt(allowance) < BigInt(tokenAmount)) return true;
+        else return false;
     }
 
     async maxAllowancePerTransaction(sender, blockchain) {
         if (blockchain.maxAllowance) {
             return blockchain.maxAllowance;
         } else {
-            return await this.callContractFunction(
-                'Token',
-                'balanceOf',
-                [sender],
-                blockchain,
-            );
+            return await this.callContractFunction('Token', 'balanceOf', [sender], blockchain);
         }
     }
 
@@ -468,27 +471,22 @@ export default class BlockchainServiceBase {
             blockchain,
         );
 
-        const needsMoreAllowance = await this.needsMoreAllowance(sender, tokenAmount, blockchain, knowledgeCollectionAddress);
-
-        let allowanceThreshold = await this.maxAllowancePerTransaction(sender, blockchain);
+        const needsMoreAllowance = await this.needsMoreAllowance(
+            sender,
+            tokenAmount,
+            blockchain,
+            knowledgeCollectionAddress,
+        );
 
         if (needsMoreAllowance) {
+            const allowanceThreshold = await this.maxAllowancePerTransaction(sender, blockchain);
             await this.executeContractFunction(
                 'Token',
                 'approve',
                 [knowledgeCollectionAddress, allowanceThreshold],
                 blockchain,
             );
-            return {
-                allowanceIncreased: true,
-                allowanceCurrent: allowanceThreshold,
-            };
         }
-
-        return {
-            allowanceIncreased: false,
-            allowanceCurrent: allowanceThreshold,
-        };
     }
 
     // Knowledge assets operations
@@ -1062,7 +1060,7 @@ export default class BlockchainServiceBase {
 
         if (
             this[blockchain.name].contractAddresses[blockchain.hubContract][
-            'ParanetIncentivesPoolStorage'
+                'ParanetIncentivesPoolStorage'
             ] !== contractAddress
         ) {
             this[blockchain.name].contractAddresses[blockchain.hubContract][
@@ -1074,7 +1072,7 @@ export default class BlockchainServiceBase {
             ] = await new web3Instance.eth.Contract(
                 this.abis['ParanetIncentivesPoolStorage'],
                 this[blockchain.name].contractAddresses[blockchain.hubContract][
-                'ParanetIncentivesPoolStorage'
+                    'ParanetIncentivesPoolStorage'
                 ],
                 { from: blockchain.publicKey },
             );
@@ -1109,7 +1107,7 @@ export default class BlockchainServiceBase {
 
         if (
             this[blockchain.name].contractAddresses[blockchain.hubContract][
-            'ParanetIncentivesPool'
+                'ParanetIncentivesPool'
             ] !== contractAddress
         ) {
             this[blockchain.name].contractAddresses[blockchain.hubContract][
@@ -1120,7 +1118,7 @@ export default class BlockchainServiceBase {
                 await new web3Instance.eth.Contract(
                     this.abis['ParanetIncentivesPool'],
                     this[blockchain.name].contractAddresses[blockchain.hubContract][
-                    'ParanetIncentivesPool'
+                        'ParanetIncentivesPool'
                     ],
                     { from: blockchain.publicKey },
                 );
@@ -1409,9 +1407,8 @@ export default class BlockchainServiceBase {
             return {
                 supported: true,
                 oldestBlock: parseInt(feeHistory.oldestBlock, 16),
-                baseFeePerGas: feeHistory.baseFeePerGas.map(bf => BigInt(bf))
+                baseFeePerGas: feeHistory.baseFeePerGas.map((bf) => BigInt(bf)),
             };
-
         } catch (error) {
             // eth_feeHistory not supported on this network
             return {
@@ -1449,7 +1446,7 @@ export default class BlockchainServiceBase {
         }
 
         // Find max base fee from recent blocks
-        let maxBaseFee = baseFees.reduce((max, bf) => bf > max ? bf : max, 0n);
+        let maxBaseFee = baseFees.reduce((max, bf) => (bf > max ? bf : max), 0n);
 
         // Add buffer (e.g., 20% = multiply by 120, divide by 100)
         let safeGasPrice = (maxBaseFee * BigInt(100 + bufferPercent)) / 100n;
@@ -1472,7 +1469,10 @@ export default class BlockchainServiceBase {
         let eip1559Error = null;
 
         try {
-            const estimatedPrice = await this.estimateGasPriceFromFeeHistory(blockchain, blockchain.bufferPercent ? { bufferPercent: blockchain.bufferPercent } : {});
+            const estimatedPrice = await this.estimateGasPriceFromFeeHistory(
+                blockchain,
+                blockchain.bufferPercent ? { bufferPercent: blockchain.bufferPercent } : {},
+            );
             return estimatedPrice.toString();
         } catch (error) {
             eip1559Error = error;
@@ -1483,12 +1483,11 @@ export default class BlockchainServiceBase {
             } catch (fallbackError) {
                 throw new Error(
                     `All gas price estimation methods failed. ` +
-                    `EIP-1559: ${eip1559Error?.message || 'N/A'}. ` +
-                    `Fallback: ${fallbackError.message}`
+                        `EIP-1559: ${eip1559Error?.message || 'N/A'}. ` +
+                        `Fallback: ${fallbackError.message}`,
                 );
             }
         }
-
     }
 
     async getWalletBalances(blockchain) {
