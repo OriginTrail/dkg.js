@@ -1449,7 +1449,7 @@ export default class BlockchainServiceBase {
         let maxBaseFee = baseFees.reduce((max, bf) => (bf > max ? bf : max), 0n);
 
         // Add buffer (e.g., 20% = multiply by 120, divide by 100)
-        let safeGasPrice = (maxBaseFee * BigInt(100 + bufferPercent)) / 100n;
+        let safeGasPrice = (maxBaseFee * BigInt(100 + Number(bufferPercent))) / 100n;
 
         if (this.isGnosis(blockchain.name)) {
             safeGasPrice = safeGasPrice + 1n;
