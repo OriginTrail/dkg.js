@@ -185,7 +185,7 @@ export default class BlockchainServiceBase {
         );
         gasLimit = Math.round(gasLimit * blockchain.gasLimitMultiplier);
 
-        let gasPrice;
+        // let gasPrice;
         /*if (blockchain.previousTxGasPrice && blockchain.retryTx) {
             // Increase previous tx gas price by retryTxGasPriceMultiplier
             gasPrice = Math.round(blockchain.previousTxGasPrice * blockchain.retryTxGasPriceMultiplier);
@@ -224,7 +224,7 @@ export default class BlockchainServiceBase {
             gasPrice = blockchain.gasPrice || (await this.getSmartGasPrice(blockchain));
         }*/
 
-        gasPrice = await this.getSmartGasPrice(blockchain);
+        const gasPrice = blockchain.gasPrice ?? (await this.getSmartGasPrice(blockchain));
 
         if (blockchain.simulateTxs) {
             await web3Instance.eth.call({
