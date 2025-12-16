@@ -250,9 +250,9 @@ const DEFAULT_PROXIMITY_SCORE_FUNCTIONS_PAIR_IDS = {
 const DEFAULT_NEUROWEB_FINALITY_PARAMETERS = {
     WAIT_NEUROWEB_TX_FINALIZATION: false,
     TX_FINALITY_POLLING_INTERVAL: 6_000,
-    TX_FINALITY_MAX_WAIT_TIME: 60_000,
+    TX_FINALITY_MAX_WAIT_TIME: 300_000,
     TX_REMINING_POLLING_INTERVAL: 6_000,
-    TX_REMINING_MAX_WAIT_TIME: 60_000,
+    TX_REMINING_MAX_WAIT_TIME: 300_000, 
 };
 
 const DEFAULT_PARAMETERS = {
@@ -273,6 +273,7 @@ const DEFAULT_PARAMETERS = {
     SIMULATE_TXS: false,
     FORCE_REPLACE_TXS: false,
     GAS_LIMIT_MULTIPLIER: 1,
+    RETRY_TX_GAS_PRICE_MULTIPLIER: 3,
 };
 
 const DEFAULT_GAS_PRICE = {
@@ -282,6 +283,8 @@ const DEFAULT_GAS_PRICE = {
 };
 
 const CHUNK_BYTE_SIZE$1 = 32;
+
+const FEE_HISTORY_BLOCK_COUNT = 5;
 
 function nodeSupported() {
     return typeof window === 'undefined';
@@ -797,6 +800,7 @@ class AssetOperationsManager {
         let knowledgeCollectionId;
         let mintKnowledgeCollectionReceipt;
 
+        try {
         ({ knowledgeCollectionId, receipt: mintKnowledgeCollectionReceipt } =
             await this.blockchainService.createKnowledgeCollection(
                 {
@@ -820,6 +824,11 @@ class AssetOperationsManager {
                 blockchain,
                 stepHooks,
             ));
+        } catch (error) {
+            // Attach operationId to blockchain transaction errors (no UAL yet at this stage)
+            error.operationId = publishOperationId;
+            throw error;
+        }
 
         // ------------------------------------------------------------------
         // Ensure KC minting transaction is reorg-safe by waiting until it is
@@ -829,6 +838,7 @@ class AssetOperationsManager {
         const minimumBlockConfirmations = options.minimumBlockConfirmations ?? 1;
 
         if (blockchain.name && blockchain.name.startsWith('otp') && minimumBlockConfirmations > 0) {
+            try {
             const { receipt: finalizedMintReceipt, eventData } =
                 await this.blockchainService.waitForEventFinality(
                     mintKnowledgeCollectionReceipt,
@@ -840,12 +850,20 @@ class AssetOperationsManager {
 
             mintKnowledgeCollectionReceipt = finalizedMintReceipt;
             knowledgeCollectionId = parseInt(eventData.id, 10);
+            } catch (error) {
+                // Generate UAL with available data and attach it along with operationId
+                const UAL = deriveUAL$1(blockchain.name, contentAssetStorageAddress, knowledgeCollectionId);
+                error.UAL = UAL;
+                error.operationId = publishOperationId;
+                throw error;
+            }
         }
 
         const UAL = deriveUAL$1(blockchain.name, contentAssetStorageAddress, knowledgeCollectionId);
 
         let finalityStatusResult = 0;
         if (minimumNumberOfFinalizationConfirmations > 0) {
+            try {
             finalityStatusResult = await this.nodeApiService.finalityStatus(
                 endpoint,
                 port,
@@ -855,6 +873,12 @@ class AssetOperationsManager {
                 maxNumberOfRetries,
                 frequency,
             );
+            } catch (error) {
+                // Attach UAL and operationId to the error so they can be logged even when finality fails
+                error.UAL = UAL;
+                error.operationId = publishOperationId;
+                throw error;
+            }
         }
 
         return {
@@ -3229,6 +3253,8 @@ class HttpService {
     ) {
         let retries = 0;
         let finality = 0;
+        const startTime = Date.now();
+        const maxTotalTime = 300_000; // 5 minutes total timeout
 
         const axios_config = {
             method: 'get',
@@ -3238,9 +3264,16 @@ class HttpService {
         };
 
         do {
+            // Check for total timeout
+            if (Date.now() - startTime >= maxTotalTime) {
+                throw Error(
+                    `Timeout: DKG finality exceeded maximum wait time (5 minutes) - Last finality: ${finality}, Required: ${requiredConfirmations}`
+                );
+            }
+
             if (retries > maxNumberOfRetries) {
                 throw Error(
-                    `Unable to achieve required confirmations. Max number of retries (${maxNumberOfRetries}) reached.`,
+                    `Unable to achieve required confirmations. Max number of retries (${maxNumberOfRetries}) reached. Last finality: ${finality}, Required: ${requiredConfirmations}`,
                 );
             }
 
@@ -3254,7 +3287,10 @@ class HttpService {
                 const response = await axios(axios_config);
                 finality = response.data.finality || 0;
             } catch (e) {
-                finality = 0;
+                // Don't reset finality to 0 on network errors, keep the last known value
+                // Only reset if we get a successful response with 0 finality
+                console.warn(`Warning: Network error during finality check for ${ual}: ${e.message}`);
+                // Don't increment finality, keep the last known value
             }
         } while (finality < requiredConfirmations && retries <= maxNumberOfRetries);
 
@@ -3274,6 +3310,8 @@ class HttpService {
             status: OPERATION_STATUSES$1.PENDING,
         };
         let retries = 0;
+        const startTime = Date.now();
+        const maxTotalTime = 300_000; // 5 minutes total timeout
 
         const axios_config = {
             method: 'get',
@@ -3281,6 +3319,18 @@ class HttpService {
             headers: this.prepareRequestConfig(authToken),
         };
         do {
+            // Check for total timeout
+            if (Date.now() - startTime >= maxTotalTime) {
+                response.data = {
+                    ...response.data,
+                    data: {
+                        errorType: 'DKG_CLIENT_ERROR',
+                        errorMessage: `Timeout: OT-node operation polling exceeded maximum wait time (5 minutes) - Operation: ${operation}, ID: ${operationId}`,
+                    },
+                };
+                break;
+            }
+
             if (retries > maxNumberOfRetries) {
                 response.data = {
                     ...response.data,
@@ -3501,16 +3551,16 @@ class BlockchainServiceBase {
         const encodedABI = await contractInstance.methods[functionName](...args).encodeABI();
 
         let gasLimit = Number(
-            await contractInstance.methods[functionName](...args).estimateGas({
-                from: publicKey,
-            }),
-        );
-        gasLimit = Math.round(gasLimit * blockchain.gasLimitMultiplier);
+                await contractInstance.methods[functionName](...args).estimateGas({
+                    from: publicKey,
+                }),
+            );
+            gasLimit = Math.round(gasLimit * blockchain.gasLimitMultiplier);
 
-        let gasPrice;
-        if (blockchain.previousTxGasPrice && blockchain.retryTx) {
-            // Increase previous tx gas price by 20%
-            gasPrice = Math.round(blockchain.previousTxGasPrice * 1.2);
+        // let gasPrice;
+        /*if (blockchain.previousTxGasPrice && blockchain.retryTx) {
+            // Increase previous tx gas price by retryTxGasPriceMultiplier
+            gasPrice = Math.round(blockchain.previousTxGasPrice * blockchain.retryTxGasPriceMultiplier);
         } else if (blockchain.forceReplaceTxs) {
             // Get the current transaction count (nonce) of the wallet, including pending transactions
             const currentNonce = await web3Instance.eth.getTransactionCount(publicKey, 'pending');
@@ -3530,30 +3580,32 @@ class BlockchainServiceBase {
                 );
 
                 if (pendingTx) {
-                    // If found, increase gas price of pending tx by 20%
-                    gasPrice = Math.round(Number(pendingTx.gasPrice) * 1.2);
+                    // If found, increase gas price of pending tx by retryTxGasPriceMultiplier
+                    gasPrice = Math.round(Number(pendingTx.gasPrice) * blockchain.retryTxGasPriceMultiplier);
                 } else {
-                    // If not found, use default/network gas price increased by 20%
+                    // If not found, use default/network gas price increased by retryTxGasPriceMultiplier
                     // Theoretically this should never happen
                     gasPrice = Math.round(
-                        (blockchain.gasPrice || (await this.getNetworkGasPrice(blockchain))) * 1.2,
+                        (blockchain.gasPrice || (await this.getSmartGasPrice(blockchain))) * blockchain.retryTxGasPriceMultiplier,
                     );
                 }
             } else {
-                gasPrice = blockchain.gasPrice || (await this.getNetworkGasPrice(blockchain));
+                gasPrice = blockchain.gasPrice || (await this.getSmartGasPrice(blockchain));
             }
         } else {
-            gasPrice = blockchain.gasPrice || (await this.getNetworkGasPrice(blockchain));
-        }
+            gasPrice = blockchain.gasPrice || (await this.getSmartGasPrice(blockchain));
+        }*/
+
+        const gasPrice = blockchain.gasPrice ?? (await this.getSmartGasPrice(blockchain));
 
         if (blockchain.simulateTxs) {
-            await web3Instance.eth.call({
-                to: contractInstance.options.address,
-                data: encodedABI,
-                from: publicKey,
-                gasPrice,
-                gas: gasLimit,
-            });
+                await web3Instance.eth.call({
+                    to: contractInstance.options.address,
+                    data: encodedABI,
+                    from: publicKey,
+                    gasPrice,
+                    gas: gasLimit,
+                });
         }
 
         return {
@@ -3639,20 +3691,38 @@ class BlockchainServiceBase {
         }
     }
 
-    async waitForEventFinality(initialReceipt, eventName, expectedEventId, blockchain, confirmations = 1) {
+    async waitForEventFinality(
+        initialReceipt,
+        eventName,
+        expectedEventId,
+        blockchain,
+        confirmations = 1,
+    ) {
         await this.ensureBlockchainInfo(blockchain);
         const web3Instance = await this.getWeb3Instance(blockchain);
 
         // Guaranteed to be defined for OTP chains
         const polling = blockchain.transactionFinalityPollingInterval;
         const reminingPollingInterval = blockchain.transactionReminingPollingInterval;
+        const maxWaitTime = blockchain.transactionFinalityMaxWaitTime || 60_000; // Default 60 seconds
 
         let receipt = initialReceipt;
+        const startTime = Date.now();
 
         // eslint-disable-next-line no-constant-condition
         while (true) {
+            // Check for timeout
+            if (Date.now() - startTime >= maxWaitTime) {
+                throw new Error(
+                    `Timeout: Blockchain finality exceeded maximum wait time (${maxWaitTime / 1000}s)`
+                );
+            }
+
             // 1. Wait until the block containing the tx is at the required depth
-            while (await web3Instance.eth.getBlockNumber() < receipt.blockNumber + confirmations) {
+            while (
+                (await web3Instance.eth.getBlockNumber()) <
+                receipt.blockNumber + confirmations
+            ) {
                 await sleepForMilliseconds(polling);
             }
 
@@ -3674,7 +3744,9 @@ class BlockchainServiceBase {
 
                 const idMatches =
                     expectedEventId == null ||
-                    (eventData && eventData.id != null && eventData.id.toString() === expectedEventId.toString());
+                    (eventData &&
+                        eventData.id != null &&
+                        eventData.id.toString() === expectedEventId.toString());
 
                 if (eventData && idMatches) {
                     return { receipt: currentReceipt, eventData };
@@ -3683,11 +3755,11 @@ class BlockchainServiceBase {
 
             // 3. Re-org detected: wait for tx to appear again
             const timeoutMs = 60 * 1000; // 1 minute
-            const startTime = Date.now();
+            const reorgStartTime = Date.now();
             let newReceipt = null;
             // eslint-disable-next-line no-await-in-loop
             while (!newReceipt) {
-                if (Date.now() - startTime >= timeoutMs) {
+                if (Date.now() - reorgStartTime >= timeoutMs) {
                     throw new Error(
                         `Timeout: Transaction receipt for ${receipt.transactionHash} not found after 1 minute of re-mining polling.`,
                     );
@@ -3754,12 +3826,7 @@ class BlockchainServiceBase {
         );
     }
 
-    async increaseKnowledgeCollectionAllowance(sender, tokenAmount, blockchain) {
-        const knowledgeCollectionAddress = await this.getContractAddress(
-            'KnowledgeCollection',
-            blockchain,
-        );
-
+    async needsMoreAllowance(sender, tokenAmount, blockchain, knowledgeCollectionAddress) {
         const allowance = await this.callContractFunction(
             'Token',
             'allowance',
@@ -3767,26 +3834,41 @@ class BlockchainServiceBase {
             blockchain,
         );
 
-        const allowanceGap = BigInt(tokenAmount) - BigInt(allowance);
+        if (BigInt(allowance) < BigInt(tokenAmount)) return true;
 
-        if (allowanceGap > 0) {
+        return false;
+    }
+
+    async maxAllowancePerTransaction(sender, blockchain) {
+        if (blockchain.maxAllowance) {
+            return blockchain.maxAllowance;
+        } else {
+            return await this.callContractFunction('Token', 'balanceOf', [sender], blockchain);
+        }
+    }
+
+    async increaseKnowledgeCollectionAllowance(sender, tokenAmount, blockchain) {
+        const knowledgeCollectionAddress = await this.getContractAddress(
+            'KnowledgeCollection',
+            blockchain,
+        );
+
+        const needsMoreAllowance = await this.needsMoreAllowance(
+            sender,
+            tokenAmount,
+            blockchain,
+            knowledgeCollectionAddress,
+        );
+
+        if (needsMoreAllowance) {
+            const allowanceThreshold = await this.maxAllowancePerTransaction(sender, blockchain);
             await this.executeContractFunction(
                 'Token',
-                'increaseAllowance',
-                [knowledgeCollectionAddress, allowanceGap],
+                'approve',
+                [knowledgeCollectionAddress, allowanceThreshold],
                 blockchain,
             );
-
-            return {
-                allowanceIncreased: true,
-                allowanceGap,
-            };
         }
-
-        return {
-            allowanceIncreased: false,
-            allowanceGap,
-        };
     }
 
     // Knowledge assets operations
@@ -3799,19 +3881,16 @@ class BlockchainServiceBase {
         stepHooks = emptyHooks$1,
     ) {
         const sender = await this.getPublicKey(blockchain);
-        let allowanceIncreased = false;
-        let allowanceGap = 0;
 
         try {
             if (requestData?.paymaster && requestData?.paymaster !== ZERO_ADDRESS) {
                 // Handle the case when payer is passed
             } else {
-                ({ allowanceIncreased, allowanceGap } =
-                    await this.increaseKnowledgeCollectionAllowance(
-                        sender,
-                        requestData.tokenAmount,
-                        blockchain,
-                    ));
+                await this.increaseKnowledgeCollectionAllowance(
+                    sender,
+                    requestData.tokenAmount,
+                    blockchain,
+                );
             }
 
             stepHooks.afterHook({
@@ -3850,9 +3929,7 @@ class BlockchainServiceBase {
 
             return { knowledgeCollectionId: id, receipt };
         } catch (error) {
-            if (allowanceIncreased) {
-                await this.decreaseKnowledgeCollectionAllowance(allowanceGap, blockchain);
-            }
+            console.error('createKnowledgeCollection failed:', error);
             throw error;
         }
     }
@@ -4693,6 +4770,111 @@ class BlockchainServiceBase {
         }
     }
 
+    /**
+     * Get fee history from the last N blocks using eth_feeHistory RPC call
+     * @param {Object} blockchain - Blockchain configuration
+     * @param {number} blockCount - Number of blocks to fetch (default: 5)
+     * @returns {Promise<Object>} Fee history data with baseFeePerGas and priorityFees arrays
+     */
+    async getFeeHistory(blockchain, blockCount = 5) {
+        await this.ensureBlockchainInfo(blockchain);
+        const web3Instance = await this.getWeb3Instance(blockchain);
+
+        try {
+            // eth_feeHistory params: blockCount, newestBlock, rewardPercentiles
+            // [50] = median priority fee per block
+            const feeHistory = await web3Instance.eth.getFeeHistory(blockCount, 'latest', [50]);
+
+            // Extract median priority fees from each block (reward[blockIndex][percentileIndex])
+            const priorityFees = feeHistory.reward
+                ? feeHistory.reward.map((blockRewards) => BigInt(blockRewards[0] || 0))
+                : [];
+
+            return {
+                supported: true,
+                oldestBlock: parseInt(feeHistory.oldestBlock, 16),
+                baseFeePerGas: feeHistory.baseFeePerGas.map((bf) => BigInt(bf)),
+                priorityFees,
+            };
+        } catch (error) {
+            // eth_feeHistory not supported on this network
+            return {
+                supported: false,
+                error: error.message,
+            };
+        }
+    }
+
+    /**
+     * Apply buffer percentage to a gas price
+     * @param {BigInt} gasPrice - Gas price in wei
+     * @param {number} gasPriceBufferPercent - Buffer percentage to add
+     * @returns {BigInt} Gas price with buffer applied
+     */
+    applyGasPriceBuffer(gasPrice, gasPriceBufferPercent) {
+        if (!gasPriceBufferPercent) return gasPrice;
+        return (gasPrice * BigInt(100 + Number(gasPriceBufferPercent))) / 100n;
+    }
+
+    /**
+     * Estimate safe gas price using eth_feeHistory (EIP-1559 style)
+     * Takes max base fee from last N blocks, adds a buffer for volatility,
+     * and includes the priority fee (tip) for validator incentive
+     * @param {Object} blockchain - Blockchain configuration
+     * @returns {Promise<BigInt>} Estimated gas price in wei
+     */
+    async estimateGasPriceFromFeeHistory(blockchain) {
+        const { gasPriceBufferPercent } = blockchain;
+        const feeHistory = await this.getFeeHistory(blockchain, FEE_HISTORY_BLOCK_COUNT);
+
+        // Fallback to network gas price if feeHistory not supported or empty
+        if (!feeHistory.supported) {
+            return this.applyGasPriceBuffer(
+                BigInt(await this.getNetworkGasPrice(blockchain)),
+                gasPriceBufferPercent,
+            );
+        }
+
+        const baseFees = Array.from(feeHistory.baseFeePerGas);
+        const priorityFees = Array.from(feeHistory.priorityFees);
+
+        if (baseFees.length === 0 || priorityFees.length === 0) {
+            return this.applyGasPriceBuffer(
+                BigInt(await this.getNetworkGasPrice(blockchain)),
+                gasPriceBufferPercent,
+            );
+        }
+
+        // Find max base fee and priority fee from recent blocks
+        const maxBaseFee = baseFees.reduce((max, bf) => (bf > max ? bf : max), 0n);
+        const maxPriorityFee = priorityFees.reduce((max, pf) => (pf > max ? pf : max), 0n);
+
+        return this.applyGasPriceBuffer(maxBaseFee + maxPriorityFee, gasPriceBufferPercent);
+    }
+
+    /**
+     * Get gas price with EIP-1559 estimation (with fallback)
+     * Tries eth_feeHistory first, falls back to legacy methods
+     * @param {Object} blockchain - Blockchain configuration
+     * @returns {Promise<string>} Gas price in wei (as string for web3 compatibility)
+     */
+    async getSmartGasPrice(blockchain) {
+        try {
+            const estimatedPrice = await this.estimateGasPriceFromFeeHistory(blockchain);
+            return estimatedPrice.toString();
+        } catch (eip1559Error) {
+            try {
+                return await this.getNetworkGasPrice(blockchain);
+            } catch (fallbackError) {
+                throw new Error(
+                    `All gas price estimation methods failed. ` +
+                        `EIP-1559: ${eip1559Error?.message || 'N/A'}. ` +
+                        `Fallback: ${fallbackError.message}`,
+                );
+            }
+        }
+    }
+
     async getWalletBalances(blockchain) {
         await this.ensureBlockchainInfo(blockchain);
         const web3Instance = await this.getWeb3Instance(blockchain);
@@ -4973,8 +5155,17 @@ class NodeBlockchainService extends BlockchainServiceBase {
         let previousTxGasPrice;
         let simulationSucceeded = false;
         let transactionRetried = false;
+        const startTime = Date.now();
+        const maxWaitTime = 300_000; // 5 minutes total timeout
 
         while (receipt === undefined) {
+            // Check for timeout
+            if (Date.now() - startTime >= maxWaitTime) {
+                throw new Error(
+                    `Timeout: Blockchain transaction receipt not received within maximum wait time (5 minutes)`
+                );
+            }
+
             try {
                 const tx = await this.prepareTransaction(
                     contractInstance,
@@ -6105,6 +6296,17 @@ class InputService {
             BLOCKCHAINS[environment][name]?.gasPriceOracleLink ??
             undefined;
 
+        const maxAllowance =
+            options.blockchain?.maxAllowance ?? this.config.blockchain?.maxAllowance ?? undefined;
+        const gasPriceBufferPercent =
+            options.blockchain?.gasPriceBufferPercent ??
+            this.config.blockchain?.gasPriceBufferPercent ??
+            undefined;
+        const retryTxGasPriceMultiplier =
+            options.blockchain?.retryTxGasPriceMultiplier ??
+            this.config.blockchain?.retryTxGasPriceMultiplier ??
+            DEFAULT_PARAMETERS.RETRY_TX_GAS_PRICE_MULTIPLIER; // e.g., 1.2
+
         const blockchainConfig = {
             name,
             rpc,
@@ -6118,6 +6320,9 @@ class InputService {
             simulateTxs,
             forceReplaceTxs,
             gasPriceOracleLink,
+            maxAllowance,
+            gasPriceBufferPercent,
+            retryTxGasPriceMultiplier,
         };
 
         if (name && name.startsWith('otp')) {

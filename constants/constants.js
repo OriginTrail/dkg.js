@@ -219,6 +219,7 @@ export const DEFAULT_PARAMETERS = {
     SIMULATE_TXS: false,
     FORCE_REPLACE_TXS: false,
     GAS_LIMIT_MULTIPLIER: 1,
+    RETRY_TX_GAS_PRICE_MULTIPLIER: 3,
 };
 
 export const DEFAULT_GAS_PRICE = {
@@ -236,3 +237,5 @@ export const PARANET_KNOWLEDGE_ASSET_ACCESS_POLICY = {
 };
 
 export const CHUNK_BYTE_SIZE = 32;
+
+export const FEE_HISTORY_BLOCK_COUNT = 5;

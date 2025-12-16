@@ -192,6 +192,17 @@ export default class InputService {
             BLOCKCHAINS[environment][name]?.gasPriceOracleLink ??
             undefined;
 
+        const maxAllowance =
+            options.blockchain?.maxAllowance ?? this.config.blockchain?.maxAllowance ?? undefined;
+        const gasPriceBufferPercent =
+            options.blockchain?.gasPriceBufferPercent ??
+            this.config.blockchain?.gasPriceBufferPercent ??
+            undefined;
+        const retryTxGasPriceMultiplier =
+            options.blockchain?.retryTxGasPriceMultiplier ??
+            this.config.blockchain?.retryTxGasPriceMultiplier ??
+            DEFAULT_PARAMETERS.RETRY_TX_GAS_PRICE_MULTIPLIER; // e.g., 1.2
+
         const blockchainConfig = {
             name,
             rpc,
@@ -205,6 +216,9 @@ export default class InputService {
             simulateTxs,
             forceReplaceTxs,
             gasPriceOracleLink,
+            maxAllowance,
+            gasPriceBufferPercent,
+            retryTxGasPriceMultiplier,
         };
 
         if (name && name.startsWith('otp')) {
