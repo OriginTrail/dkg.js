@@ -398,6 +398,7 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
           } else {
             console.log(`❌ Publish failed | No UAL | Operation ID: ${operationId}`);
             ual = 'did:dkg:otp:20430/0xcdb28e93ed340ec10a71bba00a31dbfcf1bd5d37/179542';
+            console.log(`ℹ️  Using fallback UAL for remaining operations: ${ual}`);
           }
           
           const reason = actualUal ? 'Publish failed but UAL exists' : 'Publish failed — No UAL';

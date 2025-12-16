@@ -397,6 +397,7 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
           } else {
             console.log(`❌ Publish failed | No UAL | Operation ID: ${operationId}`);
             ual = 'did:dkg:gnosis:10200/0x592aae7abeed0ecf399c2628b3d18f769c544383/57402';
+            console.log(`ℹ️  Using fallback UAL for remaining operations: ${ual}`);
           }
           
           const reason = actualUal ? 'Publish failed but UAL exists' : 'Publish failed — No UAL';

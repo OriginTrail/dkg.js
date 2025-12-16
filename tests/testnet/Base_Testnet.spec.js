@@ -397,6 +397,7 @@ describe('DKG Asset Lifecycle on Base Testnet', function () {
           } else {
             console.log(`❌ Publish failed | No UAL | Operation ID: ${operationId}`);
             ual = 'did:dkg:base:84532/0xd5550173b0f7b8766ab2770e4ba86caf714a5af5/237041';
+            console.log(`ℹ️  Using fallback UAL for remaining operations: ${ual}`);
           }
           
           const reason = actualUal ? 'Publish failed but UAL exists' : 'Publish failed — No UAL';
