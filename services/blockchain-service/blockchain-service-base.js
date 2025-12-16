@@ -1436,8 +1436,8 @@ export default class BlockchainServiceBase {
             return BigInt(await this.getNetworkGasPrice(blockchain));
         }
 
-        // Get base fees (exclude last element - it's for the next block)
-        const baseFees = feeHistory.baseFeePerGas.slice(0, -1);
+        // Get base fees
+        const baseFees = Array.from(feeHistory.baseFeePerGas);
 
         if (baseFees.length === 0) {
             return BigInt(await this.getNetworkGasPrice(blockchain));
