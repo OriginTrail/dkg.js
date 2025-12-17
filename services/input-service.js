@@ -198,6 +198,10 @@ export default class InputService {
             options.blockchain?.gasPriceBufferPercent ??
             this.config.blockchain?.gasPriceBufferPercent ??
             undefined;
+        const priorityFeePercentile =
+            options.blockchain?.priorityFeePercentile ??
+            this.config.blockchain?.priorityFeePercentile ??
+            undefined;
         const retryTxGasPriceMultiplier =
             options.blockchain?.retryTxGasPriceMultiplier ??
             this.config.blockchain?.retryTxGasPriceMultiplier ??
@@ -218,6 +222,7 @@ export default class InputService {
             gasPriceOracleLink,
             maxAllowance,
             gasPriceBufferPercent,
+            priorityFeePercentile,
             retryTxGasPriceMultiplier,
         };
 
