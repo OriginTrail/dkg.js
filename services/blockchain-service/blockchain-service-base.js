@@ -1410,7 +1410,7 @@ export default class BlockchainServiceBase {
         try {
             // eth_feeHistory params: blockCount, newestBlock, rewardPercentiles
             // [50] = median priority fee per block
-            const feeHistory = await web3Instance.eth.getFeeHistory(blockCount, 'latest', [95]);
+            const feeHistory = await web3Instance.eth.getFeeHistory(blockCount, 'latest', [100]);
 
             // Extract median priority fees from each block (reward[blockIndex][percentileIndex])
             const priorityFees = feeHistory.reward
