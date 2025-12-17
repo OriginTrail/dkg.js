@@ -869,20 +869,28 @@ class AssetOperationsManager {
                             contentType: options.contentType || 'all',
                         });
 
-                        // Verify asset has assertion data
-                        if (getResult && getResult.assertion) {
+                        // Check if asset has assertion data and operation completed successfully
+                        if (getResult && getResult.assertion && 
+                            getResult.operation?.get?.status === 'COMPLETED') {
                             assetVerified = true;
                             const verificationTime = ((Date.now() - verificationStartTime) / 1000).toFixed(1);
                             console.log(`✅ Asset verified: Successfully retrieved via GET after ${verificationTime}s`);
+                        } else if (getResult && !getResult.assertion) {
+                            // Asset returned but missing assertion - node is processing
+                            const remainingTime = Math.floor((verificationMaxWaitTime - (Date.now() - verificationStartTime)) / 1000);
+                            const opStatus = getResult.operation?.get?.status || 'UNKNOWN';
+                            console.log(`⏳ Asset indexing in progress (status: ${opStatus}), retrying in ${verificationRetryInterval / 1000}s... (${remainingTime}s remaining)`);
+                            await new Promise(resolve => setTimeout(resolve, verificationRetryInterval));
                         } else {
-                            // Asset returned but missing assertion - keep retrying
-                            console.log(`⚠️  Asset GET returned but missing assertion data, retrying in ${verificationRetryInterval / 1000}s...`);
+                            // Unexpected state
+                            const remainingTime = Math.floor((verificationMaxWaitTime - (Date.now() - verificationStartTime)) / 1000);
+                            console.log(`⚠️  Unexpected GET result, retrying in ${verificationRetryInterval / 1000}s... (${remainingTime}s remaining)`);
                             await new Promise(resolve => setTimeout(resolve, verificationRetryInterval));
                         }
                     } catch (getError) {
                         // Asset not ready yet, wait and retry
                         const remainingTime = Math.floor((verificationMaxWaitTime - (Date.now() - verificationStartTime)) / 1000);
-                        console.log(`⏳ Asset not yet available (${getError.message.split('\n')[0]}), retrying in ${verificationRetryInterval / 1000}s... (${remainingTime}s remaining)`);
+                        console.log(`⏳ Asset not yet available, retrying in ${verificationRetryInterval / 1000}s... (${remainingTime}s remaining)`);
                         await new Promise(resolve => setTimeout(resolve, verificationRetryInterval));
                     }
                 }
