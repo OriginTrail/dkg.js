@@ -840,16 +840,22 @@ class AssetOperationsManager {
         let assetVerified = false;
         const verificationStartTime = Date.now();
         const verificationMaxWaitTime = 5 * 60 * 1000; // 5 minutes
-        const verificationRetryInterval = 5 * 1000; // 5 seconds
+        const verificationRetryInterval = 10 * 1000; // 10 seconds between retries
+        const initialWaitTime = 15 * 1000; // 15 seconds initial wait for node to process blockchain event
 
         // Only verify if finality confirmations are required
         if (minimumNumberOfFinalizationConfirmations > 0) {
             try {
+                // Wait initially for node to process blockchain event and index the asset
+                console.log(`⏳ Waiting ${initialWaitTime / 1000}s for node to process and index asset...`);
+                await new Promise(resolve => setTimeout(resolve, initialWaitTime));
+
                 while (!assetVerified) {
                     // Check for timeout
-                    if (Date.now() - verificationStartTime >= verificationMaxWaitTime) {
+                    const elapsedTime = Date.now() - verificationStartTime;
+                    if (elapsedTime >= verificationMaxWaitTime) {
                         throw new Error(
-                            `Timeout: Asset verification exceeded maximum wait time (5 minutes) - Unable to retrieve published asset via GET`
+                            `Timeout: Asset verification exceeded maximum wait time (5 minutes) - Unable to retrieve published asset via GET after ${Math.floor(elapsedTime / 1000)}s`
                         );
                     }
 
@@ -866,12 +872,17 @@ class AssetOperationsManager {
                         // Verify asset has assertion data
                         if (getResult && getResult.assertion) {
                             assetVerified = true;
-                            console.log(`✅ Asset verified: Successfully retrieved via GET after ${((Date.now() - verificationStartTime) / 1000).toFixed(1)}s`);
+                            const verificationTime = ((Date.now() - verificationStartTime) / 1000).toFixed(1);
+                            console.log(`✅ Asset verified: Successfully retrieved via GET after ${verificationTime}s`);
                         } else {
-                            throw new Error('Asset GET returned but has no assertion data');
+                            // Asset returned but missing assertion - keep retrying
+                            console.log(`⚠️  Asset GET returned but missing assertion data, retrying in ${verificationRetryInterval / 1000}s...`);
+                            await new Promise(resolve => setTimeout(resolve, verificationRetryInterval));
                         }
                     } catch (getError) {
                         // Asset not ready yet, wait and retry
+                        const remainingTime = Math.floor((verificationMaxWaitTime - (Date.now() - verificationStartTime)) / 1000);
+                        console.log(`⏳ Asset not yet available (${getError.message.split('\n')[0]}), retrying in ${verificationRetryInterval / 1000}s... (${remainingTime}s remaining)`);
                         await new Promise(resolve => setTimeout(resolve, verificationRetryInterval));
                     }
                 }
