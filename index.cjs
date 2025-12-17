@@ -842,6 +842,7 @@ class AssetOperationsManager {
         const verificationMaxWaitTime = 5 * 60 * 1000; // 5 minutes
         const verificationRetryInterval = 10 * 1000; // 10 seconds between retries
         const initialWaitTime = 15 * 1000; // 15 seconds initial wait for node to process blockchain event
+        const gracePeriodForIndexing = 2 * 60 * 1000; // 2 minutes grace period before treating FAILED as permanent
 
         // Only verify if finality confirmations are required
         if (minimumNumberOfFinalizationConfirmations > 0) {
@@ -873,29 +874,36 @@ class AssetOperationsManager {
                         const opStatus = getResult.operation?.get?.status || 'UNKNOWN';
                         
                         if (opStatus === 'FAILED') {
-                            // Node explicitly failed to retrieve/index the asset - fail fast
-                            const errorMsg = getResult.operation?.get?.data?.errorMessage || 'Unable to find assertion on the network';
-                            throw new Error(`Asset GET operation failed on node: ${errorMsg}`);
-                        }
-                        
-                        // Check if asset has assertion data and operation completed successfully
-                        if (getResult && getResult.assertion && opStatus === 'COMPLETED') {
+                            // Only fail fast after the grace period
+                            // Before that, FAILED likely means "not indexed yet" not "will never work"
+                            if (elapsedTime > gracePeriodForIndexing) {
+                                const errorMsg = getResult.operation?.get?.data?.errorMessage || 'Unable to find assertion on the network';
+                                throw new Error(`Asset GET operation failed on node after ${Math.floor(elapsedTime / 1000)}s: ${errorMsg}`);
+                            } else {
+                                // Still within grace period - node might still be indexing from blockchain
+                                const remainingTime = Math.floor((verificationMaxWaitTime - elapsedTime) / 1000);
+                                console.log(`⏳ Node still indexing from blockchain (${Math.floor(elapsedTime / 1000)}s elapsed), retrying in ${verificationRetryInterval / 1000}s... (${remainingTime}s remaining)`);
+                                await new Promise(resolve => setTimeout(resolve, verificationRetryInterval));
+                            }
+                        } else if (getResult && getResult.assertion && opStatus === 'COMPLETED') {
+                            // Success!
                             assetVerified = true;
                             const verificationTime = ((Date.now() - verificationStartTime) / 1000).toFixed(1);
                             console.log(`✅ Asset verified: Successfully retrieved via GET after ${verificationTime}s`);
                         } else {
                             // Asset still processing - keep retrying
-                            const remainingTime = Math.floor((verificationMaxWaitTime - (Date.now() - verificationStartTime)) / 1000);
+                            const remainingTime = Math.floor((verificationMaxWaitTime - elapsedTime) / 1000);
                             console.log(`⏳ Asset indexing in progress (status: ${opStatus}), retrying in ${verificationRetryInterval / 1000}s... (${remainingTime}s remaining)`);
                             await new Promise(resolve => setTimeout(resolve, verificationRetryInterval));
                         }
                     } catch (getError) {
-                        // If it's our explicit failure message, re-throw it
-                        if (getError.message.includes('Asset GET operation failed on node')) {
+                        // If it's our explicit failure message (after grace period), re-throw it
+                        if (getError.message.includes('Asset GET operation failed on node after')) {
                             throw getError;
                         }
                         // Otherwise, asset not ready yet - wait and retry
-                        const remainingTime = Math.floor((verificationMaxWaitTime - (Date.now() - verificationStartTime)) / 1000);
+                        const elapsedTime = Date.now() - verificationStartTime;
+                        const remainingTime = Math.floor((verificationMaxWaitTime - elapsedTime) / 1000);
                         console.log(`⏳ Asset not yet available, retrying in ${verificationRetryInterval / 1000}s... (${remainingTime}s remaining)`);
                         await new Promise(resolve => setTimeout(resolve, verificationRetryInterval));
                     }
