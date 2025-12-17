@@ -280,6 +280,7 @@ describe('DKG Asset Lifecycle on Gnosis Mainnet', function () {
           name: BLOCKCHAIN_IDS.GNOSIS_MAINNET,
           publicKey: nodeKeys[name].publicKey,
           privateKey: nodeKeys[name].privateKey,
+          gasPriceBufferPercent: 20,
         },
         maxNumberOfRetries: 300,
         frequency: 2,
