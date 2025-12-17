@@ -1451,6 +1451,7 @@ export default class BlockchainServiceBase {
         // Fallback to network gas price if feeHistory not supported or empty
         if (!feeHistory.supported) {
             return this.applyGasPriceBuffer(
+                0n, 
                 BigInt(await this.getNetworkGasPrice(blockchain)),
                 gasPriceBufferPercent,
             );
@@ -1461,6 +1462,7 @@ export default class BlockchainServiceBase {
 
         if (baseFees.length === 0 || priorityFees.length === 0) {
             return this.applyGasPriceBuffer(
+                0n, 
                 BigInt(await this.getNetworkGasPrice(blockchain)),
                 gasPriceBufferPercent,
             );
