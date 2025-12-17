@@ -288,7 +288,7 @@ describe('DKG Asset Lifecycle on Gnosis Mainnet', function () {
         nodeApiVersion: '/v1',
       });
 
-      for (let i = 0; i < 10; i++) {
+      const runAssetFlow = async (i) => {
         console.log(`\nPublishing KA #${i + 1} on ${name}`);
         const content = {
           public: {
@@ -461,7 +461,17 @@ describe('DKG Asset Lifecycle on Gnosis Mainnet', function () {
           failedAssets.push(`KA #${i + 1} (${reason})`);
           remoteGetFail++;
         }
-      }
+      };
+
+      const tasks = Array.from({ length: 10 }, (_, i) =>
+        new Promise((resolve, reject) => {
+          setTimeout(() => {
+            runAssetFlow(i).then(resolve).catch(reject);
+          }, i * 10);
+        }),
+      );
+
+      await Promise.all(tasks);
 
       const avgPublishMs = publishSuccess > 0 && publishDurations.length > 0 ? publishDurations.reduce((a, b) => a + b, 0) / publishDurations.length : 0;
       const avgQueryMs = querySuccess > 0 && queryDurations.length > 0 ? queryDurations.reduce((a, b) => a + b, 0) / queryDurations.length : 0;
