@@ -470,6 +470,7 @@ describe('DKG Asset Lifecycle on Base Testnet', function () {
               name: BLOCKCHAIN_IDS.BASE_TESTNET,
               publicKey: nodeKeys[remoteNode.name].publicKey,
               privateKey: nodeKeys[remoteNode.name].privateKey,
+              gasPriceBufferPercent: 20,
             },
             maxNumberOfRetries: 300,
             frequency: 2,
