@@ -1402,7 +1402,8 @@ export default class BlockchainServiceBase {
         try {
             // eth_feeHistory params: blockCount, newestBlock, rewardPercentiles
             // [50] = median priority fee per block
-            const feeHistory = await web3Instance.eth.getFeeHistory(blockCount, 'latest', [50]);
+            const priorityFeePercentile = blockchain.priorityFeePercentile ?? 80;
+            const feeHistory = await web3Instance.eth.getFeeHistory(blockCount, 'latest', [priorityFeePercentile]);
 
             // Extract median priority fees from each block (reward[blockIndex][percentileIndex])
             const priorityFees = feeHistory.reward
@@ -1426,13 +1427,14 @@ export default class BlockchainServiceBase {
 
     /**
      * Apply buffer percentage to a gas price
-     * @param {BigInt} gasPrice - Gas price in wei
+     * @param {BigInt} maxBaseFee - base fee in wei
+     * @param {BigInt} maxPriorityFee - priority fee in wei
      * @param {number} gasPriceBufferPercent - Buffer percentage to add
      * @returns {BigInt} Gas price with buffer applied
      */
-    applyGasPriceBuffer(gasPrice, gasPriceBufferPercent) {
-        if (!gasPriceBufferPercent) return gasPrice;
-        return (gasPrice * BigInt(100 + Number(gasPriceBufferPercent))) / 100n;
+    applyGasPriceBuffer(maxBaseFee, maxPriorityFee, gasPriceBufferPercent) {
+        if (!gasPriceBufferPercent) return maxBaseFee + maxPriorityFee;
+        return ((maxBaseFee * BigInt(100 + Number(gasPriceBufferPercent))) / 100n) + maxPriorityFee;
     }
 
     /**
@@ -1449,6 +1451,7 @@ export default class BlockchainServiceBase {
         // Fallback to network gas price if feeHistory not supported or empty
         if (!feeHistory.supported) {
             return this.applyGasPriceBuffer(
+                0n, 
                 BigInt(await this.getNetworkGasPrice(blockchain)),
                 gasPriceBufferPercent,
             );
@@ -1459,6 +1462,7 @@ export default class BlockchainServiceBase {
 
         if (baseFees.length === 0 || priorityFees.length === 0) {
             return this.applyGasPriceBuffer(
+                0n, 
                 BigInt(await this.getNetworkGasPrice(blockchain)),
                 gasPriceBufferPercent,
             );
@@ -1468,7 +1472,7 @@ export default class BlockchainServiceBase {
         const maxBaseFee = baseFees.reduce((max, bf) => (bf > max ? bf : max), 0n);
         const maxPriorityFee = priorityFees.reduce((max, pf) => (pf > max ? pf : max), 0n);
 
-        return this.applyGasPriceBuffer(maxBaseFee + maxPriorityFee, gasPriceBufferPercent);
+        return this.applyGasPriceBuffer(maxBaseFee, maxPriorityFee, gasPriceBufferPercent);
     }
 
     /**
