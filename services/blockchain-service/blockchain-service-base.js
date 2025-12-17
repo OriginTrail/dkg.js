@@ -1410,7 +1410,7 @@ export default class BlockchainServiceBase {
         try {
             // eth_feeHistory params: blockCount, newestBlock, rewardPercentiles
             // [50] = median priority fee per block
-            const feeHistory = await web3Instance.eth.getFeeHistory(blockCount, 'latest', [100]);
+            const feeHistory = await web3Instance.eth.getFeeHistory(blockCount, 'latest', [80]);
 
             // Extract median priority fees from each block (reward[blockIndex][percentileIndex])
             const priorityFees = feeHistory.reward
@@ -1475,6 +1475,8 @@ export default class BlockchainServiceBase {
         // Find max base fee and priority fee from recent blocks
         const maxBaseFee = baseFees.reduce((max, bf) => (bf > max ? bf : max), 0n);
         const maxPriorityFee = priorityFees.reduce((max, pf) => (pf > max ? pf : max), 0n);
+        console.log('maxBaseFee', maxBaseFee);
+        console.log('maxPriorityFee', maxPriorityFee);
 
         return this.applyGasPriceBuffer(maxBaseFee + maxPriorityFee, gasPriceBufferPercent);
     }
