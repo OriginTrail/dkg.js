@@ -9,6 +9,8 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
         super(config);
         this.config = config;
         this.events = {};
+        this.receiptPollingIntervalMs = config.receiptPollingIntervalMs || 1000;
+        this.rpcRateLimitRps = config.rpcRateLimitRps || 200;
         this.nonceLocks = new Map(); // per-address mutex to avoid nonce collisions
         this.nextNonces = new Map(); // per-address pending nonce cache
 
@@ -40,6 +42,9 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
             this[blockchainName].web3.eth.transactionPollingTimeout =
                 blockchainOptions.transactionPollingTimeout;
         }
+
+        this._wrapProviderRateLimit(this[blockchainName].web3);
+        this._wrapProviderReceiptThrottle(this[blockchainName].web3);
     }
 
     async decodeEventLogs(receipt, eventName, blockchain) {
@@ -59,6 +64,106 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
 
     async getPublicKey(blockchain) {
         return blockchain?.publicKey;
+    }
+
+    _wrapProviderReceiptThrottle(web3Instance) {
+        const provider = web3Instance?.currentProvider;
+        if (!provider || provider._dkgReceiptThrottleWrapped) return;
+
+        const baseInterval = Math.max(0, this.receiptPollingIntervalMs || 1000);
+        let lastCallTs = 0;
+        const queue = [];
+        let processing = false;
+
+        const originalSend =
+            provider.send?.bind(provider) ??
+            provider.sendAsync?.bind(provider) ??
+            provider.request?.bind(provider);
+
+        if (!originalSend) return;
+
+        const schedule = () => {
+            if (processing || queue.length === 0) return;
+            const now = Date.now();
+            const elapsed = now - lastCallTs;
+            if (elapsed < baseInterval) {
+                const jitter = Math.floor(baseInterval * Math.random() * 0.3); // up to +30% jitter
+                setTimeout(schedule, baseInterval - elapsed + jitter);
+                return;
+            }
+
+            processing = true;
+            const { payload, callback } = queue.shift();
+            lastCallTs = Date.now();
+            originalSend(payload, (err, result) => {
+                processing = false;
+                callback(err, result);
+                const jitter = Math.floor(baseInterval * Math.random() * 0.3);
+                setTimeout(schedule, baseInterval + jitter);
+            });
+        };
+
+        const handler = (payload, callback) => {
+            if (payload?.method === 'eth_getTransactionReceipt') {
+                queue.push({ payload, callback });
+                schedule();
+                return;
+            }
+            originalSend(payload, callback);
+        };
+
+        provider.send = handler;
+        if (provider.sendAsync) {
+            provider.sendAsync = handler;
+        }
+        provider._dkgReceiptThrottleWrapped = true;
+    }
+
+    _wrapProviderRateLimit(web3Instance) {
+        const provider = web3Instance?.currentProvider;
+        if (!provider || provider._dkgRpcLimitWrapped || !this.rpcRateLimitRps) return;
+
+        const minInterval = Math.max(1, Math.floor(1000 / this.rpcRateLimitRps));
+        let lastCallTs = 0;
+        let processing = false;
+        const queue = [];
+
+        const originalSend =
+            provider.send?.bind(provider) ??
+            provider.sendAsync?.bind(provider) ??
+            provider.request?.bind(provider);
+
+        if (!originalSend) return;
+
+        const schedule = () => {
+            if (processing || queue.length === 0) return;
+            const now = Date.now();
+            const elapsed = now - lastCallTs;
+            const jitter = Math.floor(minInterval * Math.random() * 0.3); // up to +30% jitter
+            const wait = elapsed >= minInterval ? jitter : minInterval - elapsed + jitter;
+
+            processing = true;
+            setTimeout(() => {
+                const { payload, callback } = queue.shift();
+                originalSend(payload, (err, result) => {
+                    lastCallTs = Date.now();
+                    processing = false;
+                    callback(err, result);
+                    schedule();
+                });
+            }, wait);
+        };
+
+        const handler = (payload, callback) => {
+            queue.push({ payload, callback });
+            schedule();
+        };
+
+        provider.send = handler;
+        if (provider.sendAsync) {
+            provider.sendAsync = handler;
+        }
+        provider._dkgRpcLimitWrapped = true;
     }
 
     async _acquireLock(address) {
