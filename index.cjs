@@ -831,50 +831,52 @@ class AssetOperationsManager {
         }
 
         // ------------------------------------------------------------------
-        // Ensure KC minting transaction is reorg-safe by waiting until it is
-        // included in a block with the desired depth (default = 1).
+        // Verify asset is retrievable by attempting GET operations
+        // Retry for 5 minutes to ensure asset is properly stored and accessible
         // ------------------------------------------------------------------
-
-        const minimumBlockConfirmations = options.minimumBlockConfirmations ?? 1;
-
-        if (blockchain.name && blockchain.name.startsWith('otp') && minimumBlockConfirmations > 0) {
-            try {
-            const { receipt: finalizedMintReceipt, eventData } =
-                await this.blockchainService.waitForEventFinality(
-                    mintKnowledgeCollectionReceipt,
-                    'KnowledgeCollectionCreated',
-                    knowledgeCollectionId,
-                    blockchain,
-                    minimumBlockConfirmations,
-                );
-
-            mintKnowledgeCollectionReceipt = finalizedMintReceipt;
-            knowledgeCollectionId = parseInt(eventData.id, 10);
-            } catch (error) {
-                // Generate UAL with available data and attach it along with operationId
-                const UAL = deriveUAL$1(blockchain.name, contentAssetStorageAddress, knowledgeCollectionId);
-                error.UAL = UAL;
-                error.operationId = publishOperationId;
-                throw error;
-            }
-        }
 
         const UAL = deriveUAL$1(blockchain.name, contentAssetStorageAddress, knowledgeCollectionId);
 
-        let finalityStatusResult = 0;
+        let assetVerified = false;
+        const verificationStartTime = Date.now();
+        const verificationMaxWaitTime = 5 * 60 * 1000; // 5 minutes
+        const verificationRetryInterval = 5 * 1000; // 5 seconds
+
+        // Only verify if finality confirmations are required
         if (minimumNumberOfFinalizationConfirmations > 0) {
             try {
-            finalityStatusResult = await this.nodeApiService.finalityStatus(
-                endpoint,
-                port,
-                authToken,
-                UAL,
-                minimumNumberOfFinalizationConfirmations,
-                maxNumberOfRetries,
-                frequency,
-            );
+                while (!assetVerified) {
+                    // Check for timeout
+                    if (Date.now() - verificationStartTime >= verificationMaxWaitTime) {
+                        throw new Error(
+                            `Timeout: Asset verification exceeded maximum wait time (5 minutes) - Unable to retrieve published asset via GET`
+                        );
+                    }
+
+                    try {
+                        // Attempt to GET the asset
+                        const getResult = await this.get(UAL, {
+                            endpoint,
+                            port,
+                            authToken,
+                            blockchain,
+                            contentType: options.contentType || 'all',
+                        });
+
+                        // Verify asset has assertion data
+                        if (getResult && getResult.assertion) {
+                            assetVerified = true;
+                            console.log(`✅ Asset verified: Successfully retrieved via GET after ${((Date.now() - verificationStartTime) / 1000).toFixed(1)}s`);
+                        } else {
+                            throw new Error('Asset GET returned but has no assertion data');
+                        }
+                    } catch (getError) {
+                        // Asset not ready yet, wait and retry
+                        await new Promise(resolve => setTimeout(resolve, verificationRetryInterval));
+                    }
+                }
             } catch (error) {
-                // Attach UAL and operationId to the error so they can be logged even when finality fails
+                // Attach UAL and operationId to the error so they can be logged even when verification fails
                 error.UAL = UAL;
                 error.operationId = publishOperationId;
                 throw error;
@@ -889,12 +891,9 @@ class AssetOperationsManager {
                 mintKnowledgeCollection: mintKnowledgeCollectionReceipt,
                 publish: getOperationStatusObject$1(publishOperationResult, publishOperationId),
                 finality: {
-                    status:
-                        finalityStatusResult >= minimumNumberOfFinalizationConfirmations
-                            ? 'FINALIZED'
-                            : 'NOT FINALIZED',
+                    status: assetVerified ? 'FINALIZED' : 'NOT FINALIZED',
                 },
-                numberOfConfirmations: finalityStatusResult,
+                verified: assetVerified,
                 requiredConfirmations: minimumNumberOfFinalizationConfirmations,
             },
         };
