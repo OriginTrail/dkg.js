@@ -178,12 +178,23 @@ export default class BlockchainServiceBase {
         const publicKey = await this.getPublicKey(blockchain);
         const encodedABI = await contractInstance.methods[functionName](...args).encodeABI();
 
-        let gasLimit = Number(
+        let gasLimit;
+        try {
+            gasLimit = Number(
                 await contractInstance.methods[functionName](...args).estimateGas({
                     from: publicKey,
                 }),
             );
             gasLimit = Math.round(gasLimit * blockchain.gasLimitMultiplier);
+        } catch (estimateError) {
+            // Gas estimation failed - likely insufficient funds
+            const balance = await web3Instance.eth.getBalance(publicKey);
+            console.error(`❌ Gas estimation failed for ${functionName}:`);
+            console.error(`   - Wallet: ${publicKey}`);
+            console.error(`   - Balance: ${web3Instance.utils.fromWei(balance, 'ether')} (native token)`);
+            console.error(`   - Error: ${estimateError.message}`);
+            throw estimateError;
+        }
 
         // let gasPrice;
         /*if (blockchain.previousTxGasPrice && blockchain.retryTx) {
@@ -225,6 +236,40 @@ export default class BlockchainServiceBase {
         }*/
 
         const gasPrice = blockchain.gasPrice ?? (await this.getSmartGasPrice(blockchain));
+
+        // Diagnostic: Check if wallet has enough balance for gas
+        const balance = await web3Instance.eth.getBalance(publicKey);
+        const chainId = await web3Instance.eth.getChainId();
+        const estimatedGasCost = BigInt(gasLimit) * BigInt(gasPrice);
+        const balanceAfterGas = BigInt(balance) - estimatedGasCost;
+        
+        // Always log balance info for debugging
+        const gasPriceGwei = Number(gasPrice) / 1e9;
+        const requiredEth = Number(estimatedGasCost) / 1e18;
+        const currentEth = Number(balance) / 1e18;
+        
+        console.log(`   💰 Wallet: ${publicKey.substring(0, 10)}...${publicKey.substring(publicKey.length - 8)}`);
+        console.log(`   🌐 Network: ${blockchain.name} (Chain ID: ${chainId}) | RPC: ${blockchain.rpc || 'default'}`);
+        console.log(`   💵 Balance: ${currentEth.toFixed(9)} NEURO (${balance.toString()} wei)`);
+        console.log(`   ⛽ Gas Cost: ${requiredEth.toFixed(9)} NEURO | After TX: ${(currentEth - requiredEth).toFixed(9)} NEURO`);
+        
+        if (balanceAfterGas < 0n) {
+            const shortfall = Number(-balanceAfterGas) / 1e18;
+            
+            console.error(`\n❌ ❌ ❌ INSUFFICIENT NATIVE TOKEN (NEURO) FOR GAS ❌ ❌ ❌`);
+            console.error(`   - Function: ${functionName}`);
+            console.error(`   - Wallet: ${publicKey}`);
+            console.error(`   - Current NEURO Balance: ${currentEth.toFixed(9)} NEURO`);
+            console.error(`   - Balance Raw: ${balance.toString()} wei`);
+            console.error(`   - Gas Limit: ${gasLimit}`);
+            console.error(`   - Gas Price: ${gasPriceGwei.toFixed(6)} Gwei (${gasPrice.toString()} wei)${blockchain.gasPriceBufferPercent ? ` [includes ${blockchain.gasPriceBufferPercent}% buffer]` : ''}`);
+            console.error(`   - Estimated Gas Cost: ${requiredEth.toFixed(9)} NEURO`);
+            console.error(`   - Shortfall: ${shortfall.toFixed(9)} NEURO`);
+            console.error(`   - RPC Endpoint: ${blockchain.rpc || 'default'}`);
+            console.error(`\n   ⚠️  IMPORTANT: This is NEURO (native gas token), NOT TRAC (ERC-20 token)!`);
+            console.error(`   💡 SOLUTION: Send at least ${(shortfall + 0.01).toFixed(6)} NEURO to wallet ${publicKey}`);
+            console.error(`   💡 OR: Reduce gasPriceBufferPercent to lower gas costs\n`);
+        }
 
         if (blockchain.simulateTxs) {
                 await web3Instance.eth.call({

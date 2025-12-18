@@ -66,7 +66,7 @@ const nodeKeys = {
 };
 
 const nodes = [
-  { name: 'Node 01', hostname: 'https://v6-pegasus-node-01.origin-trail.network' },
+  { name: 'Node 01', hostname: 'https://v6-pegasus-node-02.origin-trail.network' },
   { name: 'Node 04', hostname: 'https://v6-pegasus-node-04.origin-trail.network' },
   { name: 'Node 05', hostname: 'https://v6-pegasus-node-05.origin-trail.network' },
   { name: 'Node 06', hostname: 'https://v6-pegasus-node-06.origin-trail.network' },
@@ -313,7 +313,7 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
           name: BLOCKCHAIN_IDS.NEUROWEB_TESTNET,
           publicKey: nodeKeys[name].publicKey,
           privateKey: nodeKeys[name].privateKey,
-          gasPriceBufferPercent: 50,
+          gasPriceBufferPercent: 20,
         },
         maxNumberOfRetries: 300,
         frequency: 2,

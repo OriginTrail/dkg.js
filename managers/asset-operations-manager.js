@@ -367,6 +367,8 @@ export default class AssetOperationsManager {
             publishOperationId,
         );
 
+        console.log(`📋 Publish operation completed - Status: ${publishOperationResult.status}, MinAcks: ${publishOperationResult.data?.minAcksReached}, Replications: ${publishOperationResult.data?.signatures?.length || 0}`);
+
         if (
             publishOperationResult.status !== OPERATION_STATUSES.COMPLETED &&
             !publishOperationResult.data.minAcksReached
@@ -432,7 +434,9 @@ export default class AssetOperationsManager {
         let knowledgeCollectionId;
         let mintKnowledgeCollectionReceipt;
 
+        const txStartTime = Date.now();
         try {
+        console.log(`⛓️  Submitting blockchain transaction (createKnowledgeCollection)...`);
         ({ knowledgeCollectionId, receipt: mintKnowledgeCollectionReceipt } =
             await this.blockchainService.createKnowledgeCollection(
                 {
@@ -456,7 +460,11 @@ export default class AssetOperationsManager {
                 blockchain,
                 stepHooks,
             ));
+        const txDuration = ((Date.now() - txStartTime) / 1000).toFixed(1);
+        console.log(`✅ Blockchain transaction confirmed in ${txDuration}s - Token ID: ${knowledgeCollectionId}, Block: ${mintKnowledgeCollectionReceipt.blockNumber}, TX: ${mintKnowledgeCollectionReceipt.transactionHash}`);
         } catch (error) {
+            const txDuration = ((Date.now() - txStartTime) / 1000).toFixed(1);
+            console.error(`❌ Blockchain transaction failed after ${txDuration}s:`, error.message);
             // Attach operationId to blockchain transaction errors (no UAL yet at this stage)
             error.operationId = publishOperationId;
             throw error;
@@ -468,19 +476,25 @@ export default class AssetOperationsManager {
         // ------------------------------------------------------------------
 
         const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, knowledgeCollectionId);
+        console.log(`🔍 Generated UAL: ${UAL} - Starting verification...`);
 
         let assetVerified = false;
         const verificationStartTime = Date.now();
         const verificationMaxWaitTime = 5 * 60 * 1000; // 5 minutes
         const verificationRetryInterval = 10 * 1000; // 10 seconds between retries
-        const initialWaitTime = 15 * 1000; // 15 seconds initial wait for node to process blockchain event
-        const gracePeriodForIndexing = 2 * 60 * 1000; // 2 minutes grace period before treating FAILED as permanent
+        
+        // Network-specific configurations based on observed performance
+        // Neuroweb nodes (otp) need more time to index assets from blockchain
+        const isNeurowebNetwork = blockchain.name.toLowerCase().includes('otp');
+        const initialWaitTime = isNeurowebNetwork ? 30 * 1000 : 15 * 1000; // 30s for Neuroweb, 15s for others
+        const gracePeriodForIndexing = isNeurowebNetwork ? 3.5 * 60 * 1000 : 2.5 * 60 * 1000; // 3.5min for Neuroweb, 2.5min for others
 
         // Only verify if finality confirmations are required
         if (minimumNumberOfFinalizationConfirmations > 0) {
             try {
                 // Wait initially for node to process blockchain event and index the asset
-                console.log(`⏳ Waiting ${initialWaitTime / 1000}s for node to process and index asset...`);
+                const networkInfo = isNeurowebNetwork ? ' (Neuroweb requires longer indexing time)' : '';
+                console.log(`⏳ Waiting ${initialWaitTime / 1000}s for node to process and index asset...${networkInfo}`);
                 await new Promise(resolve => setTimeout(resolve, initialWaitTime));
 
                 while (!assetVerified) {
@@ -504,17 +518,34 @@ export default class AssetOperationsManager {
 
                         // Check operation status first
                         const opStatus = getResult.operation?.get?.status || 'UNKNOWN';
+                        const errorType = getResult.operation?.get?.data?.errorType;
+                        const errorMsg = getResult.operation?.get?.data?.errorMessage;
                         
                         if (opStatus === 'FAILED') {
                             // Only fail fast after the grace period
                             // Before that, FAILED likely means "not indexed yet" not "will never work"
                             if (elapsedTime > gracePeriodForIndexing) {
-                                const errorMsg = getResult.operation?.get?.data?.errorMessage || 'Unable to find assertion on the network';
-                                throw new Error(`Asset GET operation failed on node after ${Math.floor(elapsedTime / 1000)}s: ${errorMsg}`);
+                                // Diagnostics for troubleshooting
+                                console.log(`🔍 DIAGNOSTIC INFO:`);
+                                console.log(`   - UAL: ${UAL}`);
+                                console.log(`   - Operation ID: ${publishOperationId}`);
+                                console.log(`   - Token ID: ${knowledgeCollectionId}`);
+                                console.log(`   - Block Number: ${mintKnowledgeCollectionReceipt.blockNumber}`);
+                                console.log(`   - TX Hash: ${mintKnowledgeCollectionReceipt.transactionHash}`);
+                                console.log(`   - Error Type: ${errorType || 'N/A'}`);
+                                console.log(`   - Error Message: ${errorMsg || 'N/A'}`);
+                                console.log(`   - Time Elapsed: ${Math.floor(elapsedTime / 1000)}s`);
+                                console.log(`📊 POSSIBLE CAUSES: Node may not have picked up blockchain event, or blockchain sync issue`);
+                                
+                                const fullError = errorMsg || 'Unable to find assertion on the network';
+                                const errorDetails = errorType ? ` [${errorType}]` : '';
+                                throw new Error(`Asset GET operation failed on node after ${Math.floor(elapsedTime / 1000)}s: ${fullError}${errorDetails}`);
                             } else {
                                 // Still within grace period - node might still be indexing from blockchain
-                                const remainingTime = Math.floor((verificationMaxWaitTime - elapsedTime) / 1000);
-                                console.log(`⏳ Node still indexing from blockchain (${Math.floor(elapsedTime / 1000)}s elapsed), retrying in ${verificationRetryInterval / 1000}s... (${remainingTime}s remaining)`);
+                                const remainingGracePeriod = Math.floor((gracePeriodForIndexing - elapsedTime) / 1000);
+                                const remainingTotalTime = Math.floor((verificationMaxWaitTime - elapsedTime) / 1000);
+                                const errorDetails = errorType ? ` [${errorType}: ${errorMsg}]` : '';
+                                console.log(`⏳ Node still indexing from blockchain (${Math.floor(elapsedTime / 1000)}s/${Math.floor(gracePeriodForIndexing / 1000)}s grace period)${errorDetails}, retrying in ${verificationRetryInterval / 1000}s... (${remainingTotalTime}s total remaining)`);
                                 await new Promise(resolve => setTimeout(resolve, verificationRetryInterval));
                             }
                         } else if (getResult && getResult.assertion && opStatus === 'COMPLETED') {

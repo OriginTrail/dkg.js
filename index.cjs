@@ -735,6 +735,8 @@ class AssetOperationsManager {
             publishOperationId,
         );
 
+        console.log(`📋 Publish operation completed - Status: ${publishOperationResult.status}, MinAcks: ${publishOperationResult.data?.minAcksReached}, Replications: ${publishOperationResult.data?.signatures?.length || 0}`);
+
         if (
             publishOperationResult.status !== OPERATION_STATUSES$1.COMPLETED &&
             !publishOperationResult.data.minAcksReached
@@ -800,7 +802,9 @@ class AssetOperationsManager {
         let knowledgeCollectionId;
         let mintKnowledgeCollectionReceipt;
 
+        const txStartTime = Date.now();
         try {
+        console.log(`⛓️  Submitting blockchain transaction (createKnowledgeCollection)...`);
         ({ knowledgeCollectionId, receipt: mintKnowledgeCollectionReceipt } =
             await this.blockchainService.createKnowledgeCollection(
                 {
@@ -824,7 +828,11 @@ class AssetOperationsManager {
                 blockchain,
                 stepHooks,
             ));
+        const txDuration = ((Date.now() - txStartTime) / 1000).toFixed(1);
+        console.log(`✅ Blockchain transaction confirmed in ${txDuration}s - Token ID: ${knowledgeCollectionId}, Block: ${mintKnowledgeCollectionReceipt.blockNumber}, TX: ${mintKnowledgeCollectionReceipt.transactionHash}`);
         } catch (error) {
+            const txDuration = ((Date.now() - txStartTime) / 1000).toFixed(1);
+            console.error(`❌ Blockchain transaction failed after ${txDuration}s:`, error.message);
             // Attach operationId to blockchain transaction errors (no UAL yet at this stage)
             error.operationId = publishOperationId;
             throw error;
@@ -836,19 +844,25 @@ class AssetOperationsManager {
         // ------------------------------------------------------------------
 
         const UAL = deriveUAL$1(blockchain.name, contentAssetStorageAddress, knowledgeCollectionId);
+        console.log(`🔍 Generated UAL: ${UAL} - Starting verification...`);
 
         let assetVerified = false;
         const verificationStartTime = Date.now();
         const verificationMaxWaitTime = 5 * 60 * 1000; // 5 minutes
         const verificationRetryInterval = 10 * 1000; // 10 seconds between retries
-        const initialWaitTime = 15 * 1000; // 15 seconds initial wait for node to process blockchain event
-        const gracePeriodForIndexing = 2 * 60 * 1000; // 2 minutes grace period before treating FAILED as permanent
+        
+        // Network-specific configurations based on observed performance
+        // Neuroweb nodes (otp) need more time to index assets from blockchain
+        const isNeurowebNetwork = blockchain.name.toLowerCase().includes('otp');
+        const initialWaitTime = isNeurowebNetwork ? 30 * 1000 : 15 * 1000; // 30s for Neuroweb, 15s for others
+        const gracePeriodForIndexing = isNeurowebNetwork ? 3.5 * 60 * 1000 : 2.5 * 60 * 1000; // 3.5min for Neuroweb, 2.5min for others
 
         // Only verify if finality confirmations are required
         if (minimumNumberOfFinalizationConfirmations > 0) {
             try {
                 // Wait initially for node to process blockchain event and index the asset
-                console.log(`⏳ Waiting ${initialWaitTime / 1000}s for node to process and index asset...`);
+                const networkInfo = isNeurowebNetwork ? ' (Neuroweb requires longer indexing time)' : '';
+                console.log(`⏳ Waiting ${initialWaitTime / 1000}s for node to process and index asset...${networkInfo}`);
                 await new Promise(resolve => setTimeout(resolve, initialWaitTime));
 
                 while (!assetVerified) {
@@ -872,17 +886,34 @@ class AssetOperationsManager {
 
                         // Check operation status first
                         const opStatus = getResult.operation?.get?.status || 'UNKNOWN';
+                        const errorType = getResult.operation?.get?.data?.errorType;
+                        const errorMsg = getResult.operation?.get?.data?.errorMessage;
                         
                         if (opStatus === 'FAILED') {
                             // Only fail fast after the grace period
                             // Before that, FAILED likely means "not indexed yet" not "will never work"
                             if (elapsedTime > gracePeriodForIndexing) {
-                                const errorMsg = getResult.operation?.get?.data?.errorMessage || 'Unable to find assertion on the network';
-                                throw new Error(`Asset GET operation failed on node after ${Math.floor(elapsedTime / 1000)}s: ${errorMsg}`);
+                                // Diagnostics for troubleshooting
+                                console.log(`🔍 DIAGNOSTIC INFO:`);
+                                console.log(`   - UAL: ${UAL}`);
+                                console.log(`   - Operation ID: ${publishOperationId}`);
+                                console.log(`   - Token ID: ${knowledgeCollectionId}`);
+                                console.log(`   - Block Number: ${mintKnowledgeCollectionReceipt.blockNumber}`);
+                                console.log(`   - TX Hash: ${mintKnowledgeCollectionReceipt.transactionHash}`);
+                                console.log(`   - Error Type: ${errorType || 'N/A'}`);
+                                console.log(`   - Error Message: ${errorMsg || 'N/A'}`);
+                                console.log(`   - Time Elapsed: ${Math.floor(elapsedTime / 1000)}s`);
+                                console.log(`📊 POSSIBLE CAUSES: Node may not have picked up blockchain event, or blockchain sync issue`);
+                                
+                                const fullError = errorMsg || 'Unable to find assertion on the network';
+                                const errorDetails = errorType ? ` [${errorType}]` : '';
+                                throw new Error(`Asset GET operation failed on node after ${Math.floor(elapsedTime / 1000)}s: ${fullError}${errorDetails}`);
                             } else {
                                 // Still within grace period - node might still be indexing from blockchain
-                                const remainingTime = Math.floor((verificationMaxWaitTime - elapsedTime) / 1000);
-                                console.log(`⏳ Node still indexing from blockchain (${Math.floor(elapsedTime / 1000)}s elapsed), retrying in ${verificationRetryInterval / 1000}s... (${remainingTime}s remaining)`);
+                                const remainingGracePeriod = Math.floor((gracePeriodForIndexing - elapsedTime) / 1000);
+                                const remainingTotalTime = Math.floor((verificationMaxWaitTime - elapsedTime) / 1000);
+                                const errorDetails = errorType ? ` [${errorType}: ${errorMsg}]` : '';
+                                console.log(`⏳ Node still indexing from blockchain (${Math.floor(elapsedTime / 1000)}s/${Math.floor(gracePeriodForIndexing / 1000)}s grace period)${errorDetails}, retrying in ${verificationRetryInterval / 1000}s... (${remainingTotalTime}s total remaining)`);
                                 await new Promise(resolve => setTimeout(resolve, verificationRetryInterval));
                             }
                         } else if (getResult && getResult.assertion && opStatus === 'COMPLETED') {
@@ -3582,12 +3613,23 @@ class BlockchainServiceBase {
         const publicKey = await this.getPublicKey(blockchain);
         const encodedABI = await contractInstance.methods[functionName](...args).encodeABI();
 
-        let gasLimit = Number(
+        let gasLimit;
+        try {
+            gasLimit = Number(
                 await contractInstance.methods[functionName](...args).estimateGas({
                     from: publicKey,
                 }),
             );
             gasLimit = Math.round(gasLimit * blockchain.gasLimitMultiplier);
+        } catch (estimateError) {
+            // Gas estimation failed - likely insufficient funds
+            const balance = await web3Instance.eth.getBalance(publicKey);
+            console.error(`❌ Gas estimation failed for ${functionName}:`);
+            console.error(`   - Wallet: ${publicKey}`);
+            console.error(`   - Balance: ${web3Instance.utils.fromWei(balance, 'ether')} (native token)`);
+            console.error(`   - Error: ${estimateError.message}`);
+            throw estimateError;
+        }
 
         // let gasPrice;
         /*if (blockchain.previousTxGasPrice && blockchain.retryTx) {
@@ -3629,6 +3671,40 @@ class BlockchainServiceBase {
         }*/
 
         const gasPrice = blockchain.gasPrice ?? (await this.getSmartGasPrice(blockchain));
+
+        // Diagnostic: Check if wallet has enough balance for gas
+        const balance = await web3Instance.eth.getBalance(publicKey);
+        const chainId = await web3Instance.eth.getChainId();
+        const estimatedGasCost = BigInt(gasLimit) * BigInt(gasPrice);
+        const balanceAfterGas = BigInt(balance) - estimatedGasCost;
+        
+        // Always log balance info for debugging
+        const gasPriceGwei = Number(gasPrice) / 1e9;
+        const requiredEth = Number(estimatedGasCost) / 1e18;
+        const currentEth = Number(balance) / 1e18;
+        
+        console.log(`   💰 Wallet: ${publicKey.substring(0, 10)}...${publicKey.substring(publicKey.length - 8)}`);
+        console.log(`   🌐 Network: ${blockchain.name} (Chain ID: ${chainId}) | RPC: ${blockchain.rpc || 'default'}`);
+        console.log(`   💵 Balance: ${currentEth.toFixed(9)} NEURO (${balance.toString()} wei)`);
+        console.log(`   ⛽ Gas Cost: ${requiredEth.toFixed(9)} NEURO | After TX: ${(currentEth - requiredEth).toFixed(9)} NEURO`);
+        
+        if (balanceAfterGas < 0n) {
+            const shortfall = Number(-balanceAfterGas) / 1e18;
+            
+            console.error(`\n❌ ❌ ❌ INSUFFICIENT NATIVE TOKEN (NEURO) FOR GAS ❌ ❌ ❌`);
+            console.error(`   - Function: ${functionName}`);
+            console.error(`   - Wallet: ${publicKey}`);
+            console.error(`   - Current NEURO Balance: ${currentEth.toFixed(9)} NEURO`);
+            console.error(`   - Balance Raw: ${balance.toString()} wei`);
+            console.error(`   - Gas Limit: ${gasLimit}`);
+            console.error(`   - Gas Price: ${gasPriceGwei.toFixed(6)} Gwei (${gasPrice.toString()} wei)${blockchain.gasPriceBufferPercent ? ` [includes ${blockchain.gasPriceBufferPercent}% buffer]` : ''}`);
+            console.error(`   - Estimated Gas Cost: ${requiredEth.toFixed(9)} NEURO`);
+            console.error(`   - Shortfall: ${shortfall.toFixed(9)} NEURO`);
+            console.error(`   - RPC Endpoint: ${blockchain.rpc || 'default'}`);
+            console.error(`\n   ⚠️  IMPORTANT: This is NEURO (native gas token), NOT TRAC (ERC-20 token)!`);
+            console.error(`   💡 SOLUTION: Send at least ${(shortfall + 0.01).toFixed(6)} NEURO to wallet ${publicKey}`);
+            console.error(`   💡 OR: Reduce gasPriceBufferPercent to lower gas costs\n`);
+        }
 
         if (blockchain.simulateTxs) {
                 await web3Instance.eth.call({
@@ -5202,6 +5278,7 @@ class NodeBlockchainService extends BlockchainServiceBase {
             }
 
             try {
+                console.log(`   📝 Preparing transaction...`);
                 const tx = await this.prepareTransaction(
                     contractInstance,
                     functionName,
@@ -5211,16 +5288,24 @@ class NodeBlockchainService extends BlockchainServiceBase {
                 previousTxGasPrice = tx.gasPrice;
                 simulationSucceeded = true;
 
+                console.log(`   ✍️  Signing transaction...`);
                 const createdTransaction = await web3Instance.eth.accounts.signTransaction(
                     tx,
                     blockchain.privateKey,
                 );
 
+                console.log(`   📤 Sending signed transaction to network...`);
+                const sendStartTime = Date.now();
                 receipt = await web3Instance.eth.sendSignedTransaction(
                     createdTransaction.rawTransaction,
                 );
+                const sendDuration = ((Date.now() - sendStartTime) / 1000).toFixed(1);
+                console.log(`   ⛓️  Transaction mined in ${sendDuration}s - Block: ${receipt.blockNumber}, Gas Used: ${receipt.gasUsed}`);
+                
                 if (blockchain.name.startsWith('otp') && blockchain.waitNeurowebTxFinalization) {
+                    console.log(`   ⏳ Waiting for Neuroweb transaction finalization...`);
                     receipt = await this.waitForTransactionFinalization(receipt, blockchain);
+                    console.log(`   ✅ Transaction finalized`);
                 }
             } catch (error) {
                 if (

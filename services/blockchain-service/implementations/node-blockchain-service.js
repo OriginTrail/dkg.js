@@ -80,6 +80,7 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
             }
 
             try {
+                console.log(`   📝 Preparing transaction...`);
                 const tx = await this.prepareTransaction(
                     contractInstance,
                     functionName,
@@ -89,16 +90,24 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
                 previousTxGasPrice = tx.gasPrice;
                 simulationSucceeded = true;
 
+                console.log(`   ✍️  Signing transaction...`);
                 const createdTransaction = await web3Instance.eth.accounts.signTransaction(
                     tx,
                     blockchain.privateKey,
                 );
 
+                console.log(`   📤 Sending signed transaction to network...`);
+                const sendStartTime = Date.now();
                 receipt = await web3Instance.eth.sendSignedTransaction(
                     createdTransaction.rawTransaction,
                 );
+                const sendDuration = ((Date.now() - sendStartTime) / 1000).toFixed(1);
+                console.log(`   ⛓️  Transaction mined in ${sendDuration}s - Block: ${receipt.blockNumber}, Gas Used: ${receipt.gasUsed}`);
+                
                 if (blockchain.name.startsWith('otp') && blockchain.waitNeurowebTxFinalization) {
+                    console.log(`   ⏳ Waiting for Neuroweb transaction finalization...`);
                     receipt = await this.waitForTransactionFinalization(receipt, blockchain);
+                    console.log(`   ✅ Transaction finalized`);
                 }
             } catch (error) {
                 if (
