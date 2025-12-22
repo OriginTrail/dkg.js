@@ -575,14 +575,13 @@ class AssetOperationsManager {
     }
 
     /**
-     * Creates a new knowledge collection.
+     * Phase 1 of asset creation: validate input, build dataset, and publish to the node.
      * @async
-     * @param {Object} content - The content of the knowledge collection to be created, contains public, private or both keys.
-     * @param {Object} [options={}] - Additional options for knowledge collection creation.
-     * @param {Object} [stepHooks=emptyHooks] - Hooks to execute during knowledge collection creation.
-     * @returns {Object} Object containing UAL, publicAssertionId and operation status.
+     * @param {Object|string} content - The content of the knowledge collection.
+     * @param {Object} [options={}] - Options for knowledge collection creation.
+     * @returns {Object} Publish phase output including dataset info and publish operation data.
      */
-    async create(content, options = {}, stepHooks = emptyHooks$1) {
+    async publishAssetPhase(content, options = {}) {
         this.validationService.validateJsonldOrNquads(content);
         const {
             blockchain,
@@ -735,17 +734,52 @@ class AssetOperationsManager {
             publishOperationId,
         );
 
-        if (
-            publishOperationResult.status !== OPERATION_STATUSES$1.COMPLETED &&
-            !publishOperationResult.data.minAcksReached
-        ) {
-            return {
-                datasetRoot,
-                operation: {
-                    publish: getOperationStatusObject$1(publishOperationResult, publishOperationId),
-                },
-            };
-        }
+        return {
+            dataset,
+            datasetRoot,
+            datasetSize,
+            publishOperationId,
+            publishOperationResult,
+            contentAssetStorageAddress,
+            blockchain,
+            endpoint,
+            port,
+            maxNumberOfRetries,
+            frequency,
+            authToken,
+            epochsNum,
+            hashFunctionId,
+            scoreFunctionId,
+            immutable,
+            tokenAmount,
+            payer,
+            minimumNumberOfFinalizationConfirmations,
+            minimumNumberOfNodeReplications,
+        };
+    }
+
+    /**
+     * Phase 2 of asset creation: mint the knowledge collection on chain using publish output.
+     * @async
+     * @param {Object} publishPayload - Output of publishAssetPhase.
+     * @param {Object} [options={}] - Options affecting minting (e.g., minimumBlockConfirmations).
+     * @param {Object} [stepHooks=emptyHooks] - Hooks to execute during minting.
+     * @returns {Object} Mint phase output including UAL and mint receipt.
+     */
+    async mintKnowledgeCollectionPhase(publishPayload, options = {}, stepHooks = emptyHooks$1) {
+        const {
+            dataset,
+            datasetRoot,
+            datasetSize,
+            publishOperationId,
+            publishOperationResult,
+            contentAssetStorageAddress,
+            blockchain,
+            epochsNum,
+            immutable,
+            tokenAmount,
+            payer,
+        } = publishPayload;
 
         const { signatures } = publishOperationResult.data;
 
@@ -800,7 +834,6 @@ class AssetOperationsManager {
         let knowledgeCollectionId;
         let mintKnowledgeCollectionReceipt;
 
-        try {
         ({ knowledgeCollectionId, receipt: mintKnowledgeCollectionReceipt } =
             await this.blockchainService.createKnowledgeCollection(
                 {
@@ -824,11 +857,6 @@ class AssetOperationsManager {
                 blockchain,
                 stepHooks,
             ));
-        } catch (error) {
-            // Attach operationId to blockchain transaction errors (no UAL yet at this stage)
-            error.operationId = publishOperationId;
-            throw error;
-        }
 
         // ------------------------------------------------------------------
         // Ensure KC minting transaction is reorg-safe by waiting until it is
@@ -838,7 +866,6 @@ class AssetOperationsManager {
         const minimumBlockConfirmations = options.minimumBlockConfirmations ?? 1;
 
         if (blockchain.name && blockchain.name.startsWith('otp') && minimumBlockConfirmations > 0) {
-            try {
             const { receipt: finalizedMintReceipt, eventData } =
                 await this.blockchainService.waitForEventFinality(
                     mintKnowledgeCollectionReceipt,
@@ -850,20 +877,48 @@ class AssetOperationsManager {
 
             mintKnowledgeCollectionReceipt = finalizedMintReceipt;
             knowledgeCollectionId = parseInt(eventData.id, 10);
-            } catch (error) {
-                // Generate UAL with available data and attach it along with operationId
-                const UAL = deriveUAL$1(blockchain.name, contentAssetStorageAddress, knowledgeCollectionId);
-                error.UAL = UAL;
-                error.operationId = publishOperationId;
-                throw error;
-            }
         }
 
         const UAL = deriveUAL$1(blockchain.name, contentAssetStorageAddress, knowledgeCollectionId);
 
+        return {
+            UAL,
+            knowledgeCollectionId,
+            mintKnowledgeCollectionReceipt,
+            datasetRoot,
+            publishOperationId,
+            publishOperationResult,
+        };
+    }
+
+    /**
+     * Phase 3 of asset creation: poll node finality status for the minted asset.
+     * @async
+     * @param {string} UAL - Universal Asset Locator returned from minting.
+     * @param {Object} [options={}] - Finality options.
+     * @returns {Object} Finality status details.
+     */
+    async finalizePublishPhase(UAL, options = {}) {
+        const {
+            endpoint,
+            port,
+            maxNumberOfRetries,
+            frequency,
+            minimumNumberOfFinalizationConfirmations,
+            authToken,
+        } = this.inputService.getPublishFinalityArguments(options);
+
+        this.validationService.validatePublishFinality(
+            endpoint,
+            port,
+            maxNumberOfRetries,
+            frequency,
+            minimumNumberOfFinalizationConfirmations,
+            authToken,
+        );
+
         let finalityStatusResult = 0;
         if (minimumNumberOfFinalizationConfirmations > 0) {
-            try {
             finalityStatusResult = await this.nodeApiService.finalityStatus(
                 endpoint,
                 port,
@@ -873,29 +928,63 @@ class AssetOperationsManager {
                 maxNumberOfRetries,
                 frequency,
             );
-            } catch (error) {
-                // Attach UAL and operationId to the error so they can be logged even when finality fails
-                error.UAL = UAL;
-                error.operationId = publishOperationId;
-                throw error;
-            }
         }
 
         return {
-            UAL,
-            datasetRoot,
+            status:
+                finalityStatusResult >= minimumNumberOfFinalizationConfirmations
+                    ? 'FINALIZED'
+                    : 'NOT FINALIZED',
+            numberOfConfirmations: finalityStatusResult,
+            requiredConfirmations: minimumNumberOfFinalizationConfirmations,
+        };
+    }
+
+    /**
+     * Creates a new knowledge collection.
+     * @async
+     * @param {Object} content - The content of the knowledge collection to be created, contains public, private or both keys.
+     * @param {Object} [options={}] - Additional options for knowledge collection creation.
+     * @param {Object} [stepHooks=emptyHooks] - Hooks to execute during knowledge collection creation.
+     * @returns {Object} Object containing UAL, publicAssertionId and operation status.
+     */
+    async create(content, options = {}, stepHooks = emptyHooks$1) {
+        const publishOperationOutput = await this.publishAssetPhase(content, options);
+        const { datasetRoot, publishOperationId, publishOperationResult } = publishOperationOutput;
+
+        if (
+            publishOperationResult.status !== OPERATION_STATUSES$1.COMPLETED &&
+            !publishOperationResult.data.minAcksReached
+        ) {
+            return {
+                datasetRoot,
+                operation: {
+                    publish: getOperationStatusObject$1(publishOperationResult, publishOperationId),
+                },
+            };
+        }
+
+        const mintOperationOutput = await this.mintKnowledgeCollectionPhase(
+            publishOperationOutput,
+            options,
+            stepHooks,
+        );
+
+        const finalityOperationOutput = await this.finalizePublishPhase(
+            mintOperationOutput.UAL,
+            options,
+        );
+
+        return {
+            UAL: mintOperationOutput.UAL,
+            datasetRoot: mintOperationOutput.datasetRoot,
             signatures: publishOperationResult.data.signatures,
             operation: {
-                mintKnowledgeCollection: mintKnowledgeCollectionReceipt,
+                mintKnowledgeCollection: mintOperationOutput.mintKnowledgeCollectionReceipt,
                 publish: getOperationStatusObject$1(publishOperationResult, publishOperationId),
-                finality: {
-                    status:
-                        finalityStatusResult >= minimumNumberOfFinalizationConfirmations
-                            ? 'FINALIZED'
-                            : 'NOT FINALIZED',
-                },
-                numberOfConfirmations: finalityStatusResult,
-                requiredConfirmations: minimumNumberOfFinalizationConfirmations,
+                finality: { status: finalityOperationOutput.status },
+                numberOfConfirmations: finalityOperationOutput.numberOfConfirmations,
+                requiredConfirmations: finalityOperationOutput.requiredConfirmations,
             },
         };
     }
@@ -3253,8 +3342,6 @@ class HttpService {
     ) {
         let retries = 0;
         let finality = 0;
-        const startTime = Date.now();
-        const maxTotalTime = 300_000; // 5 minutes total timeout
 
         const axios_config = {
             method: 'get',
@@ -3264,16 +3351,10 @@ class HttpService {
         };
 
         do {
-            // Check for total timeout
-            if (Date.now() - startTime >= maxTotalTime) {
-                throw Error(
-                    `Timeout: DKG finality exceeded maximum wait time (5 minutes) - Last finality: ${finality}, Required: ${requiredConfirmations}`
-                );
-            }
-
             if (retries > maxNumberOfRetries) {
+                console.log(`❌ DKG Finality Timeout: Unable to achieve required confirmations after ${maxNumberOfRetries} retries. Last finality: ${finality}, Required: ${requiredConfirmations}`);
                 throw Error(
-                    `Unable to achieve required confirmations. Max number of retries (${maxNumberOfRetries}) reached. Last finality: ${finality}, Required: ${requiredConfirmations}`,
+                    `Unable to achieve required confirmations. Max number of retries (${maxNumberOfRetries}) reached.`,
                 );
             }
 
@@ -3287,10 +3368,7 @@ class HttpService {
                 const response = await axios(axios_config);
                 finality = response.data.finality || 0;
             } catch (e) {
-                // Don't reset finality to 0 on network errors, keep the last known value
-                // Only reset if we get a successful response with 0 finality
-                console.warn(`Warning: Network error during finality check for ${ual}: ${e.message}`);
-                // Don't increment finality, keep the last known value
+                finality = 0;
             }
         } while (finality < requiredConfirmations && retries <= maxNumberOfRetries);
 
@@ -3310,8 +3388,6 @@ class HttpService {
             status: OPERATION_STATUSES$1.PENDING,
         };
         let retries = 0;
-        const startTime = Date.now();
-        const maxTotalTime = 300_000; // 5 minutes total timeout
 
         const axios_config = {
             method: 'get',
@@ -3319,18 +3395,6 @@ class HttpService {
             headers: this.prepareRequestConfig(authToken),
         };
         do {
-            // Check for total timeout
-            if (Date.now() - startTime >= maxTotalTime) {
-                response.data = {
-                    ...response.data,
-                    data: {
-                        errorType: 'DKG_CLIENT_ERROR',
-                        errorMessage: `Timeout: OT-node operation polling exceeded maximum wait time (5 minutes) - Operation: ${operation}, ID: ${operationId}`,
-                    },
-                };
-                break;
-            }
-
             if (retries > maxNumberOfRetries) {
                 response.data = {
                     ...response.data,
@@ -3551,11 +3615,11 @@ class BlockchainServiceBase {
         const encodedABI = await contractInstance.methods[functionName](...args).encodeABI();
 
         let gasLimit = Number(
-                await contractInstance.methods[functionName](...args).estimateGas({
-                    from: publicKey,
-                }),
-            );
-            gasLimit = Math.round(gasLimit * blockchain.gasLimitMultiplier);
+            await contractInstance.methods[functionName](...args).estimateGas({
+                from: publicKey,
+            }),
+        );
+        gasLimit = Math.round(gasLimit * blockchain.gasLimitMultiplier);
 
         // let gasPrice;
         /*if (blockchain.previousTxGasPrice && blockchain.retryTx) {
@@ -3599,13 +3663,13 @@ class BlockchainServiceBase {
         const gasPrice = blockchain.gasPrice ?? (await this.getSmartGasPrice(blockchain));
 
         if (blockchain.simulateTxs) {
-                await web3Instance.eth.call({
-                    to: contractInstance.options.address,
-                    data: encodedABI,
-                    from: publicKey,
-                    gasPrice,
-                    gas: gasLimit,
-                });
+            await web3Instance.eth.call({
+                to: contractInstance.options.address,
+                data: encodedABI,
+                from: publicKey,
+                gasPrice,
+                gas: gasLimit,
+            });
         }
 
         return {
@@ -3704,20 +3768,11 @@ class BlockchainServiceBase {
         // Guaranteed to be defined for OTP chains
         const polling = blockchain.transactionFinalityPollingInterval;
         const reminingPollingInterval = blockchain.transactionReminingPollingInterval;
-        const maxWaitTime = blockchain.transactionFinalityMaxWaitTime || 60_000; // Default 60 seconds
 
         let receipt = initialReceipt;
-        const startTime = Date.now();
 
         // eslint-disable-next-line no-constant-condition
         while (true) {
-            // Check for timeout
-            if (Date.now() - startTime >= maxWaitTime) {
-                throw new Error(
-                    `Timeout: Blockchain finality exceeded maximum wait time (${maxWaitTime / 1000}s)`
-                );
-            }
-
             // 1. Wait until the block containing the tx is at the required depth
             while (
                 (await web3Instance.eth.getBlockNumber()) <
@@ -3755,11 +3810,12 @@ class BlockchainServiceBase {
 
             // 3. Re-org detected: wait for tx to appear again
             const timeoutMs = 60 * 1000; // 1 minute
-            const reorgStartTime = Date.now();
+            const startTime = Date.now();
             let newReceipt = null;
             // eslint-disable-next-line no-await-in-loop
             while (!newReceipt) {
-                if (Date.now() - reorgStartTime >= timeoutMs) {
+                if (Date.now() - startTime >= timeoutMs) {
+                    console.log(`❌ Blockchain Finality Timeout: Transaction receipt for ${receipt.transactionHash} not found after 1 minute of re-mining polling.`);
                     throw new Error(
                         `Timeout: Transaction receipt for ${receipt.transactionHash} not found after 1 minute of re-mining polling.`,
                     );
@@ -3929,6 +3985,7 @@ class BlockchainServiceBase {
 
             return { knowledgeCollectionId: id, receipt };
         } catch (error) {
+            console.error('createKnowledgeCollection failed:', error);
             throw error;
         }
     }
@@ -5158,17 +5215,8 @@ class NodeBlockchainService extends BlockchainServiceBase {
         let previousTxGasPrice;
         let simulationSucceeded = false;
         let transactionRetried = false;
-        const startTime = Date.now();
-        const maxWaitTime = 300_000; // 5 minutes total timeout
 
         while (receipt === undefined) {
-            // Check for timeout
-            if (Date.now() - startTime >= maxWaitTime) {
-                throw new Error(
-                    `Timeout: Blockchain transaction receipt not received within maximum wait time (5 minutes)`
-                );
-            }
-
             try {
                 const tx = await this.prepareTransaction(
                     contractInstance,

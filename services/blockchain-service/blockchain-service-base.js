@@ -179,11 +179,11 @@ export default class BlockchainServiceBase {
         const encodedABI = await contractInstance.methods[functionName](...args).encodeABI();
 
         let gasLimit = Number(
-                await contractInstance.methods[functionName](...args).estimateGas({
-                    from: publicKey,
-                }),
-            );
-            gasLimit = Math.round(gasLimit * blockchain.gasLimitMultiplier);
+            await contractInstance.methods[functionName](...args).estimateGas({
+                from: publicKey,
+            }),
+        );
+        gasLimit = Math.round(gasLimit * blockchain.gasLimitMultiplier);
 
         // let gasPrice;
         /*if (blockchain.previousTxGasPrice && blockchain.retryTx) {
@@ -227,13 +227,13 @@ export default class BlockchainServiceBase {
         const gasPrice = blockchain.gasPrice ?? (await this.getSmartGasPrice(blockchain));
 
         if (blockchain.simulateTxs) {
-                await web3Instance.eth.call({
-                    to: contractInstance.options.address,
-                    data: encodedABI,
-                    from: publicKey,
-                    gasPrice,
-                    gas: gasLimit,
-                });
+            await web3Instance.eth.call({
+                to: contractInstance.options.address,
+                data: encodedABI,
+                from: publicKey,
+                gasPrice,
+                gas: gasLimit,
+            });
         }
 
         return {
@@ -332,20 +332,11 @@ export default class BlockchainServiceBase {
         // Guaranteed to be defined for OTP chains
         const polling = blockchain.transactionFinalityPollingInterval;
         const reminingPollingInterval = blockchain.transactionReminingPollingInterval;
-        const maxWaitTime = blockchain.transactionFinalityMaxWaitTime || 60_000; // Default 60 seconds
 
         let receipt = initialReceipt;
-        const startTime = Date.now();
 
         // eslint-disable-next-line no-constant-condition
         while (true) {
-            // Check for timeout
-            if (Date.now() - startTime >= maxWaitTime) {
-                throw new Error(
-                    `Timeout: Blockchain finality exceeded maximum wait time (${maxWaitTime / 1000}s)`
-                );
-            }
-
             // 1. Wait until the block containing the tx is at the required depth
             while (
                 (await web3Instance.eth.getBlockNumber()) <
@@ -383,11 +374,12 @@ export default class BlockchainServiceBase {
 
             // 3. Re-org detected: wait for tx to appear again
             const timeoutMs = 60 * 1000; // 1 minute
-            const reorgStartTime = Date.now();
+            const startTime = Date.now();
             let newReceipt = null;
             // eslint-disable-next-line no-await-in-loop
             while (!newReceipt) {
-                if (Date.now() - reorgStartTime >= timeoutMs) {
+                if (Date.now() - startTime >= timeoutMs) {
+                    console.log(`❌ Blockchain Finality Timeout: Transaction receipt for ${receipt.transactionHash} not found after 1 minute of re-mining polling.`);
                     throw new Error(
                         `Timeout: Transaction receipt for ${receipt.transactionHash} not found after 1 minute of re-mining polling.`,
                     );
@@ -557,6 +549,7 @@ export default class BlockchainServiceBase {
 
             return { knowledgeCollectionId: id, receipt };
         } catch (error) {
+            console.error('createKnowledgeCollection failed:', error);
             throw error;
         }
     }

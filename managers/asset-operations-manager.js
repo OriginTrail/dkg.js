@@ -466,7 +466,6 @@ export default class AssetOperationsManager {
         let knowledgeCollectionId;
         let mintKnowledgeCollectionReceipt;
 
-        try {
         ({ knowledgeCollectionId, receipt: mintKnowledgeCollectionReceipt } =
             await this.blockchainService.createKnowledgeCollection(
                 {
@@ -490,11 +489,6 @@ export default class AssetOperationsManager {
                 blockchain,
                 stepHooks,
             ));
-        } catch (error) {
-            // Attach operationId to blockchain transaction errors (no UAL yet at this stage)
-            error.operationId = publishOperationId;
-            throw error;
-        }
 
         // ------------------------------------------------------------------
         // Ensure KC minting transaction is reorg-safe by waiting until it is
@@ -504,7 +498,6 @@ export default class AssetOperationsManager {
         const minimumBlockConfirmations = options.minimumBlockConfirmations ?? 1;
 
         if (blockchain.name && blockchain.name.startsWith('otp') && minimumBlockConfirmations > 0) {
-            try {
             const { receipt: finalizedMintReceipt, eventData } =
                 await this.blockchainService.waitForEventFinality(
                     mintKnowledgeCollectionReceipt,
@@ -516,13 +509,6 @@ export default class AssetOperationsManager {
 
             mintKnowledgeCollectionReceipt = finalizedMintReceipt;
             knowledgeCollectionId = parseInt(eventData.id, 10);
-            } catch (error) {
-                // Generate UAL with available data and attach it along with operationId
-                const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, knowledgeCollectionId);
-                error.UAL = UAL;
-                error.operationId = publishOperationId;
-                throw error;
-            }
         }
 
         const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, knowledgeCollectionId);
@@ -565,7 +551,6 @@ export default class AssetOperationsManager {
 
         let finalityStatusResult = 0;
         if (minimumNumberOfFinalizationConfirmations > 0) {
-            try {
             finalityStatusResult = await this.nodeApiService.finalityStatus(
                 endpoint,
                 port,
@@ -575,12 +560,6 @@ export default class AssetOperationsManager {
                 maxNumberOfRetries,
                 frequency,
             );
-            } catch (error) {
-                // Attach UAL and operationId to the error so they can be logged even when finality fails
-                error.UAL = UAL;
-                error.operationId = publishOperationId;
-                throw error;
-            }
         }
 
         return {

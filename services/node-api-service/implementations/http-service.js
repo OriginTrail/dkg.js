@@ -176,8 +176,6 @@ export default class HttpService {
     ) {
         let retries = 0;
         let finality = 0;
-        const startTime = Date.now();
-        const maxTotalTime = 300_000; // 5 minutes total timeout
 
         const axios_config = {
             method: 'get',
@@ -187,16 +185,10 @@ export default class HttpService {
         };
 
         do {
-            // Check for total timeout
-            if (Date.now() - startTime >= maxTotalTime) {
-                throw Error(
-                    `Timeout: DKG finality exceeded maximum wait time (5 minutes) - Last finality: ${finality}, Required: ${requiredConfirmations}`
-                );
-            }
-
             if (retries > maxNumberOfRetries) {
+                console.log(`❌ DKG Finality Timeout: Unable to achieve required confirmations after ${maxNumberOfRetries} retries. Last finality: ${finality}, Required: ${requiredConfirmations}`);
                 throw Error(
-                    `Unable to achieve required confirmations. Max number of retries (${maxNumberOfRetries}) reached. Last finality: ${finality}, Required: ${requiredConfirmations}`,
+                    `Unable to achieve required confirmations. Max number of retries (${maxNumberOfRetries}) reached.`,
                 );
             }
 
@@ -210,10 +202,7 @@ export default class HttpService {
                 const response = await axios(axios_config);
                 finality = response.data.finality || 0;
             } catch (e) {
-                // Don't reset finality to 0 on network errors, keep the last known value
-                // Only reset if we get a successful response with 0 finality
-                console.warn(`Warning: Network error during finality check for ${ual}: ${e.message}`);
-                // Don't increment finality, keep the last known value
+                finality = 0;
             }
         } while (finality < requiredConfirmations && retries <= maxNumberOfRetries);
 
@@ -233,8 +222,6 @@ export default class HttpService {
             status: OPERATION_STATUSES.PENDING,
         };
         let retries = 0;
-        const startTime = Date.now();
-        const maxTotalTime = 300_000; // 5 minutes total timeout
 
         const axios_config = {
             method: 'get',
@@ -242,18 +229,6 @@ export default class HttpService {
             headers: this.prepareRequestConfig(authToken),
         };
         do {
-            // Check for total timeout
-            if (Date.now() - startTime >= maxTotalTime) {
-                response.data = {
-                    ...response.data,
-                    data: {
-                        errorType: 'DKG_CLIENT_ERROR',
-                        errorMessage: `Timeout: OT-node operation polling exceeded maximum wait time (5 minutes) - Operation: ${operation}, ID: ${operationId}`,
-                    },
-                };
-                break;
-            }
-
             if (retries > maxNumberOfRetries) {
                 response.data = {
                     ...response.data,
