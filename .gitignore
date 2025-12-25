@@ -16,6 +16,20 @@ playwright-results.json
 playwright-junit-results.xml
 playwright/.cache/
 
+# Log files
+*.log
+
+# Test output files (errors and summaries)
+errors_*.json
+summary_*.json
+
+# Mochawesome reports
+mochawesome-report/
+mainnet_*.html
+mainnet_*.json
+testnet_*.html
+testnet_*.json
+
 assets-demo.js
 frontendMock.html
 native-demo.js
@@ -25,23 +39,5 @@ kg-example.json
 
 client-d-n.html
 client-d-n.js
-mochawesome-report
-errors_Node_01.json
-summary_Node_01.json
 assets
-mainnet_base.html
-mainnet_base.json
-mochawesome-report
-errors_Node_25.json
-summary_Node_25.json
-errors_Node_26.json
-summary_Node_26.json
-errors_Node_27.json
-summary_Node_27.json
-errors_Node_28.json
-summary_Node_28.json
-errors_Node_29.json
-summary_Node_29.json
-errors_Node_30.json
-summary_Node_30.json
 .cache-synpress

@@ -41,6 +41,13 @@ export default defineConfig({
     
     // Extended timeout for actions
     actionTimeout: 30 * 1000,
+    
+    // Cloudflare bypass header for E2E testing
+    extraHTTPHeaders: {
+      'Accept-Language': 'en-US,en;q=0.9',
+      // Cloudflare E2E bypass header - loaded from .env
+      ...(process.env.E2E_CF_HEADER && { 'X-E2E-Auth': process.env.E2E_CF_HEADER }),
+    },
   },
 
   // Configure projects for different browsers
