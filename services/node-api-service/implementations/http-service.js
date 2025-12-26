@@ -57,6 +57,22 @@ export default class HttpService {
 
             return response.data.operationId;
         } catch (error) {
+            const status = error?.response?.status;
+            const body = error?.response?.data;
+            const url = `${this.getBaseUrl(endpoint, port)}/publish`;
+            console.error(
+                'Unable to publish',
+                JSON.stringify(
+                    {
+                        url,
+                        status,
+                        body,
+                        message: error?.message,
+                    },
+                    null,
+                    2,
+                ),
+            );
             throw Error(`Unable to publish: ${error.message}`);
         }
     }

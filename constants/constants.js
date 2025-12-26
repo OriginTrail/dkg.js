@@ -161,6 +161,11 @@ export const GRAPH_STATES = {
     HISTORICAL: 'HISTORICAL',
 };
 
+export const GAS_MODES = {
+    LEGACY: 'legacy',
+    EIP1559: 'eip1559',
+};
+
 export const OT_NODE_TRIPLE_STORE_REPOSITORIES = {
     PUBLIC_CURRENT: 'publicCurrent',
     PUBLIC_HISTORY: 'publicHistory',
@@ -220,6 +225,7 @@ export const DEFAULT_PARAMETERS = {
     FORCE_REPLACE_TXS: false,
     GAS_LIMIT_MULTIPLIER: 1,
     RETRY_TX_GAS_PRICE_MULTIPLIER: 3,
+    GAS_MODE: GAS_MODES.EIP1559,
 };
 
 export const DEFAULT_GAS_PRICE = {
