@@ -207,14 +207,13 @@ export default class AssetOperationsManager {
     }
 
     /**
-     * Creates a new knowledge collection.
+     * Phase 1 of asset creation: validate input, build dataset, and publish to the node.
      * @async
-     * @param {Object} content - The content of the knowledge collection to be created, contains public, private or both keys.
-     * @param {Object} [options={}] - Additional options for knowledge collection creation.
-     * @param {Object} [stepHooks=emptyHooks] - Hooks to execute during knowledge collection creation.
-     * @returns {Object} Object containing UAL, publicAssertionId and operation status.
+     * @param {Object|string} content - The content of the knowledge collection.
+     * @param {Object} [options={}] - Options for knowledge collection creation.
+     * @returns {Object} Publish phase output including dataset info and publish operation data.
      */
-    async create(content, options = {}, stepHooks = emptyHooks) {
+    async publishAssetPhase(content, options = {}) {
         this.validationService.validateJsonldOrNquads(content);
         const {
             blockchain,
@@ -367,17 +366,52 @@ export default class AssetOperationsManager {
             publishOperationId,
         );
 
-        if (
-            publishOperationResult.status !== OPERATION_STATUSES.COMPLETED &&
-            !publishOperationResult.data.minAcksReached
-        ) {
-            return {
-                datasetRoot,
-                operation: {
-                    publish: getOperationStatusObject(publishOperationResult, publishOperationId),
-                },
-            };
-        }
+        return {
+            dataset,
+            datasetRoot,
+            datasetSize,
+            publishOperationId,
+            publishOperationResult,
+            contentAssetStorageAddress,
+            blockchain,
+            endpoint,
+            port,
+            maxNumberOfRetries,
+            frequency,
+            authToken,
+            epochsNum,
+            hashFunctionId,
+            scoreFunctionId,
+            immutable,
+            tokenAmount,
+            payer,
+            minimumNumberOfFinalizationConfirmations,
+            minimumNumberOfNodeReplications,
+        };
+    }
+
+    /**
+     * Phase 2 of asset creation: mint the knowledge collection on chain using publish output.
+     * @async
+     * @param {Object} publishPayload - Output of publishAssetPhase.
+     * @param {Object} [options={}] - Options affecting minting (e.g., minimumBlockConfirmations).
+     * @param {Object} [stepHooks=emptyHooks] - Hooks to execute during minting.
+     * @returns {Object} Mint phase output including UAL and mint receipt.
+     */
+    async mintKnowledgeCollectionPhase(publishPayload, options = {}, stepHooks = emptyHooks) {
+        const {
+            dataset,
+            datasetRoot,
+            datasetSize,
+            publishOperationId,
+            publishOperationResult,
+            contentAssetStorageAddress,
+            blockchain,
+            epochsNum,
+            immutable,
+            tokenAmount,
+            payer,
+        } = publishPayload;
 
         const { signatures } = publishOperationResult.data;
 
@@ -493,6 +527,42 @@ export default class AssetOperationsManager {
 
         const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, knowledgeCollectionId);
 
+        return {
+            UAL,
+            knowledgeCollectionId,
+            mintKnowledgeCollectionReceipt,
+            datasetRoot,
+            publishOperationId,
+            publishOperationResult,
+        };
+    }
+
+    /**
+     * Phase 3 of asset creation: poll node finality status for the minted asset.
+     * @async
+     * @param {string} UAL - Universal Asset Locator returned from minting.
+     * @param {Object} [options={}] - Finality options.
+     * @returns {Object} Finality status details.
+     */
+    async finalizePublishPhase(UAL, options = {}) {
+        const {
+            endpoint,
+            port,
+            maxNumberOfRetries,
+            frequency,
+            minimumNumberOfFinalizationConfirmations,
+            authToken,
+        } = this.inputService.getPublishFinalityArguments(options);
+
+        this.validationService.validatePublishFinality(
+            endpoint,
+            port,
+            maxNumberOfRetries,
+            frequency,
+            minimumNumberOfFinalizationConfirmations,
+            authToken,
+        );
+
         let finalityStatusResult = 0;
         if (minimumNumberOfFinalizationConfirmations > 0) {
             try {
@@ -514,20 +584,60 @@ export default class AssetOperationsManager {
         }
 
         return {
-            UAL,
-            datasetRoot,
+            status:
+                finalityStatusResult >= minimumNumberOfFinalizationConfirmations
+                    ? 'FINALIZED'
+                    : 'NOT FINALIZED',
+            numberOfConfirmations: finalityStatusResult,
+            requiredConfirmations: minimumNumberOfFinalizationConfirmations,
+        };
+    }
+
+    /**
+     * Creates a new knowledge collection.
+     * @async
+     * @param {Object} content - The content of the knowledge collection to be created, contains public, private or both keys.
+     * @param {Object} [options={}] - Additional options for knowledge collection creation.
+     * @param {Object} [stepHooks=emptyHooks] - Hooks to execute during knowledge collection creation.
+     * @returns {Object} Object containing UAL, publicAssertionId and operation status.
+     */
+    async create(content, options = {}, stepHooks = emptyHooks) {
+        const publishOperationOutput = await this.publishAssetPhase(content, options);
+        const { datasetRoot, publishOperationId, publishOperationResult } = publishOperationOutput;
+
+        if (
+            publishOperationResult.status !== OPERATION_STATUSES.COMPLETED &&
+            !publishOperationResult.data.minAcksReached
+        ) {
+            return {
+                datasetRoot,
+                operation: {
+                    publish: getOperationStatusObject(publishOperationResult, publishOperationId),
+                },
+            };
+        }
+
+        const mintOperationOutput = await this.mintKnowledgeCollectionPhase(
+            publishOperationOutput,
+            options,
+            stepHooks,
+        );
+
+        const finalityOperationOutput = await this.finalizePublishPhase(
+            mintOperationOutput.UAL,
+            options,
+        );
+
+        return {
+            UAL: mintOperationOutput.UAL,
+            datasetRoot: mintOperationOutput.datasetRoot,
             signatures: publishOperationResult.data.signatures,
             operation: {
-                mintKnowledgeCollection: mintKnowledgeCollectionReceipt,
+                mintKnowledgeCollection: mintOperationOutput.mintKnowledgeCollectionReceipt,
                 publish: getOperationStatusObject(publishOperationResult, publishOperationId),
-                finality: {
-                    status:
-                        finalityStatusResult >= minimumNumberOfFinalizationConfirmations
-                            ? 'FINALIZED'
-                            : 'NOT FINALIZED',
-                },
-                numberOfConfirmations: finalityStatusResult,
-                requiredConfirmations: minimumNumberOfFinalizationConfirmations,
+                finality: { status: finalityOperationOutput.status },
+                numberOfConfirmations: finalityOperationOutput.numberOfConfirmations,
+                requiredConfirmations: finalityOperationOutput.requiredConfirmations,
             },
         };
     }

@@ -10,6 +10,8 @@ import {
     ZERO_ADDRESS,
     NEUROWEB_INCENTIVE_TYPE_CHAINS,
     FEE_HISTORY_BLOCK_COUNT,
+    GAS_MODES,
+    DEFAULT_PARAMETERS,
 } from '../../constants/constants.js';
 import emptyHooks from '../../util/empty-hooks.js';
 import { sleepForMilliseconds } from '../utilities.js';
@@ -185,63 +187,66 @@ export default class BlockchainServiceBase {
             );
             gasLimit = Math.round(gasLimit * blockchain.gasLimitMultiplier);
 
+        // Retry bumping is disabled by default. If you want to re-enable it, consider bumping
+        // legacy gasPrice or EIP-1559 maxFeePerGas/maxPriorityFeePerGas with retryTxGasPriceMultiplier.
+        // Example (legacy-only):
         // let gasPrice;
-        /*if (blockchain.previousTxGasPrice && blockchain.retryTx) {
-            // Increase previous tx gas price by retryTxGasPriceMultiplier
-            gasPrice = Math.round(blockchain.previousTxGasPrice * blockchain.retryTxGasPriceMultiplier);
-        } else if (blockchain.forceReplaceTxs) {
-            // Get the current transaction count (nonce) of the wallet, including pending transactions
-            const currentNonce = await web3Instance.eth.getTransactionCount(publicKey, 'pending');
+        // if (blockchain.previousTxGasPrice && blockchain.retryTx) {
+        //     gasPrice = Math.round(blockchain.previousTxGasPrice * blockchain.retryTxGasPriceMultiplier);
+        // } else if (blockchain.forceReplaceTxs) {
+        //     const currentNonce = await web3Instance.eth.getTransactionCount(publicKey, 'pending');
+        //     const confirmedNonce = await web3Instance.eth.getTransactionCount(publicKey, 'latest');
+        //     if (currentNonce > confirmedNonce) {
+        //         const pendingBlock = await web3Instance.eth.getBlock('pending', true);
+        //         const pendingTx = Object.values(pendingBlock.transactions).find(
+        //             (tx) => tx.from.toLowerCase() === publicKey.toLowerCase() && tx.nonce === confirmedNonce,
+        //         );
+        //         if (pendingTx) {
+        //             gasPrice = Math.round(Number(pendingTx.gasPrice) * blockchain.retryTxGasPriceMultiplier);
+        //         } else {
+        //             gasPrice = Math.round(
+        //                 (blockchain.gasPrice || (await this.getSmartGasPrice(blockchain))) *
+        //                     blockchain.retryTxGasPriceMultiplier,
+        //             );
+        //         }
+        //     } else {
+        //         gasPrice = blockchain.gasPrice || (await this.getSmartGasPrice(blockchain));
+        //     }
+        // } else {
+        //     gasPrice = blockchain.gasPrice || (await this.getSmartGasPrice(blockchain));
+        // }
 
-            // Get the transaction count of the wallet excluding pending transactions
-            const confirmedNonce = await web3Instance.eth.getTransactionCount(publicKey, 'latest');
-
-            // If there are any pending transactions
-            if (currentNonce > confirmedNonce) {
-                const pendingBlock = await web3Instance.eth.getBlock('pending', true);
-
-                // Search for pending tx in the pending block
-                const pendingTx = Object.values(pendingBlock.transactions).find(
-                    (tx) =>
-                        tx.from.toLowerCase() === publicKey.toLowerCase() &&
-                        tx.nonce === confirmedNonce,
-                );
-
-                if (pendingTx) {
-                    // If found, increase gas price of pending tx by retryTxGasPriceMultiplier
-                    gasPrice = Math.round(Number(pendingTx.gasPrice) * blockchain.retryTxGasPriceMultiplier);
-                } else {
-                    // If not found, use default/network gas price increased by retryTxGasPriceMultiplier
-                    // Theoretically this should never happen
-                    gasPrice = Math.round(
-                        (blockchain.gasPrice || (await this.getSmartGasPrice(blockchain))) * blockchain.retryTxGasPriceMultiplier,
-                    );
-                }
-            } else {
-                gasPrice = blockchain.gasPrice || (await this.getSmartGasPrice(blockchain));
-            }
-        } else {
-            gasPrice = blockchain.gasPrice || (await this.getSmartGasPrice(blockchain));
-        }*/
-
-        const gasPrice = blockchain.gasPrice ?? (await this.getSmartGasPrice(blockchain));
+        const gasFeeOptions = await this.getGasFeeOptions(blockchain);
 
         if (blockchain.simulateTxs) {
-                await web3Instance.eth.call({
-                    to: contractInstance.options.address,
-                    data: encodedABI,
-                    from: publicKey,
-                    gasPrice,
-                    gas: gasLimit,
-                });
+            const simulationTx = {
+                to: contractInstance.options.address,
+                data: encodedABI,
+                from: publicKey,
+                gas: gasLimit,
+            };
+
+            if (gasFeeOptions.type === GAS_MODES.EIP1559) {
+                simulationTx.maxFeePerGas = gasFeeOptions.maxFeePerGas;
+                simulationTx.maxPriorityFeePerGas = gasFeeOptions.maxPriorityFeePerGas;
+            } else {
+                simulationTx.gasPrice = gasFeeOptions.gasPrice;
+            }
+
+            await web3Instance.eth.call(simulationTx);
         }
 
         return {
             from: publicKey,
             to: contractInstance.options.address,
             data: encodedABI,
-            gasPrice,
             gas: gasLimit,
+            ...(gasFeeOptions.type === GAS_MODES.EIP1559
+                ? {
+                      maxFeePerGas: gasFeeOptions.maxFeePerGas,
+                      maxPriorityFeePerGas: gasFeeOptions.maxPriorityFeePerGas,
+                  }
+                : { gasPrice: gasFeeOptions.gasPrice }),
         };
     }
 
@@ -1411,7 +1416,9 @@ export default class BlockchainServiceBase {
             // eth_feeHistory params: blockCount, newestBlock, rewardPercentiles
             // [50] = median priority fee per block
             const priorityFeePercentile = blockchain.priorityFeePercentile ?? 80;
-            const feeHistory = await web3Instance.eth.getFeeHistory(blockCount, 'latest', [priorityFeePercentile]);
+            const feeHistory = await web3Instance.eth.getFeeHistory(blockCount, 'latest', [
+                priorityFeePercentile,
+            ]);
 
             // Extract median priority fees from each block (reward[blockIndex][percentileIndex])
             const priorityFees = feeHistory.reward
@@ -1442,45 +1449,54 @@ export default class BlockchainServiceBase {
      */
     applyGasPriceBuffer(maxBaseFee, maxPriorityFee, gasPriceBufferPercent) {
         if (!gasPriceBufferPercent) return maxBaseFee + maxPriorityFee;
-        return ((maxBaseFee * BigInt(100 + Number(gasPriceBufferPercent))) / 100n) + maxPriorityFee;
+        return (maxBaseFee * BigInt(100 + Number(gasPriceBufferPercent))) / 100n + maxPriorityFee;
+    }
+
+    buildEip1559FeesFromHistory(feeHistory, gasPriceBufferPercent = 0) {
+        const baseFees = Array.from(feeHistory.baseFeePerGas ?? []);
+        const priorityFees = Array.from(feeHistory.priorityFees ?? []);
+
+        if (baseFees.length === 0 || priorityFees.length === 0) {
+            throw new Error('Fee history data is empty');
+        }
+
+        const maxBaseFee = baseFees.reduce((max, bf) => (bf > max ? bf : max), 0n);
+        const maxPriorityFeePerGas = priorityFees.reduce((max, pf) => (pf > max ? pf : max), 0n);
+
+        const maxFeePerGas = this.applyGasPriceBuffer(
+            maxBaseFee,
+            maxPriorityFeePerGas,
+            gasPriceBufferPercent,
+        );
+
+        return {
+            maxFeePerGas,
+            maxPriorityFeePerGas,
+        };
+    }
+
+    /**
+     * Estimate safe gas fees using eth_feeHistory (EIP-1559 style)
+     * @param {Object} blockchain - Blockchain configuration
+     * @returns {Promise<{maxFeePerGas: bigint, maxPriorityFeePerGas: bigint}>}
+     */
+    async estimateEip1559Fees(blockchain) {
+        const feeHistory = await this.getFeeHistory(blockchain, FEE_HISTORY_BLOCK_COUNT);
+        if (!feeHistory.supported) {
+            throw new Error('eth_feeHistory not supported');
+        }
+
+        return this.buildEip1559FeesFromHistory(feeHistory, blockchain.gasPriceBufferPercent ?? 0);
     }
 
     /**
      * Estimate safe gas price using eth_feeHistory (EIP-1559 style)
-     * Takes max base fee from last N blocks, adds a buffer for volatility,
-     * and includes the priority fee (tip) for validator incentive
      * @param {Object} blockchain - Blockchain configuration
      * @returns {Promise<BigInt>} Estimated gas price in wei
      */
     async estimateGasPriceFromFeeHistory(blockchain) {
-        const { gasPriceBufferPercent } = blockchain;
-        const feeHistory = await this.getFeeHistory(blockchain, FEE_HISTORY_BLOCK_COUNT);
-
-        // Fallback to network gas price if feeHistory not supported or empty
-        if (!feeHistory.supported) {
-            return this.applyGasPriceBuffer(
-                0n, 
-                BigInt(await this.getNetworkGasPrice(blockchain)),
-                gasPriceBufferPercent,
-            );
-        }
-
-        const baseFees = Array.from(feeHistory.baseFeePerGas);
-        const priorityFees = Array.from(feeHistory.priorityFees);
-
-        if (baseFees.length === 0 || priorityFees.length === 0) {
-            return this.applyGasPriceBuffer(
-                0n, 
-                BigInt(await this.getNetworkGasPrice(blockchain)),
-                gasPriceBufferPercent,
-            );
-        }
-
-        // Find max base fee and priority fee from recent blocks
-        const maxBaseFee = baseFees.reduce((max, bf) => (bf > max ? bf : max), 0n);
-        const maxPriorityFee = priorityFees.reduce((max, pf) => (pf > max ? pf : max), 0n);
-
-        return this.applyGasPriceBuffer(maxBaseFee, maxPriorityFee, gasPriceBufferPercent);
+        const fees = await this.estimateEip1559Fees(blockchain);
+        return fees.maxFeePerGas;
     }
 
     /**
@@ -1491,8 +1507,8 @@ export default class BlockchainServiceBase {
      */
     async getSmartGasPrice(blockchain) {
         try {
-            const estimatedPrice = await this.estimateGasPriceFromFeeHistory(blockchain);
-            return estimatedPrice.toString();
+            const { maxFeePerGas } = await this.estimateEip1559Fees(blockchain);
+            return maxFeePerGas.toString();
         } catch (eip1559Error) {
             try {
                 return await this.getNetworkGasPrice(blockchain);
@@ -1504,6 +1520,55 @@ export default class BlockchainServiceBase {
                 );
             }
         }
+    }
+
+    normalizeGasMode(gasMode) {
+        const requested = (gasMode || '').toLowerCase();
+        if ([GAS_MODES.LEGACY, GAS_MODES.EIP1559].includes(requested)) {
+            return requested;
+        }
+        return DEFAULT_PARAMETERS.GAS_MODE;
+    }
+
+    /**
+     * Resolve gas fee fields based on configured gas mode and network support
+     * @param {Object} blockchain - Blockchain configuration
+     * @returns {Promise<Object>} Gas fee fields to merge into tx (legacy or EIP-1559)
+     */
+    async getGasFeeOptions(blockchain) {
+        const desiredMode = this.normalizeGasMode(blockchain.gasMode);
+        const feeHistory = await this.getFeeHistory(blockchain, FEE_HISTORY_BLOCK_COUNT);
+        const supportsEip1559 =
+            feeHistory.supported &&
+            feeHistory.baseFeePerGas?.length &&
+            feeHistory.priorityFees?.length;
+
+        if (desiredMode === GAS_MODES.EIP1559 && supportsEip1559) {
+            const { maxFeePerGas, maxPriorityFeePerGas } = this.buildEip1559FeesFromHistory(
+                feeHistory,
+                blockchain.gasPriceBufferPercent ?? 0,
+            );
+
+            return {
+                type: GAS_MODES.EIP1559,
+                maxFeePerGas: maxFeePerGas.toString(),
+                maxPriorityFeePerGas: maxPriorityFeePerGas.toString(),
+            };
+        }
+
+        if (desiredMode === GAS_MODES.EIP1559 && !supportsEip1559) {
+            // eslint-disable-next-line no-console
+            console.warn(
+                'EIP-1559 gas mode requested but eth_feeHistory unsupported; falling back to legacy gasPrice',
+            );
+        }
+
+        const legacyGasPrice = blockchain.gasPrice ?? (await this.getSmartGasPrice(blockchain));
+
+        return {
+            type: GAS_MODES.LEGACY,
+            gasPrice: legacyGasPrice?.toString?.() ?? legacyGasPrice,
+        };
     }
 
     async getWalletBalances(blockchain) {
