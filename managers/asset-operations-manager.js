@@ -541,10 +541,11 @@ export default class AssetOperationsManager {
      * Phase 3 of asset creation: poll node finality status for the minted asset.
      * @async
      * @param {string} UAL - Universal Asset Locator returned from minting.
+     * @param {string} publishOperationId - The publish operation ID for error tracking.
      * @param {Object} [options={}] - Finality options.
      * @returns {Object} Finality status details.
      */
-    async finalizePublishPhase(UAL, options = {}) {
+    async finalizePublishPhase(UAL, publishOperationId, options = {}) {
         const {
             endpoint,
             port,
@@ -625,6 +626,7 @@ export default class AssetOperationsManager {
 
         const finalityOperationOutput = await this.finalizePublishPhase(
             mintOperationOutput.UAL,
+            publishOperationId,
             options,
         );
 
