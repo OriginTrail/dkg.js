@@ -7,6 +7,7 @@ import {
     PARANET_MINERS_ACCESS_POLICY,
     PARANET_KC_SUBMISSION_POLICY,
     ZERO_ADDRESS,
+    GAS_MODES,
 } from '../constants/constants.js';
 
 export default class InputService {
@@ -192,6 +193,19 @@ export default class InputService {
             BLOCKCHAINS[environment][name]?.gasPriceOracleLink ??
             undefined;
 
+        const getEnvGasMode = () =>
+            typeof process !== 'undefined' && process?.env ? process.env.DKG_GAS_MODE : undefined;
+
+        const requestedGasMode =
+            options.blockchain?.gasMode ??
+            this.config.blockchain?.gasMode ??
+            getEnvGasMode() ??
+            DEFAULT_PARAMETERS.GAS_MODE;
+        const normalizedRequestedGasMode = (requestedGasMode || '').toLowerCase();
+        const normalizedGasMode = Object.values(GAS_MODES).includes(normalizedRequestedGasMode)
+            ? normalizedRequestedGasMode
+            : DEFAULT_PARAMETERS.GAS_MODE;
+
         const maxAllowance =
             options.blockchain?.maxAllowance ?? this.config.blockchain?.maxAllowance ?? undefined;
         const gasPriceBufferPercent =
@@ -220,6 +234,7 @@ export default class InputService {
             simulateTxs,
             forceReplaceTxs,
             gasPriceOracleLink,
+            gasMode: normalizedGasMode,
             maxAllowance,
             gasPriceBufferPercent,
             priorityFeePercentile,

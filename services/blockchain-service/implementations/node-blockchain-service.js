@@ -1,7 +1,10 @@
 /* eslint-disable no-param-reassign */
 /* eslint-disable no-await-in-loop */
 import Web3 from 'web3';
-import { TRANSACTION_RETRY_ERRORS, WEBSOCKET_PROVIDER_OPTIONS } from '../../../constants/constants.js';
+import {
+    TRANSACTION_RETRY_ERRORS,
+    WEBSOCKET_PROVIDER_OPTIONS,
+} from '../../../constants/constants.js';
 import BlockchainServiceBase from '../blockchain-service-base.js';
 
 export default class NodeBlockchainService extends BlockchainServiceBase {
@@ -20,6 +23,8 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
                 };
             },
         );
+
+        this.nextNonces = new Map();
     }
 
     initializeWeb3(blockchainName, blockchainRpc, blockchainOptions) {
@@ -59,13 +64,30 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
         return blockchain?.publicKey;
     }
 
+    async allocateNonce(blockchain) {
+        const address = (await this.getPublicKey(blockchain))?.toLowerCase();
+        if (!address) throw new Error('Missing public key for nonce allocation');
+
+        if (!this.nextNonces.has(address)) {
+            const web3Instance = await this.getWeb3Instance(blockchain);
+            // Seed the local nonce tracker from the pending nonce to avoid collisions across sequential txs.
+            const startingNonce = await web3Instance.eth.getTransactionCount(address, 'pending');
+            this.nextNonces.set(address, startingNonce);
+        }
+
+        const nonce = this.nextNonces.get(address);
+        // Increment locally so concurrent sends reuse the monotonic nonce without extra RPC calls.
+        this.nextNonces.set(address, nonce + 1);
+        return nonce;
+    }
+
     async executeContractFunction(contractName, functionName, args, blockchain) {
         await this.ensureBlockchainInfo(blockchain);
         const web3Instance = await this.getWeb3Instance(blockchain);
         let contractInstance = await this.getContractInstance(contractName, blockchain);
 
         let receipt;
-        let previousTxGasPrice;
+        let lastSentGasPrice;
         let simulationSucceeded = false;
         let transactionRetried = false;
 
@@ -77,17 +99,25 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
                     args,
                     blockchain,
                 );
-                previousTxGasPrice = tx.gasPrice;
+                const nonce = await this.allocateNonce(blockchain);
+                // Track what we sent in case we need to retry without a receipt.
+                lastSentGasPrice = tx.gasPrice ?? tx.maxFeePerGas;
                 simulationSucceeded = true;
 
                 const createdTransaction = await web3Instance.eth.accounts.signTransaction(
-                    tx,
+                    { ...tx, nonce },
                     blockchain.privateKey,
                 );
 
                 receipt = await web3Instance.eth.sendSignedTransaction(
                     createdTransaction.rawTransaction,
                 );
+
+                const actualGasPrice =
+                    receipt?.effectiveGasPrice ?? receipt?.gasPrice ?? lastSentGasPrice;
+                lastSentGasPrice = actualGasPrice;
+                blockchain.previousTxGasPrice = actualGasPrice;
+
                 if (blockchain.name.startsWith('otp') && blockchain.waitNeurowebTxFinalization) {
                     receipt = await this.waitForTransactionFinalization(receipt, blockchain);
                 }
@@ -102,7 +132,8 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
                 ) {
                     transactionRetried = true;
                     blockchain.retryTx = true;
-                    blockchain.previousTxGasPrice = previousTxGasPrice;
+                    // Prefer actual paid price; fall back to what we sent if no receipt.
+                    blockchain.previousTxGasPrice = lastSentGasPrice;
                 } else if (!transactionRetried && /revert|VM Exception/i.test(error.message)) {
                     let status;
                     try {
