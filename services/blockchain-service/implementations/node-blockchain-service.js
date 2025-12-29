@@ -70,11 +70,13 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
 
         if (!this.nextNonces.has(address)) {
             const web3Instance = await this.getWeb3Instance(blockchain);
+            // Seed the local nonce tracker from the pending nonce to avoid collisions across sequential txs.
             const startingNonce = await web3Instance.eth.getTransactionCount(address, 'pending');
             this.nextNonces.set(address, startingNonce);
         }
 
         const nonce = this.nextNonces.get(address);
+        // Increment locally so concurrent sends reuse the monotonic nonce without extra RPC calls.
         this.nextNonces.set(address, nonce + 1);
         return nonce;
     }
@@ -109,6 +111,12 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
                 receipt = await web3Instance.eth.sendSignedTransaction(
                     createdTransaction.rawTransaction,
                 );
+
+                const actualGasPrice =
+                    receipt?.effectiveGasPrice ?? receipt?.gasPrice ?? previousTxGasPrice;
+                previousTxGasPrice = actualGasPrice;
+                blockchain.previousTxGasPrice = actualGasPrice;
+
                 if (blockchain.name.startsWith('otp') && blockchain.waitNeurowebTxFinalization) {
                     receipt = await this.waitForTransactionFinalization(receipt, blockchain);
                 }

@@ -531,6 +531,9 @@ export default class AssetOperationsManager {
      * @returns {Object} Finality status details.
      */
     async finalizePublishPhase(UAL, options = {}) {
+        // UAL should point to a knowledge collection (kcUAL), not a knowledge asset (kaUAL).
+        this.validationService.validateUAL(UAL);
+
         const {
             endpoint,
             port,

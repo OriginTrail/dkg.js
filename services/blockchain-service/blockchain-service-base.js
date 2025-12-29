@@ -1516,7 +1516,7 @@ export default class BlockchainServiceBase {
 
     normalizeGasMode(gasMode) {
         const requested = (gasMode || '').toLowerCase();
-        if ([GAS_MODES.LEGACY, GAS_MODES.EIP1559].includes(requested)) {
+        if (Object.values(GAS_MODES).includes(requested)) {
             return requested;
         }
         return DEFAULT_PARAMETERS.GAS_MODE;
@@ -1551,11 +1551,15 @@ export default class BlockchainServiceBase {
         if (desiredMode === GAS_MODES.EIP1559 && !supportsEip1559) {
             // eslint-disable-next-line no-console
             console.warn(
-                'EIP-1559 gas mode requested but eth_feeHistory unsupported; falling back to legacy gasPrice',
+                'EIP-1559 gas mode requested but eth_feeHistory is unsupported; skipping feeHistory retry and falling back to legacy gasPrice',
             );
         }
 
-        const legacyGasPrice = blockchain.gasPrice ?? (await this.getSmartGasPrice(blockchain));
+        const legacyGasPrice =
+            blockchain.gasPrice ??
+            (supportsEip1559
+                ? await this.getSmartGasPrice(blockchain)
+                : await this.getNetworkGasPrice(blockchain));
 
         return {
             type: GAS_MODES.LEGACY,
