@@ -87,7 +87,7 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
         let contractInstance = await this.getContractInstance(contractName, blockchain);
 
         let receipt;
-        let previousTxGasPrice;
+        let lastSentGasPrice;
         let simulationSucceeded = false;
         let transactionRetried = false;
 
@@ -100,7 +100,8 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
                     blockchain,
                 );
                 const nonce = await this.allocateNonce(blockchain);
-                previousTxGasPrice = tx.gasPrice ?? tx.maxFeePerGas;
+                // Track what we sent in case we need to retry without a receipt.
+                lastSentGasPrice = tx.gasPrice ?? tx.maxFeePerGas;
                 simulationSucceeded = true;
 
                 const createdTransaction = await web3Instance.eth.accounts.signTransaction(
@@ -113,8 +114,8 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
                 );
 
                 const actualGasPrice =
-                    receipt?.effectiveGasPrice ?? receipt?.gasPrice ?? previousTxGasPrice;
-                previousTxGasPrice = actualGasPrice;
+                    receipt?.effectiveGasPrice ?? receipt?.gasPrice ?? lastSentGasPrice;
+                lastSentGasPrice = actualGasPrice;
                 blockchain.previousTxGasPrice = actualGasPrice;
 
                 if (blockchain.name.startsWith('otp') && blockchain.waitNeurowebTxFinalization) {
@@ -131,7 +132,8 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
                 ) {
                     transactionRetried = true;
                     blockchain.retryTx = true;
-                    blockchain.previousTxGasPrice = previousTxGasPrice;
+                    // Prefer actual paid price; fall back to what we sent if no receipt.
+                    blockchain.previousTxGasPrice = lastSentGasPrice;
                 } else if (!transactionRetried && /revert|VM Exception/i.test(error.message)) {
                     let status;
                     try {

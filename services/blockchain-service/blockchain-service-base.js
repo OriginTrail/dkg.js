@@ -205,15 +205,15 @@ export default class BlockchainServiceBase {
         //             gasPrice = Math.round(Number(pendingTx.gasPrice) * blockchain.retryTxGasPriceMultiplier);
         //         } else {
         //             gasPrice = Math.round(
-        //                 (blockchain.gasPrice || (await this.getSmartGasPrice(blockchain))) *
+        //                 (blockchain.gasPrice || (await this.getGasPriceWeiWithFallback(blockchain))) *
         //                     blockchain.retryTxGasPriceMultiplier,
         //             );
         //         }
         //     } else {
-        //         gasPrice = blockchain.gasPrice || (await this.getSmartGasPrice(blockchain));
+        //         gasPrice = blockchain.gasPrice || (await this.getGasPriceWeiWithFallback(blockchain));
         //     }
         // } else {
-        //     gasPrice = blockchain.gasPrice || (await this.getSmartGasPrice(blockchain));
+        //     gasPrice = blockchain.gasPrice || (await this.getGasPriceWeiWithFallback(blockchain));
         // }
 
         const gasFeeOptions = await this.getGasFeeOptions(blockchain);
@@ -1482,22 +1482,11 @@ export default class BlockchainServiceBase {
     }
 
     /**
-     * Estimate safe gas price using eth_feeHistory (EIP-1559 style)
-     * @param {Object} blockchain - Blockchain configuration
-     * @returns {Promise<BigInt>} Estimated gas price in wei
-     */
-    async estimateGasPriceFromFeeHistory(blockchain) {
-        const fees = await this.estimateEip1559Fees(blockchain);
-        return fees.maxFeePerGas;
-    }
-
-    /**
-     * Get gas price with EIP-1559 estimation (with fallback)
-     * Tries eth_feeHistory first, falls back to legacy methods
+     * Get preferred gas price in wei: try EIP-1559 fee history, fall back to legacy network gas price.
      * @param {Object} blockchain - Blockchain configuration
      * @returns {Promise<string>} Gas price in wei (as string for web3 compatibility)
      */
-    async getSmartGasPrice(blockchain) {
+    async getGasPriceWeiWithFallback(blockchain) {
         try {
             const { maxFeePerGas } = await this.estimateEip1559Fees(blockchain);
             return maxFeePerGas.toString();
@@ -1558,7 +1547,7 @@ export default class BlockchainServiceBase {
         const legacyGasPrice =
             blockchain.gasPrice ??
             (supportsEip1559
-                ? await this.getSmartGasPrice(blockchain)
+                ? await this.getGasPriceWeiWithFallback(blockchain)
                 : await this.getNetworkGasPrice(blockchain));
 
         return {
