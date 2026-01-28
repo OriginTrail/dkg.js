@@ -47,7 +47,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '16.x'
 
       - name: Validate package-lock.json is valid and in sync
         run: npm ci --dry-run --ignore-scripts
