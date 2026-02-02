@@ -1,0 +1,12 @@
+{
+    "public": {
+        "@context": "https://schema.org",
+        "@id": "urn:edge-case:empty-arrays:001",
+        "@type": "Organization",
+        "name": "Empty Arrays Test",
+        "description": "Testing empty array handling",
+        "employee": [],
+        "department": [],
+        "keywords": []
+    }
+}

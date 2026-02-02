@@ -1,0 +1,8 @@
+{
+    "public": {
+        "@context": "https://schema.org",
+        "@id": "urn:edge-case:minimal:001",
+        "@type": "Thing",
+        "name": "Minimal Asset"
+    }
+}

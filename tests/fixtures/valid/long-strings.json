@@ -1,0 +1,10 @@
+{
+    "public": {
+        "@context": "https://schema.org",
+        "@id": "urn:edge-case:long-strings:001",
+        "@type": "Article",
+        "name": "Long Strings Test",
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+        "articleBody": "This is the article body with a very long text content that spans multiple paragraphs and contains various types of content to test the handling of large text fields in the DKG system. The purpose of this test is to ensure that assets with substantial text content are properly published, stored, and retrievable through the normal publish-get-query flow. Additional content is added here to make the string even longer and more representative of real-world use cases where users might publish lengthy documents, articles, or descriptions as part of their knowledge assets."
+    }
+}

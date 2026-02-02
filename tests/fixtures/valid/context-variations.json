@@ -1,0 +1,16 @@
+{
+    "public": {
+        "@context": [
+            "https://schema.org",
+            {
+                "custom": "https://example.org/custom#",
+                "customProperty": "custom:property"
+            }
+        ],
+        "@id": "urn:edge-case:context:001",
+        "@type": "Thing",
+        "name": "Context Variations Test",
+        "description": "Testing different @context formats",
+        "customProperty": "Custom value using extended context"
+    }
+}

@@ -1,0 +1,67 @@
+{
+    "public": {
+        "@context": "https://schema.org",
+        "@id": "urn:edge-case:large:001",
+        "@type": "Organization",
+        "name": "Large Corporation",
+        "description": "A large organization with deep nested structure",
+        "department": [
+            {
+                "@type": "Organization",
+                "@id": "urn:edge-case:large:dept:engineering",
+                "name": "Engineering Department",
+                "employee": [
+                    {
+                        "@type": "Person",
+                        "@id": "urn:edge-case:large:person:001",
+                        "name": "Alice Engineer",
+                        "jobTitle": "Senior Developer",
+                        "knows": [
+                            { "@id": "urn:edge-case:large:person:002" },
+                            { "@id": "urn:edge-case:large:person:003" }
+                        ]
+                    },
+                    {
+                        "@type": "Person",
+                        "@id": "urn:edge-case:large:person:002",
+                        "name": "Bob Developer",
+                        "jobTitle": "Developer"
+                    },
+                    {
+                        "@type": "Person",
+                        "@id": "urn:edge-case:large:person:003",
+                        "name": "Charlie Tester",
+                        "jobTitle": "QA Engineer"
+                    }
+                ]
+            },
+            {
+                "@type": "Organization",
+                "@id": "urn:edge-case:large:dept:marketing",
+                "name": "Marketing Department",
+                "employee": [
+                    {
+                        "@type": "Person",
+                        "@id": "urn:edge-case:large:person:004",
+                        "name": "Diana Marketer",
+                        "jobTitle": "Marketing Manager"
+                    }
+                ]
+            }
+        ],
+        "metadata": {
+            "level1": {
+                "level2": {
+                    "level3": {
+                        "level4": {
+                            "level5": {
+                                "deepValue": "This is deeply nested data",
+                                "nestedArray": [1, 2, 3, 4, 5]
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

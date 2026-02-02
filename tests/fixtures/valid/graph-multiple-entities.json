@@ -1,0 +1,30 @@
+{
+    "public": {
+        "@context": "https://schema.org",
+        "@graph": [
+            {
+                "@id": "urn:edge-case:graph:person:alice",
+                "@type": "Person",
+                "name": "Alice",
+                "knows": { "@id": "urn:edge-case:graph:person:bob" },
+                "worksFor": { "@id": "urn:edge-case:graph:org:acme" }
+            },
+            {
+                "@id": "urn:edge-case:graph:person:bob",
+                "@type": "Person",
+                "name": "Bob",
+                "knows": { "@id": "urn:edge-case:graph:person:alice" },
+                "worksFor": { "@id": "urn:edge-case:graph:org:acme" }
+            },
+            {
+                "@id": "urn:edge-case:graph:org:acme",
+                "@type": "Organization",
+                "name": "Acme Corporation",
+                "employee": [
+                    { "@id": "urn:edge-case:graph:person:alice" },
+                    { "@id": "urn:edge-case:graph:person:bob" }
+                ]
+            }
+        ]
+    }
+}

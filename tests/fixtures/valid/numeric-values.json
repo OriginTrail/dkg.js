@@ -1,0 +1,43 @@
+{
+    "public": {
+        "@context": "https://schema.org",
+        "@id": "urn:edge-case:numeric:001",
+        "@type": "Product",
+        "name": "Numeric Values Test",
+        "description": "Testing various numeric edge cases",
+        "price": 99.99,
+        "priceCurrency": "USD",
+        "weight": {
+            "@type": "QuantitativeValue",
+            "value": 0,
+            "unitCode": "KGM"
+        },
+        "additionalProperty": [
+            {
+                "@type": "PropertyValue",
+                "name": "integerValue",
+                "value": 42
+            },
+            {
+                "@type": "PropertyValue",
+                "name": "floatValue",
+                "value": 3.14159265359
+            },
+            {
+                "@type": "PropertyValue",
+                "name": "negativeValue",
+                "value": -100
+            },
+            {
+                "@type": "PropertyValue",
+                "name": "largeNumber",
+                "value": 9999999999999
+            },
+            {
+                "@type": "PropertyValue",
+                "name": "smallDecimal",
+                "value": 0.00001
+            }
+        ]
+    }
+}

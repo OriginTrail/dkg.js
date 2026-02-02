@@ -1,0 +1,16 @@
+{
+    "public": {
+        "@context": "https://schema.org",
+        "@id": "urn:edge-case:utf8:001",
+        "@type": "CreativeWork",
+        "name": "UTF-8 Test 日本語 中文 العربية Ελληνικά",
+        "description": "Special chars: \"quotes\" 'apostrophe' <angle> & ampersand",
+        "text": "Escape sequences: \\n newline \\t tab \\r return \\\\ backslash",
+        "keywords": ["emoji 🚀🌍🔥", "math ∑∏∫≠≤≥", "currency €£¥₿"],
+        "author": {
+            "@type": "Person",
+            "name": "José García-Müller",
+            "description": "Cześć! Привет! שלום! مرحبا! 你好!"
+        }
+    }
+}

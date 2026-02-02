@@ -91,7 +91,11 @@
         "test:neuroweb:node27:mainnet": "NODE_TO_TEST=\"Node 27\" mocha tests/mainnet/Neuroweb_Mainnet.spec.js --reporter mochawesome --reporter-options reportFilename=mainnet_neuroweb",
         "test:neuroweb:node28:mainnet": "NODE_TO_TEST=\"Node 28\" mocha tests/mainnet/Neuroweb_Mainnet.spec.js --reporter mochawesome --reporter-options reportFilename=mainnet_neuroweb",
         "test:neuroweb:node29:mainnet": "NODE_TO_TEST=\"Node 29\" mocha tests/mainnet/Neuroweb_Mainnet.spec.js --reporter mochawesome --reporter-options reportFilename=mainnet_neuroweb",
-        "test:neuroweb:node30:mainnet": "NODE_TO_TEST=\"Node 30\" mocha tests/mainnet/Neuroweb_Mainnet.spec.js --reporter mochawesome --reporter-options reportFilename=mainnet_neuroweb"
+        "test:neuroweb:node30:mainnet": "NODE_TO_TEST=\"Node 30\" mocha tests/mainnet/Neuroweb_Mainnet.spec.js --reporter mochawesome --reporter-options reportFilename=mainnet_neuroweb",
+        "test:edge-cases:testnet": "mocha tests/edge-cases/testnet.spec.js --reporter mochawesome --reporter-options reportFilename=edge_cases_testnet",
+        "test:edge-cases:mainnet": "mocha tests/edge-cases/mainnet.spec.js --reporter mochawesome --reporter-options reportFilename=edge_cases_mainnet",
+        "report:edge-cases:testnet": "node report-edge-cases-testnet-config.js",
+        "report:edge-cases:mainnet": "node report-edge-cases-mainnet-config.js"
     },
     "repository": {
         "type": "git",
