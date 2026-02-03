@@ -9,7 +9,7 @@ const teamsHookBaseURL = process.env.EDGE_CASE_TEAMS_HOOK;
 const buildUrl = process.env.BUILD_URL;
 
 // Resolve the JSON file path relative to this script's location
-const jsonFilePath = path.resolve(__dirname, "mochawesome-report/edge_cases_testnet.json");
+const jsonFilePath = path.resolve(__dirname, "mochawesome-report/edge_cases_mainnet.json");
 
 console.log(`Looking for JSON file at: ${jsonFilePath}`);
 
@@ -24,7 +24,7 @@ const config = defineConfig({
             url: teamsHookBaseURL,
             only_failures: false,
             publish: "test-summary",
-            title: "DKG.js Edge Case Tests - TESTNET",
+            title: "DKG.js Edge Case Tests - MAINNET",
             width: "Full",
           },
           extensions: [
@@ -36,8 +36,8 @@ const config = defineConfig({
               inputs: {
                 links: [
                   {
-                    text: "Testnet Edge Case Report",
-                    url: `${buildUrl}artifact/mochawesome-report/edge_cases_testnet.html`,
+                    text: "Mainnet Edge Case Report",
+                    url: `${buildUrl}artifact/mochawesome-report/edge_cases_mainnet.html`,
                   },
                 ],
               },
@@ -47,7 +47,7 @@ const config = defineConfig({
       ],
       results: [
         {
-          type: "mochawesome",
+          type: "mocha",
           files: [jsonFilePath],
         },
       ],
