@@ -6,7 +6,7 @@ const path = require("path");
 dotenv.config({ path: path.resolve(__dirname, ".env") });
 
 const teamsHookBaseURL = process.env.EDGE_CASE_TEAMS_HOOK;
-const buildUrl = process.env.BUILD_URL;
+const jenkinsUrl = process.env.JENKINS_URL;
 
 // Resolve the JSON file path relative to this script's location
 const jsonFilePath = path.resolve(__dirname, "mochawesome-report/edge_cases_testnet.json");
@@ -37,7 +37,7 @@ const config = defineConfig({
                 links: [
                   {
                     text: "Testnet Edge Case Report",
-                    url: `${buildUrl}artifact/mochawesome-report/edge_cases_testnet.html`,
+                    url: `${jenkinsUrl}/job/Edge_Case_Testnet_dkg.js/Edge_20Case_20Testnet_20Report/*zip*/Edge_20Case_20Testnet_20Report.zip`,
                   },
                 ],
               },
