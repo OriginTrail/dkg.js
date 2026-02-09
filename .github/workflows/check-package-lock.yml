@@ -10,10 +10,16 @@ concurrency:
 on:
   push:
     branches:
-      - main # Run on push to main branch only
+      - main
+    paths:
+      - "package.json"
+      - "package-lock.json"
   pull_request:
     branches:
-      - "**" # Run on PR to any branch
+      - "**"
+    paths:
+      - "package.json"
+      - "package-lock.json"
 
 jobs:
   verify-package-lock:
@@ -43,6 +49,26 @@ jobs:
             exit 1
           fi
           echo "SUCCESS: package-lock.json file is valid and not empty"
+
+      - name: Check package-lock.json is updated when package.json changes
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch origin ${{ github.base_ref }} --depth=1
+          
+          # Check if package.json was changed in this PR
+          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q "^package\.json$"; then
+            echo "package.json was modified - checking if package-lock.json was also updated..."
+            
+            if ! git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q "^package-lock\.json$"; then
+              echo "ERROR: package.json was changed but package-lock.json was NOT updated"
+              echo "Please run 'npm install' to update the lock file and commit it"
+              exit 1
+            fi
+            
+            echo "SUCCESS: Both package.json and package-lock.json were updated"
+          else
+            echo "SKIP: package.json was not modified, only package-lock.json changed"
+          fi
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
