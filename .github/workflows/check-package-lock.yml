@@ -10,10 +10,16 @@ concurrency:
 on:
   push:
     branches:
-      - main # Run on push to main branch only
+      - main
+    paths:
+      - "package.json"
+      - "package-lock.json"
   pull_request:
     branches:
-      - "**" # Run on PR to any branch
+      - "**"
+    paths:
+      - "package.json"
+      - "package-lock.json"
 
 jobs:
   verify-package-lock:
@@ -47,7 +53,23 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '16.x'
+          node-version: '20.x'
 
       - name: Validate package-lock.json is valid and in sync
         run: npm ci --dry-run --ignore-scripts
+
+      - name: Check package-lock.json is up to date with package.json
+        if: github.event_name == 'pull_request'
+        run: |
+          # Regenerate the lock file from the current package.json without
+          # installing node_modules, then check if it differs from what was committed.
+          cp package-lock.json package-lock.json.bak
+          npm install --package-lock-only --ignore-scripts
+          
+          if ! diff -q package-lock.json package-lock.json.bak > /dev/null 2>&1; then
+            echo "ERROR: package-lock.json is out of date with package.json"
+            echo "Please run 'npm install' and commit the updated package-lock.json"
+            exit 1
+          fi
+          
+          echo "SUCCESS: package-lock.json is up to date"
