@@ -510,6 +510,25 @@ export default class BlockchainServiceBase {
             if (requestData?.paymaster && requestData?.paymaster !== ZERO_ADDRESS) {
                 // Handle the case when payer is passed
             } else {
+                const senderBalance = await this.callContractFunction(
+                    'Token',
+                    'balanceOf',
+                    [sender],
+                    blockchain,
+                );
+
+                if (BigInt(senderBalance) < BigInt(requestData.tokenAmount)) {
+                    const balance = Number(senderBalance) / 1e18;
+                    const required = Number(requestData.tokenAmount) / 1e18;
+
+                    throw new Error(
+                        `Insufficient TRAC token balance to publish. ` +
+                            `Wallet ${sender} has ${balance} TRAC, ` +
+                            `but the publish operation requires ${required} TRAC. ` +
+                            `Please fund your wallet with more TRAC tokens to proceed.`,
+                    );
+                }
+
                 await this.increaseKnowledgeCollectionAllowance(
                     sender,
                     requestData.tokenAmount,
