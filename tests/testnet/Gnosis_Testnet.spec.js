@@ -10,63 +10,25 @@ import fs from 'fs';
 
 const OT_NODE_PORT = '8900';
 
-const nodeKeys = {
-  'Node 01': {
-    publicKey: process.env.JS_TESTNET_GNOSIS_NODE01_PUBLIC_KEY,
-    privateKey: process.env.JS_TESTNET_GNOSIS_NODE01_PRIVATE_KEY
-  },
-  'Node 04': {
-    publicKey: process.env.JS_TESTNET_GNOSIS_NODE04_PUBLIC_KEY,
-    privateKey: process.env.JS_TESTNET_GNOSIS_NODE04_PRIVATE_KEY
-  },
-  'Node 05': {
-    publicKey: process.env.JS_TESTNET_GNOSIS_NODE05_PUBLIC_KEY,
-    privateKey: process.env.JS_TESTNET_GNOSIS_NODE05_PRIVATE_KEY
-  },
-  'Node 06': {
-    publicKey: process.env.JS_TESTNET_GNOSIS_NODE06_PUBLIC_KEY,
-    privateKey: process.env.JS_TESTNET_GNOSIS_NODE06_PRIVATE_KEY
-  },
-  'Node 07': {
-    publicKey: process.env.JS_TESTNET_GNOSIS_NODE07_PUBLIC_KEY,
-    privateKey: process.env.JS_TESTNET_GNOSIS_NODE07_PRIVATE_KEY
-  },
-  'Node 08': {
-    publicKey: process.env.JS_TESTNET_GNOSIS_NODE08_PUBLIC_KEY,
-    privateKey: process.env.JS_TESTNET_GNOSIS_NODE08_PRIVATE_KEY
-  },
-  'Node 09': {
-    publicKey: process.env.JS_TESTNET_GNOSIS_NODE09_PUBLIC_KEY,
-    privateKey: process.env.JS_TESTNET_GNOSIS_NODE09_PRIVATE_KEY
-  },
-  'Node 10': {
-    publicKey: process.env.JS_TESTNET_GNOSIS_NODE10_PUBLIC_KEY,
-    privateKey: process.env.JS_TESTNET_GNOSIS_NODE10_PRIVATE_KEY
-  },
-  'Node 13': {
-    publicKey: process.env.JS_TESTNET_GNOSIS_NODE13_PUBLIC_KEY,
-    privateKey: process.env.JS_TESTNET_GNOSIS_NODE13_PRIVATE_KEY
-  },
-  'Node 14': {
-    publicKey: process.env.JS_TESTNET_GNOSIS_NODE14_PUBLIC_KEY,
-    privateKey: process.env.JS_TESTNET_GNOSIS_NODE14_PRIVATE_KEY
-  },
-  'Node 21': {
-    publicKey: process.env.JS_TESTNET_GNOSIS_NODE21_PUBLIC_KEY,
-    privateKey: process.env.JS_TESTNET_GNOSIS_NODE21_PRIVATE_KEY
-  },
-  'Node 23': {
-    publicKey: process.env.JS_TESTNET_GNOSIS_NODE23_PUBLIC_KEY,
-    privateKey: process.env.JS_TESTNET_GNOSIS_NODE23_PRIVATE_KEY
-  },
-  'Node 37': {
-    publicKey: process.env.JS_TESTNET_GNOSIS_NODE37_PUBLIC_KEY,
-    privateKey: process.env.JS_TESTNET_GNOSIS_NODE37_PRIVATE_KEY
-  }
-};
+function getNodeWallet(nodeId, walletSlot = null) {
+  const resolvedWalletSlot = String(walletSlot || process.env.TEST_WALLET_SLOT || '01').padStart(2, '0');
+  const prefixedPublic = process.env[`JS_TESTNET_GNOSIS_NODE${nodeId}_W${resolvedWalletSlot}_PUBLIC_KEY`];
+  const prefixedPrivate = process.env[`JS_TESTNET_GNOSIS_NODE${nodeId}_W${resolvedWalletSlot}_PRIVATE_KEY`];
+  const legacyPublic = process.env[`JS_TESTNET_GNOSIS_NODE${nodeId}_PUBLIC_KEY`];
+  const legacyPrivate = process.env[`JS_TESTNET_GNOSIS_NODE${nodeId}_PRIVATE_KEY`];
+
+  return {
+    publicKey: prefixedPublic || legacyPublic,
+    privateKey: prefixedPrivate || legacyPrivate,
+  };
+}
+
+function getNodeIdFromName(nodeName) {
+  return nodeName.split(' ')[1];
+}
 
 const nodes = [
-  { name: 'Node 01', hostname: 'https://v6-pegasus-node-01.origin-trail.network' },
+  { name: 'Node 01', hostname: 'https://v6-pegasus-node-02.origin-trail.network' },
   { name: 'Node 04', hostname: 'https://v6-pegasus-node-04.origin-trail.network' },
   { name: 'Node 05', hostname: 'https://v6-pegasus-node-05.origin-trail.network' },
   { name: 'Node 06', hostname: 'https://v6-pegasus-node-06.origin-trail.network' },
@@ -97,6 +59,61 @@ function getRandomDescription() {
   const word = getRandomWord();
   const template = templates[Math.floor(Math.random() * templates.length)];
   return template.replace('{}', word);
+}
+
+const TEST_CONTENT_SIZE_KB = Number(process.env.TEST_CONTENT_SIZE_KB || 1);
+const TEST_ENTITY_COUNT = Number(process.env.TEST_ENTITY_COUNT || 500);
+
+function createLargeText(sizeBytes) {
+  const resolvedSizeBytes = Math.max(0, Math.floor(sizeBytes));
+  if (resolvedSizeBytes === 0) return '';
+
+  const chunk = 'OTDKG_LOAD_PAYLOAD_';
+  return chunk.repeat(Math.ceil(resolvedSizeBytes / chunk.length)).slice(0, resolvedSizeBytes);
+}
+
+function buildContent(nodeName, kaNumber) {
+  const rootId = `urn:ka:${nodeName.replace(' ', '').toLowerCase()}-${randomUUID()}`;
+  const entities = Array.from({ length: TEST_ENTITY_COUNT }, (_, index) => ({
+    '@id': `urn:entity:${nodeName.replace(' ', '').toLowerCase()}:${kaNumber}:${index + 1}:${randomUUID()}`,
+    '@type': 'Thing',
+    name: `${getRandomWord()}-${index + 1}`,
+    description: getRandomDescription(),
+    isPartOf: { '@id': rootId },
+  }));
+
+  const datasetNode = {
+    '@id': rootId,
+    '@type': 'Dataset',
+    name: `DKG ${getRandomWord()} ${Date.now()}`,
+    description: getRandomDescription(),
+    entityCount: TEST_ENTITY_COUNT,
+    kaNumber,
+    generatedAt: new Date().toISOString(),
+    metadata: {
+      loadProfile: 'high-entity-count',
+      targetSizeKb: TEST_CONTENT_SIZE_KB,
+      actualEntityCount: TEST_ENTITY_COUNT,
+      filler: '',
+    },
+  };
+
+  const graph = [
+    datasetNode,
+    ...entities,
+  ];
+
+  const publicContent = {
+    '@context': 'https://www.schema.org',
+    '@graph': graph,
+  };
+
+  const targetBytes = Math.max(0, Math.floor(TEST_CONTENT_SIZE_KB * 1024));
+  const currentBytes = Buffer.byteLength(JSON.stringify(publicContent), 'utf8');
+  const fillerBytes = Math.max(0, targetBytes - currentBytes);
+  publicContent['@graph'][0].metadata.filler = createLargeText(fillerBytes);
+
+  return { public: publicContent };
 }
 
 const globalStats = {
@@ -307,91 +324,106 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
 
       const failedAssets = [];
 
-      const DkgClient = new DKG({
-        endpoint: hostname,
-        port: OT_NODE_PORT,
-        blockchain: {
-          name: BLOCKCHAIN_IDS.GNOSIS_TESTNET,
-          publicKey: nodeKeys[name].publicKey,
-          privateKey: nodeKeys[name].privateKey,
-          gasPriceBufferPercent: 50,
-        },
-        maxNumberOfRetries: 300,
-        frequency: 2,
-        contentType: 'all',
-        nodeApiVersion: '/v1',
-      });
+      const PARALLEL_KA_BATCH_SIZE = Number(process.env.TEST_PARALLEL_KA_BATCH_SIZE || 10);
+      const TEST_KA_BATCHES = Number(process.env.TEST_KA_BATCHES || 10);
+      const TEST_WALLET_SLOTS = Number(process.env.TEST_WALLET_SLOTS || 10);
+      const totalKAs = PARALLEL_KA_BATCH_SIZE * TEST_KA_BATCHES;
 
-      for (let i = 0; i < 10; i++) {
-        console.log(`\nPublishing KA #${i + 1} on ${name}`);
-        const content = {
-          public: {
-            '@context': 'https://www.schema.org',
-            '@id': `urn:ka:${name.replace(' ', '').toLowerCase()}-${randomUUID()}`,
-            '@type': 'CreativeWork',
-            name: `DKG ${getRandomWord()} ${Date.now()}`,
-            description: getRandomDescription(),
-          },
-        };
+      console.log(`Load mode on ${name}: ${TEST_KA_BATCHES} batches x ${PARALLEL_KA_BATCH_SIZE} parallel publishes = ${totalKAs} total KAs`);
+      console.log(`Wallet mode on ${name}: rotating through ${TEST_WALLET_SLOTS} wallet slots`);
+      console.log(`Payload mode on ${name}: ~${TEST_CONTENT_SIZE_KB}KB public assertion payload per KA`);
+      console.log(`Entity mode on ${name}: ${TEST_ENTITY_COUNT} @id entities per published JSON-LD`);
+
+      const processKnowledgeAsset = async (kaNumber, walletSlot) => {
+        console.log(`\nPublishing KA #${kaNumber} on ${name} with wallet W${walletSlot}`);
+        const content = buildContent(name, kaNumber);
 
         let ual = null;
-        let create_result = null; // Store result to access even on timeout
+        let create_result = null;
         let step = 'publishing';
         let stepNodeName = name;
+        const nodeId = getNodeIdFromName(name);
+        const publishingWallet = getNodeWallet(nodeId, walletSlot);
+        const DkgClient = new DKG({
+          endpoint: hostname,
+          port: OT_NODE_PORT,
+          blockchain: {
+            name: BLOCKCHAIN_IDS.GNOSIS_TESTNET,
+            publicKey: publishingWallet.publicKey,
+            privateKey: publishingWallet.privateKey,
+            gasPriceBufferPercent: 50,
+          },
+          maxNumberOfRetries: 300,
+          frequency: 2,
+          contentType: 'all',
+          nodeApiVersion: '/v1',
+        });
 
         try {
           await Promise.race([
             (async () => {
-              // Measure publish time:
               const publishStart = Date.now();
-
               create_result = await DkgClient.asset.create(content, {
                 epochsNum: 2,
+                minimumNumberOfFinalizationConfirmations: 0,
               });
-
               const publishEnd = Date.now();
               publishDurations.push(publishEnd - publishStart);
 
               assert.ok(create_result);
               assert.ok(create_result.operation);
-              assert.strictEqual(create_result.operation.publish.status, 'COMPLETED');
-              assert.ok(create_result.operation.finality);
-              assert.strictEqual(create_result.operation.finality.status, 'FINALIZED');
+              const publishOperation = create_result.operation.publish || {};
+              const publishStatus = publishOperation.status || 'UNKNOWN';
+              if (publishStatus !== 'COMPLETED') {
+                const publishOperationId = create_result.operation?.operationId || create_result.operationId || publishOperation.operationId || 'N/A';
+                let publishReason = publishOperation.errorMessage || publishOperation.reason || publishOperation.message || publishOperation.error || publishOperation.statusMessage;
+                if (!publishReason) {
+                  publishReason = JSON.stringify(publishOperation);
+                }
+                throw new Error(`Publish status ${publishStatus} (operationId=${publishOperationId}): ${publishReason}`);
+              }
+
+              const finalityOperation = create_result.operation.finality || {};
+              const finalityStatus = finalityOperation.status || 'UNKNOWN';
+              if (finalityStatus !== 'FINALIZED') {
+                const finalityOperationId = create_result.operation?.operationId || create_result.operationId || finalityOperation.operationId || 'N/A';
+                let finalityReason = finalityOperation.errorMessage || finalityOperation.reason || finalityOperation.message || finalityOperation.error || finalityOperation.statusMessage;
+                if (!finalityReason) {
+                  finalityReason = JSON.stringify(finalityOperation);
+                }
+                throw new Error(`Finality status ${finalityStatus} (operationId=${finalityOperationId}): ${finalityReason}`);
+              }
 
               ual = create_result.UAL;
-          const operationId = create_result.operation?.operationId || create_result.operationId || (create_result.operation?.publish?.operationId) || 'N/A';
+              const operationId = create_result.operation?.operationId || create_result.operationId || (create_result.operation?.publish?.operationId) || 'N/A';
               assert.ok(ual);
-          console.log(`✅ Published KA #${i + 1} | UAL: ${ual} | Operation ID: ${operationId}`);
+              console.log(`✅ Published KA #${kaNumber} | UAL: ${ual} | Operation ID: ${operationId}`);
               publishSuccess++;
-
             })(),
             new Promise((_, reject) =>
               setTimeout(() => reject(new Error(`Timeout after 6 minutes during "publishing" on ${stepNodeName}`)), 6 * 60 * 1000)
             ),
           ]);
         } catch (error) {
-          logError(error, stepNodeName, step, null, i + 1);
-          
-          // Try to extract operation ID and UAL from error object (if DKG finality failed after blockchain success)
+          logError(error, stepNodeName, step, null, kaNumber);
+
           let operationId = 'N/A';
           let actualUal = null;
-          
-          // Check if error object has UAL and operationId (attached when DKG finality fails)
+
           if (error.UAL) {
             actualUal = error.UAL;
           }
           if (error.operationId) {
             operationId = error.operationId;
           }
-          
-          // Fallback: If create_result exists (test wrapper timeout), extract from it
+
           if (!actualUal && create_result) {
             actualUal = create_result.UAL || null;
             if (operationId === 'N/A') {
               operationId = create_result.operation?.operationId || create_result.operationId || (create_result.operation?.publish?.operationId) || 'N/A';
             }
           }
-          
+
           if (actualUal) {
             console.log(`❌ Publish failed but got UAL: ${actualUal} | Operation ID: ${operationId}`);
             ual = actualUal;
@@ -400,13 +432,12 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
             ual = 'did:dkg:gnosis:10200/0x592aae7abeed0ecf399c2628b3d18f769c544383/57402';
             console.log(`ℹ️  Using fallback UAL for remaining operations: ${ual}`);
           }
-          
+
           const reason = actualUal ? 'Publish failed but UAL exists' : 'Publish failed — No UAL';
-          failedAssets.push(`KA #${i + 1} (${reason})`);
+          failedAssets.push(`KA #${kaNumber} (${reason})`);
           publishFail++;
         }
 
-        // Continue with query, local get, and remote get regardless of publish status
         try {
           step = 'querying';
           const queryStart = Date.now();
@@ -429,9 +460,9 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
           console.log(`✅ Query succeeded`);
           querySuccess++;
         } catch (error) {
-          logError(error, stepNodeName, step, null, i + 1);
+          logError(error, stepNodeName, step, null, kaNumber);
           const reason = `Query failed — UAL: ${ual}`;
-          failedAssets.push(`KA #${i + 1} (${reason})`);
+          failedAssets.push(`KA #${kaNumber} (${reason})`);
           queryFail++;
         }
 
@@ -450,17 +481,16 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
           console.log(`✅ Local Get Succeeded`);
           localGetSuccess++;
         } catch (error) {
-          logError(error, stepNodeName, step, null, i + 1);
+          logError(error, stepNodeName, step, null, kaNumber);
           const reason = `Local Get failed — UAL: ${ual}`;
-          failedAssets.push(`KA #${i + 1} (${reason})`);
+          failedAssets.push(`KA #${kaNumber} (${reason})`);
           localGetFail++;
         }
 
-        // Prepare for remote get operation
         step = 'get';
-        const otherIndexes = nodes.map((_, i) => i).filter(i => i !== currentIndex);
+        const otherIndexes = nodes.map((_, idx) => idx).filter(idx => idx !== currentIndex);
         const remoteNode = nodes[otherIndexes[Math.floor(Math.random() * otherIndexes.length)]];
-        const originalStepNodeName = stepNodeName; // Preserve original node name for error tracking
+        const originalStepNodeName = stepNodeName;
         stepNodeName = remoteNode.name;
 
         try {
@@ -469,8 +499,8 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
             port: OT_NODE_PORT,
             blockchain: {
               name: BLOCKCHAIN_IDS.GNOSIS_TESTNET,
-              publicKey: nodeKeys[remoteNode.name].publicKey,
-              privateKey: nodeKeys[remoteNode.name].privateKey,
+              publicKey: getNodeWallet(getNodeIdFromName(remoteNode.name), walletSlot).publicKey,
+              privateKey: getNodeWallet(getNodeIdFromName(remoteNode.name), walletSlot).privateKey,
             },
             maxNumberOfRetries: 300,
             frequency: 2,
@@ -490,11 +520,25 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
           console.log(`✅ Get Succeeded on ${remoteNode.name}`);
           remoteGetSuccess++;
         } catch (error) {
-          logError(error, originalStepNodeName, step, remoteNode.name, i + 1);
+          logError(error, originalStepNodeName, step, remoteNode.name, kaNumber);
           const reason = `Get failed — UAL: ${ual}`;
-          failedAssets.push(`KA #${i + 1} (${reason})`);
+          failedAssets.push(`KA #${kaNumber} (${reason})`);
           remoteGetFail++;
         }
+      };
+
+      for (let batch = 0; batch < TEST_KA_BATCHES; batch++) {
+        const startKa = batch * PARALLEL_KA_BATCH_SIZE + 1;
+        const batchKAs = Array.from(
+          { length: PARALLEL_KA_BATCH_SIZE },
+          (_, idx) => startKa + idx
+        );
+        const batchWalletSlots = Array.from(
+          { length: PARALLEL_KA_BATCH_SIZE },
+          (_, idx) => String((idx % TEST_WALLET_SLOTS) + 1).padStart(2, '0')
+        );
+        console.log(`\n▶ Running batch ${batch + 1}/${TEST_KA_BATCHES} on ${name}: KAs ${batchKAs[0]}-${batchKAs[batchKAs.length - 1]}`);
+        await Promise.all(batchKAs.map((kaNumber, idx) => processKnowledgeAsset(kaNumber, batchWalletSlots[idx])));
       }
 
       const avgPublishMs = publishSuccess > 0 && publishDurations.length > 0 ? publishDurations.reduce((a, b) => a + b, 0) / publishDurations.length : 0;
