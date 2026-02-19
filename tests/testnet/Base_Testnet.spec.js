@@ -7,8 +7,52 @@ import { BLOCKCHAIN_IDS } from '../../constants/constants.js';
 import 'dotenv/config';
 import { randomUUID } from 'crypto';
 import fs from 'fs';
+import { Interface } from 'ethers';
 
 const OT_NODE_PORT = '8900';
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+const ERC1155_INTERFACE = new Interface([
+  'event TransferSingle(address indexed operator, address indexed from, address indexed to, uint256 id, uint256 value)',
+  'event TransferBatch(address indexed operator, address indexed from, address indexed to, uint256[] ids, uint256[] values)',
+]);
+
+function extractMintedTokenIdsFromReceipt(receipt) {
+  const logs = receipt?.logs || [];
+  const mintedIds = [];
+  for (const log of logs) {
+    try {
+      const parsed = ERC1155_INTERFACE.parseLog({ topics: log.topics, data: log.data });
+      if (parsed.name === 'TransferSingle') {
+        const from = String(parsed.args.from || '').toLowerCase();
+        if (from === ZERO_ADDRESS) {
+          mintedIds.push(String(parsed.args.id));
+        }
+      }
+      if (parsed.name === 'TransferBatch') {
+        const from = String(parsed.args.from || '').toLowerCase();
+        if (from === ZERO_ADDRESS) {
+          for (const id of parsed.args.ids || []) {
+            mintedIds.push(String(id));
+          }
+        }
+      }
+    } catch {
+      // Ignore non-ERC1155 logs.
+    }
+  }
+  return mintedIds;
+}
+
+function buildChildUalsFromRoot(rootUal, tokenIds) {
+  if (!rootUal || !Array.isArray(tokenIds) || tokenIds.length === 0) {
+    return [];
+  }
+  const [didPrefix, contractAddress] = rootUal.split('/');
+  if (!didPrefix || !contractAddress) {
+    return [];
+  }
+  return tokenIds.map((tokenId) => `${didPrefix}/${contractAddress}/${tokenId}`);
+}
 
 function getNodeWallet(nodeId, walletSlot = null) {
   const resolvedWalletSlot = String(walletSlot || process.env.TEST_WALLET_SLOT || '01').padStart(2, '0');
@@ -63,6 +107,9 @@ function getRandomDescription() {
 
 const TEST_CONTENT_SIZE_KB = Number(process.env.TEST_CONTENT_SIZE_KB || 1);
 const TEST_ENTITY_COUNT = Number(process.env.TEST_ENTITY_COUNT || 500);
+const TEST_COMPACT_CHUNK_MODE = String(process.env.TEST_COMPACT_CHUNK_MODE || 'false').toLowerCase() === 'true';
+const TEST_COMPACT_CHUNK_IDS = Number(process.env.TEST_COMPACT_CHUNK_IDS || 8000);
+const TEST_COMPACT_CHUNK_EDGES = Number(process.env.TEST_COMPACT_CHUNK_EDGES || 2);
 
 function createLargeText(sizeBytes) {
   const resolvedSizeBytes = Math.max(0, Math.floor(sizeBytes));
@@ -116,6 +163,47 @@ function buildContent(nodeName, kaNumber) {
   return { public: publicContent };
 }
 
+function buildCompactChunkContent(nodeName, kaNumber) {
+  const nodeKey = nodeName.replace(' ', '').toLowerCase();
+  const chunkRoot = `urn:chunk:${nodeKey}:${kaNumber}:${randomUUID()}`;
+  const mentionPredicate = 'https://dkg.synthetic/vocab/mentions';
+  const weightPredicate = 'https://dkg.synthetic/vocab/weight';
+  const ids = Array.from(
+    { length: TEST_COMPACT_CHUNK_IDS },
+    (_, index) => `${chunkRoot}:id:${index + 1}`,
+  );
+
+  const graph = ids.map((subjectId, index) => ({
+    '@id': subjectId,
+    [weightPredicate]: (index % 10) + 1,
+    [mentionPredicate]: Array.from(
+      { length: TEST_COMPACT_CHUNK_EDGES },
+      (_, edgeIndex) => ({ '@id': ids[(index + edgeIndex + 1) % ids.length] }),
+    ),
+  }));
+
+  graph.push({
+    '@id': `${chunkRoot}:meta`,
+    'https://dkg.synthetic/vocab/chunkOrdinal': kaNumber,
+    'https://dkg.synthetic/vocab/node': nodeName,
+    [mentionPredicate]: ids.slice(0, Math.min(10, ids.length)).map((id) => ({ '@id': id })),
+  });
+
+  return {
+    public: {
+      '@context': { '@vocab': 'https://dkg.synthetic/vocab/' },
+      '@graph': graph,
+    },
+  };
+}
+
+function buildPublishContent(nodeName, kaNumber) {
+  if (TEST_COMPACT_CHUNK_MODE) {
+    return buildCompactChunkContent(nodeName, kaNumber);
+  }
+  return buildContent(nodeName, kaNumber);
+}
+
 const globalStats = {
   [BLOCKCHAIN_IDS.BASE_TESTNET]: {},
 };
@@ -138,6 +226,10 @@ function formatDuration(ms) {
 function safeRate(success, fail) {
   const total = success + fail;
   return total === 0 ? '0.00' : ((success / total) * 100).toFixed(2);
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -327,16 +419,62 @@ describe('DKG Asset Lifecycle on Base Testnet', function () {
       const PARALLEL_KA_BATCH_SIZE = Number(process.env.TEST_PARALLEL_KA_BATCH_SIZE || 10);
       const TEST_KA_BATCHES = Number(process.env.TEST_KA_BATCHES || 10);
       const TEST_WALLET_SLOTS = Number(process.env.TEST_WALLET_SLOTS || 10);
-      const totalKAs = PARALLEL_KA_BATCH_SIZE * TEST_KA_BATCHES;
+      const TEST_TARGET_UALS = Number(process.env.TEST_TARGET_UALS || 0);
+      const TEST_TARGET_MINTED_UALS = Number(process.env.TEST_TARGET_MINTED_UALS || 0);
+      const TEST_BATCH_DELAY_MS = Number(process.env.TEST_BATCH_DELAY_MS || 0);
+      const TEST_RATE_LIMIT_COOLDOWN_MS = Number(process.env.TEST_RATE_LIMIT_COOLDOWN_MS || 65000);
+      const TEST_RATE_LIMIT_MAX_RETRIES = Number(process.env.TEST_RATE_LIMIT_MAX_RETRIES || 3);
+      const isTargetUalMode = TEST_TARGET_UALS > 0;
+      const isTargetMintedMode = TEST_TARGET_MINTED_UALS > 0;
+      const totalKAs = isTargetUalMode ? TEST_TARGET_UALS : (PARALLEL_KA_BATCH_SIZE * TEST_KA_BATCHES);
+      const totalBatches = isTargetUalMode
+        ? Math.ceil(totalKAs / PARALLEL_KA_BATCH_SIZE)
+        : TEST_KA_BATCHES;
+      const estimatedMintedPerSuccessfulPublish = TEST_COMPACT_CHUNK_MODE
+        ? (TEST_COMPACT_CHUNK_IDS + 1)
+        : (TEST_ENTITY_COUNT + 2);
+      const walletPublishStats = {};
+      for (let slot = 1; slot <= TEST_WALLET_SLOTS; slot++) {
+        const slotKey = String(slot).padStart(2, '0');
+        walletPublishStats[slotKey] = {
+          attempted: 0,
+          success: 0,
+          fail: 0,
+          mintedChildUals: 0,
+        };
+      }
+      let mintedChildUalTotal = 0;
+      let rateLimit429Count = 0;
+      let rateLimitRetryCount = 0;
+      const DEFAULT_MAX_ATTEMPTS = isTargetMintedMode
+        ? Math.max(PARALLEL_KA_BATCH_SIZE, Math.ceil(TEST_TARGET_MINTED_UALS / Math.max(1, estimatedMintedPerSuccessfulPublish)) * 3)
+        : totalKAs;
+      const TEST_MAX_ATTEMPTS = Number(process.env.TEST_MAX_ATTEMPTS || DEFAULT_MAX_ATTEMPTS);
 
-      console.log(`Load mode on ${name}: ${TEST_KA_BATCHES} batches x ${PARALLEL_KA_BATCH_SIZE} parallel publishes = ${totalKAs} total KAs`);
+      if (isTargetUalMode) {
+        console.log(`Load mode on ${name}: target publish attempts = ${totalKAs} KAs`);
+      } else if (isTargetMintedMode) {
+        console.log(`Load mode on ${name}: target child UALs from mint logs = ${TEST_TARGET_MINTED_UALS}`);
+      } else {
+        console.log(`Load mode on ${name}: ${TEST_KA_BATCHES} batches x ${PARALLEL_KA_BATCH_SIZE} parallel publishes = ${totalKAs} total KAs`);
+      }
       console.log(`Wallet mode on ${name}: rotating through ${TEST_WALLET_SLOTS} wallet slots`);
+      if (TEST_COMPACT_CHUNK_MODE) {
+        console.log(`Content mode on ${name}: compact chunk mode (${TEST_COMPACT_CHUNK_IDS} ids/chunk, ${TEST_COMPACT_CHUNK_EDGES} edges/id)`);
+      }
+      if (TEST_BATCH_DELAY_MS > 0) {
+        console.log(`Pacing mode on ${name}: ${TEST_BATCH_DELAY_MS}ms delay between batches`);
+      }
+      console.log(`Rate-limit mode on ${name}: cooldown=${TEST_RATE_LIMIT_COOLDOWN_MS}ms, max429Retries=${TEST_RATE_LIMIT_MAX_RETRIES}`);
       console.log(`Payload mode on ${name}: ~${TEST_CONTENT_SIZE_KB}KB public assertion payload per KA`);
       console.log(`Entity mode on ${name}: ${TEST_ENTITY_COUNT} @id entities per published JSON-LD`);
 
       const processKnowledgeAsset = async (kaNumber, walletSlot) => {
         console.log(`\nPublishing KA #${kaNumber} on ${name} with wallet W${walletSlot}`);
-        const content = buildContent(name, kaNumber);
+        if (walletPublishStats[walletSlot]) {
+          walletPublishStats[walletSlot].attempted++;
+        }
+        const content = buildPublishContent(name, kaNumber);
 
         let ual = null;
         let create_result = null;
@@ -358,52 +496,91 @@ describe('DKG Asset Lifecycle on Base Testnet', function () {
           nodeApiVersion: '/v1',
         });
 
-        try {
-          await Promise.race([
-            (async () => {
-              const publishStart = Date.now();
-              create_result = await DkgClient.asset.create(content, {
-                epochsNum: 2,
-                minimumNumberOfFinalizationConfirmations: 0,
-              });
-              const publishEnd = Date.now();
-              publishDurations.push(publishEnd - publishStart);
+        let publishSucceeded = false;
+        let terminalPublishError = null;
+        const maxPublishAttemptsPerKa = 1 + TEST_RATE_LIMIT_MAX_RETRIES;
+        let rateLimitedRetriesUsed = 0;
+        let publishAttempt = 0;
+        while (!publishSucceeded && publishAttempt < maxPublishAttemptsPerKa) {
+          publishAttempt++;
+          try {
+            await Promise.race([
+              (async () => {
+                const publishStart = Date.now();
+                create_result = await DkgClient.asset.create(content, {
+                  epochsNum: 2,
+                  minimumNumberOfFinalizationConfirmations: 0,
+                });
+                const publishEnd = Date.now();
+                publishDurations.push(publishEnd - publishStart);
 
-              assert.ok(create_result);
-              assert.ok(create_result.operation);
-              const publishOperation = create_result.operation.publish || {};
-              const publishStatus = publishOperation.status || 'UNKNOWN';
-              if (publishStatus !== 'COMPLETED') {
-                const publishOperationId = create_result.operation?.operationId || create_result.operationId || publishOperation.operationId || 'N/A';
-                let publishReason = publishOperation.errorMessage || publishOperation.reason || publishOperation.message || publishOperation.error || publishOperation.statusMessage;
-                if (!publishReason) {
-                  publishReason = JSON.stringify(publishOperation);
+                assert.ok(create_result);
+                assert.ok(create_result.operation);
+                const publishOperation = create_result.operation.publish || {};
+                const publishStatus = publishOperation.status || 'UNKNOWN';
+                if (publishStatus !== 'COMPLETED') {
+                  const publishOperationId = create_result.operation?.operationId || create_result.operationId || publishOperation.operationId || 'N/A';
+                  let publishReason = publishOperation.errorMessage || publishOperation.reason || publishOperation.message || publishOperation.error || publishOperation.statusMessage;
+                  if (!publishReason) {
+                    publishReason = JSON.stringify(publishOperation);
+                  }
+                  throw new Error(`Publish status ${publishStatus} (operationId=${publishOperationId}): ${publishReason}`);
                 }
-                throw new Error(`Publish status ${publishStatus} (operationId=${publishOperationId}): ${publishReason}`);
-              }
 
-              const finalityOperation = create_result.operation.finality || {};
-              const finalityStatus = finalityOperation.status || 'UNKNOWN';
-              if (finalityStatus !== 'FINALIZED') {
-                const finalityOperationId = create_result.operation?.operationId || create_result.operationId || finalityOperation.operationId || 'N/A';
-                let finalityReason = finalityOperation.errorMessage || finalityOperation.reason || finalityOperation.message || finalityOperation.error || finalityOperation.statusMessage;
-                if (!finalityReason) {
-                  finalityReason = JSON.stringify(finalityOperation);
+                const finalityOperation = create_result.operation.finality || {};
+                const finalityStatus = finalityOperation.status || 'UNKNOWN';
+                if (finalityStatus !== 'FINALIZED') {
+                  const finalityOperationId = create_result.operation?.operationId || create_result.operationId || finalityOperation.operationId || 'N/A';
+                  let finalityReason = finalityOperation.errorMessage || finalityOperation.reason || finalityOperation.message || finalityOperation.error || finalityOperation.statusMessage;
+                  if (!finalityReason) {
+                    finalityReason = JSON.stringify(finalityOperation);
+                  }
+                  throw new Error(`Finality status ${finalityStatus} (operationId=${finalityOperationId}): ${finalityReason}`);
                 }
-                throw new Error(`Finality status ${finalityStatus} (operationId=${finalityOperationId}): ${finalityReason}`);
-              }
 
-              ual = create_result.UAL;
-              const operationId = create_result.operation?.operationId || create_result.operationId || (create_result.operation?.publish?.operationId) || 'N/A';
-              assert.ok(ual);
-              console.log(`✅ Published KA #${kaNumber} | UAL: ${ual} | Operation ID: ${operationId}`);
-              publishSuccess++;
-            })(),
-            new Promise((_, reject) =>
-              setTimeout(() => reject(new Error(`Timeout after 6 minutes during "publishing" on ${stepNodeName}`)), 6 * 60 * 1000)
-            ),
-          ]);
-        } catch (error) {
+                ual = create_result.UAL;
+                const operationId = create_result.operation?.operationId || create_result.operationId || (create_result.operation?.publish?.operationId) || 'N/A';
+                assert.ok(ual);
+                console.log(`✅ Published KA #${kaNumber} | UAL: ${ual} | Operation ID: ${operationId}`);
+                const mintReceipt = create_result.operation?.mintKnowledgeCollection;
+                const mintedTokenIds = extractMintedTokenIdsFromReceipt(mintReceipt);
+                const childUals = buildChildUalsFromRoot(ual, mintedTokenIds);
+                const mintedChildCount = childUals.length > 0 ? childUals.length : estimatedMintedPerSuccessfulPublish;
+                console.log(`🔢 Minted child assets in tx: ${mintedChildCount}`);
+                if (childUals.length > 0) {
+                  console.log('📌 Child UAL sample (first 5):');
+                  childUals.slice(0, 5).forEach((childUal) => console.log(`  - ${childUal}`));
+                }
+                if (walletPublishStats[walletSlot]) {
+                  walletPublishStats[walletSlot].success++;
+                  walletPublishStats[walletSlot].mintedChildUals += mintedChildCount;
+                }
+                mintedChildUalTotal += mintedChildCount;
+                publishSuccess++;
+                publishSucceeded = true;
+              })(),
+              new Promise((_, reject) =>
+                setTimeout(() => reject(new Error(`Timeout after 6 minutes during "publishing" on ${stepNodeName}`)), 6 * 60 * 1000)
+              ),
+            ]);
+          } catch (error) {
+            const message = String(error?.message || '');
+            const isRateLimited = message.includes('status code 429') || message.toLowerCase().includes('too many requests');
+            if (isRateLimited && rateLimitedRetriesUsed < TEST_RATE_LIMIT_MAX_RETRIES) {
+              rateLimit429Count++;
+              rateLimitRetryCount++;
+              rateLimitedRetriesUsed++;
+              console.log(`⏳ Rate limited on KA #${kaNumber} (W${walletSlot}). Retry ${rateLimitedRetriesUsed}/${TEST_RATE_LIMIT_MAX_RETRIES} after ${TEST_RATE_LIMIT_COOLDOWN_MS}ms`);
+              await sleep(TEST_RATE_LIMIT_COOLDOWN_MS);
+              continue;
+            }
+            terminalPublishError = error;
+            break;
+          }
+        }
+
+        if (!publishSucceeded) {
+          const error = terminalPublishError || new Error('Publishing failed without explicit error');
           logError(error, stepNodeName, step, null, kaNumber);
 
           let operationId = 'N/A';
@@ -434,6 +611,9 @@ describe('DKG Asset Lifecycle on Base Testnet', function () {
 
           const reason = actualUal ? 'Publish failed but UAL exists' : 'Publish failed — No UAL';
           failedAssets.push(`KA #${kaNumber} (${reason})`);
+          if (walletPublishStats[walletSlot]) {
+            walletPublishStats[walletSlot].fail++;
+          }
           publishFail++;
         }
 
@@ -500,7 +680,7 @@ describe('DKG Asset Lifecycle on Base Testnet', function () {
               name: BLOCKCHAIN_IDS.BASE_TESTNET,
               publicKey: getNodeWallet(getNodeIdFromName(remoteNode.name), walletSlot).publicKey,
               privateKey: getNodeWallet(getNodeIdFromName(remoteNode.name), walletSlot).privateKey,
-              gasPriceBufferPercent: 30,
+              gasPriceBufferPercent: 50,
             },
             maxNumberOfRetries: 300,
             frequency: 2,
@@ -527,18 +707,69 @@ describe('DKG Asset Lifecycle on Base Testnet', function () {
         }
       };
 
-      for (let batch = 0; batch < TEST_KA_BATCHES; batch++) {
-        const startKa = batch * PARALLEL_KA_BATCH_SIZE + 1;
-        const batchKAs = Array.from(
-          { length: PARALLEL_KA_BATCH_SIZE },
-          (_, idx) => startKa + idx
-        );
-        const batchWalletSlots = Array.from(
-          { length: PARALLEL_KA_BATCH_SIZE },
-          (_, idx) => String((idx % TEST_WALLET_SLOTS) + 1).padStart(2, '0')
-        );
-        console.log(`\n▶ Running batch ${batch + 1}/${TEST_KA_BATCHES} on ${name}: KAs ${batchKAs[0]}-${batchKAs[batchKAs.length - 1]}`);
-        await Promise.all(batchKAs.map((kaNumber, idx) => processKnowledgeAsset(kaNumber, batchWalletSlots[idx])));
+      if (isTargetUalMode || isTargetMintedMode) {
+        console.log(`⚙️ Worker mode on ${name}: ${PARALLEL_KA_BATCH_SIZE} concurrent workers`);
+        let nextKaNumber = 1;
+        let nextWalletSlotNumber = 1;
+        const shouldStop = () => {
+          if (isTargetUalMode && nextKaNumber > totalKAs) {
+            return true;
+          }
+          if (isTargetMintedMode && mintedChildUalTotal >= TEST_TARGET_MINTED_UALS) {
+            return true;
+          }
+          return (publishSuccess + publishFail) >= TEST_MAX_ATTEMPTS;
+        };
+        const claimNextTask = () => {
+          if (shouldStop()) {
+            return null;
+          }
+          const kaNumber = nextKaNumber;
+          const walletSlot = String(nextWalletSlotNumber).padStart(2, '0');
+          nextKaNumber += 1;
+          nextWalletSlotNumber = nextWalletSlotNumber % TEST_WALLET_SLOTS + 1;
+          return { kaNumber, walletSlot };
+        };
+
+        const workerCount = Math.max(1, PARALLEL_KA_BATCH_SIZE);
+        const workers = Array.from({ length: workerCount }, () => (async () => {
+          while (true) {
+            const task = claimNextTask();
+            if (task === null) {
+              return;
+            }
+            await processKnowledgeAsset(task.kaNumber, task.walletSlot);
+            if (isTargetMintedMode) {
+              const attempts = publishSuccess + publishFail;
+              if (attempts % 50 === 0) {
+                console.log(`📈 Minted child UAL progress on ${name}: ${mintedChildUalTotal}/${TEST_TARGET_MINTED_UALS} (attempts=${attempts})`);
+              }
+            }
+            if (TEST_BATCH_DELAY_MS > 0) {
+              await sleep(TEST_BATCH_DELAY_MS);
+            }
+          }
+        })());
+        await Promise.all(workers);
+        if ((publishSuccess + publishFail) >= TEST_MAX_ATTEMPTS) {
+          console.log(`⚠️ Reached TEST_MAX_ATTEMPTS=${TEST_MAX_ATTEMPTS}, stopping target mode on ${name}`);
+        }
+      } else {
+        for (let batch = 0; batch < totalBatches; batch++) {
+          const startKa = batch * PARALLEL_KA_BATCH_SIZE + 1;
+          const batchKAs = Array.from(
+            { length: PARALLEL_KA_BATCH_SIZE },
+            (_, idx) => startKa + idx
+          );
+          const batchWalletSlots = batchKAs.map(
+            (kaNumber) => String(((kaNumber - 1) % TEST_WALLET_SLOTS) + 1).padStart(2, '0')
+          );
+          console.log(`\n▶ Running batch ${batch + 1}/${totalBatches} on ${name}: KAs ${batchKAs[0]}-${batchKAs[batchKAs.length - 1]}`);
+          await Promise.all(batchKAs.map((kaNumber, idx) => processKnowledgeAsset(kaNumber, batchWalletSlots[idx])));
+          if (TEST_BATCH_DELAY_MS > 0) {
+            await sleep(TEST_BATCH_DELAY_MS);
+          }
+        }
       }
 
       const avgPublishMs = publishSuccess > 0 && publishDurations.length > 0 ? publishDurations.reduce((a, b) => a + b, 0) / publishDurations.length : 0;
@@ -553,6 +784,15 @@ describe('DKG Asset Lifecycle on Base Testnet', function () {
       } else {
         console.log(`✅ All assets processed successfully`);
       }
+      const targetDescription = isTargetMintedMode
+        ? `🎯 Target child UALs on ${name}: ${TEST_TARGET_MINTED_UALS} | Minted child UALs: ${mintedChildUalTotal}`
+        : `🎯 Target attempts on ${name}: ${totalKAs} | Attempted: ${publishSuccess + publishFail} | Success: ${publishSuccess} | Failed: ${publishFail}`;
+      console.log(targetDescription);
+      console.log(`🚦 Rate-limit stats on ${name}: 429s=${rateLimit429Count}, retries=${rateLimitRetryCount}`);
+      console.log('👛 Wallet publish distribution:');
+      Object.entries(walletPublishStats).forEach(([slot, stats]) => {
+        console.log(`  - W${slot}: attempted=${stats.attempted}, success=${stats.success}, failed=${stats.fail}, mintedChildUals=${stats.mintedChildUals}`);
+      });
 
       // Save stats for global summary:
       globalStats[BLOCKCHAIN_IDS.BASE_TESTNET][name] = {
@@ -568,6 +808,11 @@ describe('DKG Asset Lifecycle on Base Testnet', function () {
         avgQueryMs,
         avgLocalGetMs,
         avgRemoteGetMs,
+        targetAttempts: totalKAs,
+        actualAttempts: publishSuccess + publishFail,
+        targetMintedUals: TEST_TARGET_MINTED_UALS,
+        mintedChildUalTotal,
+        walletPublishStats,
       };
 
       const summary = {
