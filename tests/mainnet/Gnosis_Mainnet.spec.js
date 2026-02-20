@@ -168,13 +168,8 @@ function logError(error, nodeName, step = 'unknown', remoteNodeName = null, kaNu
     // Only show first line, strip out everything after (the JSON receipt)
     cleanMessage = cleanMessage.split('\n')[0];
     
-    // If error.data exists, we'll show it separately, so just show the main error line
-    if (error.data && typeof error.data === 'string' && error.data.startsWith('0x')) {
-      console.log(`Message: ${cleanMessage}`);
-      console.log(`Error Data (hex): ${error.data}`);
-    } else {
-      console.log(`Message: ${cleanMessage}`);
-    }
+    // Keep logs safe: do not print raw revert payload hex to CI output.
+    console.log(`Message: ${cleanMessage}`);
   } else {
     // For non-revert errors, show full message
     console.log(`Message: ${cleanMessage}`);
@@ -201,17 +196,11 @@ function logError(error, nodeName, step = 'unknown', remoteNodeName = null, kaNu
     }
   }
   
-  // Append error data hex to message if available (for aggregation)
-  let errorDataSuffix = '';
-  if (error.data && typeof error.data === 'string' && error.data.startsWith('0x')) {
-    errorDataSuffix = ` | Error Data: ${error.data}`;
-  }
-  
   // Categorize error by service using stack trace
   const service = categorizeErrorService(error);
   
   // Create aggregated key (without KA number for counting) - use clean message
-  let aggregatedKey = `${step} — ${error.name}: ${cleanErrorMessage}${errorDataSuffix}`;
+  let aggregatedKey = `${step} — ${error.name}: ${cleanErrorMessage}`;
   if (remoteNodeName) {
     // Only add remote node name if it's not already in the error message
     if (!error.message.includes(`on ${remoteNodeName}`)) {
