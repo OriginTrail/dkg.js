@@ -56,10 +56,11 @@ function buildChildUalsFromRoot(rootUal, tokenIds) {
 
 function getNodeWallet(nodeId, walletSlot = null) {
   const resolvedWalletSlot = String(walletSlot || process.env.TEST_WALLET_SLOT || '01').padStart(2, '0');
-  const prefixedPublic = process.env[`JS_TESTNET_NEUROWEB_NODE${nodeId}_W${resolvedWalletSlot}_PUBLIC_KEY`];
-  const prefixedPrivate = process.env[`JS_TESTNET_NEUROWEB_NODE${nodeId}_W${resolvedWalletSlot}_PRIVATE_KEY`];
-  const legacyPublic = process.env[`JS_TESTNET_NEUROWEB_NODE${nodeId}_PUBLIC_KEY`];
-  const legacyPrivate = process.env[`JS_TESTNET_NEUROWEB_NODE${nodeId}_PRIVATE_KEY`];
+  const normalizedNodeId = String(nodeId).padStart(2, '0');
+  const prefixedPublic = process.env[`JS_TESTNET_NEUROWEB_NODE${normalizedNodeId}_W${resolvedWalletSlot}_PUBLIC_KEY`];
+  const prefixedPrivate = process.env[`JS_TESTNET_NEUROWEB_NODE${normalizedNodeId}_W${resolvedWalletSlot}_PRIVATE_KEY`];
+  const legacyPublic = process.env[`JS_TESTNET_NEUROWEB_NODE${normalizedNodeId}_PUBLIC_KEY`];
+  const legacyPrivate = process.env[`JS_TESTNET_NEUROWEB_NODE${normalizedNodeId}_PRIVATE_KEY`];
 
   return {
     publicKey: prefixedPublic || legacyPublic,
@@ -417,7 +418,7 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
 
       const PARALLEL_KA_BATCH_SIZE = Number(process.env.TEST_PARALLEL_KA_BATCH_SIZE || 10);
       const TEST_KA_BATCHES = Number(process.env.TEST_KA_BATCHES || 10);
-      const TEST_WALLET_SLOTS = Number(process.env.TEST_WALLET_SLOTS || 10);
+      const TEST_WALLET_SLOTS = Number(process.env.TEST_WALLET_SLOTS || 5);
       const TEST_TARGET_UALS = Number(process.env.TEST_TARGET_UALS || 0);
       const TEST_TARGET_MINTED_UALS = Number(process.env.TEST_TARGET_MINTED_UALS || 0);
       const TEST_BATCH_DELAY_MS = Number(process.env.TEST_BATCH_DELAY_MS || 0);
