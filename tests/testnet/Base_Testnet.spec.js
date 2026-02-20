@@ -424,6 +424,8 @@ describe('DKG Asset Lifecycle on Base Testnet', function () {
       const TEST_BATCH_DELAY_MS = Number(process.env.TEST_BATCH_DELAY_MS || 0);
       const TEST_RATE_LIMIT_COOLDOWN_MS = Number(process.env.TEST_RATE_LIMIT_COOLDOWN_MS || 65000);
       const TEST_RATE_LIMIT_MAX_RETRIES = Number(process.env.TEST_RATE_LIMIT_MAX_RETRIES || 3);
+      const TEST_INSUFFICIENT_FUNDS_COOLDOWN_MS = Number(process.env.TEST_INSUFFICIENT_FUNDS_COOLDOWN_MS || 65000);
+      const TEST_INSUFFICIENT_FUNDS_MAX_RETRIES = Number(process.env.TEST_INSUFFICIENT_FUNDS_MAX_RETRIES || 3);
       const isTargetUalMode = TEST_TARGET_UALS > 0;
       const isTargetMintedMode = TEST_TARGET_MINTED_UALS > 0;
       const totalKAs = isTargetUalMode ? TEST_TARGET_UALS : (PARALLEL_KA_BATCH_SIZE * TEST_KA_BATCHES);
@@ -446,6 +448,8 @@ describe('DKG Asset Lifecycle on Base Testnet', function () {
       let mintedChildUalTotal = 0;
       let rateLimit429Count = 0;
       let rateLimitRetryCount = 0;
+      let insufficientFundsCount = 0;
+      let insufficientFundsRetryCount = 0;
       const DEFAULT_MAX_ATTEMPTS = isTargetMintedMode
         ? Math.max(PARALLEL_KA_BATCH_SIZE, Math.ceil(TEST_TARGET_MINTED_UALS / Math.max(1, estimatedMintedPerSuccessfulPublish)) * 3)
         : totalKAs;
@@ -466,6 +470,7 @@ describe('DKG Asset Lifecycle on Base Testnet', function () {
         console.log(`Pacing mode on ${name}: ${TEST_BATCH_DELAY_MS}ms delay between batches`);
       }
       console.log(`Rate-limit mode on ${name}: cooldown=${TEST_RATE_LIMIT_COOLDOWN_MS}ms, max429Retries=${TEST_RATE_LIMIT_MAX_RETRIES}`);
+      console.log(`Insufficient-funds retry mode on ${name}: cooldown=${TEST_INSUFFICIENT_FUNDS_COOLDOWN_MS}ms, maxRetries=${TEST_INSUFFICIENT_FUNDS_MAX_RETRIES}`);
       console.log(`Payload mode on ${name}: ~${TEST_CONTENT_SIZE_KB}KB public assertion payload per KA`);
       console.log(`Entity mode on ${name}: ${TEST_ENTITY_COUNT} @id entities per published JSON-LD`);
 
@@ -498,8 +503,9 @@ describe('DKG Asset Lifecycle on Base Testnet', function () {
 
         let publishSucceeded = false;
         let terminalPublishError = null;
-        const maxPublishAttemptsPerKa = 1 + TEST_RATE_LIMIT_MAX_RETRIES;
+        const maxPublishAttemptsPerKa = 1 + TEST_RATE_LIMIT_MAX_RETRIES + TEST_INSUFFICIENT_FUNDS_MAX_RETRIES;
         let rateLimitedRetriesUsed = 0;
+        let insufficientFundsRetriesUsed = 0;
         let publishAttempt = 0;
         while (!publishSucceeded && publishAttempt < maxPublishAttemptsPerKa) {
           publishAttempt++;
@@ -566,12 +572,22 @@ describe('DKG Asset Lifecycle on Base Testnet', function () {
           } catch (error) {
             const message = String(error?.message || '');
             const isRateLimited = message.includes('status code 429') || message.toLowerCase().includes('too many requests');
+            const lowerMessage = message.toLowerCase();
+            const isInsufficientFunds = lowerMessage.includes('insufficient funds for gas') || lowerMessage.includes('insufficient funds');
             if (isRateLimited && rateLimitedRetriesUsed < TEST_RATE_LIMIT_MAX_RETRIES) {
               rateLimit429Count++;
               rateLimitRetryCount++;
               rateLimitedRetriesUsed++;
               console.log(`⏳ Rate limited on KA #${kaNumber} (W${walletSlot}). Retry ${rateLimitedRetriesUsed}/${TEST_RATE_LIMIT_MAX_RETRIES} after ${TEST_RATE_LIMIT_COOLDOWN_MS}ms`);
               await sleep(TEST_RATE_LIMIT_COOLDOWN_MS);
+              continue;
+            }
+            if (isInsufficientFunds && insufficientFundsRetriesUsed < TEST_INSUFFICIENT_FUNDS_MAX_RETRIES) {
+              insufficientFundsCount++;
+              insufficientFundsRetryCount++;
+              insufficientFundsRetriesUsed++;
+              console.log(`💸 Insufficient funds on KA #${kaNumber} (W${walletSlot}). Retry ${insufficientFundsRetriesUsed}/${TEST_INSUFFICIENT_FUNDS_MAX_RETRIES} after ${TEST_INSUFFICIENT_FUNDS_COOLDOWN_MS}ms`);
+              await sleep(TEST_INSUFFICIENT_FUNDS_COOLDOWN_MS);
               continue;
             }
             terminalPublishError = error;
@@ -789,6 +805,7 @@ describe('DKG Asset Lifecycle on Base Testnet', function () {
         : `🎯 Target attempts on ${name}: ${totalKAs} | Attempted: ${publishSuccess + publishFail} | Success: ${publishSuccess} | Failed: ${publishFail}`;
       console.log(targetDescription);
       console.log(`🚦 Rate-limit stats on ${name}: 429s=${rateLimit429Count}, retries=${rateLimitRetryCount}`);
+      console.log(`💸 Insufficient-funds stats on ${name}: hits=${insufficientFundsCount}, retries=${insufficientFundsRetryCount}`);
       console.log('👛 Wallet publish distribution:');
       Object.entries(walletPublishStats).forEach(([slot, stats]) => {
         console.log(`  - W${slot}: attempted=${stats.attempted}, success=${stats.success}, failed=${stats.fail}, mintedChildUals=${stats.mintedChildUals}`);
