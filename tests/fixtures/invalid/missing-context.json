@@ -1,0 +1,7 @@
+{
+    "public": {
+        "@id": "urn:edge-case:invalid:missing-context",
+        "@type": "Thing",
+        "name": "Invalid Missing Context"
+    }
+}

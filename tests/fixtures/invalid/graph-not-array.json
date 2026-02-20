@@ -1,0 +1,6 @@
+{
+    "public": {
+        "@context": "https://schema.org",
+        "@graph": "invalid-graph-value"
+    }
+}

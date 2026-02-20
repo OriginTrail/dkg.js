@@ -47,3 +47,64 @@ export const EDGE_CASE_DESCRIPTIONS = {
     'empty-arrays': 'Empty arrays in properties',
     'long-strings': 'Very long string values',
 };
+
+/**
+ * Invalid edge-case descriptions for reporting
+ */
+export const INVALID_EDGE_CASE_DESCRIPTIONS = {
+    'missing-public': 'Missing top-level public assertion object',
+    'public-not-object': 'Public assertion is not an object',
+    'missing-context': 'Public assertion is missing @context',
+    'invalid-context-type': '@context has an invalid type',
+    'invalid-id-type': '@id has an invalid type',
+    'graph-not-array': '@graph is not an array/object structure',
+};
+
+/**
+ * Expected error message fragments for invalid fixtures.
+ * These are intentionally broad because validation messages may vary across nodes/versions.
+ */
+export const INVALID_EDGE_CASE_ERROR_PATTERNS = {
+    'missing-public': [
+        'public',
+        'assertion',
+        'invalid',
+        'validation',
+        'failed',
+    ],
+    'public-not-object': [
+        'public',
+        'object',
+        'invalid',
+        'validation',
+        'failed',
+    ],
+    'missing-context': [
+        'context',
+        'jsonld',
+        'invalid',
+        'validation',
+        'failed',
+    ],
+    'invalid-context-type': [
+        'context',
+        'jsonld',
+        'invalid',
+        'validation',
+        'failed',
+    ],
+    'invalid-id-type': [
+        '@id',
+        'id',
+        'invalid',
+        'validation',
+        'failed',
+    ],
+    'graph-not-array': [
+        'graph',
+        'invalid',
+        'validation',
+        'failed',
+        'jsonld',
+    ],
+};

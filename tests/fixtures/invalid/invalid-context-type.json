@@ -1,0 +1,8 @@
+{
+    "public": {
+        "@context": 12345,
+        "@id": "urn:edge-case:invalid:context-type",
+        "@type": "Thing",
+        "name": "Invalid Context Type"
+    }
+}

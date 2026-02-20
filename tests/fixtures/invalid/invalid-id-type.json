@@ -1,0 +1,8 @@
+{
+    "public": {
+        "@context": "https://schema.org",
+        "@id": 987654321,
+        "@type": "Thing",
+        "name": "Invalid ID Type"
+    }
+}

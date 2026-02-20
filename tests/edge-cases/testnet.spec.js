@@ -1,8 +1,8 @@
 /**
  * Edge Case Tests - Testnet
  *
- * Runs each edge-case fixture ONCE per chain (Base, Gnosis, Neuroweb).
- * Reports which passed, which failed, and what errors occurred.
+ * Runs valid and invalid fixtures per chain (Base, Gnosis, Neuroweb).
+ * Produces actionable pass/fail diagnostics for validation and runtime failures.
  */
 
 import { BLOCKCHAINS, BLOCKCHAIN_IDS } from '../../constants/constants.js';
@@ -20,7 +20,12 @@ if (process.env.NEUROWEB_TESTNET_RPC) {
 
 import { strict as assert } from 'assert';
 import DKG from '../../index.js';
-import { loadAllFixtures, EDGE_CASE_DESCRIPTIONS } from '../fixtures/index.js';
+import {
+    loadAllFixtures,
+    EDGE_CASE_DESCRIPTIONS,
+    INVALID_EDGE_CASE_DESCRIPTIONS,
+    INVALID_EDGE_CASE_ERROR_PATTERNS,
+} from '../fixtures/index.js';
 import 'dotenv/config';
 
 const OT_NODE_PORT = '8900';
@@ -52,54 +57,76 @@ const results = {};
 // Delay between tests to avoid nonce/gas issues
 const DELAY_BETWEEN_TESTS_MS = 10000; // 10 seconds between tests
 const DELAY_BETWEEN_CHAINS_MS = 15000; // 15 seconds when switching chains
-const DELAY_BETWEEN_RETRIES_MS = 15000; // 15 seconds between publish retries
-const MAX_PUBLISH_RETRIES = 3; // Total attempts (1 initial + 2 retries)
+const PUBLISH_TIMEOUT_MS = 5 * 60 * 1000;
+const GET_TIMEOUT_MS = 3 * 60 * 1000;
+const QUERY_TIMEOUT_MS = 3 * 60 * 1000;
 
 function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/**
- * Attempts to publish an asset with retries.
- * Waits between retries to avoid underpriced/nonce issues.
- */
-async function publishWithRetry(DkgClient, content, options, maxRetries = MAX_PUBLISH_RETRIES) {
-    let lastError = null;
-    
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        try {
-            console.log(`    📤 Publish attempt ${attempt}/${maxRetries}...`);
-            
-            const createResult = await Promise.race([
-                DkgClient.asset.create(content, options),
-                new Promise((_, reject) =>
-                    setTimeout(
-                        () => reject(new Error('Timeout: Publish exceeded 5 minutes')),
-                        5 * 60 * 1000,
-                    ),
-                ),
-            ]);
-            
-            return { success: true, result: createResult, attempts: attempt };
-        } catch (error) {
-            lastError = error;
-            console.log(`    ⚠️  Attempt ${attempt} failed: ${error.message}`);
-            
-            // Don't wait after the last attempt
-            if (attempt < maxRetries) {
-                console.log(`    ⏳ Waiting ${DELAY_BETWEEN_RETRIES_MS / 1000}s before retry...`);
-                await sleep(DELAY_BETWEEN_RETRIES_MS);
-            }
-        }
+function getOperationStatus(createResult, operationName) {
+    return createResult?.operation?.[operationName]?.status || 'UNKNOWN';
+}
+
+function extractOperationReason(createResult, operationName) {
+    const operation = createResult?.operation?.[operationName] || {};
+    return (
+        operation.errorMessage ||
+        operation.reason ||
+        operation.message ||
+        operation.error ||
+        operation.statusMessage ||
+        ''
+    );
+}
+
+function buildCreateResultErrorText(createResult) {
+    const publishStatus = getOperationStatus(createResult, 'publish');
+    const finalityStatus = getOperationStatus(createResult, 'finality');
+    const publishReason = extractOperationReason(createResult, 'publish');
+    const finalityReason = extractOperationReason(createResult, 'finality');
+
+    return [
+        `publishStatus=${publishStatus}`,
+        `finalityStatus=${finalityStatus}`,
+        publishReason,
+        finalityReason,
+    ]
+        .filter(Boolean)
+        .join(' | ');
+}
+
+function getErrorText(error, createResult = null) {
+    const message = String(error?.message || '');
+    if (createResult) {
+        return `${message} | ${buildCreateResultErrorText(createResult)}`;
     }
-    
-    return { success: false, error: lastError, attempts: maxRetries };
+    return message;
+}
+
+function matchesAnyPattern(text, patterns = []) {
+    const lowerText = String(text || '').toLowerCase();
+    return patterns.some((pattern) => lowerText.includes(String(pattern).toLowerCase()));
+}
+
+async function attemptPublishOnce(DkgClient, content, options) {
+    return Promise.race([
+        DkgClient.asset.create(content, options),
+        new Promise((_, reject) =>
+            setTimeout(
+                () => reject(new Error('Timeout: Publish exceeded 5 minutes')),
+                PUBLISH_TIMEOUT_MS,
+            ),
+        ),
+    ]);
 }
 
 describe('Edge Case Tests - Testnet (All Chains)', function () {
     this.timeout(60 * 60 * 1000); // 60 minutes total
 
-    const fixtures = loadAllFixtures('valid');
+    const validFixtures = loadAllFixtures('valid');
+    const invalidFixtures = loadAllFixtures('invalid');
 
     for (const chain of CHAINS) {
         describe(`Chain: ${chain.name} (${chain.id})`, function () {
@@ -141,41 +168,48 @@ describe('Edge Case Tests - Testnet (All Chains)', function () {
                 await sleep(DELAY_BETWEEN_TESTS_MS);
             });
 
-            for (const fixture of fixtures) {
-                it(`Edge case: ${fixture.name}`, async function () {
+            for (const fixture of validFixtures) {
+                it(`Valid edge case: ${fixture.name}`, async function () {
                     const description = EDGE_CASE_DESCRIPTIONS[fixture.name] || fixture.name;
-                    console.log(`\n  Testing: ${fixture.name} - ${description}`);
+                    console.log(`\n  [VALID] Testing: ${fixture.name} - ${description}`);
 
                     const testResult = {
+                        category: 'valid',
                         name: fixture.name,
                         description,
                         passed: false,
+                        expectedFailure: false,
                         error: null,
                         ual: null,
+                        publishAttempts: null,
+                        publishStatus: null,
+                        finalityStatus: null,
                         publishTime: null,
                         getTime: null,
                         queryTime: null,
                     };
 
                     try {
-                        // Step 1: Publish (with retries)
+                        // Step 1: Publish (single attempt, no retries)
                         const publishStart = Date.now();
-                        const publishResult = await publishWithRetry(
+                        const createResult = await attemptPublishOnce(
                             DkgClient,
                             fixture.content,
-                            { epochsNum: 2 },
+                            { epochsNum: 2, minimumNumberOfFinalizationConfirmations: 0 },
                         );
                         testResult.publishTime = Date.now() - publishStart;
-
-                        if (!publishResult.success) {
-                            throw publishResult.error || new Error('Publish failed after all retries');
-                        }
-
-                        const createResult = publishResult.result;
+                        testResult.publishAttempts = 1;
                         assert.ok(createResult, 'Create result should exist');
+                        assert.ok(createResult.operation, 'Operation should exist');
+                        const publishStatus = getOperationStatus(createResult, 'publish');
+                        const finalityStatus = getOperationStatus(createResult, 'finality');
+                        assert.equal(publishStatus, 'COMPLETED', `Publish status must be COMPLETED (got ${publishStatus})`);
+                        assert.equal(finalityStatus, 'FINALIZED', `Finality status must be FINALIZED (got ${finalityStatus})`);
                         assert.ok(createResult.UAL, 'UAL should be returned');
+                        testResult.publishStatus = getOperationStatus(createResult, 'publish');
+                        testResult.finalityStatus = getOperationStatus(createResult, 'finality');
                         testResult.ual = createResult.UAL;
-                        console.log(`    ✅ Published: ${createResult.UAL} (${(testResult.publishTime / 1000).toFixed(2)}s, ${publishResult.attempts} attempt(s))`);
+                        console.log(`    ✅ Published: ${createResult.UAL} (${(testResult.publishTime / 1000).toFixed(2)}s, 1 attempt)`);
 
                         // Step 2: Get (retrieve the asset)
                         const getStart = Date.now();
@@ -184,7 +218,7 @@ describe('Edge Case Tests - Testnet (All Chains)', function () {
                             new Promise((_, reject) =>
                                 setTimeout(
                                     () => reject(new Error('Timeout: Get exceeded 3 minutes')),
-                                    3 * 60 * 1000,
+                                    GET_TIMEOUT_MS,
                                 ),
                             ),
                         ]);
@@ -204,13 +238,17 @@ describe('Edge Case Tests - Testnet (All Chains)', function () {
                             new Promise((_, reject) =>
                                 setTimeout(
                                     () => reject(new Error('Timeout: Query exceeded 3 minutes')),
-                                    3 * 60 * 1000,
+                                    QUERY_TIMEOUT_MS,
                                 ),
                             ),
                         ]);
                         testResult.queryTime = Date.now() - queryStart;
 
                         assert.ok(queryResult, 'Query result should exist');
+                        assert.ok(
+                            Array.isArray(queryResult.data) && queryResult.data.length > 0,
+                            'Query should return at least one row',
+                        );
                         console.log(`    ✅ Query succeeded (${(testResult.queryTime / 1000).toFixed(2)}s)`);
 
                         testResult.passed = true;
@@ -222,6 +260,90 @@ describe('Edge Case Tests - Testnet (All Chains)', function () {
                         };
                         console.log(`    ❌ Failed: ${error.message}`);
                         throw error; // Re-throw to mark test as failed
+                    } finally {
+                        results[chain.id][fixture.name] = testResult;
+                    }
+                });
+            }
+
+            for (const fixture of invalidFixtures) {
+                it(`Invalid edge case: ${fixture.name}`, async function () {
+                    const description = INVALID_EDGE_CASE_DESCRIPTIONS[fixture.name] || fixture.name;
+                    const expectedErrorPatterns = INVALID_EDGE_CASE_ERROR_PATTERNS[fixture.name] || [];
+                    console.log(`\n  [INVALID] Testing: ${fixture.name} - ${description}`);
+
+                    const testResult = {
+                        category: 'invalid',
+                        name: fixture.name,
+                        description,
+                        passed: false,
+                        expectedFailure: true,
+                        error: null,
+                        ual: null,
+                        publishAttempts: 1,
+                        publishStatus: null,
+                        finalityStatus: null,
+                        publishTime: null,
+                        getTime: null,
+                        queryTime: null,
+                    };
+
+                    try {
+                        const publishStart = Date.now();
+                        let createResult = null;
+                        let thrownError = null;
+
+                        try {
+                            createResult = await attemptPublishOnce(
+                                DkgClient,
+                                fixture.content,
+                                { epochsNum: 2, minimumNumberOfFinalizationConfirmations: 0 },
+                            );
+                        } catch (error) {
+                            thrownError = error;
+                        }
+
+                        testResult.publishTime = Date.now() - publishStart;
+                        testResult.publishStatus = getOperationStatus(createResult, 'publish');
+                        testResult.finalityStatus = getOperationStatus(createResult, 'finality');
+                        testResult.ual = createResult?.UAL || null;
+
+                        if (thrownError) {
+                            const errorText = getErrorText(thrownError);
+                            assert.ok(
+                                matchesAnyPattern(errorText, expectedErrorPatterns),
+                                `Invalid fixture failed for unexpected reason: ${errorText}`,
+                            );
+                            console.log(`    ✅ Rejected as expected: ${thrownError.message}`);
+                            testResult.passed = true;
+                            return;
+                        }
+
+                        // If no throw, operation statuses must still indicate failure for invalid input.
+                        const publishStatus = getOperationStatus(createResult, 'publish');
+                        const finalityStatus = getOperationStatus(createResult, 'finality');
+                        const isRejectedByStatus = publishStatus !== 'COMPLETED' || finalityStatus !== 'FINALIZED';
+                        const statusErrorText = buildCreateResultErrorText(createResult);
+
+                        assert.ok(
+                            isRejectedByStatus,
+                            `Invalid fixture unexpectedly succeeded with UAL=${createResult?.UAL || 'N/A'}`
+                        );
+                        assert.ok(
+                            matchesAnyPattern(statusErrorText, expectedErrorPatterns),
+                            `Invalid fixture failed for unexpected reason: ${statusErrorText}`,
+                        );
+
+                        console.log(`    ✅ Rejected by operation status as expected (${statusErrorText})`);
+                        testResult.passed = true;
+                    } catch (error) {
+                        testResult.error = {
+                            name: error.name,
+                            message: error.message,
+                            stack: error.stack?.split('\n').slice(0, 3).join('\n'),
+                        };
+                        console.log(`    ❌ Failed: ${error.message}`);
+                        throw error;
                     } finally {
                         results[chain.id][fixture.name] = testResult;
                     }
@@ -243,22 +365,32 @@ describe('Edge Case Tests - Testnet (All Chains)', function () {
                 continue;
             }
 
-            const passed = Object.values(chainResults).filter((r) => r.passed).length;
-            const failed = Object.values(chainResults).filter((r) => !r.passed).length;
+            const allResults = Object.values(chainResults);
+            const passed = allResults.filter((r) => r.passed).length;
+            const failed = allResults.filter((r) => !r.passed).length;
             const total = passed + failed;
+            const validPassed = allResults.filter((r) => r.category === 'valid' && r.passed).length;
+            const validTotal = allResults.filter((r) => r.category === 'valid').length;
+            const invalidPassed = allResults.filter((r) => r.category === 'invalid' && r.passed).length;
+            const invalidTotal = allResults.filter((r) => r.category === 'invalid').length;
 
             console.log(`\n🔗 ${chain.name} (${chain.id}): ${passed}/${total} passed`);
+            console.log(`   • Valid fixtures:   ${validPassed}/${validTotal}`);
+            console.log(`   • Invalid fixtures: ${invalidPassed}/${invalidTotal}`);
             console.log('─'.repeat(60));
 
             for (const [name, result] of Object.entries(chainResults)) {
                 if (result.passed) {
-                    const totalTime = (
-                        (result.publishTime + result.getTime + result.queryTime) /
-                        1000
-                    ).toFixed(2);
-                    console.log(`  ✅ ${name} - PASSED (${totalTime}s total)`);
+                    const totalMs =
+                        (result.publishTime || 0) +
+                        (result.getTime || 0) +
+                        (result.queryTime || 0);
+                    const totalTime = (totalMs / 1000).toFixed(2);
+                    const categoryLabel = result.category?.toUpperCase() || 'UNKNOWN';
+                    console.log(`  ✅ [${categoryLabel}] ${name} - PASSED (${totalTime}s total)`);
                 } else {
-                    console.log(`  ❌ ${name} - FAILED`);
+                    const categoryLabel = result.category?.toUpperCase() || 'UNKNOWN';
+                    console.log(`  ❌ [${categoryLabel}] ${name} - FAILED`);
                     console.log(`     Error: ${result.error?.message || 'Unknown error'}`);
                     if (result.ual) {
                         console.log(`     UAL: ${result.ual}`);
