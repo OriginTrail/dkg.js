@@ -187,12 +187,17 @@ describe('Edge Case Tests - Testnet (All Chains)', function () {
                         publishTime: null,
                         getTime: null,
                         queryTime: null,
+                        failedAt: null,
                     };
+                    let createResult = null;
+                    let getResult = null;
+                    let queryResult = null;
+                    let currentStep = 'publish';
 
                     try {
                         // Step 1: Publish (single attempt, no retries)
                         const publishStart = Date.now();
-                        const createResult = await attemptPublishOnce(
+                        createResult = await attemptPublishOnce(
                             DkgClient,
                             fixture.content,
                             { epochsNum: 2, minimumNumberOfFinalizationConfirmations: 0 },
@@ -212,8 +217,9 @@ describe('Edge Case Tests - Testnet (All Chains)', function () {
                         console.log(`    ✅ Published: ${createResult.UAL} (${(testResult.publishTime / 1000).toFixed(2)}s, 1 attempt)`);
 
                         // Step 2: Get (retrieve the asset)
+                        currentStep = 'get';
                         const getStart = Date.now();
-                        const getResult = await Promise.race([
+                        getResult = await Promise.race([
                             DkgClient.asset.get(createResult.UAL),
                             new Promise((_, reject) =>
                                 setTimeout(
@@ -225,12 +231,18 @@ describe('Edge Case Tests - Testnet (All Chains)', function () {
                         testResult.getTime = Date.now() - getStart;
 
                         assert.ok(getResult, 'Get result should exist');
-                        assert.ok(getResult.assertion, 'Assertion should be present');
+                        if (!getResult.assertion) {
+                            const getKeys = typeof getResult === 'object' && getResult !== null
+                                ? Object.keys(getResult).join(',') || 'none'
+                                : typeof getResult;
+                            throw new Error(`Get response is missing assertion (response keys/type: ${getKeys})`);
+                        }
                         console.log(`    ✅ Get succeeded (${(testResult.getTime / 1000).toFixed(2)}s)`);
 
                         // Step 3: Query
+                        currentStep = 'query';
                         const queryStart = Date.now();
-                        const queryResult = await Promise.race([
+                        queryResult = await Promise.race([
                             DkgClient.graph.query(
                                 `SELECT ?s ?type WHERE { ?s a ?type } LIMIT 10`,
                                 'SELECT',
@@ -245,21 +257,45 @@ describe('Edge Case Tests - Testnet (All Chains)', function () {
                         testResult.queryTime = Date.now() - queryStart;
 
                         assert.ok(queryResult, 'Query result should exist');
-                        assert.ok(
-                            Array.isArray(queryResult.data) && queryResult.data.length > 0,
-                            'Query should return at least one row',
-                        );
+                        if (!Array.isArray(queryResult.data) || queryResult.data.length === 0) {
+                            const queryDataType = Array.isArray(queryResult.data) ? 'array' : typeof queryResult.data;
+                            const queryRows = Array.isArray(queryResult.data) ? queryResult.data.length : 'n/a';
+                            throw new Error(`Query returned no rows (data type: ${queryDataType}, rows: ${queryRows})`);
+                        }
                         console.log(`    ✅ Query succeeded (${(testResult.queryTime / 1000).toFixed(2)}s)`);
 
                         testResult.passed = true;
                     } catch (error) {
+                        const getKeys = typeof getResult === 'object' && getResult !== null
+                            ? Object.keys(getResult).join(',') || 'none'
+                            : 'n/a';
+                        const assertionType = getResult?.assertion === undefined
+                            ? 'undefined'
+                            : getResult?.assertion === null
+                                ? 'null'
+                                : Array.isArray(getResult?.assertion)
+                                    ? 'array'
+                                    : typeof getResult?.assertion;
+                        const queryRows = Array.isArray(queryResult?.data) ? queryResult.data.length : 'n/a';
+                        const detailedMessage = [
+                            `Step=${currentStep}`,
+                            `Fixture=${fixture.name}`,
+                            `Reason=${error.message}`,
+                            createResult ? `PublishMeta=${buildCreateResultErrorText(createResult)}` : null,
+                            createResult?.UAL ? `UAL=${createResult.UAL}` : null,
+                            currentStep !== 'publish' ? `GetKeys=${getKeys}` : null,
+                            currentStep !== 'publish' ? `AssertionType=${assertionType}` : null,
+                            currentStep === 'query' ? `QueryRows=${queryRows}` : null,
+                        ].filter(Boolean).join(' | ');
+
+                        testResult.failedAt = currentStep;
                         testResult.error = {
                             name: error.name,
-                            message: error.message,
+                            message: detailedMessage,
                             stack: error.stack?.split('\n').slice(0, 3).join('\n'),
                         };
-                        console.log(`    ❌ Failed: ${error.message}`);
-                        throw error; // Re-throw to mark test as failed
+                        console.log(`    ❌ Failed: ${detailedMessage}`);
+                        throw new Error(detailedMessage); // Re-throw to mark test as failed with context
                     } finally {
                         results[chain.id][fixture.name] = testResult;
                     }
