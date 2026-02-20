@@ -425,7 +425,7 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
       const TEST_RATE_LIMIT_COOLDOWN_MS = Number(process.env.TEST_RATE_LIMIT_COOLDOWN_MS || 65000);
       const TEST_RATE_LIMIT_MAX_RETRIES = Number(process.env.TEST_RATE_LIMIT_MAX_RETRIES || 3);
       const TEST_INSUFFICIENT_FUNDS_COOLDOWN_MS = Number(process.env.TEST_INSUFFICIENT_FUNDS_COOLDOWN_MS || 65000);
-      const TEST_INSUFFICIENT_FUNDS_MAX_RETRIES = Number(process.env.TEST_INSUFFICIENT_FUNDS_MAX_RETRIES || 3);
+      const TEST_INSUFFICIENT_FUNDS_MAX_RETRIES = Number(process.env.TEST_INSUFFICIENT_FUNDS_MAX_RETRIES || 5);
       const isTargetUalMode = TEST_TARGET_UALS > 0;
       const isTargetMintedMode = TEST_TARGET_MINTED_UALS > 0;
       const totalKAs = isTargetUalMode ? TEST_TARGET_UALS : (PARALLEL_KA_BATCH_SIZE * TEST_KA_BATCHES);
