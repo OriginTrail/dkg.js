@@ -408,7 +408,7 @@ describe('DKG Asset Lifecycle on Base Testnet', function () {
 
       const PARALLEL_KA_BATCH_SIZE = Number(process.env.TEST_PARALLEL_KA_BATCH_SIZE || 10);
       const TEST_KA_BATCHES = Number(process.env.TEST_KA_BATCHES || 10);
-      const TEST_WALLET_SLOTS = Number(process.env.TEST_WALLET_SLOTS || 5);
+      const TEST_WALLET_SLOTS = Number(process.env.TEST_WALLET_SLOTS || 2);
       const TEST_TARGET_UALS = Number(process.env.TEST_TARGET_UALS || 0);
       const TEST_TARGET_MINTED_UALS = Number(process.env.TEST_TARGET_MINTED_UALS || 0);
       const TEST_BATCH_DELAY_MS = Number(process.env.TEST_BATCH_DELAY_MS || 0);
