@@ -2,7 +2,7 @@ name: BDD Full Tests
 
 on:
   pull_request:
-    branches: [main]
+    branches: ['**']
 
 jobs:
   full-tests:
