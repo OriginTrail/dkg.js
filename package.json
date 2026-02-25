@@ -19,6 +19,9 @@
         "build": "npm run cjs-compat && webpack --config webpack.config.cjs",
         "watch": "npm run cjs-compat && webpack --config webpack.config.cjs --watch --progress",
         "lint": "eslint .",
+        "test:bdd": "cucumber-js --config tests/cucumber.cjs --profile full",
+        "test:smoke": "cucumber-js --config tests/cucumber.cjs --profile smoke",
+        "test:full": "cucumber-js --config tests/cucumber.cjs --profile full",
         "cjs:main": "npx rollup index.js --file index.cjs --format cjs",
         "cjs:constants": "npx rollup constants/index.js --file constants/index.cjs --format cjs",
         "cjs-compat": "npm run cjs:main && npm run cjs:constants",
@@ -53,8 +56,10 @@
         "web3": "^1.7.3"
     },
     "devDependencies": {
+        "@cucumber/cucumber": "^11.3.0",
         "assert": "^2.0.0",
         "buffer": "^6.0.3",
+        "chai": "^6.2.2",
         "crypto-browserify": "^3.12.0",
         "eslint": "^8.23.0",
         "eslint-config-airbnb": "^19.0.4",
@@ -63,6 +68,7 @@
         "os-browserify": "^0.3.0",
         "prettier": "^2.7.1",
         "rollup": "^4.28.1",
+        "sinon": "^21.0.1",
         "stream-browserify": "^3.0.0",
         "stream-http": "^3.2.0",
         "terser-webpack-plugin": "^5.3.6",

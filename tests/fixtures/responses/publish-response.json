@@ -1,0 +1,18 @@
+{
+    "status": "COMPLETED",
+    "data": {
+        "signatures": [
+            {
+                "identityId": 1,
+                "r": "0xabababababababababababababababababababababababababababababababababab",
+                "vs": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd"
+            }
+        ],
+        "publisherNodeSignature": {
+            "identityId": 1,
+            "r": "0xabababababababababababababababababababababababababababababababababab",
+            "vs": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd"
+        },
+        "minAcksReached": true
+    }
+}

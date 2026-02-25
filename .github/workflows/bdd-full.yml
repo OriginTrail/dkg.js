@@ -1,0 +1,14 @@
+name: BDD Full Tests
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  full-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup
+      - name: Run BDD Full Tests
+        run: npm run test:full

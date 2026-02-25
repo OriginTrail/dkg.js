@@ -1,0 +1,14 @@
+name: BDD Smoke Tests
+
+on:
+  push:
+    branches: ['**']
+
+jobs:
+  smoke-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup
+      - name: Run BDD Smoke Tests
+        run: npm run test:smoke

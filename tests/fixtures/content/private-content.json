@@ -1,0 +1,16 @@
+{
+    "public": {
+        "@context": "http://schema.org",
+        "@type": "Product",
+        "@id": "http://example.org/product/2",
+        "name": "Public Product Info",
+        "description": "Publicly visible product data"
+    },
+    "private": {
+        "@context": "http://schema.org",
+        "@type": "Product",
+        "@id": "http://example.org/product/2",
+        "serialNumber": "SECRET-12345",
+        "gtin": "00012345678905"
+    }
+}
