@@ -22,4 +22,8 @@ runs:
     - if: steps.cache-node-modules.outputs.cache-hit != 'true'
       name: Install dependencies
       shell: bash
-      run: npm ci
+      run: |
+        npm ci --ignore-scripts
+        npm install --no-save @rollup/rollup-linux-x64-gnu 2>/dev/null || true
+        npm rebuild
+        npm run --if-present postinstall

@@ -4,6 +4,9 @@ on:
   push:
     branches: ['**']
 
+permissions:
+  contents: read
+
 jobs:
   smoke-tests:
     runs-on: ubuntu-latest
