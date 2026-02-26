@@ -1,47 +1,39 @@
 import { Given, When, Then } from '@cucumber/cucumber';
 import { expect } from 'chai';
 import DkgClient from '../../index.js';
-import { getTestDkgClientConfig, TEST_PRIVATE_KEY } from '../support/hardhat-setup.js';
+import { makeClientConfig, TEST_PRIVATE_KEY } from '../support/config-factory.js';
+import { TEST_CHAIN_NAME } from '../support/test-constants.js';
 
 Given('I have a configuration with blockchain name {string}', function (name) {
-    this.config = {
-        ...getTestDkgClientConfig(),
-        blockchain: { name, privateKey: TEST_PRIVATE_KEY },
-    };
+    this.config = makeClientConfig({ blockchain: { name, privateKey: TEST_PRIVATE_KEY } });
 });
 
 Given('I have a configuration with a valid private key', function () {
-    this.config = getTestDkgClientConfig();
+    this.config = makeClientConfig();
 });
 
 Given('I have a configuration without a blockchain name', function () {
-    this.config = { endpoint: 'http://localhost', port: 8900, blockchain: {} };
+    this.config = makeClientConfig({ blockchain: { name: undefined, privateKey: undefined } });
 });
 
 Given('I have a configuration with an invalid private key', function () {
-    this.config = {
-        endpoint: 'http://localhost',
-        port: 8900,
-        blockchain: { name: 'hardhat1:31337', privateKey: 'invalid-key' },
-    };
+    this.config = makeClientConfig({
+        blockchain: { name: TEST_CHAIN_NAME, privateKey: 'invalid-key' },
+    });
 });
 
-When('I initialize the DKG client', function () {
-    try {
+When('I initialize the DKG client', async function () {
+    await this.run(() => {
         this.dkgClient = new DkgClient(this.config);
-        this.error = null;
-    } catch (e) {
-        this.error = e;
-    }
+        return this.dkgClient;
+    });
 });
 
-When('I attempt to initialize the DKG client', function () {
-    try {
+When('I attempt to initialize the DKG client', async function () {
+    await this.run(() => {
         this.dkgClient = new DkgClient(this.config);
-        this.error = null;
-    } catch (e) {
-        this.error = e;
-    }
+        return this.dkgClient;
+    });
 });
 
 Then('the client should be created successfully', function () {

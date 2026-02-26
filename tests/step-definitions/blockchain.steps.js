@@ -3,12 +3,7 @@ import { expect } from 'chai';
 import { isAddress } from 'ethers';
 
 When('I request the chain ID', async function () {
-    try {
-        this.result = await this.dkgClient.blockchain.getChainId();
-        this.error = null;
-    } catch (e) {
-        this.error = e;
-    }
+    await this.run(() => this.dkgClient.blockchain.getChainId());
 });
 
 Then('I should receive the chain ID {int}', function (chainId) {
@@ -17,12 +12,7 @@ Then('I should receive the chain ID {int}', function (chainId) {
 });
 
 When('I request the gas price', async function () {
-    try {
-        this.result = await this.dkgClient.blockchain.getGasPrice();
-        this.error = null;
-    } catch (e) {
-        this.error = e;
-    }
+    await this.run(() => this.dkgClient.blockchain.getGasPrice());
 });
 
 Then('I should receive a non-empty gas price string', function () {
@@ -31,12 +21,7 @@ Then('I should receive a non-empty gas price string', function () {
 });
 
 When('I request the wallet balances', async function () {
-    try {
-        this.result = await this.dkgClient.blockchain.getWalletBalances();
-        this.error = null;
-    } catch (e) {
-        this.error = e;
-    }
+    await this.run(() => this.dkgClient.blockchain.getWalletBalances());
 });
 
 Then('the result should contain an ETH balance', function () {
@@ -48,12 +33,7 @@ Then('the result should contain a TRAC balance', function () {
 });
 
 When('I request the wallet address', async function () {
-    try {
-        this.result = await this.dkgClient.blockchain.getWalletAddress();
-        this.error = null;
-    } catch (e) {
-        this.error = e;
-    }
+    await this.run(() => this.dkgClient.blockchain.getWalletAddress());
 });
 
 Then('I should receive a valid Ethereum address', function () {

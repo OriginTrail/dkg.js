@@ -28,6 +28,6 @@ Feature: Graph Querying
 
   Scenario: Execute a query with paranet UAL scope
     Given a valid SPARQL SELECT query
-    And a Paranet UAL "did:dkg:hardhat1:31337/0x5fbdb2315678afecb367f032d93f642f64180aa3/1/1"
+    And a default Paranet UAL
     When I execute the graph query scoped to the paranet
     Then the query should return results

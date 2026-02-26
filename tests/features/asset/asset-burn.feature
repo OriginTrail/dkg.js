@@ -8,7 +8,7 @@ Feature: Knowledge Asset Burn
     And the blockchain service is mocked
 
   Scenario: Successfully burn an asset
-    Given a valid UAL "did:dkg:hardhat1:31337/0x5fbdb2315678afecb367f032d93f642f64180aa3/1"
+    Given a default KC UAL
     When I burn the asset
     Then the burn should complete successfully
     And the result should contain the UAL

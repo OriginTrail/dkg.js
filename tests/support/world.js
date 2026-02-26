@@ -1,4 +1,5 @@
 import { setWorldConstructor, World } from '@cucumber/cucumber';
+import ValidationService from '../../services/validation-service.js';
 
 class DkgWorld extends World {
     constructor(options) {
@@ -17,8 +18,17 @@ class DkgWorld extends World {
         this.blockchainServiceStubs = null;
         this.nodeApiStubs = null;
 
-        this.validationService = null;
+        this.validationService = new ValidationService();
         this.inputService = null;
+    }
+
+    async run(fn) {
+        try {
+            this.result = await fn();
+            this.error = null;
+        } catch (e) {
+            this.error = e;
+        }
     }
 }
 

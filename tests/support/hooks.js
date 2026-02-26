@@ -11,6 +11,8 @@ Before(async function () {
     this.ual = null;
     this.paranetUAL = null;
     this.content = null;
+    this.blockchainServiceStubs = null;
+    this.nodeApiStubs = null;
 });
 
 After(async function () {

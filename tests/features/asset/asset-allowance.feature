@@ -19,23 +19,17 @@ Feature: Token Allowance Management
     When I decrease the allowance
     Then the allowance operation should complete successfully
 
-  Scenario: Set allowance higher than current
-    Given the current allowance is 100
-    And a target allowance of 500
+  Scenario Outline: Set allowance relative to current
+    Given the current allowance is <current>
+    And a target allowance of <target>
     When I set the allowance
-    Then the allowance operation should complete successfully
+    Then <assertion>
 
-  Scenario: Set allowance lower than current
-    Given the current allowance is 500
-    And a target allowance of 100
-    When I set the allowance
-    Then the allowance operation should complete successfully
-
-  Scenario: Set allowance equal to current skips transaction
-    Given the current allowance is 500
-    And a target allowance of 500
-    When I set the allowance
-    Then the result status should indicate "Skipped"
+    Examples:
+      | current | target | assertion                                    |
+      | 100     | 500    | the allowance operation should complete successfully |
+      | 500     | 100    | the allowance operation should complete successfully |
+      | 500     | 500    | the result status should indicate "Skipped"          |
 
   Scenario: Get current allowance
     Given the current allowance is 1000

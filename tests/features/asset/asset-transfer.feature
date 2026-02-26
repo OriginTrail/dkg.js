@@ -9,7 +9,7 @@ Feature: Knowledge Asset Transfer
     And the node API is mocked
 
   Scenario: Successfully transfer an asset to a new owner
-    Given a valid KA UAL "did:dkg:hardhat1:31337/0x5fbdb2315678afecb367f032d93f642f64180aa3/1/1"
+    Given a default KA UAL
     And a valid new owner address
     When I transfer the asset
     Then the transfer should complete successfully
@@ -22,7 +22,7 @@ Feature: Knowledge Asset Transfer
     Then the operation should fail with a validation error
 
   Scenario: Fail to transfer with missing new owner
-    Given a valid KA UAL "did:dkg:hardhat1:31337/0x5fbdb2315678afecb367f032d93f642f64180aa3/1/1"
+    Given a default KA UAL
     And no new owner address
     When I attempt to transfer the asset
     Then the operation should fail with error "newOwner is missing"

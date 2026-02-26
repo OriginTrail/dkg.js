@@ -6,22 +6,20 @@ Feature: Paranet Curator Management
   Background:
     Given the DKG client is initialized with a valid configuration
     And the blockchain service is mocked
+    And a default Paranet UAL
 
   Scenario: Add a curator to a Paranet
-    Given a Paranet UAL "did:dkg:hardhat1:31337/0x5fbdb2315678afecb367f032d93f642f64180aa3/1/1"
-    And a valid curator address
+    Given a valid curator address
     When I add the curator to the Paranet
     Then the curator addition should succeed
 
   Scenario: Remove a curator from a Paranet
-    Given a Paranet UAL "did:dkg:hardhat1:31337/0x5fbdb2315678afecb367f032d93f642f64180aa3/1/1"
-    And a valid curator address
+    Given a valid curator address
     When I remove the curator from the Paranet
     Then the curator removal should succeed
 
   Scenario: Fail to add curator with invalid address
-    Given a Paranet UAL "did:dkg:hardhat1:31337/0x5fbdb2315678afecb367f032d93f642f64180aa3/1/1"
-    And an invalid curator address "not-an-address"
+    Given an invalid curator address "not-an-address"
     When I attempt to add the curator
     Then the operation should fail with error "Wrong address format"
 

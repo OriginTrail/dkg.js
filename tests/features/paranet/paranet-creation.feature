@@ -8,23 +8,23 @@ Feature: Paranet Creation
     And the blockchain service is mocked
 
   Scenario: Successfully create a Paranet
-    Given a valid KA UAL "did:dkg:hardhat1:31337/0x5fbdb2315678afecb367f032d93f642f64180aa3/1/1"
+    Given a default KA UAL
     When I create a Paranet with name "TestParanet" and description "A test paranet"
     Then the Paranet creation should succeed
     And the result should contain the paranet UAL
 
   Scenario: Create a Paranet with permissioned node access
-    Given a valid KA UAL "did:dkg:hardhat1:31337/0x5fbdb2315678afecb367f032d93f642f64180aa3/1/1"
+    Given a default KA UAL
     When I create a Paranet with permissioned nodes access policy
     Then the Paranet creation should succeed
 
   Scenario: Fail to create Paranet without KA token ID
-    Given a valid UAL "did:dkg:hardhat1:31337/0x5fbdb2315678afecb367f032d93f642f64180aa3/1"
+    Given a default KC UAL
     When I attempt to create a Paranet
     Then the operation should fail with error "Knowledge asset token id is required"
 
   Scenario: Fail to create Paranet without name
-    Given a valid KA UAL "did:dkg:hardhat1:31337/0x5fbdb2315678afecb367f032d93f642f64180aa3/1/1"
+    Given a default KA UAL
     When I attempt to create a Paranet without a name
     Then the operation should fail with error "paranetName is missing"
 

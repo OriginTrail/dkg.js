@@ -1,134 +1,58 @@
 import { Given, When, Then } from '@cucumber/cucumber';
 import { expect } from 'chai';
-import ValidationService from '../../services/validation-service.js';
 import { deriveUAL, resolveUAL } from '../../services/utilities.js';
+import { DEFAULT_EPOCHS_NUM } from '../support/test-constants.js';
 
 When('I attempt to create an asset with null content', async function () {
-    try {
-        await this.dkgClient.asset.create(null, { epochsNum: 2 });
-        this.error = null;
-    } catch (e) {
-        this.error = e;
-    }
+    await this.run(() => this.dkgClient.asset.create(null, { epochsNum: DEFAULT_EPOCHS_NUM }));
 });
 
 When('I attempt to create an asset with the invalid content', async function () {
-    try {
-        await this.dkgClient.asset.create(this.content, { epochsNum: 2 });
-        this.error = null;
-    } catch (e) {
-        this.error = e;
-    }
+    await this.run(() => this.dkgClient.asset.create(this.content, { epochsNum: DEFAULT_EPOCHS_NUM }));
 });
 
 When('I attempt an operation with endpoint {string}', function (endpoint) {
-    const vs = new ValidationService();
-    try {
-        vs.validateEndpoint(endpoint);
-        this.error = null;
-    } catch (e) {
-        this.error = e;
-    }
+    this.run(() => { this.validationService.validateEndpoint(endpoint); return true; });
 });
 
 When('I attempt an operation with a null port', function () {
-    const vs = new ValidationService();
-    try {
-        vs.validatePort(null);
-        this.error = null;
-    } catch (e) {
-        this.error = e;
-    }
+    this.run(() => { this.validationService.validatePort(null); return true; });
 });
 
 When('I attempt to validate a null epochs number', function () {
-    const vs = new ValidationService();
-    try {
-        vs.validateEpochsNum(null);
-        this.error = null;
-    } catch (e) {
-        this.error = e;
-    }
+    this.run(() => { this.validationService.validateEpochsNum(null); return true; });
 });
 
 When('I attempt to get an asset with content type {string}', function (contentType) {
-    const vs = new ValidationService();
-    try {
-        vs.validateContentType(contentType);
-        this.error = null;
-    } catch (e) {
-        this.error = e;
-    }
+    this.run(() => { this.validationService.validateContentType(contentType); return true; });
 });
 
 When('I attempt a graph query with query type {string}', function (queryType) {
-    const vs = new ValidationService();
-    try {
-        vs.validateQueryType(queryType);
-        this.error = null;
-    } catch (e) {
-        this.error = e;
-    }
+    this.run(() => { this.validationService.validateQueryType(queryType); return true; });
 });
 
 When('I attempt to transfer an asset to an invalid address', function () {
-    const vs = new ValidationService();
-    try {
-        vs.validateAddress('not-a-valid-address');
-        this.error = null;
-    } catch (e) {
-        this.error = e;
-    }
+    this.run(() => { this.validationService.validateAddress('not-a-valid-address'); return true; });
 });
 
 When('I attempt to validate a negative state index', function () {
-    const vs = new ValidationService();
-    try {
-        vs.validateStateIndex(-1);
-        this.error = null;
-    } catch (e) {
-        this.error = e;
-    }
+    this.run(() => { this.validationService.validateStateIndex(-1); return true; });
 });
 
 When('I attempt to create a paranet with nodes access policy {int}', function (policy) {
-    const vs = new ValidationService();
-    try {
-        vs.validateParanetNodesAccessPolicy(policy);
-        this.error = null;
-    } catch (e) {
-        this.error = e;
-    }
+    this.run(() => { this.validationService.validateParanetNodesAccessPolicy(policy); return true; });
 });
 
 When('I attempt to create a paranet with miners access policy {int}', function (policy) {
-    const vs = new ValidationService();
-    try {
-        vs.validateParanetMinersAccessPolicy(policy);
-        this.error = null;
-    } catch (e) {
-        this.error = e;
-    }
+    this.run(() => { this.validationService.validateParanetMinersAccessPolicy(policy); return true; });
 });
 
 When('I attempt to validate operator reward percentage of {int}', function (pct) {
-    const vs = new ValidationService();
-    try {
-        vs.validateOperatorRewardPercentage(pct);
-        this.error = null;
-    } catch (e) {
-        this.error = e;
-    }
+    this.run(() => { this.validationService.validateOperatorRewardPercentage(pct); return true; });
 });
 
 When('I attempt to validate voter reward percentage of {int}', function (pct) {
-    const vs = new ValidationService();
-    try {
-        vs.validateIncentivizationProposalVotersRewardPercentage(pct);
-        this.error = null;
-    } catch (e) {
-        this.error = e;
-    }
+    this.run(() => { this.validationService.validateIncentivizationProposalVotersRewardPercentage(pct); return true; });
 });
 
 // UAL validation steps
@@ -138,44 +62,19 @@ Given('a UAL {string}', function (ual) {
 });
 
 When('I validate the UAL', function () {
-    const vs = new ValidationService();
-    try {
-        vs.validateUAL(this.ual);
-        this.error = null;
-        this.result = true;
-    } catch (e) {
-        this.error = e;
-    }
+    this.run(() => { this.validationService.validateUAL(this.ual); return true; });
 });
 
 When('I attempt to validate the UAL', function () {
-    const vs = new ValidationService();
-    try {
-        vs.validateUAL(this.ual);
-        this.error = null;
-    } catch (e) {
-        this.error = e;
-    }
+    this.run(() => { this.validationService.validateUAL(this.ual); return true; });
 });
 
 When('I attempt to validate a null UAL', function () {
-    const vs = new ValidationService();
-    try {
-        vs.validateUAL(null);
-        this.error = null;
-    } catch (e) {
-        this.error = e;
-    }
+    this.run(() => { this.validationService.validateUAL(null); return true; });
 });
 
 When('I attempt to validate a numeric UAL', function () {
-    const vs = new ValidationService();
-    try {
-        vs.validateUAL(12345);
-        this.error = null;
-    } catch (e) {
-        this.error = e;
-    }
+    this.run(() => { this.validationService.validateUAL(12345); return true; });
 });
 
 Then('the UAL should be valid', function () {
@@ -189,12 +88,7 @@ Then('the UAL validation should fail with {string}', function (msg) {
 });
 
 When('I resolve the UAL', function () {
-    try {
-        this.result = resolveUAL(this.ual);
-        this.error = null;
-    } catch (e) {
-        this.error = e;
-    }
+    this.run(() => resolveUAL(this.ual));
 });
 
 Then('the blockchain should be {string}', function (blockchain) {
@@ -214,13 +108,11 @@ Then('the KA token ID should be {int}', function (id) {
 });
 
 When('I derive a UAL from blockchain {string}, contract {string}, and KC token ID {int}', function (blockchain, contract, kcTokenId) {
-    this.result = deriveUAL(blockchain, contract, kcTokenId);
-    this.error = null;
+    this.run(() => deriveUAL(blockchain, contract, kcTokenId));
 });
 
 When('I derive a UAL from blockchain {string}, contract {string}, KC token ID {int}, and KA token ID {int}', function (blockchain, contract, kcTokenId, kaTokenId) {
-    this.result = deriveUAL(blockchain, contract, kcTokenId, kaTokenId);
-    this.error = null;
+    this.run(() => deriveUAL(blockchain, contract, kcTokenId, kaTokenId));
 });
 
 Then('the derived UAL should be {string}', function (expected) {

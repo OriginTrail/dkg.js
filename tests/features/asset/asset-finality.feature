@@ -6,18 +6,16 @@ Feature: Publish Finality
   Background:
     Given the DKG client is initialized with a valid configuration
     And the node API is mocked
+    And a default KC UAL
 
-  Scenario: Asset is finalized with sufficient confirmations
-    Given a valid UAL "did:dkg:hardhat1:31337/0x5fbdb2315678afecb367f032d93f642f64180aa3/1"
-    And the node reports 3 finality confirmations
+  Scenario Outline: Asset finality check
+    Given the node reports <confirmations> finality confirmations
+    And the required confirmations are <required>
     When I check the publish finality
-    Then the finality status should be "FINALIZED"
-    And the number of confirmations should be 3
+    Then the finality status should be "<status>"
+    And the number of confirmations should be <confirmations>
 
-  Scenario: Asset is not yet finalized
-    Given a valid UAL "did:dkg:hardhat1:31337/0x5fbdb2315678afecb367f032d93f642f64180aa3/1"
-    And the node reports 1 finality confirmation
-    And the required confirmations are 3
-    When I check the publish finality
-    Then the finality status should be "NOT FINALIZED"
-    And the number of confirmations should be 1
+    Examples:
+      | confirmations | required | status        |
+      | 3             | 3        | FINALIZED     |
+      | 1             | 3        | NOT FINALIZED |

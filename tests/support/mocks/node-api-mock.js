@@ -1,43 +1,40 @@
-import sinon from 'sinon';
 import { safeStub } from './stub-utils.js';
+import { loadFixture } from '../fixture-loader.js';
 
-export function createNodeApiStubs(nodeApiService) {
-    return {
-        info: sinon.stub(nodeApiService, 'info').resolves({
+function defaultPublishResult() {
+    return loadFixture('responses/publish-response.json');
+}
+
+function defaultQueryResult() {
+    return loadFixture('responses/query-response.json');
+}
+
+export function createNodeApiStubs(nodeApiService, overrides = {}) {
+    const defaults = {
+        info: {
             data: {
                 version: '8.0.0',
                 blockchain: ['hardhat1:31337'],
                 autoUpdate: false,
             },
-        }),
-        publish: sinon.stub(nodeApiService, 'publish').resolves('mock-publish-op-id'),
-        get: sinon.stub(nodeApiService, 'get').resolves('mock-get-op-id'),
-        getOperationResult: sinon.stub(nodeApiService, 'getOperationResult').resolves({
-            status: 'COMPLETED',
-            data: {
-                signatures: [
-                    {
-                        identityId: 1,
-                        r: '0x' + 'ab'.repeat(32),
-                        vs: '0x' + 'cd'.repeat(32),
-                    },
-                ],
-                publisherNodeSignature: {
-                    identityId: 1,
-                    r: '0x' + 'ab'.repeat(32),
-                    vs: '0x' + 'cd'.repeat(32),
-                },
-                minAcksReached: true,
-            },
-        }),
-        query: sinon.stub(nodeApiService, 'query').resolves({
-            status: 'COMPLETED',
-            data: [],
-        }),
-        finality: sinon.stub(nodeApiService, 'finality').resolves('mock-finality-op-id'),
-        finalityStatus: sinon.stub(nodeApiService, 'finalityStatus').resolves(3),
-        localStore: safeStub(nodeApiService, 'localStore', 'mock-local-store-op-id'),
+        },
+        publish: 'mock-publish-op-id',
+        get: 'mock-get-op-id',
+        getOperationResult: defaultPublishResult(),
+        query: defaultQueryResult(),
+        finality: 'mock-finality-op-id',
+        finalityStatus: 3,
+        localStore: 'mock-local-store-op-id',
     };
+
+    const merged = { ...defaults, ...overrides };
+    const stubs = {};
+
+    for (const [method, value] of Object.entries(merged)) {
+        stubs[method] = safeStub(nodeApiService, method, value);
+    }
+
+    return stubs;
 }
 
 export function createGetOperationResultForAssetGet(assertion, metadata) {
@@ -68,23 +65,6 @@ export function createFailedOperationResult(errorMessage) {
 }
 
 export function createPublishOperationResult(overrides = {}) {
-    return {
-        status: 'COMPLETED',
-        data: {
-            signatures: [
-                {
-                    identityId: 1,
-                    r: '0x' + 'ab'.repeat(32),
-                    vs: '0x' + 'cd'.repeat(32),
-                },
-            ],
-            publisherNodeSignature: {
-                identityId: 1,
-                r: '0x' + 'ab'.repeat(32),
-                vs: '0x' + 'cd'.repeat(32),
-            },
-            minAcksReached: true,
-            ...overrides,
-        },
-    };
+    const base = defaultPublishResult();
+    return { ...base, data: { ...base.data, ...overrides } };
 }

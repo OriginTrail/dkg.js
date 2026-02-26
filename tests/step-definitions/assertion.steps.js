@@ -2,12 +2,7 @@ import { When, Then } from '@cucumber/cucumber';
 import { expect } from 'chai';
 
 When('I format the graph', async function () {
-    try {
-        this.result = await this.dkgClient.assertion.formatGraph(this.content);
-        this.error = null;
-    } catch (e) {
-        this.error = e;
-    }
+    await this.run(() => this.dkgClient.assertion.formatGraph(this.content));
 });
 
 Then('the result should contain a {string} assertion', function (key) {
@@ -23,12 +18,7 @@ Then('the private assertion should be a non-empty array', function () {
 });
 
 When('I compute the public assertion ID', async function () {
-    try {
-        this.result = await this.dkgClient.assertion.getPublicAssertionId(this.content);
-        this.error = null;
-    } catch (e) {
-        this.error = e;
-    }
+    await this.run(() => this.dkgClient.assertion.getPublicAssertionId(this.content));
 });
 
 Then('I should receive a non-empty hex string', function () {
@@ -42,8 +32,7 @@ When('I compute the assertion size in bytes', async function () {
         this.result = await this.dkgClient.assertion.getSizeInBytes(this.content);
         this.error = null;
     } catch (e) {
-        // getSizeInBytes may not be available in all assertion-tools versions
-        if (e.message && e.message.includes('is not a function')) {
+        if (e.message?.includes('is not a function')) {
             this.result = 1;
             this.error = null;
         } else {
@@ -62,7 +51,7 @@ When('I count the triples', async function () {
         this.result = await this.dkgClient.assertion.getTriplesNumber(this.content);
         this.error = null;
     } catch (e) {
-        if (e.message && e.message.includes('is not a function')) {
+        if (e.message?.includes('is not a function')) {
             this.result = 1;
             this.error = null;
         } else {
@@ -72,12 +61,7 @@ When('I count the triples', async function () {
 });
 
 When('I count the chunks', async function () {
-    try {
-        this.result = await this.dkgClient.assertion.getChunksNumber(this.content);
-        this.error = null;
-    } catch (e) {
-        this.error = e;
-    }
+    await this.run(() => this.dkgClient.assertion.getChunksNumber(this.content));
 });
 
 Then('the count should be a positive number', function () {

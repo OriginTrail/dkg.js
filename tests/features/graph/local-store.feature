@@ -12,3 +12,9 @@ Feature: Local Store
     Given I have content that is neither JSON-LD nor N-Quads
     When I attempt to store content locally
     Then the local store operation should fail
+
+  @wip
+  Scenario: Local store with valid JSON-LD content
+    Given I have valid JSON-LD content with public triples
+    When I attempt to store content locally
+    Then the operation should complete successfully

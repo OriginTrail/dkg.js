@@ -1,29 +1,20 @@
 import { Given, When, Then } from '@cucumber/cucumber';
 import { expect } from 'chai';
 import DkgClient from '../../index.js';
-import { getTestDkgClientConfig, TEST_PUBLIC_KEY } from '../support/hardhat-setup.js';
+import { makeClientConfig } from '../support/config-factory.js';
 import { createNodeApiStubs } from '../support/mocks/node-api-mock.js';
 import { createBlockchainServiceStubs } from '../support/mocks/blockchain-service-mock.js';
-import { readFileSync } from 'fs';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
-function loadFixture(relativePath) {
-    return JSON.parse(readFileSync(resolve(__dirname, '..', 'fixtures', relativePath), 'utf-8'));
-}
-
-function loadTextFixture(relativePath) {
-    return readFileSync(resolve(__dirname, '..', 'fixtures', relativePath), 'utf-8').trim();
-}
+import { loadFixture, loadTextFixture } from '../support/fixture-loader.js';
+import {
+    DEFAULT_KC_UAL, DEFAULT_KA_UAL, DEFAULT_PARANET_UAL,
+} from '../support/test-constants.js';
 
 Given('I have a valid Hardhat blockchain configuration', function () {
-    this.config = getTestDkgClientConfig();
+    this.config = makeClientConfig();
 });
 
 Given('the DKG client is initialized with a valid configuration', function () {
-    this.config = getTestDkgClientConfig();
+    this.config = makeClientConfig();
     this.dkgClient = new DkgClient(this.config);
 });
 
@@ -47,8 +38,24 @@ Given('I have content that is neither JSON-LD nor N-Quads', function () {
     this.content = 'just a plain string that is not nquads';
 });
 
+Given('a default KC UAL', function () {
+    this.ual = DEFAULT_KC_UAL;
+});
+
+Given('a default KA UAL', function () {
+    this.ual = DEFAULT_KA_UAL;
+});
+
+Given('a default Paranet UAL', function () {
+    this.paranetUAL = DEFAULT_PARANET_UAL;
+});
+
 Given('a valid UAL for an existing asset', function () {
-    this.ual = 'did:dkg:hardhat1:31337/0x5fbdb2315678afecb367f032d93f642f64180aa3/1';
+    this.ual = DEFAULT_KC_UAL;
+});
+
+Given('I have valid N-Quads content', function () {
+    this.content = loadTextFixture('content/valid-nquads.txt');
 });
 
 Given('a valid UAL {string}', function (ual) {
@@ -85,5 +92,3 @@ Then('the operation should fail with error {string}', function (msg) {
 Then('the operation should succeed', function () {
     expect(this.error).to.be.null;
 });
-
-export { loadFixture, loadTextFixture };

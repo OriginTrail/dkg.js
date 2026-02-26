@@ -19,3 +19,4 @@ Feature: Assertion Graph Formatting
     Then the result should contain a "public" assertion
     And the result should contain a "private" assertion
     And the private assertion should be a non-empty array
+

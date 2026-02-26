@@ -1,12 +1,18 @@
 import { SummaryFormatter } from '@cucumber/cucumber';
 
+const NO_COLOR = !!process.env.NO_COLOR;
+
+function color(code, text) {
+    return NO_COLOR ? text : `\x1b[${code}m${text}\x1b[0m`;
+}
+
 const STATUS_ICONS = {
-    PASSED: '\x1b[32m✓\x1b[0m',
-    FAILED: '\x1b[31m✗\x1b[0m',
-    SKIPPED: '\x1b[36m-\x1b[0m',
-    PENDING: '\x1b[33m?\x1b[0m',
-    UNDEFINED: '\x1b[33m?\x1b[0m',
-    AMBIGUOUS: '\x1b[31m!\x1b[0m',
+    PASSED: () => color(32, '✓'),
+    FAILED: () => color(31, '✗'),
+    SKIPPED: () => color(36, '-'),
+    PENDING: () => color(33, '?'),
+    UNDEFINED: () => color(33, '?'),
+    AMBIGUOUS: () => color(31, '!'),
 };
 
 export default class PrettyConsoleFormatter extends SummaryFormatter {
@@ -49,10 +55,10 @@ export default class PrettyConsoleFormatter extends SummaryFormatter {
                     const doc = options.eventDataCollector
                         .getGherkinDocument(pickle.uri);
                     const name = doc?.feature?.name || pickle.uri;
-                    this.log(`\n\x1b[1mFeature:\x1b[0m ${name}\n`);
+                    this.log(`\n${color(1, 'Feature:')} ${name}\n`);
                 }
 
-                this.log(`\n  \x1b[1mScenario:\x1b[0m ${pickle.name}\n`);
+                this.log(`\n  ${color(1, 'Scenario:')} ${pickle.name}\n`);
             }
 
             if (envelope.testStepFinished) {
@@ -77,7 +83,7 @@ export default class PrettyConsoleFormatter extends SummaryFormatter {
                 }
 
                 const status = envelope.testStepFinished.testStepResult.status;
-                const icon = STATUS_ICONS[status] || ' ';
+                const icon = (STATUS_ICONS[status] || (() => ' '))();
 
                 this.log(`    ${icon} ${keyword}${pickleStep.text}\n`);
             }

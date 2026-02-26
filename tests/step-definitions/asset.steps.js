@@ -1,7 +1,7 @@
 import { Given, When, Then } from '@cucumber/cucumber';
 import { expect } from 'chai';
 import { createFailedOperationResult, createGetOperationResultForAssetGet } from '../support/mocks/node-api-mock.js';
-import { MOCK_CONTRACT_ADDRESS } from '../support/hardhat-setup.js';
+import { DEFAULT_EPOCHS_NUM, TEST_ADDRESSES } from '../support/test-constants.js';
 
 // --- Asset creation ---
 
@@ -14,12 +14,7 @@ Given('the node API publish operation will fail', function () {
 });
 
 When('I create a Knowledge Asset with default options', async function () {
-    try {
-        this.result = await this.dkgClient.asset.create(this.content, { epochsNum: 2 });
-        this.error = null;
-    } catch (e) {
-        this.error = e;
-    }
+    await this.run(() => this.dkgClient.asset.create(this.content, { epochsNum: DEFAULT_EPOCHS_NUM }));
 });
 
 Then('I should receive a valid UAL starting with {string}', function (prefix) {
@@ -54,24 +49,14 @@ Given('the node API get operation returns assertion data with metadata', functio
 });
 
 When('I get the Knowledge Asset', async function () {
-    try {
-        this.result = await this.dkgClient.asset.get(this.ual, { outputFormat: 'n-quads' });
-        this.error = null;
-    } catch (e) {
-        this.error = e;
-    }
+    await this.run(() => this.dkgClient.asset.get(this.ual, { outputFormat: 'n-quads' }));
 });
 
 When('I get the Knowledge Asset with metadata included', async function () {
-    try {
-        this.result = await this.dkgClient.asset.get(this.ual, {
-            outputFormat: 'n-quads',
-            includeMetadata: true,
-        });
-        this.error = null;
-    } catch (e) {
-        this.error = e;
-    }
+    await this.run(() => this.dkgClient.asset.get(this.ual, {
+        outputFormat: 'n-quads',
+        includeMetadata: true,
+    }));
 });
 
 Then('the result should contain the assertion data', function () {
@@ -98,7 +83,7 @@ Then('the result should contain metadata', function () {
 // --- Asset transfer ---
 
 Given('a valid new owner address', function () {
-    this.newOwner = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8';
+    this.newOwner = TEST_ADDRESSES.owner;
 });
 
 Given('an invalid new owner address {string}', function (address) {
@@ -110,21 +95,11 @@ Given('no new owner address', function () {
 });
 
 When('I transfer the asset', async function () {
-    try {
-        this.result = await this.dkgClient.asset.transfer(this.ual, this.newOwner);
-        this.error = null;
-    } catch (e) {
-        this.error = e;
-    }
+    await this.run(() => this.dkgClient.asset.transfer(this.ual, this.newOwner));
 });
 
 When('I attempt to transfer the asset', async function () {
-    try {
-        this.result = await this.dkgClient.asset.transfer(this.ual, this.newOwner);
-        this.error = null;
-    } catch (e) {
-        this.error = e;
-    }
+    await this.run(() => this.dkgClient.asset.transfer(this.ual, this.newOwner));
 });
 
 Then('the transfer should complete successfully', function () {
@@ -140,21 +115,11 @@ Then('the result should contain the UAL', function () {
 // --- Asset burn ---
 
 When('I burn the asset', async function () {
-    try {
-        this.result = await this.dkgClient.asset.burn(this.ual);
-        this.error = null;
-    } catch (e) {
-        this.error = e;
-    }
+    await this.run(() => this.dkgClient.asset.burn(this.ual));
 });
 
 When('I attempt to burn the asset', async function () {
-    try {
-        this.result = await this.dkgClient.asset.burn(this.ual);
-        this.error = null;
-    } catch (e) {
-        this.error = e;
-    }
+    await this.run(() => this.dkgClient.asset.burn(this.ual));
 });
 
 Then('the burn should complete successfully', function () {
@@ -180,40 +145,20 @@ Given('a target allowance of {int}', function (target) {
 });
 
 When('I increase the allowance', async function () {
-    try {
-        this.result = await this.dkgClient.asset.increaseAllowance(this.tokenAmount);
-        this.error = null;
-    } catch (e) {
-        this.error = e;
-    }
+    await this.run(() => this.dkgClient.asset.increaseAllowance(this.tokenAmount));
 });
 
 When('I decrease the allowance', async function () {
-    try {
-        this.result = await this.dkgClient.asset.decreaseAllowance(this.tokenAmount);
-        this.error = null;
-    } catch (e) {
-        this.error = e;
-    }
+    await this.run(() => this.dkgClient.asset.decreaseAllowance(this.tokenAmount));
 });
 
 When('I set the allowance', async function () {
-    try {
-        this.result = await this.dkgClient.asset.setAllowance(BigInt(this.targetAllowance));
-        this.error = null;
-    } catch (e) {
-        this.error = e;
-    }
+    await this.run(() => this.dkgClient.asset.setAllowance(BigInt(this.targetAllowance)));
 });
 
 When('I get the current allowance', async function () {
-    try {
-        this.blockchainServiceStubs.callContractFunction.resolves(this.currentAllowance.toString());
-        this.result = await this.dkgClient.asset.getCurrentAllowance();
-        this.error = null;
-    } catch (e) {
-        this.error = e;
-    }
+    this.blockchainServiceStubs.callContractFunction.resolves(this.currentAllowance.toString());
+    await this.run(() => this.dkgClient.asset.getCurrentAllowance());
 });
 
 Then('the allowance operation should complete successfully', function () {
@@ -255,16 +200,11 @@ Given('the required confirmations are {int}', function (count) {
 });
 
 When('I check the publish finality', async function () {
-    try {
-        const options = {};
-        if (this.requiredConfirmations != null) {
-            options.minimumNumberOfFinalizationConfirmations = this.requiredConfirmations;
-        }
-        this.result = await this.dkgClient.asset.publishFinality(this.ual, options);
-        this.error = null;
-    } catch (e) {
-        this.error = e;
+    const options = {};
+    if (this.requiredConfirmations != null) {
+        options.minimumNumberOfFinalizationConfirmations = this.requiredConfirmations;
     }
+    await this.run(() => this.dkgClient.asset.publishFinality(this.ual, options));
 });
 
 Then('the finality status should be {string}', function (status) {
