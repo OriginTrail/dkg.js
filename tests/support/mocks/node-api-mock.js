@@ -1,5 +1,6 @@
 import { safeStub } from './stub-utils.js';
 import { loadFixture } from '../fixture-loader.js';
+import { TEST_CHAIN_NAME } from '../test-constants.js';
 
 function defaultPublishResult() {
     return loadFixture('responses/publish-response.json');
@@ -14,7 +15,7 @@ export function createNodeApiStubs(nodeApiService, overrides = {}) {
         info: {
             data: {
                 version: '8.0.0',
-                blockchain: ['hardhat1:31337'],
+                blockchain: [TEST_CHAIN_NAME],
                 autoUpdate: false,
             },
         },

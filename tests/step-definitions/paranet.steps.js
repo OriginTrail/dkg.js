@@ -1,6 +1,7 @@
 import { Given, When, Then } from '@cucumber/cucumber';
 import { expect } from 'chai';
-import { TEST_ADDRESSES, DEFAULT_KC_UAL_2, DEFAULT_PARANET_UAL, DEFAULT_SERVICE_UAL } from '../support/test-constants.js';
+import { TEST_ADDRESSES } from '../support/test-constants.js';
+import { makeKCUAL, makeParanetUAL, makeServiceUAL } from '../support/ual-factory.js';
 
 function makeParanetPayload(overrides = {}) {
     return {
@@ -52,8 +53,8 @@ Then('the result should contain the paranet UAL', function () {
 // --- KC registration check ---
 
 Given('a KC UAL and a Paranet UAL', function () {
-    this.kcUAL = DEFAULT_KC_UAL_2;
-    this.paranetUAL = DEFAULT_PARANET_UAL;
+    this.kcUAL = makeKCUAL({ kcTokenId: 2 });
+    this.paranetUAL = makeParanetUAL();
 });
 
 When('I check if the KC is registered to the Paranet', async function () {
@@ -345,7 +346,7 @@ Then('the result should contain the service UAL', function () {
 });
 
 Given('service UALs to add', function () {
-    this.serviceUALs = [DEFAULT_SERVICE_UAL];
+    this.serviceUALs = [makeServiceUAL()];
 });
 
 When('I add the services to the Paranet', async function () {

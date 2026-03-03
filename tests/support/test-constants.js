@@ -21,12 +21,6 @@ export const TEST_ADDRESSES = {
     secondary: '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC',
 };
 
-export const DEFAULT_KC_UAL = `did:dkg:${TEST_CHAIN_NAME}/${MOCK_CONTRACT_ADDRESS.toLowerCase()}/1`;
-export const DEFAULT_KA_UAL = `did:dkg:${TEST_CHAIN_NAME}/${MOCK_CONTRACT_ADDRESS.toLowerCase()}/1/1`;
-export const DEFAULT_PARANET_UAL = `did:dkg:${TEST_CHAIN_NAME}/${MOCK_CONTRACT_ADDRESS.toLowerCase()}/1/1`;
-export const DEFAULT_KC_UAL_2 = `did:dkg:${TEST_CHAIN_NAME}/${MOCK_CONTRACT_ADDRESS.toLowerCase()}/2`;
-export const DEFAULT_SERVICE_UAL = `did:dkg:${TEST_CHAIN_NAME}/${MOCK_CONTRACT_ADDRESS.toLowerCase()}/3/1`;
-
 export const SPARQL_QUERIES = {
     construct: 'CONSTRUCT { ?s ?p ?o } WHERE { ?s ?p ?o } LIMIT 10',
     select: 'SELECT ?s ?p ?o WHERE { ?s ?p ?o } LIMIT 10',

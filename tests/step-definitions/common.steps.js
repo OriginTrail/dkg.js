@@ -5,9 +5,7 @@ import { makeClientConfig } from '../support/config-factory.js';
 import { createNodeApiStubs } from '../support/mocks/node-api-mock.js';
 import { createBlockchainServiceStubs } from '../support/mocks/blockchain-service-mock.js';
 import { loadFixture, loadTextFixture } from '../support/fixture-loader.js';
-import {
-    DEFAULT_KC_UAL, DEFAULT_KA_UAL, DEFAULT_PARANET_UAL,
-} from '../support/test-constants.js';
+import { makeKCUAL, makeKAUAL, makeParanetUAL, makeServiceUAL } from '../support/ual-factory.js';
 
 Given('I have a valid Hardhat blockchain configuration', function () {
     this.config = makeClientConfig();
@@ -39,19 +37,23 @@ Given('I have content that is neither JSON-LD nor N-Quads', function () {
 });
 
 Given('a default KC UAL', function () {
-    this.ual = DEFAULT_KC_UAL;
+    this.ual = makeKCUAL();
 });
 
 Given('a default KA UAL', function () {
-    this.ual = DEFAULT_KA_UAL;
+    this.ual = makeKAUAL();
 });
 
 Given('a default Paranet UAL', function () {
-    this.paranetUAL = DEFAULT_PARANET_UAL;
+    this.paranetUAL = makeParanetUAL();
+});
+
+Given('a default service UAL', function () {
+    this.serviceUAL = makeServiceUAL();
 });
 
 Given('a valid UAL for an existing asset', function () {
-    this.ual = DEFAULT_KC_UAL;
+    this.ual = makeKCUAL();
 });
 
 Given('I have valid N-Quads content', function () {

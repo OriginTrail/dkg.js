@@ -1,4 +1,4 @@
-import { MOCK_CONTRACT_ADDRESS, TEST_CHAIN_NAME } from './test-env.js';
+import { MOCK_CONTRACT_ADDRESS, TEST_CHAIN_NAME } from './test-constants.js';
 
 const BASE_CONTRACT = MOCK_CONTRACT_ADDRESS.toLowerCase();
 

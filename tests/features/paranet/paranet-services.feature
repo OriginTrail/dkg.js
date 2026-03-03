@@ -8,7 +8,7 @@ Feature: Paranet Services
     And the blockchain service is mocked
 
   Scenario: Create a Paranet service
-    Given a service UAL "did:dkg:hardhat1:31337/0x5fbdb2315678afecb367f032d93f642f64180aa3/1/1"
+    Given a default service UAL
     When I create a Paranet service with name "TestService" and description "A test service"
     Then the service creation should succeed
     And the result should contain the service UAL
