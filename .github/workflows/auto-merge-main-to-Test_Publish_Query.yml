@@ -32,7 +32,7 @@ jobs:
 
       - name: Merge v8/develop into Test_Publish_Query
         run: |
-          git merge origin/v8/develop --no-edit || echo "Merge failed but continuing"
+          git merge origin/v8/develop --no-edit
 
       - name: Push updated branch
         run: git push origin HEAD:Test_Publish_Query
