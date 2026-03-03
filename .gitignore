@@ -17,3 +17,4 @@ assets
 mainnet_base.html
 mainnet_base.json
 mochawesome-report
+tests/reports/

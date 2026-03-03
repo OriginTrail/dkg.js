@@ -5,22 +5,25 @@ runs:
   steps:
     - name: Setup NodeJS
       id: nodejs
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
-        node-version: 16.x
+        node-version: 20.x
         cache: npm
 
     - name: Cache node modules
       id: cache-node-modules
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: '**/node_modules'
         key: ${{ runner.os }}-node-modules-${{ hashFiles('**/package-lock.json') }}
         restore-keys: |
-            ${{ runner.os }}-node-modules-${{ hashFiles('**/package-lock.json') }}
             ${{ runner.os }}-node-modules-
 
     - if: steps.cache-node-modules.outputs.cache-hit != 'true'
       name: Install dependencies
       shell: bash
-      run: npm ci
+      run: |
+        npm ci --ignore-scripts
+        npm install --no-save @rollup/rollup-linux-x64-gnu 2>/dev/null || true
+        npm rebuild
+        npm run --if-present postinstall
