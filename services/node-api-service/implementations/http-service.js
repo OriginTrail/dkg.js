@@ -249,8 +249,6 @@ export default class HttpService {
             status: OPERATION_STATUSES.PENDING,
         };
         let retries = 0;
-        const startTime = Date.now();
-        const maxTotalTime = 300_000; // 5 minutes total timeout
 
         const axios_config = {
             method: 'get',
@@ -258,18 +256,6 @@ export default class HttpService {
             headers: this.prepareRequestConfig(authToken),
         };
         do {
-            // Check for total timeout
-            if (Date.now() - startTime >= maxTotalTime) {
-                response.data = {
-                    ...response.data,
-                    data: {
-                        errorType: 'DKG_CLIENT_ERROR',
-                        errorMessage: `Timeout: OT-node operation polling exceeded maximum wait time (5 minutes) - Operation: ${operation}, ID: ${operationId}`,
-                    },
-                };
-                break;
-            }
-
             if (retries > maxNumberOfRetries) {
                 const elapsedSec = Math.round((retries * frequency));
                 // eslint-disable-next-line no-console
