@@ -238,8 +238,8 @@ export default class HttpService {
         };
         let retries = 0;
         let finalityFailedExtraPolls = 0;
-        const MAX_FINALITY_EXTRA_POLLS = 30;
-        const FINALITY_EXTRA_POLL_INTERVAL = 4_000;
+        const MAX_FINALITY_EXTRA_POLLS = 4;
+        const FINALITY_EXTRA_POLL_INTERVAL = 3_000;
 
         const axios_config = {
             method: 'get',
