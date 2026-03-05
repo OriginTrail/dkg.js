@@ -1,0 +1,15 @@
+{
+    "status": "COMPLETED",
+    "data": {
+        "assertion": {
+            "public": [
+                "<http://example.org/product/1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Product> .",
+                "<http://example.org/product/1> <http://schema.org/name> \"DKG Test Product\" ."
+            ],
+            "private": []
+        },
+        "metadata": [
+            "<http://example.org/meta/1> <http://schema.org/dateCreated> \"2025-01-01\" ."
+        ]
+    }
+}

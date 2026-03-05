@@ -205,15 +205,15 @@ export default class BlockchainServiceBase {
         //             gasPrice = Math.round(Number(pendingTx.gasPrice) * blockchain.retryTxGasPriceMultiplier);
         //         } else {
         //             gasPrice = Math.round(
-        //                 (blockchain.gasPrice || (await this.getSmartGasPrice(blockchain))) *
+        //                 (blockchain.gasPrice || (await this.getGasPriceWeiWithFallback(blockchain))) *
         //                     blockchain.retryTxGasPriceMultiplier,
         //             );
         //         }
         //     } else {
-        //         gasPrice = blockchain.gasPrice || (await this.getSmartGasPrice(blockchain));
+        //         gasPrice = blockchain.gasPrice || (await this.getGasPriceWeiWithFallback(blockchain));
         //     }
         // } else {
-        //     gasPrice = blockchain.gasPrice || (await this.getSmartGasPrice(blockchain));
+        //     gasPrice = blockchain.gasPrice || (await this.getGasPriceWeiWithFallback(blockchain));
         // }
 
         const gasFeeOptions = await this.getGasFeeOptions(blockchain);
@@ -315,6 +315,19 @@ export default class BlockchainServiceBase {
             }
 
             if (!finalized) {
+                try {
+                    const lastReceipt = await web3Instance.eth.getTransactionReceipt(
+                        receipt.transactionHash,
+                    );
+                    if (lastReceipt) {
+                        const finalizedBlock = await web3Instance.eth.getBlock('finalized');
+                        if (finalizedBlock && finalizedBlock.number >= lastReceipt.blockNumber) {
+                            return lastReceipt;
+                        }
+                    }
+                } catch (_finalCheck) {
+                    // Final receipt check failed; throw the original timeout error
+                }
                 throw new Error('Transaction was not finalized within the expected time frame.');
             }
 
@@ -519,6 +532,25 @@ export default class BlockchainServiceBase {
             if (requestData?.paymaster && requestData?.paymaster !== ZERO_ADDRESS) {
                 // Handle the case when payer is passed
             } else {
+                const senderBalance = await this.callContractFunction(
+                    'Token',
+                    'balanceOf',
+                    [sender],
+                    blockchain,
+                );
+
+                if (BigInt(senderBalance) < BigInt(requestData.tokenAmount)) {
+                    const balance = Number(senderBalance) / 1e18;
+                    const required = Number(requestData.tokenAmount) / 1e18;
+
+                    throw new Error(
+                        `Insufficient TRAC token balance to publish. ` +
+                            `Wallet ${sender} has ${balance} TRAC, ` +
+                            `but the publish operation requires ${required} TRAC. ` +
+                            `Please fund your wallet with more TRAC tokens to proceed.`,
+                    );
+                }
+
                 await this.increaseKnowledgeCollectionAllowance(
                     sender,
                     requestData.tokenAmount,
@@ -544,6 +576,12 @@ export default class BlockchainServiceBase {
                     'mintKnowledgeCollection',
                     [paranetKaContract, paranetTokenId, Object.values(requestData)],
                     blockchain,
+                );
+            }
+
+            if (receipt == null) {
+                throw new Error(
+                    'Transaction returned a null receipt. The RPC may be unreliable.',
                 );
             }
 
@@ -1490,22 +1528,11 @@ export default class BlockchainServiceBase {
     }
 
     /**
-     * Estimate safe gas price using eth_feeHistory (EIP-1559 style)
-     * @param {Object} blockchain - Blockchain configuration
-     * @returns {Promise<BigInt>} Estimated gas price in wei
-     */
-    async estimateGasPriceFromFeeHistory(blockchain) {
-        const fees = await this.estimateEip1559Fees(blockchain);
-        return fees.maxFeePerGas;
-    }
-
-    /**
-     * Get gas price with EIP-1559 estimation (with fallback)
-     * Tries eth_feeHistory first, falls back to legacy methods
+     * Get preferred gas price in wei: try EIP-1559 fee history, fall back to legacy network gas price.
      * @param {Object} blockchain - Blockchain configuration
      * @returns {Promise<string>} Gas price in wei (as string for web3 compatibility)
      */
-    async getSmartGasPrice(blockchain) {
+    async getGasPriceWeiWithFallback(blockchain) {
         try {
             const { maxFeePerGas } = await this.estimateEip1559Fees(blockchain);
             return maxFeePerGas.toString();
@@ -1524,7 +1551,7 @@ export default class BlockchainServiceBase {
 
     normalizeGasMode(gasMode) {
         const requested = (gasMode || '').toLowerCase();
-        if ([GAS_MODES.LEGACY, GAS_MODES.EIP1559].includes(requested)) {
+        if (Object.values(GAS_MODES).includes(requested)) {
             return requested;
         }
         return DEFAULT_PARAMETERS.GAS_MODE;
@@ -1559,11 +1586,15 @@ export default class BlockchainServiceBase {
         if (desiredMode === GAS_MODES.EIP1559 && !supportsEip1559) {
             // eslint-disable-next-line no-console
             console.warn(
-                'EIP-1559 gas mode requested but eth_feeHistory unsupported; falling back to legacy gasPrice',
+                'EIP-1559 gas mode requested but eth_feeHistory is unsupported; skipping feeHistory retry and falling back to legacy gasPrice',
             );
         }
 
-        const legacyGasPrice = blockchain.gasPrice ?? (await this.getSmartGasPrice(blockchain));
+        const legacyGasPrice =
+            blockchain.gasPrice ??
+            (supportsEip1559
+                ? await this.getGasPriceWeiWithFallback(blockchain)
+                : await this.getNetworkGasPrice(blockchain));
 
         return {
             type: GAS_MODES.LEGACY,

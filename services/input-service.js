@@ -193,17 +193,17 @@ export default class InputService {
             BLOCKCHAINS[environment][name]?.gasPriceOracleLink ??
             undefined;
 
-        const envGasMode =
+        const getEnvGasMode = () =>
             typeof process !== 'undefined' && process?.env ? process.env.DKG_GAS_MODE : undefined;
+
         const requestedGasMode =
             options.blockchain?.gasMode ??
             this.config.blockchain?.gasMode ??
-            envGasMode ??
+            getEnvGasMode() ??
             DEFAULT_PARAMETERS.GAS_MODE;
-        const normalizedGasMode = [GAS_MODES.LEGACY, GAS_MODES.EIP1559].includes(
-            (requestedGasMode || '').toLowerCase(),
-        )
-            ? requestedGasMode.toLowerCase()
+        const normalizedRequestedGasMode = (requestedGasMode || '').toLowerCase();
+        const normalizedGasMode = Object.values(GAS_MODES).includes(normalizedRequestedGasMode)
+            ? normalizedRequestedGasMode
             : DEFAULT_PARAMETERS.GAS_MODE;
 
         const maxAllowance =

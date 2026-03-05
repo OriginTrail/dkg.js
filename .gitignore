@@ -19,7 +19,6 @@ summary_Node_01.json
 assets
 mainnet_base.html
 mainnet_base.json
-mochawesome-report
 errors_Node_25.json
 summary_Node_25.json
 errors_Node_26.json
@@ -43,4 +42,6 @@ ual-verification.log
 
 # All log files from test runs
 *.log
-*.md
+
+tests/reports/
+publisher_wallets_neuroweb.env

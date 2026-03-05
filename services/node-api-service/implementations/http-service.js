@@ -271,11 +271,22 @@ export default class HttpService {
             }
 
             if (retries > maxNumberOfRetries) {
+                const elapsedSec = Math.round((retries * frequency));
+                // eslint-disable-next-line no-console
+                console.warn(
+                    `[dkg.js] Operation ${operationId} (${operation}) did not complete after ` +
+                    `${retries} retries (~${elapsedSec}s). The operation may still be processing ` +
+                    `on the node. Consider increasing maxNumberOfRetries or frequency.`,
+                );
                 response.data = {
                     ...response.data,
                     data: {
                         errorType: 'DKG_CLIENT_ERROR',
-                        errorMessage: 'Unable to get results. Max number of retries reached.',
+                        errorMessage:
+                            `Unable to get results. Max number of retries reached ` +
+                            `(${retries} retries, ~${elapsedSec}s elapsed). ` +
+                            `Operation ID: ${operationId}. ` +
+                            `The operation may still be processing on the node.`,
                     },
                 };
                 break;

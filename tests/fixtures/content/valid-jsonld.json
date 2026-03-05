@@ -1,0 +1,14 @@
+{
+    "public": {
+        "@context": "http://schema.org",
+        "@type": "Product",
+        "@id": "http://example.org/product/1",
+        "name": "DKG Test Product",
+        "description": "A product for testing Knowledge Asset creation",
+        "manufacturer": {
+            "@type": "Organization",
+            "@id": "http://example.org/org/traceLabs",
+            "name": "Trace Labs"
+        }
+    }
+}

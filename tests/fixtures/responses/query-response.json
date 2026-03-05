@@ -1,0 +1,10 @@
+{
+    "status": "COMPLETED",
+    "data": [
+        {
+            "subject": "http://example.org/product/1",
+            "predicate": "http://schema.org/name",
+            "object": "DKG Test Product"
+        }
+    ]
+}
