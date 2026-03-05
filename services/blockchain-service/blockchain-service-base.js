@@ -258,57 +258,57 @@ export default class BlockchainServiceBase {
         let reminingTime = 0;
         let receipt = initialReceipt;
         let finalized = false;
+        let lastFinalizedBlock = 0;
 
         try {
-            while (
-                !finalized &&
-                Date.now() - startTime + reminingTime < blockchain.transactionFinalityMaxWaitTime
-            ) {
+            while (!finalized) {
+                const elapsed = Date.now() - startTime + reminingTime;
+
                 try {
-                    // Check if the block containing the transaction is finalized
                     const finalizedBlockNumber = (await web3Instance.eth.getBlock('finalized'))
                         .number;
+
                     if (finalizedBlockNumber >= receipt.blockNumber) {
                         finalized = true;
                         break;
-                    } else {
-                        let currentReceipt = await web3Instance.eth.getTransactionReceipt(
-                            receipt.transactionHash,
-                        );
-                        if (currentReceipt && currentReceipt.blockNumber === receipt.blockNumber) {
-                            // Transaction is still in the same block, wait and check again
-                        } else if (
-                            currentReceipt &&
-                            currentReceipt.blockNumber !== receipt.blockNumber
-                        ) {
-                            // Transaction has been re-included in a different block
-                            receipt = currentReceipt; // Update the receipt with the new block information
-                        } else {
-                            // Transaction is no longer mined, wait for it to be mined again
-                            const reminingStartTime = Date.now();
-                            while (
-                                !currentReceipt &&
-                                Date.now() - reminingStartTime <
-                                    blockchain.transactionReminingMaxWaitTime
-                            ) {
-                                await sleepForMilliseconds(
-                                    blockchain.transactionReminingPollingInterval,
-                                );
-                                currentReceipt = await web3Instance.eth.getTransactionReceipt(
-                                    receipt.transactionHash,
-                                );
-                            }
-                            if (!currentReceipt) {
-                                throw new Error(
-                                    'Transaction was not re-mined within the expected time frame.',
-                                );
-                            }
-                            reminingTime = Date.now() - reminingStartTime;
-                            receipt = currentReceipt; // Update the receipt
-                        }
-                        // Wait before the next check
-                        await sleepForMilliseconds(blockchain.transactionFinalityPollingInterval);
                     }
+
+                    const finalityProgressing = finalizedBlockNumber > lastFinalizedBlock;
+                    lastFinalizedBlock = finalizedBlockNumber;
+
+                    if (elapsed >= blockchain.transactionFinalityMaxWaitTime && !finalityProgressing) {
+                        break;
+                    }
+
+                    let currentReceipt = await web3Instance.eth.getTransactionReceipt(
+                        receipt.transactionHash,
+                    );
+                    if (currentReceipt && currentReceipt.blockNumber !== receipt.blockNumber) {
+                        receipt = currentReceipt;
+                    } else if (!currentReceipt) {
+                        const reminingStartTime = Date.now();
+                        while (
+                            !currentReceipt &&
+                            Date.now() - reminingStartTime <
+                                blockchain.transactionReminingMaxWaitTime
+                        ) {
+                            await sleepForMilliseconds(
+                                blockchain.transactionReminingPollingInterval,
+                            );
+                            currentReceipt = await web3Instance.eth.getTransactionReceipt(
+                                receipt.transactionHash,
+                            );
+                        }
+                        if (!currentReceipt) {
+                            throw new Error(
+                                'Transaction was not re-mined within the expected time frame.',
+                            );
+                        }
+                        reminingTime = Date.now() - reminingStartTime;
+                        receipt = currentReceipt;
+                    }
+
+                    await sleepForMilliseconds(blockchain.transactionFinalityPollingInterval);
                 } catch (error) {
                     throw new Error(`Error during finality polling: ${error.message}`);
                 }
@@ -316,14 +316,21 @@ export default class BlockchainServiceBase {
 
             if (!finalized) {
                 try {
-                    const lastReceipt = await web3Instance.eth.getTransactionReceipt(
+                    const currentReceipt = await web3Instance.eth.getTransactionReceipt(
                         receipt.transactionHash,
                     );
-                    if (lastReceipt) {
+                    if (currentReceipt) {
                         const finalizedBlock = await web3Instance.eth.getBlock('finalized');
-                        if (finalizedBlock && finalizedBlock.number >= lastReceipt.blockNumber) {
-                            return lastReceipt;
+                        if (finalizedBlock && finalizedBlock.number >= currentReceipt.blockNumber) {
+                            return currentReceipt;
                         }
+                        // eslint-disable-next-line no-console
+                        console.warn(
+                            `[dkg.js] Transaction ${receipt.transactionHash} not finalized within timeout ` +
+                            `but is still mined in block ${currentReceipt.blockNumber}. ` +
+                            `Finalized block: ${finalizedBlock?.number ?? 'unknown'}. Returning receipt.`,
+                        );
+                        return currentReceipt;
                     }
                 } catch (_finalCheck) {
                     // Final receipt check failed; throw the original timeout error
