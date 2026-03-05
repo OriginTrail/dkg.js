@@ -632,7 +632,7 @@ export default class AssetOperationsManager {
      */
     async create(content, options = {}, stepHooks = emptyHooks) {
         const MAX_PUBLISH_RETRIES = 5;
-        const RETRY_DELAYS = [30_000, 45_000, 60_000, 60_000, 60_000];
+        const RETRY_DELAYS = [5_000, 10_000, 15_000, 20_000, 30_000];
         let publishOperationOutput;
         let publishRetry = 0;
 
