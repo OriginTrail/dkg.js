@@ -610,20 +610,50 @@ export default class AssetOperationsManager {
      * @returns {Object} Object containing UAL, publicAssertionId and operation status.
      */
     async create(content, options = {}, stepHooks = emptyHooks) {
-        const publishOperationOutput = await this.publishAssetPhase(content, options);
-        const { datasetRoot, publishOperationId, publishOperationResult } = publishOperationOutput;
+        const MAX_PUBLISH_RETRIES = 3;
+        let publishOperationOutput;
+        let publishRetry = 0;
 
-        if (
-            publishOperationResult.status !== OPERATION_STATUSES.COMPLETED &&
-            !publishOperationResult.data.minAcksReached
-        ) {
+        for (;;) {
+            publishOperationOutput = await this.publishAssetPhase(content, options);
+            const { publishOperationResult } = publishOperationOutput;
+
+            if (
+                publishOperationResult.status === OPERATION_STATUSES.COMPLETED ||
+                publishOperationResult.data?.minAcksReached
+            ) {
+                break;
+            }
+
+            const errorMessage = (
+                publishOperationResult.data?.errorMessage ||
+                publishOperationResult.data?.data?.errorMessage ||
+                ''
+            ).toLowerCase();
+
+            const isFinalityTimeout =
+                errorMessage.includes('finality') ||
+                errorMessage.includes('maximum wait time') ||
+                errorMessage.includes('timeout');
+
+            if (isFinalityTimeout && publishRetry < MAX_PUBLISH_RETRIES) {
+                publishRetry += 1;
+                await sleepForMilliseconds(5000);
+                continue;
+            }
+
             return {
-                datasetRoot,
+                datasetRoot: publishOperationOutput.datasetRoot,
                 operation: {
-                    publish: getOperationStatusObject(publishOperationResult, publishOperationId),
+                    publish: getOperationStatusObject(
+                        publishOperationResult,
+                        publishOperationOutput.publishOperationId,
+                    ),
                 },
             };
         }
+
+        const { datasetRoot, publishOperationId, publishOperationResult } = publishOperationOutput;
 
         const mintOperationOutput = await this.mintKnowledgeCollectionPhase(
             publishOperationOutput,
