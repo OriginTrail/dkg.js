@@ -6,6 +6,7 @@ import {
     resolveUAL,
     toNQuads,
     toJSONLD,
+    sleepForMilliseconds,
 } from '../services/utilities.js';
 import {
     OPERATIONS,
@@ -407,19 +408,44 @@ export default class AssetOperationsManager {
             publishOperationResult,
             contentAssetStorageAddress,
             blockchain,
+            endpoint,
+            port,
+            authToken,
+            frequency,
             epochsNum,
             immutable,
             tokenAmount,
             payer,
         } = publishPayload;
 
-        const { signatures } = publishOperationResult.data;
+        let resolvedResult = publishOperationResult;
+
+        if (!resolvedResult.data?.publisherNodeSignature) {
+            await sleepForMilliseconds((frequency || 5) * 1000);
+            resolvedResult = await this.nodeApiService.getOperationResult(
+                endpoint,
+                port,
+                authToken,
+                OPERATIONS.PUBLISH,
+                1,
+                frequency || 5,
+                publishOperationId,
+            );
+            if (!resolvedResult.data?.publisherNodeSignature) {
+                throw new Error(
+                    `Publish operation completed but publisher node signature is missing after retry. ` +
+                        `Operation ID: ${publishOperationId}.`,
+                );
+            }
+        }
+
+        const { signatures } = resolvedResult.data;
 
         const {
             identityId: publisherNodeIdentityId,
             r: publisherNodeR,
             vs: publisherNodeVS,
-        } = publishOperationResult.data.publisherNodeSignature;
+        } = resolvedResult.data.publisherNodeSignature;
 
         const identityIds = [];
         const r = [];

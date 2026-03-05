@@ -315,6 +315,19 @@ export default class BlockchainServiceBase {
             }
 
             if (!finalized) {
+                try {
+                    const lastReceipt = await web3Instance.eth.getTransactionReceipt(
+                        receipt.transactionHash,
+                    );
+                    if (lastReceipt) {
+                        const finalizedBlock = await web3Instance.eth.getBlock('finalized');
+                        if (finalizedBlock && finalizedBlock.number >= lastReceipt.blockNumber) {
+                            return lastReceipt;
+                        }
+                    }
+                } catch (_finalCheck) {
+                    // Final receipt check failed; throw the original timeout error
+                }
                 throw new Error('Transaction was not finalized within the expected time frame.');
             }
 
@@ -554,6 +567,12 @@ export default class BlockchainServiceBase {
                     'mintKnowledgeCollection',
                     [paranetKaContract, paranetTokenId, Object.values(requestData)],
                     blockchain,
+                );
+            }
+
+            if (receipt == null) {
+                throw new Error(
+                    'Transaction returned a null receipt. The RPC may be unreliable.',
                 );
             }
 

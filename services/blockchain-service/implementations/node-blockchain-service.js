@@ -86,12 +86,15 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
         const web3Instance = await this.getWeb3Instance(blockchain);
         let contractInstance = await this.getContractInstance(contractName, blockchain);
 
+        const MAX_TX_RETRIES = 3;
+        let retryCount = 0;
         let receipt;
         let lastSentGasPrice;
+        let lastTxHash;
         let simulationSucceeded = false;
-        let transactionRetried = false;
+        let contractRetried = false;
 
-        while (receipt === undefined) {
+        while (receipt == null) {
             try {
                 const tx = await this.prepareTransaction(
                     contractInstance,
@@ -100,7 +103,6 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
                     blockchain,
                 );
                 const nonce = await this.allocateNonce(blockchain);
-                // Track what we sent in case we need to retry without a receipt.
                 lastSentGasPrice = tx.gasPrice ?? tx.maxFeePerGas;
                 simulationSucceeded = true;
 
@@ -108,13 +110,18 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
                     { ...tx, nonce },
                     blockchain.privateKey,
                 );
+                lastTxHash = createdTransaction.transactionHash;
 
                 receipt = await web3Instance.eth.sendSignedTransaction(
                     createdTransaction.rawTransaction,
                 );
 
+                if (receipt == null) {
+                    continue;
+                }
+
                 const actualGasPrice =
-                    receipt?.effectiveGasPrice ?? receipt?.gasPrice ?? lastSentGasPrice;
+                    receipt.effectiveGasPrice ?? receipt.gasPrice ?? lastSentGasPrice;
                 lastSentGasPrice = actualGasPrice;
                 blockchain.previousTxGasPrice = actualGasPrice;
 
@@ -122,19 +129,58 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
                     receipt = await this.waitForTransactionFinalization(receipt, blockchain);
                 }
             } catch (error) {
+                const errorMsg = (error.message || '').toLowerCase();
+                const isTimeoutError =
+                    errorMsg.includes('timeout exceeded') ||
+                    errorMsg.includes('was not mined') ||
+                    errorMsg.includes('not finalized') ||
+                    errorMsg.includes('transaction finalization');
+
+                if (simulationSucceeded && isTimeoutError && lastTxHash) {
+                    try {
+                        const existingReceipt =
+                            await web3Instance.eth.getTransactionReceipt(lastTxHash);
+                        if (existingReceipt) {
+                            receipt = existingReceipt;
+                            const actualGasPrice =
+                                receipt.effectiveGasPrice ?? receipt.gasPrice ?? lastSentGasPrice;
+                            blockchain.previousTxGasPrice = actualGasPrice;
+                            continue;
+                        }
+                    } catch (_receiptCheckErr) {
+                        // Receipt check failed; fall through to retry logic
+                    }
+                }
+
                 if (
                     simulationSucceeded &&
-                    !transactionRetried &&
+                    isTimeoutError &&
+                    retryCount < MAX_TX_RETRIES
+                ) {
+                    retryCount += 1;
+                    blockchain.retryTx = true;
+                    const previousGas = BigInt(lastSentGasPrice || 0);
+                    lastSentGasPrice = (previousGas * 120n / 100n).toString();
+                    blockchain.previousTxGasPrice = lastSentGasPrice;
+                    blockchain.gasPrice = lastSentGasPrice;
+                    continue;
+                }
+
+                if (
+                    simulationSucceeded &&
+                    !contractRetried &&
                     blockchain.handleNotMinedError &&
-                    TRANSACTION_RETRY_ERRORS.some((errorMsg) =>
-                        error.message.toLowerCase().includes(errorMsg),
+                    TRANSACTION_RETRY_ERRORS.some((retryErr) =>
+                        errorMsg.includes(retryErr),
                     )
                 ) {
-                    transactionRetried = true;
+                    contractRetried = true;
                     blockchain.retryTx = true;
-                    // Prefer actual paid price; fall back to what we sent if no receipt.
                     blockchain.previousTxGasPrice = lastSentGasPrice;
-                } else if (!transactionRetried && /revert|VM Exception/i.test(error.message)) {
+                    continue;
+                }
+
+                if (!contractRetried && /revert|VM Exception/i.test(error.message)) {
                     let status;
                     try {
                         status = await contractInstance.methods.status().call();
@@ -145,14 +191,13 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
                     if (!status && contractName !== 'ParanetIncentivesPool') {
                         await this.updateContractInstance(contractName, blockchain, true);
                         contractInstance = await this.getContractInstance(contractName, blockchain);
-                        transactionRetried = true;
+                        contractRetried = true;
                         blockchain.retryTx = true;
-                    } else {
-                        throw error;
+                        continue;
                     }
-                } else {
-                    throw error;
                 }
+
+                throw error;
             }
         }
 
