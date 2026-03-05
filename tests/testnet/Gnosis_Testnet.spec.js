@@ -612,7 +612,7 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
             ual = actualUal;
           } else {
             console.log(`❌ Publish failed | No UAL | Operation ID: ${operationId}`);
-            ual = 'did:dkg:gnosis:10200/0x592aae7abeed0ecf399c2628b3d18f769c544383/57402';
+            ual = 'did:dkg:gnosis:10200/0x592aae7abeed0ecf399c2628b3d18f769c544383/511807';
             console.log(`ℹ️  Using fallback UAL for remaining operations: ${ual}`);
           }
 
