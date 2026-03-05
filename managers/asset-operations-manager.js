@@ -631,13 +631,14 @@ export default class AssetOperationsManager {
      * @returns {Object} Object containing UAL, publicAssertionId and operation status.
      */
     async create(content, options = {}, stepHooks = emptyHooks) {
-        const MAX_PUBLISH_RETRIES = 3;
+        const MAX_PUBLISH_RETRIES = 5;
+        const RETRY_DELAYS = [10_000, 20_000, 30_000, 45_000, 60_000];
         let publishOperationOutput;
         let publishRetry = 0;
 
         for (;;) {
             publishOperationOutput = await this.publishAssetPhase(content, options);
-            const { publishOperationResult } = publishOperationOutput;
+            let { publishOperationResult } = publishOperationOutput;
 
             if (
                 publishOperationResult.status === OPERATION_STATUSES.COMPLETED ||
@@ -659,7 +660,45 @@ export default class AssetOperationsManager {
 
             if (isFinalityTimeout && publishRetry < MAX_PUBLISH_RETRIES) {
                 publishRetry += 1;
-                await sleepForMilliseconds(5000);
+                const delay = RETRY_DELAYS[Math.min(publishRetry - 1, RETRY_DELAYS.length - 1)];
+
+                // eslint-disable-next-line no-console
+                console.warn(
+                    `[dkg.js] Publish failed with finality timeout (attempt ${publishRetry}/${MAX_PUBLISH_RETRIES}). ` +
+                    `Re-polling operation ${publishOperationOutput.publishOperationId} in ${delay / 1000}s...`,
+                );
+                await sleepForMilliseconds(delay);
+
+                const {
+                    endpoint, port, authToken, frequency,
+                } = publishOperationOutput;
+                const repollResult = await this.nodeApiService.getOperationResult(
+                    endpoint,
+                    port,
+                    authToken,
+                    OPERATIONS.PUBLISH,
+                    1,
+                    frequency || 5,
+                    publishOperationOutput.publishOperationId,
+                );
+
+                if (
+                    repollResult.status === OPERATION_STATUSES.COMPLETED ||
+                    repollResult.data?.minAcksReached
+                ) {
+                    // eslint-disable-next-line no-console
+                    console.warn(
+                        `[dkg.js] Operation ${publishOperationOutput.publishOperationId} ` +
+                        `completed on re-poll after finality timeout.`,
+                    );
+                    publishOperationOutput.publishOperationResult = repollResult;
+                    break;
+                }
+
+                // eslint-disable-next-line no-console
+                console.warn(
+                    `[dkg.js] Re-poll still shows failure. Retrying full publish (attempt ${publishRetry}/${MAX_PUBLISH_RETRIES})...`,
+                );
                 continue;
             }
 
