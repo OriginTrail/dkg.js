@@ -73,7 +73,7 @@ function getNodeIdFromName(nodeName) {
 }
 
 const nodes = [
-  { name: 'Node 01', hostname: 'https://v6-pegasus-node-01.origin-trail.network' },
+  { name: 'Node 01', hostname: 'http://localhost' },
   { name: 'Node 04', hostname: 'https://v6-pegasus-node-04.origin-trail.network' },
   { name: 'Node 05', hostname: 'https://v6-pegasus-node-05.origin-trail.network' },
   { name: 'Node 06', hostname: 'https://v6-pegasus-node-06.origin-trail.network' },

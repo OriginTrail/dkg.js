@@ -492,6 +492,37 @@ export default class AssetOperationsManager {
         let knowledgeCollectionId;
         let mintKnowledgeCollectionReceipt;
 
+        console.log(`[DEBUG createKC] publisherNodeIdentityId=${publisherNodeIdentityId} (type=${typeof publisherNodeIdentityId})`);
+        console.log(`[DEBUG createKC] publisherNodeR=${publisherNodeR}`);
+        console.log(`[DEBUG createKC] publisherNodeVS=${publisherNodeVS}`);
+        console.log(`[DEBUG createKC] merkleRoot=${datasetRoot}`);
+        console.log(`[DEBUG createKC] identityIds=[${identityIds.join(',')}] (${identityIds.length} sigs)`);
+
+        // Verify publisher signature: does vs match (v, s)?
+        const pubSigFull = resolvedResult.data.publisherNodeSignature;
+        console.log(`[DEBUG createKC] publisher v=${pubSigFull.v}, s=${pubSigFull.s}`);
+        const sBigInt = BigInt(pubSigFull.s);
+        const expectedVS = pubSigFull.v === 28
+            ? '0x' + (sBigInt | (1n << 255n)).toString(16).padStart(64, '0')
+            : '0x' + sBigInt.toString(16).padStart(64, '0');
+        const vsMatch = expectedVS.toLowerCase() === String(publisherNodeVS).toLowerCase();
+        console.log(`[DEBUG createKC] expected vs=${expectedVS}`);
+        console.log(`[DEBUG createKC] actual   vs=${publisherNodeVS}`);
+        console.log(`[DEBUG createKC] VS MATCH: ${vsMatch}`);
+
+        // Also verify recovery: does recovering from (v,r,s) give the expected signer?
+        try {
+            const { recoverAddress: ra, hashMessage: hm, getBytes: gb, solidityPackedKeccak256: spk } = ethers;
+            const msgHash = spk(['uint72', 'bytes32'], [publisherNodeIdentityId, datasetRoot]);
+            const recoveredFromVRS = ra(hm(gb(msgHash)), { v: pubSigFull.v, r: pubSigFull.r, s: pubSigFull.s });
+            console.log(`[DEBUG createKC] recovered signer (v,r,s): ${recoveredFromVRS}`);
+            const recoveredFromRVS = ra(hm(gb(msgHash)), { r: publisherNodeR, yParityAndHighBitOfS: publisherNodeVS });
+            console.log(`[DEBUG createKC] recovered signer (r,vs):  ${recoveredFromRVS}`);
+            console.log(`[DEBUG createKC] signers match: ${recoveredFromVRS.toLowerCase() === recoveredFromRVS.toLowerCase()}`);
+        } catch (recErr) {
+            console.log(`[DEBUG createKC] recovery check error: ${recErr.message}`);
+        }
+
         try {
         ({ knowledgeCollectionId, receipt: mintKnowledgeCollectionReceipt } =
             await this.blockchainService.createKnowledgeCollection(
@@ -632,13 +663,13 @@ export default class AssetOperationsManager {
      */
     async create(content, options = {}, stepHooks = emptyHooks) {
         const MAX_PUBLISH_RETRIES = 5;
-        const RETRY_DELAYS = [10_000, 20_000, 30_000, 45_000, 60_000];
+        const RETRY_DELAYS = [30_000, 45_000, 60_000, 60_000, 60_000];
         let publishOperationOutput;
         let publishRetry = 0;
 
         for (;;) {
             publishOperationOutput = await this.publishAssetPhase(content, options);
-            let { publishOperationResult } = publishOperationOutput;
+            const { publishOperationResult } = publishOperationOutput;
 
             if (
                 publishOperationResult.status === OPERATION_STATUSES.COMPLETED ||
@@ -655,8 +686,7 @@ export default class AssetOperationsManager {
 
             const isFinalityTimeout =
                 errorMessage.includes('finality') ||
-                errorMessage.includes('maximum wait time') ||
-                errorMessage.includes('timeout');
+                errorMessage.includes('maximum wait time');
 
             if (isFinalityTimeout && publishRetry < MAX_PUBLISH_RETRIES) {
                 publishRetry += 1;
@@ -664,41 +694,11 @@ export default class AssetOperationsManager {
 
                 // eslint-disable-next-line no-console
                 console.warn(
-                    `[dkg.js] Publish failed with finality timeout (attempt ${publishRetry}/${MAX_PUBLISH_RETRIES}). ` +
-                    `Re-polling operation ${publishOperationOutput.publishOperationId} in ${delay / 1000}s...`,
+                    `[dkg.js] Publish failed with node-side finality timeout ` +
+                    `(attempt ${publishRetry}/${MAX_PUBLISH_RETRIES}). ` +
+                    `Waiting ${delay / 1000}s for blockchain to progress before retrying...`,
                 );
                 await sleepForMilliseconds(delay);
-
-                const {
-                    endpoint, port, authToken, frequency,
-                } = publishOperationOutput;
-                const repollResult = await this.nodeApiService.getOperationResult(
-                    endpoint,
-                    port,
-                    authToken,
-                    OPERATIONS.PUBLISH,
-                    1,
-                    frequency || 5,
-                    publishOperationOutput.publishOperationId,
-                );
-
-                if (
-                    repollResult.status === OPERATION_STATUSES.COMPLETED ||
-                    repollResult.data?.minAcksReached
-                ) {
-                    // eslint-disable-next-line no-console
-                    console.warn(
-                        `[dkg.js] Operation ${publishOperationOutput.publishOperationId} ` +
-                        `completed on re-poll after finality timeout.`,
-                    );
-                    publishOperationOutput.publishOperationResult = repollResult;
-                    break;
-                }
-
-                // eslint-disable-next-line no-console
-                console.warn(
-                    `[dkg.js] Re-poll still shows failure. Retrying full publish (attempt ${publishRetry}/${MAX_PUBLISH_RETRIES})...`,
-                );
                 continue;
             }
 

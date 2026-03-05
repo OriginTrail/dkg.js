@@ -249,6 +249,9 @@ export default class HttpService {
             status: OPERATION_STATUSES.PENDING,
         };
         let retries = 0;
+        let finalityFailedExtraPolls = 0;
+        const MAX_FINALITY_EXTRA_POLLS = 30;
+        const FINALITY_EXTRA_POLL_INTERVAL = 4_000;
 
         const axios_config = {
             method: 'get',
@@ -285,6 +288,48 @@ export default class HttpService {
                 response = await axios(axios_config);
             } catch (e) {
                 response = { data: { status: 'NETWORK ERROR' } };
+            }
+
+            if (
+                response.data.status === OPERATION_STATUSES.FAILED &&
+                operation === 'publish' &&
+                finalityFailedExtraPolls < MAX_FINALITY_EXTRA_POLLS
+            ) {
+                const errMsg = (
+                    response.data.data?.errorMessage || ''
+                ).toLowerCase();
+                const isFinalityTimeout =
+                    errMsg.includes('finality') ||
+                    errMsg.includes('maximum wait time');
+                if (isFinalityTimeout) {
+                    finalityFailedExtraPolls += 1;
+                    if (finalityFailedExtraPolls === 1) {
+                        // eslint-disable-next-line no-console
+                        console.warn(
+                            `[dkg.js] Operation ${operationId} reported FAILED with finality timeout. ` +
+                            `Continuing to poll for up to ${MAX_FINALITY_EXTRA_POLLS * FINALITY_EXTRA_POLL_INTERVAL / 1000}s ` +
+                            `in case the node recovers...`,
+                        );
+                    }
+                    // eslint-disable-next-line no-await-in-loop
+                    await sleepForMilliseconds(FINALITY_EXTRA_POLL_INTERVAL);
+                    try {
+                        // eslint-disable-next-line no-await-in-loop
+                        response = await axios(axios_config);
+                    } catch (e) {
+                        response = { data: { status: 'NETWORK ERROR' } };
+                    }
+                    if (
+                        response.data.status === OPERATION_STATUSES.COMPLETED ||
+                        response.data.data?.minAcksReached
+                    ) {
+                        // eslint-disable-next-line no-console
+                        console.warn(
+                            `[dkg.js] Operation ${operationId} recovered after finality timeout ` +
+                            `(${finalityFailedExtraPolls} extra polls). Proceeding.`,
+                        );
+                    }
+                }
             }
         } while (
             response.data.status !== OPERATION_STATUSES.COMPLETED &&

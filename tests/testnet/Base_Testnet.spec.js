@@ -73,7 +73,7 @@ function getNodeIdFromName(nodeName) {
 }
 
 const nodes = [
-  { name: 'Node 01', hostname: 'https://v6-pegasus-node-01.origin-trail.network' },
+  { name: 'Node 01', hostname: 'http://localhost' },
   { name: 'Node 04', hostname: 'https://v6-pegasus-node-04.origin-trail.network' },
   { name: 'Node 05', hostname: 'https://v6-pegasus-node-05.origin-trail.network' },
   { name: 'Node 06', hostname: 'https://v6-pegasus-node-06.origin-trail.network' },
@@ -611,7 +611,7 @@ describe('DKG Asset Lifecycle on Base Testnet', function () {
             ual = actualUal;
           } else {
             console.log(`❌ Publish failed | No UAL | Operation ID: ${operationId}`);
-            ual = 'did:dkg:base:84532/0xd5550173b0f7b8766ab2770e4ba86caf714a5af5/237041';
+            ual = 'did:dkg:base:84532/0xd5550173b0f7b8766ab2770e4ba86caf714a5af5/8703';
             console.log(`ℹ️  Using fallback UAL for remaining operations: ${ual}`);
           }
 
