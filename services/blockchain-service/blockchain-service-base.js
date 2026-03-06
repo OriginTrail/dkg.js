@@ -1467,7 +1467,7 @@ export default class BlockchainServiceBase {
         return (maxBaseFee * BigInt(100 + Number(gasPriceBufferPercent))) / 100n + maxPriorityFee;
     }
 
-    buildEip1559FeesFromHistory(feeHistory, gasPriceBufferPercent = 0) {
+    buildEip1559FeesFromHistory(feeHistory, gasPriceBufferPercent = 0, blockchainName = '') {
         const baseFees = Array.from(feeHistory.baseFeePerGas ?? []);
         const priorityFees = Array.from(feeHistory.priorityFees ?? []);
 
@@ -1478,8 +1478,10 @@ export default class BlockchainServiceBase {
         const maxBaseFee = baseFees.reduce((max, bf) => (bf > max ? bf : max), 0n);
         let maxPriorityFeePerGas = priorityFees.reduce((max, pf) => (pf > max ? pf : max), 0n);
 
-        if (maxPriorityFeePerGas < MIN_PRIORITY_FEE_WEI) {
+        if (this.isGnosis(blockchainName) && maxPriorityFeePerGas < MIN_PRIORITY_FEE_WEI) {
             maxPriorityFeePerGas = MIN_PRIORITY_FEE_WEI;
+        } else if (maxPriorityFeePerGas === 0n) {
+            maxPriorityFeePerGas = 1n;
         }
 
         const maxFeePerGas = this.applyGasPriceBuffer(
@@ -1555,6 +1557,7 @@ export default class BlockchainServiceBase {
             const { maxFeePerGas, maxPriorityFeePerGas } = this.buildEip1559FeesFromHistory(
                 feeHistory,
                 blockchain.gasPriceBufferPercent ?? 0,
+                blockchain.name ?? '',
             );
 
             return {
