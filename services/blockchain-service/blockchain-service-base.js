@@ -12,6 +12,7 @@ import {
     FEE_HISTORY_BLOCK_COUNT,
     GAS_MODES,
     DEFAULT_PARAMETERS,
+    MIN_PRIORITY_FEE_WEI,
 } from '../../constants/constants.js';
 import emptyHooks from '../../util/empty-hooks.js';
 import { sleepForMilliseconds } from '../utilities.js';
@@ -1498,7 +1499,11 @@ export default class BlockchainServiceBase {
         }
 
         const maxBaseFee = baseFees.reduce((max, bf) => (bf > max ? bf : max), 0n);
-        const maxPriorityFeePerGas = priorityFees.reduce((max, pf) => (pf > max ? pf : max), 0n);
+        let maxPriorityFeePerGas = priorityFees.reduce((max, pf) => (pf > max ? pf : max), 0n);
+
+        if (maxPriorityFeePerGas < MIN_PRIORITY_FEE_WEI) {
+            maxPriorityFeePerGas = MIN_PRIORITY_FEE_WEI;
+        }
 
         const maxFeePerGas = this.applyGasPriceBuffer(
             maxBaseFee,

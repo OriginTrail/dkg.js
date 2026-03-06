@@ -238,6 +238,8 @@ export const DEFAULT_GAS_PRICE_WEI = {
     GNOSIS: '6000000000',
 };
 
+export const MIN_PRIORITY_FEE_WEI = 1_500_000_000n;
+
 export const PARANET_KNOWLEDGE_ASSET_ACCESS_POLICY = {
     OPEN: 0,
 };
