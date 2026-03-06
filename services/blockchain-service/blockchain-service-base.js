@@ -417,6 +417,43 @@ export default class BlockchainServiceBase {
         );
     }
 
+    async waitForBlockConfirmation(receipt, blockchain, confirmations = 1) {
+        await this.ensureBlockchainInfo(blockchain);
+        const web3Instance = await this.getWeb3Instance(blockchain);
+        const polling = blockchain.transactionFinalityPollingInterval || 6_000;
+        const maxWaitTime = blockchain.transactionFinalityMaxWaitTime || 300_000;
+        const startTime = Date.now();
+
+        while (Date.now() - startTime < maxWaitTime) {
+            try {
+                const currentBlock = await web3Instance.eth.getBlockNumber();
+                if (currentBlock >= receipt.blockNumber + confirmations) {
+                    const currentReceipt = await web3Instance.eth.getTransactionReceipt(
+                        receipt.transactionHash,
+                    );
+                    if (currentReceipt && currentReceipt.blockNumber === receipt.blockNumber) {
+                        return currentReceipt;
+                    }
+                    if (currentReceipt) {
+                        return currentReceipt;
+                    }
+                }
+            } catch (_rpcErr) {
+                // RPC hiccup; retry on next poll
+            }
+            await sleepForMilliseconds(polling);
+        }
+
+        const finalReceipt = await web3Instance.eth.getTransactionReceipt(
+            receipt.transactionHash,
+        );
+        if (finalReceipt) return finalReceipt;
+
+        throw new Error(
+            `Timeout: Block confirmation exceeded maximum wait time (${maxWaitTime / 1000}s)`
+        );
+    }
+
     async getContractAddress(contractName, blockchain, force = false) {
         await this.ensureBlockchainInfo(blockchain);
 
