@@ -373,6 +373,10 @@ export default class BlockchainServiceBase {
                         eventData.id.toString() === expectedEventId.toString());
 
                 if (eventData && idMatches) {
+                    if (initialReceipt.blockNumber !== currentReceipt.blockNumber) {
+                        console.log('Re-org detected, initial receipt block number:', initialReceipt.blockNumber, 'current receipt block number:', currentReceipt.blockNumber);
+                    }
+
                     return { receipt: currentReceipt, eventData };
                 }
             }
