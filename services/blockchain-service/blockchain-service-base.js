@@ -181,43 +181,20 @@ export default class BlockchainServiceBase {
         const publicKey = await this.getPublicKey(blockchain);
         const encodedABI = await contractInstance.methods[functionName](...args).encodeABI();
 
-        let gasLimit = Number(
-                await contractInstance.methods[functionName](...args).estimateGas({
-                    from: publicKey,
-                }),
-            );
-            gasLimit = Math.round(gasLimit * blockchain.gasLimitMultiplier);
-
-        // Retry bumping is disabled by default. If you want to re-enable it, consider bumping
-        // legacy gasPrice or EIP-1559 maxFeePerGas/maxPriorityFeePerGas with retryTxGasPriceMultiplier.
-        // Example (legacy-only):
-        // let gasPrice;
-        // if (blockchain.previousTxGasPrice && blockchain.retryTx) {
-        //     gasPrice = Math.round(blockchain.previousTxGasPrice * blockchain.retryTxGasPriceMultiplier);
-        // } else if (blockchain.forceReplaceTxs) {
-        //     const currentNonce = await web3Instance.eth.getTransactionCount(publicKey, 'pending');
-        //     const confirmedNonce = await web3Instance.eth.getTransactionCount(publicKey, 'latest');
-        //     if (currentNonce > confirmedNonce) {
-        //         const pendingBlock = await web3Instance.eth.getBlock('pending', true);
-        //         const pendingTx = Object.values(pendingBlock.transactions).find(
-        //             (tx) => tx.from.toLowerCase() === publicKey.toLowerCase() && tx.nonce === confirmedNonce,
-        //         );
-        //         if (pendingTx) {
-        //             gasPrice = Math.round(Number(pendingTx.gasPrice) * blockchain.retryTxGasPriceMultiplier);
-        //         } else {
-        //             gasPrice = Math.round(
-        //                 (blockchain.gasPrice || (await this.getGasPriceWeiWithFallback(blockchain))) *
-        //                     blockchain.retryTxGasPriceMultiplier,
-        //             );
-        //         }
-        //     } else {
-        //         gasPrice = blockchain.gasPrice || (await this.getGasPriceWeiWithFallback(blockchain));
-        //     }
-        // } else {
-        //     gasPrice = blockchain.gasPrice || (await this.getGasPriceWeiWithFallback(blockchain));
-        // }
-
         const gasFeeOptions = await this.getGasFeeOptions(blockchain);
+
+        const estimateParams = { from: publicKey };
+        if (gasFeeOptions.type === GAS_MODES.EIP1559) {
+            estimateParams.maxFeePerGas = gasFeeOptions.maxFeePerGas;
+            estimateParams.maxPriorityFeePerGas = gasFeeOptions.maxPriorityFeePerGas;
+        } else {
+            estimateParams.gasPrice = gasFeeOptions.gasPrice;
+        }
+
+        let gasLimit = Number(
+            await contractInstance.methods[functionName](...args).estimateGas(estimateParams),
+        );
+        gasLimit = Math.round(gasLimit * blockchain.gasLimitMultiplier);
 
         if (blockchain.simulateTxs) {
             const simulationTx = {
