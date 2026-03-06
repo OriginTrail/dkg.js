@@ -113,6 +113,17 @@ export const TRANSACTION_RETRY_ERRORS = [
     'replacement transaction underpriced',
 ];
 
+export const TRANSIENT_EXECUTION_ERRORS = [
+    'transaction execution fails',
+    'feetoolow',
+    'socket hang up',
+    'econnreset',
+    'econnrefused',
+    'server error',
+    'bad gateway',
+    'service unavailable',
+];
+
 export const WEBSOCKET_PROVIDER_OPTIONS = {
     reconnect: {
         auto: true,

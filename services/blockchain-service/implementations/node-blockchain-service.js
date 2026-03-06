@@ -3,6 +3,7 @@
 import Web3 from 'web3';
 import {
     TRANSACTION_RETRY_ERRORS,
+    TRANSIENT_EXECUTION_ERRORS,
     WEBSOCKET_PROVIDER_OPTIONS,
 } from '../../../constants/constants.js';
 import BlockchainServiceBase from '../blockchain-service-base.js';
@@ -177,6 +178,21 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
                     contractRetried = true;
                     blockchain.retryTx = true;
                     blockchain.previousTxGasPrice = lastSentGasPrice;
+                    continue;
+                }
+
+                const isTransientError = TRANSIENT_EXECUTION_ERRORS.some((te) =>
+                    errorMsg.includes(te),
+                );
+                if (isTransientError && retryCount < MAX_TX_RETRIES) {
+                    retryCount += 1;
+                    const delayMs = 2000 * retryCount;
+                    // eslint-disable-next-line no-console
+                    console.warn(
+                        `[dkg.js] Transient error for ${functionName}: ${error.message}. ` +
+                            `Retrying in ${delayMs}ms (${retryCount}/${MAX_TX_RETRIES})`,
+                    );
+                    await new Promise((r) => setTimeout(r, delayMs));
                     continue;
                 }
 
