@@ -611,7 +611,7 @@ describe('DKG Asset Lifecycle on Base Testnet', function () {
             ual = actualUal;
           } else {
             console.log(`❌ Publish failed | No UAL | Operation ID: ${operationId}`);
-            ual = 'did:dkg:base:84532/0xd5550173b0f7b8766ab2770e4ba86caf714a5af5/8703';
+            ual = 'did:dkg:base:84532/0xd5550173b0F7b8766AB2770E4Ba86Caf714A5Af5/872442/1';
             console.log(`ℹ️  Using fallback UAL for remaining operations: ${ual}`);
           }
 
