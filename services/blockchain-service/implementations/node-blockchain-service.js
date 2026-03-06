@@ -181,9 +181,10 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
                     continue;
                 }
 
-                const isTransientError = TRANSIENT_EXECUTION_ERRORS.some((te) =>
-                    errorMsg.includes(te),
-                );
+                const isPermanentRevert = /revert|vm exception/i.test(errorMsg);
+                const isTransientError =
+                    !isPermanentRevert &&
+                    TRANSIENT_EXECUTION_ERRORS.some((te) => errorMsg.includes(te));
                 if (isTransientError && retryCount < MAX_TX_RETRIES) {
                     retryCount += 1;
                     const delayMs = 2000 * retryCount;
