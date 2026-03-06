@@ -524,17 +524,18 @@ export default class AssetOperationsManager {
         const minimumBlockConfirmations = options.minimumBlockConfirmations ?? 1;
 
         if (blockchain.name && blockchain.name.startsWith('otp') && minimumBlockConfirmations > 0) {
-            const { receipt: finalizedMintReceipt, eventData } =
-                await this.blockchainService.waitForEventFinality(
+            try {
+                await this.blockchainService.waitForBlockConfirmation(
                     mintKnowledgeCollectionReceipt,
-                    'KnowledgeCollectionCreated',
-                    knowledgeCollectionId,
                     blockchain,
                     minimumBlockConfirmations,
                 );
-
-            mintKnowledgeCollectionReceipt = finalizedMintReceipt;
-            knowledgeCollectionId = parseInt(eventData.id, 10);
+            } catch (error) {
+                const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, knowledgeCollectionId);
+                error.UAL = UAL;
+                error.operationId = publishOperationId;
+                throw error;
+            }
         }
 
         const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, knowledgeCollectionId);
