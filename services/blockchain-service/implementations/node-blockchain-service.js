@@ -192,6 +192,14 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
                         `[dkg.js] Transient error for ${functionName}: ${error.message}. ` +
                             `Retrying in ${delayMs}ms (${retryCount}/${MAX_TX_RETRIES})`,
                     );
+                    const addr = (await this.getPublicKey(blockchain))?.toLowerCase();
+                    if (addr) {
+                        const freshNonce = await web3Instance.eth.getTransactionCount(
+                            addr,
+                            'pending',
+                        );
+                        this.nextNonces.set(addr, freshNonce);
+                    }
                     await new Promise((r) => setTimeout(r, delayMs));
                     continue;
                 }
