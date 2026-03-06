@@ -87,7 +87,7 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
         const web3Instance = await this.getWeb3Instance(blockchain);
         let contractInstance = await this.getContractInstance(contractName, blockchain);
 
-        const MAX_TX_RETRIES = 5;
+        const MAX_TX_RETRIES = 10;
         let retryCount = 0;
         let receipt;
         let lastSentGasPrice;
@@ -190,11 +190,6 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
                     const baseDelay = Math.min(2000 * 2 ** (retryCount - 1), 30000);
                     const jitter = Math.floor(baseDelay * 0.3 * Math.random());
                     const delayMs = baseDelay + jitter;
-                    // eslint-disable-next-line no-console
-                    console.warn(
-                        `[dkg.js] Transient error for ${functionName}: ${error.message}. ` +
-                            `Retrying in ${delayMs}ms (${retryCount}/${MAX_TX_RETRIES})`,
-                    );
                     const addr = (await this.getPublicKey(blockchain))?.toLowerCase();
                     if (addr) {
                         const freshNonce = await web3Instance.eth.getTransactionCount(
