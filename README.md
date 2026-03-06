@@ -31,7 +31,7 @@
   </summary>
   <ol>
     <li>
-      <a href="#📚-about-the-project">📚 About The Project</a>
+      <a href="#-about-the-project">📚 About The Project</a>
       <ul>
         <li><a href="#what-is-the-decentralized-knowledge-graph">What is the Decentralized Knowledge Graph?</a></li>
         <li><a href="#the-origintrail-dkg-architecture">The OriginTrail DKG Architecture</a></li>
@@ -39,16 +39,16 @@
       </ul>
     </li>
     <li>
-      <a href="#🚀-getting-started">🚀 Getting Started</a>
+      <a href="#-getting-started">🚀 Getting Started</a>
       <ul>
         <li><a href="#prerequisites">Prerequisites</a></li>
         <li><a href="#installation">Installation</a></li>
       </ul>
     </li>
-    <li><a href="#📄-license">📄 License</a></li>
-    <li><a href="#🤝-contributing">🤝 Contributing</a></li>
-    <li><a href="#❤️-thanks-to-all-contributors">❤️ Contributors</a></li>
-    <li><a href="#📰-social-media">📰 Social Media</a></li>
+    <li><a href="#-license">📄 License</a></li>
+    <li><a href="#-contributing">🤝 Contributing</a></li>
+    <li><a href="#-thanks-to-all-contributors!">❤️ Contributors</a></li>
+    <li><a href="#-social-media">📰 Social Media</a></li>
   </ol>
 </details>
 
