@@ -73,7 +73,7 @@ function getNodeIdFromName(nodeName) {
 }
 
 const nodes = [
-  { name: 'Node 01', hostname: 'http://localhost' },
+  { name: 'Node 01', hostname: 'https://v6-pegasus-node-01.origin-trail.network' },
   { name: 'Node 04', hostname: 'https://v6-pegasus-node-04.origin-trail.network' },
   { name: 'Node 05', hostname: 'https://v6-pegasus-node-05.origin-trail.network' },
   { name: 'Node 06', hostname: 'https://v6-pegasus-node-06.origin-trail.network' },
@@ -405,6 +405,7 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
       const remoteGetDurations = [];
 
       const failedAssets = [];
+      let firstSuccessfulUal = null;
 
       const PARALLEL_KA_BATCH_SIZE = Number(process.env.TEST_PARALLEL_KA_BATCH_SIZE || 10);
       const TEST_KA_BATCHES = Number(process.env.TEST_KA_BATCHES || 10);
@@ -555,6 +556,7 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
                 mintedChildUalTotal += mintedChildCount;
                 publishSuccess++;
                 publishSucceeded = true;
+                if (!firstSuccessfulUal) firstSuccessfulUal = ual;
               })(),
               new Promise((_, reject) =>
                 setTimeout(() => reject(new Error(`Timeout after 6 minutes during "publishing" on ${stepNodeName}`)), 6 * 60 * 1000)
@@ -612,8 +614,13 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
             ual = actualUal;
           } else {
             console.log(`❌ Publish failed | No UAL | Operation ID: ${operationId}`);
-            ual = 'did:dkg:gnosis:10200/0x592aae7abeed0ecf399c2628b3d18f769c544383/511807';
-            console.log(`ℹ️  Using fallback UAL for remaining operations: ${ual}`);
+            if (firstSuccessfulUal) {
+              ual = firstSuccessfulUal;
+              console.log(`ℹ️  Using first successful UAL for remaining operations: ${ual}`);
+            } else {
+              ual = null;
+              console.log(`ℹ️  No successful publish yet, skipping get operations`);
+            }
           }
 
           const reason = actualUal ? 'Publish failed but UAL exists' : 'Publish failed — No UAL';
@@ -627,15 +634,11 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
         try {
           step = 'querying';
           const queryStart = Date.now();
+          const sparql = TEST_COMPACT_CHUNK_MODE
+            ? `SELECT ?s ?weight WHERE { ?s <https://dkg.synthetic/vocab/weight> ?weight . } LIMIT 10`
+            : `PREFIX schema: <http://schema.org/> SELECT ?s ?name ?description WHERE { ?s schema:name ?name ; schema:description ?description . } LIMIT 10`;
           const queryResult = await Promise.race([
-            DkgClient.graph.query(
-              `PREFIX schema: <http://schema.org/>
-               SELECT ?s ?name ?description
-               WHERE {
-                 ?s schema:name ?name ; schema:description ?description .
-               }`,
-              'SELECT'
-            ),
+            DkgClient.graph.query(sparql, 'SELECT'),
             new Promise((_, reject) =>
               setTimeout(() => reject(new Error(`Timeout after 6 minutes during "querying" on ${stepNodeName}`)), 6 * 60 * 1000)
             ),
@@ -652,24 +655,29 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
           queryFail++;
         }
 
-        try {
-          step = 'local get';
-          const localGetStart = Date.now();
-          const localGetResult = await Promise.race([
-            DkgClient.asset.get(ual),
-            new Promise((_, reject) =>
-              setTimeout(() => reject(new Error(`Timeout after 6 minutes during "local get" on ${stepNodeName}`)), 6 * 60 * 1000)
-            ),
-          ]);
-          const localGetEnd = Date.now();
-          localGetDurations.push(localGetEnd - localGetStart);
-          assert.ok(localGetResult?.assertion);
-          console.log(`✅ Local Get Succeeded`);
-          localGetSuccess++;
-        } catch (error) {
-          logError(error, stepNodeName, step, null, kaNumber);
-          const reason = `Local Get failed — UAL: ${ual}`;
-          failedAssets.push(`KA #${kaNumber} (${reason})`);
+        if (ual) {
+          try {
+            step = 'local get';
+            const localGetStart = Date.now();
+            const localGetResult = await Promise.race([
+              DkgClient.asset.get(ual),
+              new Promise((_, reject) =>
+                setTimeout(() => reject(new Error(`Timeout after 6 minutes during "local get" on ${stepNodeName}`)), 6 * 60 * 1000)
+              ),
+            ]);
+            const localGetEnd = Date.now();
+            localGetDurations.push(localGetEnd - localGetStart);
+            assert.ok(localGetResult?.assertion);
+            console.log(`✅ Local Get Succeeded`);
+            localGetSuccess++;
+          } catch (error) {
+            logError(error, stepNodeName, step, null, kaNumber);
+            const reason = `Local Get failed — UAL: ${ual}`;
+            failedAssets.push(`KA #${kaNumber} (${reason})`);
+            localGetFail++;
+          }
+        } else {
+          console.log(`⏭️  Skipping local get — no valid UAL`);
           localGetFail++;
         }
 
@@ -679,36 +687,41 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
         const originalStepNodeName = stepNodeName;
         stepNodeName = remoteNode.name;
 
-        try {
-          const RemoteDkgClient = new DKG({
-            endpoint: remoteNode.hostname,
-            port: OT_NODE_PORT,
-            blockchain: {
-              name: BLOCKCHAIN_IDS.GNOSIS_TESTNET,
-              publicKey: getNodeWallet(getNodeIdFromName(remoteNode.name), walletSlot).publicKey,
-              privateKey: getNodeWallet(getNodeIdFromName(remoteNode.name), walletSlot).privateKey,
-            },
-            maxNumberOfRetries: 300,
-            frequency: 2,
-            contentType: 'all',
-            nodeApiVersion: '/v1',
-          });
-          const remoteGetStart = Date.now();
-          const remoteGetResult = await Promise.race([
-            RemoteDkgClient.asset.get(ual),
-            new Promise((_, reject) =>
-              setTimeout(() => reject(new Error(`Timeout after 6 minutes during "get" on ${stepNodeName}`)), 6 * 60 * 1000)
-            ),
-          ]);
-          const remoteGetEnd = Date.now();
-          remoteGetDurations.push(remoteGetEnd - remoteGetStart);
-          assert.ok(remoteGetResult?.assertion);
-          console.log(`✅ Get Succeeded on ${remoteNode.name}`);
-          remoteGetSuccess++;
-        } catch (error) {
-          logError(error, originalStepNodeName, step, remoteNode.name, kaNumber);
-          const reason = `Get failed — UAL: ${ual}`;
-          failedAssets.push(`KA #${kaNumber} (${reason})`);
+        if (ual) {
+          try {
+            const RemoteDkgClient = new DKG({
+              endpoint: remoteNode.hostname,
+              port: OT_NODE_PORT,
+              blockchain: {
+                name: BLOCKCHAIN_IDS.GNOSIS_TESTNET,
+                publicKey: getNodeWallet(getNodeIdFromName(remoteNode.name), walletSlot).publicKey,
+                privateKey: getNodeWallet(getNodeIdFromName(remoteNode.name), walletSlot).privateKey,
+              },
+              maxNumberOfRetries: 300,
+              frequency: 2,
+              contentType: 'all',
+              nodeApiVersion: '/v1',
+            });
+            const remoteGetStart = Date.now();
+            const remoteGetResult = await Promise.race([
+              RemoteDkgClient.asset.get(ual),
+              new Promise((_, reject) =>
+                setTimeout(() => reject(new Error(`Timeout after 6 minutes during "get" on ${stepNodeName}`)), 6 * 60 * 1000)
+              ),
+            ]);
+            const remoteGetEnd = Date.now();
+            remoteGetDurations.push(remoteGetEnd - remoteGetStart);
+            assert.ok(remoteGetResult?.assertion);
+            console.log(`✅ Get Succeeded on ${remoteNode.name}`);
+            remoteGetSuccess++;
+          } catch (error) {
+            logError(error, originalStepNodeName, step, remoteNode.name, kaNumber);
+            const reason = `Get failed — UAL: ${ual}`;
+            failedAssets.push(`KA #${kaNumber} (${reason})`);
+            remoteGetFail++;
+          }
+        } else {
+          console.log(`⏭️  Skipping remote get — no valid UAL`);
           remoteGetFail++;
         }
       };

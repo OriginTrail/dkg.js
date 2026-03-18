@@ -110,6 +110,7 @@ export const NEUROWEB_INCENTIVE_TYPE_CHAINS = [
 export const TRANSACTION_RETRY_ERRORS = [
     'transaction was not mined',
     'already known',
+    'alreadyknown',
     'replacement transaction underpriced',
 ];
 

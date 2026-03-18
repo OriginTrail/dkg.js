@@ -131,13 +131,15 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
                 }
             } catch (error) {
                 const errorMsg = (error.message || '').toLowerCase();
+                const isAlreadyKnown =
+                    errorMsg.includes('already known') || errorMsg.includes('alreadyknown');
                 const isTimeoutError =
                     errorMsg.includes('timeout exceeded') ||
                     errorMsg.includes('was not mined') ||
                     errorMsg.includes('not finalized') ||
                     errorMsg.includes('transaction finalization');
 
-                if (simulationSucceeded && isTimeoutError && lastTxHash) {
+                if (simulationSucceeded && (isTimeoutError || isAlreadyKnown) && lastTxHash) {
                     try {
                         const existingReceipt =
                             await web3Instance.eth.getTransactionReceipt(lastTxHash);
@@ -155,15 +157,18 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
 
                 if (
                     simulationSucceeded &&
-                    isTimeoutError &&
+                    (isTimeoutError || isAlreadyKnown) &&
                     retryCount < MAX_TX_RETRIES
                 ) {
                     retryCount += 1;
                     blockchain.retryTx = true;
-                    const previousGas = BigInt(lastSentGasPrice || 0);
-                    lastSentGasPrice = (previousGas * 120n / 100n).toString();
-                    blockchain.previousTxGasPrice = lastSentGasPrice;
-                    blockchain.gasPrice = lastSentGasPrice;
+                    if (!isAlreadyKnown) {
+                        const previousGas = BigInt(lastSentGasPrice || 0);
+                        lastSentGasPrice = (previousGas * 120n / 100n).toString();
+                        blockchain.previousTxGasPrice = lastSentGasPrice;
+                        blockchain.gasPrice = lastSentGasPrice;
+                    }
+                    await new Promise((r) => setTimeout(r, 3000));
                     continue;
                 }
 
@@ -182,6 +187,21 @@ export default class NodeBlockchainService extends BlockchainServiceBase {
                 }
 
                 const isPermanentRevert = /revert|vm exception/i.test(errorMsg);
+
+                if (simulationSucceeded && isPermanentRevert && retryCount < 2) {
+                    retryCount += 1;
+                    const addr = (await this.getPublicKey(blockchain))?.toLowerCase();
+                    if (addr) {
+                        const freshNonce = await web3Instance.eth.getTransactionCount(
+                            addr,
+                            'pending',
+                        );
+                        this.nextNonces.set(addr, freshNonce);
+                    }
+                    await new Promise((r) => setTimeout(r, 3000));
+                    continue;
+                }
+
                 const isTransientError =
                     !isPermanentRevert &&
                     TRANSIENT_EXECUTION_ERRORS.some((te) => errorMsg.includes(te));
