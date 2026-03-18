@@ -66,11 +66,47 @@ export default class BrowserBlockchainService extends BlockchainServiceBase {
             tx = await this.prepareTransaction(contractInstance, functionName, args, blockchain);
 
             let receipt = await contractInstance.methods[functionName](...args).send(tx);
+            if (receipt == null) {
+                throw new Error(
+                    `Transaction for ${functionName} returned a null receipt. The RPC may be unreliable.`,
+                );
+            }
             if (blockchain.name.startsWith('otp') && blockchain.waitNeurowebTxFinalization) {
                 receipt = await this.waitForTransactionFinalization(receipt, blockchain);
             }
             return receipt;
         } catch (error) {
+            const errorMsg = (error.message || '').toLowerCase();
+            const isTimeoutError =
+                errorMsg.includes('timeout exceeded') ||
+                errorMsg.includes('was not mined') ||
+                errorMsg.includes('not finalized') ||
+                errorMsg.includes('transaction finalization');
+
+            if (isTimeoutError && error.transactionHash) {
+                try {
+                    const web3Instance = await this.getWeb3Instance(blockchain);
+                    const existingReceipt = await web3Instance.eth.getTransactionReceipt(
+                        error.transactionHash,
+                    );
+                    if (existingReceipt) {
+                        let receipt = existingReceipt;
+                        if (
+                            blockchain.name.startsWith('otp') &&
+                            blockchain.waitNeurowebTxFinalization
+                        ) {
+                            receipt = await this.waitForTransactionFinalization(
+                                receipt,
+                                blockchain,
+                            );
+                        }
+                        return receipt;
+                    }
+                } catch (_receiptCheckErr) {
+                    // Receipt check failed; fall through to original error handling
+                }
+            }
+
             if (/revert|VM Exception/i.test(error.message)) {
                 let status;
                 try {

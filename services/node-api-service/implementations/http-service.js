@@ -192,6 +192,8 @@ export default class HttpService {
     ) {
         let retries = 0;
         let finality = 0;
+        const startTime = Date.now();
+        const maxTotalTime = 300_000; // 5 minutes total timeout
 
         const axios_config = {
             method: 'get',
@@ -201,9 +203,16 @@ export default class HttpService {
         };
 
         do {
+            // Check for total timeout
+            if (Date.now() - startTime >= maxTotalTime) {
+                throw Error(
+                    `Timeout: DKG finality exceeded maximum wait time (5 minutes) - Last finality: ${finality}, Required: ${requiredConfirmations}`
+                );
+            }
+
             if (retries > maxNumberOfRetries) {
                 throw Error(
-                    `Unable to achieve required confirmations. Max number of retries (${maxNumberOfRetries}) reached.`,
+                    `Unable to achieve required confirmations. Max number of retries (${maxNumberOfRetries}) reached. Last finality: ${finality}, Required: ${requiredConfirmations}`,
                 );
             }
 
@@ -217,7 +226,10 @@ export default class HttpService {
                 const response = await axios(axios_config);
                 finality = response.data.finality || 0;
             } catch (e) {
-                finality = 0;
+                // Don't reset finality to 0 on network errors, keep the last known value
+                // Only reset if we get a successful response with 0 finality
+                console.warn(`Warning: Network error during finality check for ${ual}: ${e.message}`);
+                // Don't increment finality, keep the last known value
             }
         } while (finality < requiredConfirmations && retries <= maxNumberOfRetries);
 
@@ -237,6 +249,9 @@ export default class HttpService {
             status: OPERATION_STATUSES.PENDING,
         };
         let retries = 0;
+        let finalityFailedExtraPolls = 0;
+        const MAX_FINALITY_EXTRA_POLLS = 4;
+        const FINALITY_EXTRA_POLL_INTERVAL = 3_000;
 
         const axios_config = {
             method: 'get',
@@ -245,11 +260,22 @@ export default class HttpService {
         };
         do {
             if (retries > maxNumberOfRetries) {
+                const elapsedSec = Math.round((retries * frequency));
+                // eslint-disable-next-line no-console
+                console.warn(
+                    `[dkg.js] Operation ${operationId} (${operation}) did not complete after ` +
+                    `${retries} retries (~${elapsedSec}s). The operation may still be processing ` +
+                    `on the node. Consider increasing maxNumberOfRetries or frequency.`,
+                );
                 response.data = {
                     ...response.data,
                     data: {
                         errorType: 'DKG_CLIENT_ERROR',
-                        errorMessage: 'Unable to get results. Max number of retries reached.',
+                        errorMessage:
+                            `Unable to get results. Max number of retries reached ` +
+                            `(${retries} retries, ~${elapsedSec}s elapsed). ` +
+                            `Operation ID: ${operationId}. ` +
+                            `The operation may still be processing on the node.`,
                     },
                 };
                 break;
@@ -262,6 +288,48 @@ export default class HttpService {
                 response = await axios(axios_config);
             } catch (e) {
                 response = { data: { status: 'NETWORK ERROR' } };
+            }
+
+            if (
+                response.data.status === OPERATION_STATUSES.FAILED &&
+                operation === 'publish' &&
+                finalityFailedExtraPolls < MAX_FINALITY_EXTRA_POLLS
+            ) {
+                const errMsg = (
+                    response.data.data?.errorMessage || ''
+                ).toLowerCase();
+                const isFinalityTimeout =
+                    errMsg.includes('finality') ||
+                    errMsg.includes('maximum wait time');
+                if (isFinalityTimeout) {
+                    finalityFailedExtraPolls += 1;
+                    if (finalityFailedExtraPolls === 1) {
+                        // eslint-disable-next-line no-console
+                        console.warn(
+                            `[dkg.js] Operation ${operationId} reported FAILED with finality timeout. ` +
+                            `Continuing to poll for up to ${MAX_FINALITY_EXTRA_POLLS * FINALITY_EXTRA_POLL_INTERVAL / 1000}s ` +
+                            `in case the node recovers...`,
+                        );
+                    }
+                    // eslint-disable-next-line no-await-in-loop
+                    await sleepForMilliseconds(FINALITY_EXTRA_POLL_INTERVAL);
+                    try {
+                        // eslint-disable-next-line no-await-in-loop
+                        response = await axios(axios_config);
+                    } catch (e) {
+                        response = { data: { status: 'NETWORK ERROR' } };
+                    }
+                    if (
+                        response.data.status === OPERATION_STATUSES.COMPLETED ||
+                        response.data.data?.minAcksReached
+                    ) {
+                        // eslint-disable-next-line no-console
+                        console.warn(
+                            `[dkg.js] Operation ${operationId} recovered after finality timeout ` +
+                            `(${finalityFailedExtraPolls} extra polls). Proceeding.`,
+                        );
+                    }
+                }
             }
         } while (
             response.data.status !== OPERATION_STATUSES.COMPLETED &&

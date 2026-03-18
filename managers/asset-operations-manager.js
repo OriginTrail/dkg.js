@@ -6,6 +6,7 @@ import {
     resolveUAL,
     toNQuads,
     toJSONLD,
+    sleepForMilliseconds,
 } from '../services/utilities.js';
 import {
     OPERATIONS,
@@ -407,19 +408,44 @@ export default class AssetOperationsManager {
             publishOperationResult,
             contentAssetStorageAddress,
             blockchain,
+            endpoint,
+            port,
+            authToken,
+            frequency,
             epochsNum,
             immutable,
             tokenAmount,
             payer,
         } = publishPayload;
 
-        const { signatures } = publishOperationResult.data;
+        let resolvedResult = publishOperationResult;
+
+        if (!resolvedResult.data?.publisherNodeSignature) {
+            await sleepForMilliseconds((frequency || 5) * 1000);
+            resolvedResult = await this.nodeApiService.getOperationResult(
+                endpoint,
+                port,
+                authToken,
+                OPERATIONS.PUBLISH,
+                1,
+                frequency || 5,
+                publishOperationId,
+            );
+            if (!resolvedResult.data?.publisherNodeSignature) {
+                throw new Error(
+                    `Publish operation completed but publisher node signature is missing after retry. ` +
+                        `Operation ID: ${publishOperationId}.`,
+                );
+            }
+        }
+
+        const { signatures } = resolvedResult.data;
 
         const {
             identityId: publisherNodeIdentityId,
             r: publisherNodeR,
             vs: publisherNodeVS,
-        } = publishOperationResult.data.publisherNodeSignature;
+        } = resolvedResult.data.publisherNodeSignature;
 
         const identityIds = [];
         const r = [];
@@ -466,6 +492,7 @@ export default class AssetOperationsManager {
         let knowledgeCollectionId;
         let mintKnowledgeCollectionReceipt;
 
+        try {
         ({ knowledgeCollectionId, receipt: mintKnowledgeCollectionReceipt } =
             await this.blockchainService.createKnowledgeCollection(
                 {
@@ -489,6 +516,11 @@ export default class AssetOperationsManager {
                 blockchain,
                 stepHooks,
             ));
+        } catch (error) {
+            // Attach operationId to blockchain transaction errors (no UAL yet at this stage)
+            error.operationId = publishOperationId;
+            throw error;
+        }
 
         // ------------------------------------------------------------------
         // Ensure KC minting transaction is reorg-safe by waiting until it is
@@ -498,17 +530,18 @@ export default class AssetOperationsManager {
         const minimumBlockConfirmations = options.minimumBlockConfirmations ?? 1;
 
         if (blockchain.name && blockchain.name.startsWith('otp') && minimumBlockConfirmations > 0) {
-            const { receipt: finalizedMintReceipt, eventData } =
-                await this.blockchainService.waitForEventFinality(
+            try {
+                await this.blockchainService.waitForBlockConfirmation(
                     mintKnowledgeCollectionReceipt,
-                    'KnowledgeCollectionCreated',
-                    knowledgeCollectionId,
                     blockchain,
                     minimumBlockConfirmations,
                 );
-
-            mintKnowledgeCollectionReceipt = finalizedMintReceipt;
-            knowledgeCollectionId = parseInt(eventData.id, 10);
+            } catch (error) {
+                const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, knowledgeCollectionId);
+                error.UAL = UAL;
+                error.operationId = publishOperationId;
+                throw error;
+            }
         }
 
         const UAL = deriveUAL(blockchain.name, contentAssetStorageAddress, knowledgeCollectionId);
@@ -527,11 +560,11 @@ export default class AssetOperationsManager {
      * Phase 3 of asset creation: poll node finality status for the minted asset.
      * @async
      * @param {string} UAL - Universal Asset Locator returned from minting.
+     * @param {string} publishOperationId - The publish operation ID for error tracking.
      * @param {Object} [options={}] - Finality options.
      * @returns {Object} Finality status details.
      */
-    async finalizePublishPhase(UAL, options = {}) {
-        // UAL should point to a knowledge collection (kcUAL), not a knowledge asset (kaUAL).
+    async finalizePublishPhase(UAL, publishOperationId, options = {}) {
         this.validationService.validateUAL(UAL);
 
         const {
@@ -554,6 +587,7 @@ export default class AssetOperationsManager {
 
         let finalityStatusResult = 0;
         if (minimumNumberOfFinalizationConfirmations > 0) {
+            try {
             finalityStatusResult = await this.nodeApiService.finalityStatus(
                 endpoint,
                 port,
@@ -563,6 +597,12 @@ export default class AssetOperationsManager {
                 maxNumberOfRetries,
                 frequency,
             );
+            } catch (error) {
+                // Attach UAL and operationId to the error so they can be logged even when finality fails
+                error.UAL = UAL;
+                error.operationId = publishOperationId;
+                throw error;
+            }
         }
 
         return {
@@ -584,20 +624,58 @@ export default class AssetOperationsManager {
      * @returns {Object} Object containing UAL, publicAssertionId and operation status.
      */
     async create(content, options = {}, stepHooks = emptyHooks) {
-        const publishOperationOutput = await this.publishAssetPhase(content, options);
-        const { datasetRoot, publishOperationId, publishOperationResult } = publishOperationOutput;
+        const MAX_PUBLISH_RETRIES = 5;
+        const RETRY_DELAYS = [5_000, 10_000, 15_000, 20_000, 30_000];
+        let publishOperationOutput;
+        let publishRetry = 0;
 
-        if (
-            publishOperationResult.status !== OPERATION_STATUSES.COMPLETED &&
-            !publishOperationResult.data.minAcksReached
-        ) {
+        for (;;) {
+            publishOperationOutput = await this.publishAssetPhase(content, options);
+            const { publishOperationResult } = publishOperationOutput;
+
+            if (
+                publishOperationResult.status === OPERATION_STATUSES.COMPLETED ||
+                publishOperationResult.data?.minAcksReached
+            ) {
+                break;
+            }
+
+            const errorMessage = (
+                publishOperationResult.data?.errorMessage ||
+                publishOperationResult.data?.data?.errorMessage ||
+                ''
+            ).toLowerCase();
+
+            const isFinalityTimeout =
+                errorMessage.includes('finality') ||
+                errorMessage.includes('maximum wait time');
+
+            if (isFinalityTimeout && publishRetry < MAX_PUBLISH_RETRIES) {
+                publishRetry += 1;
+                const delay = RETRY_DELAYS[Math.min(publishRetry - 1, RETRY_DELAYS.length - 1)];
+
+                // eslint-disable-next-line no-console
+                console.warn(
+                    `[dkg.js] Publish failed with node-side finality timeout ` +
+                    `(attempt ${publishRetry}/${MAX_PUBLISH_RETRIES}). ` +
+                    `Waiting ${delay / 1000}s for blockchain to progress before retrying...`,
+                );
+                await sleepForMilliseconds(delay);
+                continue;
+            }
+
             return {
-                datasetRoot,
+                datasetRoot: publishOperationOutput.datasetRoot,
                 operation: {
-                    publish: getOperationStatusObject(publishOperationResult, publishOperationId),
+                    publish: getOperationStatusObject(
+                        publishOperationResult,
+                        publishOperationOutput.publishOperationId,
+                    ),
                 },
             };
         }
+
+        const { datasetRoot, publishOperationId, publishOperationResult } = publishOperationOutput;
 
         const mintOperationOutput = await this.mintKnowledgeCollectionPhase(
             publishOperationOutput,
@@ -607,6 +685,7 @@ export default class AssetOperationsManager {
 
         const finalityOperationOutput = await this.finalizePublishPhase(
             mintOperationOutput.UAL,
+            publishOperationId,
             options,
         );
 

@@ -110,7 +110,19 @@ export const NEUROWEB_INCENTIVE_TYPE_CHAINS = [
 export const TRANSACTION_RETRY_ERRORS = [
     'transaction was not mined',
     'already known',
+    'alreadyknown',
     'replacement transaction underpriced',
+];
+
+export const TRANSIENT_EXECUTION_ERRORS = [
+    'transaction execution fails',
+    'feetoolow',
+    'socket hang up',
+    'econnreset',
+    'econnrefused',
+    'server error',
+    'bad gateway',
+    'service unavailable',
 ];
 
 export const WEBSOCKET_PROVIDER_OPTIONS = {
@@ -201,9 +213,9 @@ export const DEFAULT_PROXIMITY_SCORE_FUNCTIONS_PAIR_IDS = {
 export const DEFAULT_NEUROWEB_FINALITY_PARAMETERS = {
     WAIT_NEUROWEB_TX_FINALIZATION: false,
     TX_FINALITY_POLLING_INTERVAL: 6_000,
-    TX_FINALITY_MAX_WAIT_TIME: 60_000,
+    TX_FINALITY_MAX_WAIT_TIME: 300_000,
     TX_REMINING_POLLING_INTERVAL: 6_000,
-    TX_REMINING_MAX_WAIT_TIME: 60_000,
+    TX_REMINING_MAX_WAIT_TIME: 300_000, 
 };
 
 export const DEFAULT_PARAMETERS = {
@@ -237,6 +249,8 @@ export const DEFAULT_GAS_PRICE = {
 export const DEFAULT_GAS_PRICE_WEI = {
     GNOSIS: '6000000000',
 };
+
+export const MIN_PRIORITY_FEE_WEI = 1_500_000_000n;
 
 export const PARANET_KNOWLEDGE_ASSET_ACCESS_POLICY = {
     OPEN: 0,

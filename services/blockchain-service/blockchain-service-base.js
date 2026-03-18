@@ -12,6 +12,7 @@ import {
     FEE_HISTORY_BLOCK_COUNT,
     GAS_MODES,
     DEFAULT_PARAMETERS,
+    MIN_PRIORITY_FEE_WEI,
 } from '../../constants/constants.js';
 import emptyHooks from '../../util/empty-hooks.js';
 import { sleepForMilliseconds } from '../utilities.js';
@@ -180,43 +181,20 @@ export default class BlockchainServiceBase {
         const publicKey = await this.getPublicKey(blockchain);
         const encodedABI = await contractInstance.methods[functionName](...args).encodeABI();
 
+        const gasFeeOptions = await this.getGasFeeOptions(blockchain);
+
+        const estimateParams = { from: publicKey };
+        if (gasFeeOptions.type === GAS_MODES.EIP1559) {
+            estimateParams.maxFeePerGas = gasFeeOptions.maxFeePerGas;
+            estimateParams.maxPriorityFeePerGas = gasFeeOptions.maxPriorityFeePerGas;
+        } else {
+            estimateParams.gasPrice = gasFeeOptions.gasPrice;
+        }
+
         let gasLimit = Number(
-            await contractInstance.methods[functionName](...args).estimateGas({
-                from: publicKey,
-            }),
+            await contractInstance.methods[functionName](...args).estimateGas(estimateParams),
         );
         gasLimit = Math.round(gasLimit * blockchain.gasLimitMultiplier);
-
-        // Retry bumping is disabled by default. If you want to re-enable it, consider bumping
-        // legacy gasPrice or EIP-1559 maxFeePerGas/maxPriorityFeePerGas with retryTxGasPriceMultiplier.
-        // Example (legacy-only):
-        // let gasPrice;
-        // if (blockchain.previousTxGasPrice && blockchain.retryTx) {
-        //     gasPrice = Math.round(blockchain.previousTxGasPrice * blockchain.retryTxGasPriceMultiplier);
-        // } else if (blockchain.forceReplaceTxs) {
-        //     const currentNonce = await web3Instance.eth.getTransactionCount(publicKey, 'pending');
-        //     const confirmedNonce = await web3Instance.eth.getTransactionCount(publicKey, 'latest');
-        //     if (currentNonce > confirmedNonce) {
-        //         const pendingBlock = await web3Instance.eth.getBlock('pending', true);
-        //         const pendingTx = Object.values(pendingBlock.transactions).find(
-        //             (tx) => tx.from.toLowerCase() === publicKey.toLowerCase() && tx.nonce === confirmedNonce,
-        //         );
-        //         if (pendingTx) {
-        //             gasPrice = Math.round(Number(pendingTx.gasPrice) * blockchain.retryTxGasPriceMultiplier);
-        //         } else {
-        //             gasPrice = Math.round(
-        //                 (blockchain.gasPrice || (await this.getGasPriceWeiWithFallback(blockchain))) *
-        //                     blockchain.retryTxGasPriceMultiplier,
-        //             );
-        //         }
-        //     } else {
-        //         gasPrice = blockchain.gasPrice || (await this.getGasPriceWeiWithFallback(blockchain));
-        //     }
-        // } else {
-        //     gasPrice = blockchain.gasPrice || (await this.getGasPriceWeiWithFallback(blockchain));
-        // }
-
-        const gasFeeOptions = await this.getGasFeeOptions(blockchain);
 
         if (blockchain.simulateTxs) {
             const simulationTx = {
@@ -258,63 +236,83 @@ export default class BlockchainServiceBase {
         let reminingTime = 0;
         let receipt = initialReceipt;
         let finalized = false;
+        let lastFinalizedBlock = 0;
 
         try {
-            while (
-                !finalized &&
-                Date.now() - startTime + reminingTime < blockchain.transactionFinalityMaxWaitTime
-            ) {
+            while (!finalized) {
+                const elapsed = Date.now() - startTime + reminingTime;
+
                 try {
-                    // Check if the block containing the transaction is finalized
                     const finalizedBlockNumber = (await web3Instance.eth.getBlock('finalized'))
                         .number;
+
                     if (finalizedBlockNumber >= receipt.blockNumber) {
                         finalized = true;
                         break;
-                    } else {
-                        let currentReceipt = await web3Instance.eth.getTransactionReceipt(
-                            receipt.transactionHash,
-                        );
-                        if (currentReceipt && currentReceipt.blockNumber === receipt.blockNumber) {
-                            // Transaction is still in the same block, wait and check again
-                        } else if (
-                            currentReceipt &&
-                            currentReceipt.blockNumber !== receipt.blockNumber
-                        ) {
-                            // Transaction has been re-included in a different block
-                            receipt = currentReceipt; // Update the receipt with the new block information
-                        } else {
-                            // Transaction is no longer mined, wait for it to be mined again
-                            const reminingStartTime = Date.now();
-                            while (
-                                !currentReceipt &&
-                                Date.now() - reminingStartTime <
-                                    blockchain.transactionReminingMaxWaitTime
-                            ) {
-                                await sleepForMilliseconds(
-                                    blockchain.transactionReminingPollingInterval,
-                                );
-                                currentReceipt = await web3Instance.eth.getTransactionReceipt(
-                                    receipt.transactionHash,
-                                );
-                            }
-                            if (!currentReceipt) {
-                                throw new Error(
-                                    'Transaction was not re-mined within the expected time frame.',
-                                );
-                            }
-                            reminingTime = Date.now() - reminingStartTime;
-                            receipt = currentReceipt; // Update the receipt
-                        }
-                        // Wait before the next check
-                        await sleepForMilliseconds(blockchain.transactionFinalityPollingInterval);
                     }
+
+                    const finalityProgressing = finalizedBlockNumber > lastFinalizedBlock;
+                    lastFinalizedBlock = finalizedBlockNumber;
+
+                    if (elapsed >= blockchain.transactionFinalityMaxWaitTime && !finalityProgressing) {
+                        break;
+                    }
+
+                    let currentReceipt = await web3Instance.eth.getTransactionReceipt(
+                        receipt.transactionHash,
+                    );
+                    if (currentReceipt && currentReceipt.blockNumber !== receipt.blockNumber) {
+                        receipt = currentReceipt;
+                    } else if (!currentReceipt) {
+                        const reminingStartTime = Date.now();
+                        while (
+                            !currentReceipt &&
+                            Date.now() - reminingStartTime <
+                                blockchain.transactionReminingMaxWaitTime
+                        ) {
+                            await sleepForMilliseconds(
+                                blockchain.transactionReminingPollingInterval,
+                            );
+                            currentReceipt = await web3Instance.eth.getTransactionReceipt(
+                                receipt.transactionHash,
+                            );
+                        }
+                        if (!currentReceipt) {
+                            throw new Error(
+                                'Transaction was not re-mined within the expected time frame.',
+                            );
+                        }
+                        reminingTime = Date.now() - reminingStartTime;
+                        receipt = currentReceipt;
+                    }
+
+                    await sleepForMilliseconds(blockchain.transactionFinalityPollingInterval);
                 } catch (error) {
                     throw new Error(`Error during finality polling: ${error.message}`);
                 }
             }
 
             if (!finalized) {
+                try {
+                    const currentReceipt = await web3Instance.eth.getTransactionReceipt(
+                        receipt.transactionHash,
+                    );
+                    if (currentReceipt) {
+                        const finalizedBlock = await web3Instance.eth.getBlock('finalized');
+                        if (finalizedBlock && finalizedBlock.number >= currentReceipt.blockNumber) {
+                            return currentReceipt;
+                        }
+                        // eslint-disable-next-line no-console
+                        console.warn(
+                            `[dkg.js] Transaction ${receipt.transactionHash} not finalized within timeout ` +
+                            `but is still mined in block ${currentReceipt.blockNumber}. ` +
+                            `Finalized block: ${finalizedBlock?.number ?? 'unknown'}. Returning receipt.`,
+                        );
+                        return currentReceipt;
+                    }
+                } catch (_finalCheck) {
+                    // Final receipt check failed; throw the original timeout error
+                }
                 throw new Error('Transaction was not finalized within the expected time frame.');
             }
 
@@ -334,36 +332,35 @@ export default class BlockchainServiceBase {
         await this.ensureBlockchainInfo(blockchain);
         const web3Instance = await this.getWeb3Instance(blockchain);
 
-        // Guaranteed to be defined for OTP chains
         const polling = blockchain.transactionFinalityPollingInterval;
         const reminingPollingInterval = blockchain.transactionReminingPollingInterval;
+        const maxWaitTime = blockchain.transactionFinalityMaxWaitTime || 60_000;
 
         let receipt = initialReceipt;
+        const startTime = Date.now();
+
+        const isTimedOut = () => Date.now() - startTime >= maxWaitTime;
 
         // eslint-disable-next-line no-constant-condition
         while (true) {
+            if (isTimedOut()) break;
+
             // 1. Wait until the block containing the tx is at the required depth
             while (
                 (await web3Instance.eth.getBlockNumber()) <
                 receipt.blockNumber + confirmations
             ) {
+                if (isTimedOut()) break;
                 await sleepForMilliseconds(polling);
             }
+            if (isTimedOut()) break;
 
-            // 2. Verify the tx is still in that block
-            const block = await web3Instance.eth.getBlock(receipt.blockNumber, true);
+            // 2. Verify the tx receipt still exists and check for the event
+            const currentReceipt = await web3Instance.eth.getTransactionReceipt(
+                receipt.transactionHash,
+            );
 
-            const txStillIncluded =
-                block &&
-                block.transactions.some(
-                    (tx) => tx.hash.toLowerCase() === receipt.transactionHash.toLowerCase(),
-                );
-
-            if (txStillIncluded) {
-                const currentReceipt = await web3Instance.eth.getTransactionReceipt(
-                    receipt.transactionHash,
-                );
-
+            if (currentReceipt) {
                 const eventData = await this.decodeEventLogs(currentReceipt, eventName, blockchain);
 
                 const idMatches =
@@ -375,24 +372,86 @@ export default class BlockchainServiceBase {
                 if (eventData && idMatches) {
                     return { receipt: currentReceipt, eventData };
                 }
+                receipt = currentReceipt;
             }
 
-            // 3. Re-org detected: wait for tx to appear again
-            const timeoutMs = 60 * 1000; // 1 minute
-            const startTime = Date.now();
-            let newReceipt = null;
-            // eslint-disable-next-line no-await-in-loop
-            while (!newReceipt) {
-                if (Date.now() - startTime >= timeoutMs) {
-                    throw new Error(
-                        `Timeout: Transaction receipt for ${receipt.transactionHash} not found after 1 minute of re-mining polling.`,
-                    );
+            // 3. If receipt disappeared (re-org), wait for it to reappear
+            if (!currentReceipt) {
+                const reorgTimeoutMs = 60 * 1000;
+                const reorgStartTime = Date.now();
+                let newReceipt = null;
+                while (!newReceipt) {
+                    if (isTimedOut() || Date.now() - reorgStartTime >= reorgTimeoutMs) break;
+                    await sleepForMilliseconds(reminingPollingInterval);
+                    newReceipt = await web3Instance.eth.getTransactionReceipt(receipt.transactionHash);
                 }
-                await sleepForMilliseconds(reminingPollingInterval);
-                newReceipt = await web3Instance.eth.getTransactionReceipt(receipt.transactionHash);
+                if (!newReceipt) break;
+                receipt = newReceipt;
             }
-            receipt = newReceipt;
+
+            await sleepForMilliseconds(polling);
         }
+
+        // Grace check: one final attempt to find the event before throwing
+        try {
+            const finalReceipt = await web3Instance.eth.getTransactionReceipt(
+                receipt.transactionHash,
+            );
+            if (finalReceipt) {
+                const eventData = await this.decodeEventLogs(finalReceipt, eventName, blockchain);
+                const idMatches =
+                    expectedEventId == null ||
+                    (eventData &&
+                        eventData.id != null &&
+                        eventData.id.toString() === expectedEventId.toString());
+                if (eventData && idMatches) {
+                    return { receipt: finalReceipt, eventData };
+                }
+            }
+        } catch (_finalCheckErr) {
+            // Final check failed; fall through to timeout error
+        }
+
+        throw new Error(
+            `Timeout: Blockchain finality exceeded maximum wait time (${maxWaitTime / 1000}s)`
+        );
+    }
+
+    async waitForBlockConfirmation(receipt, blockchain, confirmations = 1) {
+        await this.ensureBlockchainInfo(blockchain);
+        const web3Instance = await this.getWeb3Instance(blockchain);
+        const polling = blockchain.transactionFinalityPollingInterval || 6_000;
+        const maxWaitTime = blockchain.transactionFinalityMaxWaitTime || 300_000;
+        const startTime = Date.now();
+
+        while (Date.now() - startTime < maxWaitTime) {
+            try {
+                const currentBlock = await web3Instance.eth.getBlockNumber();
+                if (currentBlock >= receipt.blockNumber + confirmations) {
+                    const currentReceipt = await web3Instance.eth.getTransactionReceipt(
+                        receipt.transactionHash,
+                    );
+                    if (currentReceipt && currentReceipt.blockNumber === receipt.blockNumber) {
+                        return currentReceipt;
+                    }
+                    if (currentReceipt) {
+                        return currentReceipt;
+                    }
+                }
+            } catch (_rpcErr) {
+                // RPC hiccup; retry on next poll
+            }
+            await sleepForMilliseconds(polling);
+        }
+
+        const finalReceipt = await web3Instance.eth.getTransactionReceipt(
+            receipt.transactionHash,
+        );
+        if (finalReceipt) return finalReceipt;
+
+        throw new Error(
+            `Timeout: Block confirmation exceeded maximum wait time (${maxWaitTime / 1000}s)`
+        );
     }
 
     async getContractAddress(contractName, blockchain, force = false) {
@@ -557,6 +616,12 @@ export default class BlockchainServiceBase {
                 );
             }
 
+            if (receipt == null) {
+                throw new Error(
+                    'Transaction returned a null receipt. The RPC may be unreliable.',
+                );
+            }
+
             let { id } = await this.decodeEventLogs(
                 receipt,
                 'KnowledgeCollectionCreated',
@@ -572,7 +637,6 @@ export default class BlockchainServiceBase {
 
             return { knowledgeCollectionId: id, receipt };
         } catch (error) {
-            console.error('createKnowledgeCollection failed:', error);
             throw error;
         }
     }
@@ -1463,7 +1527,7 @@ export default class BlockchainServiceBase {
         return (maxBaseFee * BigInt(100 + Number(gasPriceBufferPercent))) / 100n + maxPriorityFee;
     }
 
-    buildEip1559FeesFromHistory(feeHistory, gasPriceBufferPercent = 0) {
+    buildEip1559FeesFromHistory(feeHistory, gasPriceBufferPercent = 0, blockchainName = '') {
         const baseFees = Array.from(feeHistory.baseFeePerGas ?? []);
         const priorityFees = Array.from(feeHistory.priorityFees ?? []);
 
@@ -1472,7 +1536,13 @@ export default class BlockchainServiceBase {
         }
 
         const maxBaseFee = baseFees.reduce((max, bf) => (bf > max ? bf : max), 0n);
-        const maxPriorityFeePerGas = priorityFees.reduce((max, pf) => (pf > max ? pf : max), 0n);
+        let maxPriorityFeePerGas = priorityFees.reduce((max, pf) => (pf > max ? pf : max), 0n);
+
+        if (this.isGnosis(blockchainName) && maxPriorityFeePerGas < MIN_PRIORITY_FEE_WEI) {
+            maxPriorityFeePerGas = MIN_PRIORITY_FEE_WEI;
+        } else if (maxPriorityFeePerGas === 0n) {
+            maxPriorityFeePerGas = 1n;
+        }
 
         const maxFeePerGas = this.applyGasPriceBuffer(
             maxBaseFee,
@@ -1547,6 +1617,7 @@ export default class BlockchainServiceBase {
             const { maxFeePerGas, maxPriorityFeePerGas } = this.buildEip1559FeesFromHistory(
                 feeHistory,
                 blockchain.gasPriceBufferPercent ?? 0,
+                blockchain.name ?? '',
             );
 
             return {
