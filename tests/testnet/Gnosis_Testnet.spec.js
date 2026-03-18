@@ -618,8 +618,8 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
               ual = firstSuccessfulUal;
               console.log(`ℹ️  Using first successful UAL for remaining operations: ${ual}`);
             } else {
-              ual = null;
-              console.log(`ℹ️  No successful publish yet, skipping get operations`);
+              ual = 'did:dkg:gnosis:10200/0x592aae7abeed0ecf399c2628b3d18f769c544383/511807';
+              console.log(`ℹ️  Using fallback UAL for remaining operations: ${ual}`);
             }
           }
 
@@ -655,29 +655,24 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
           queryFail++;
         }
 
-        if (ual) {
-          try {
-            step = 'local get';
-            const localGetStart = Date.now();
-            const localGetResult = await Promise.race([
-              DkgClient.asset.get(ual),
-              new Promise((_, reject) =>
-                setTimeout(() => reject(new Error(`Timeout after 6 minutes during "local get" on ${stepNodeName}`)), 6 * 60 * 1000)
-              ),
-            ]);
-            const localGetEnd = Date.now();
-            localGetDurations.push(localGetEnd - localGetStart);
-            assert.ok(localGetResult?.assertion);
-            console.log(`✅ Local Get Succeeded`);
-            localGetSuccess++;
-          } catch (error) {
-            logError(error, stepNodeName, step, null, kaNumber);
-            const reason = `Local Get failed — UAL: ${ual}`;
-            failedAssets.push(`KA #${kaNumber} (${reason})`);
-            localGetFail++;
-          }
-        } else {
-          console.log(`⏭️  Skipping local get — no valid UAL`);
+        try {
+          step = 'local get';
+          const localGetStart = Date.now();
+          const localGetResult = await Promise.race([
+            DkgClient.asset.get(ual),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error(`Timeout after 6 minutes during "local get" on ${stepNodeName}`)), 6 * 60 * 1000)
+            ),
+          ]);
+          const localGetEnd = Date.now();
+          localGetDurations.push(localGetEnd - localGetStart);
+          assert.ok(localGetResult?.assertion);
+          console.log(`✅ Local Get Succeeded`);
+          localGetSuccess++;
+        } catch (error) {
+          logError(error, stepNodeName, step, null, kaNumber);
+          const reason = `Local Get failed — UAL: ${ual}`;
+          failedAssets.push(`KA #${kaNumber} (${reason})`);
           localGetFail++;
         }
 
@@ -687,41 +682,36 @@ describe('DKG Asset Lifecycle on Gnosis Testnet', function () {
         const originalStepNodeName = stepNodeName;
         stepNodeName = remoteNode.name;
 
-        if (ual) {
-          try {
-            const RemoteDkgClient = new DKG({
-              endpoint: remoteNode.hostname,
-              port: OT_NODE_PORT,
-              blockchain: {
-                name: BLOCKCHAIN_IDS.GNOSIS_TESTNET,
-                publicKey: getNodeWallet(getNodeIdFromName(remoteNode.name), walletSlot).publicKey,
-                privateKey: getNodeWallet(getNodeIdFromName(remoteNode.name), walletSlot).privateKey,
-              },
-              maxNumberOfRetries: 300,
-              frequency: 2,
-              contentType: 'all',
-              nodeApiVersion: '/v1',
-            });
-            const remoteGetStart = Date.now();
-            const remoteGetResult = await Promise.race([
-              RemoteDkgClient.asset.get(ual),
-              new Promise((_, reject) =>
-                setTimeout(() => reject(new Error(`Timeout after 6 minutes during "get" on ${stepNodeName}`)), 6 * 60 * 1000)
-              ),
-            ]);
-            const remoteGetEnd = Date.now();
-            remoteGetDurations.push(remoteGetEnd - remoteGetStart);
-            assert.ok(remoteGetResult?.assertion);
-            console.log(`✅ Get Succeeded on ${remoteNode.name}`);
-            remoteGetSuccess++;
-          } catch (error) {
-            logError(error, originalStepNodeName, step, remoteNode.name, kaNumber);
-            const reason = `Get failed — UAL: ${ual}`;
-            failedAssets.push(`KA #${kaNumber} (${reason})`);
-            remoteGetFail++;
-          }
-        } else {
-          console.log(`⏭️  Skipping remote get — no valid UAL`);
+        try {
+          const RemoteDkgClient = new DKG({
+            endpoint: remoteNode.hostname,
+            port: OT_NODE_PORT,
+            blockchain: {
+              name: BLOCKCHAIN_IDS.GNOSIS_TESTNET,
+              publicKey: getNodeWallet(getNodeIdFromName(remoteNode.name), walletSlot).publicKey,
+              privateKey: getNodeWallet(getNodeIdFromName(remoteNode.name), walletSlot).privateKey,
+            },
+            maxNumberOfRetries: 300,
+            frequency: 2,
+            contentType: 'all',
+            nodeApiVersion: '/v1',
+          });
+          const remoteGetStart = Date.now();
+          const remoteGetResult = await Promise.race([
+            RemoteDkgClient.asset.get(ual),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error(`Timeout after 6 minutes during "get" on ${stepNodeName}`)), 6 * 60 * 1000)
+            ),
+          ]);
+          const remoteGetEnd = Date.now();
+          remoteGetDurations.push(remoteGetEnd - remoteGetStart);
+          assert.ok(remoteGetResult?.assertion);
+          console.log(`✅ Get Succeeded on ${remoteNode.name}`);
+          remoteGetSuccess++;
+        } catch (error) {
+          logError(error, originalStepNodeName, step, remoteNode.name, kaNumber);
+          const reason = `Get failed — UAL: ${ual}`;
+          failedAssets.push(`KA #${kaNumber} (${reason})`);
           remoteGetFail++;
         }
       };

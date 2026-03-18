@@ -404,6 +404,7 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
       const remoteGetDurations = [];
 
       const failedAssets = [];
+      let firstSuccessfulUal = null;
 
       const PARALLEL_KA_BATCH_SIZE = Number(process.env.TEST_PARALLEL_KA_BATCH_SIZE || 10);
       const TEST_KA_BATCHES = Number(process.env.TEST_KA_BATCHES || 10);
@@ -554,6 +555,7 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
                 mintedChildUalTotal += mintedChildCount;
                 publishSuccess++;
                 publishSucceeded = true;
+                if (!firstSuccessfulUal) firstSuccessfulUal = ual;
               })(),
               new Promise((_, reject) =>
                 setTimeout(() => reject(new Error(`Timeout after 6 minutes during "publishing" on ${stepNodeName}`)), 6 * 60 * 1000)
@@ -611,8 +613,13 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
             ual = actualUal;
           } else {
             console.log(`❌ Publish failed | No UAL | Operation ID: ${operationId}`);
-            ual = 'did:dkg:otp:20430/0xcdb28e93ed340ec10a71bba00a31dbfcf1bd5d37/179542';
-            console.log(`ℹ️  Using fallback UAL for remaining operations: ${ual}`);
+            if (firstSuccessfulUal) {
+              ual = firstSuccessfulUal;
+              console.log(`ℹ️  Using first successful UAL for remaining operations: ${ual}`);
+            } else {
+              ual = 'did:dkg:otp:20430/0xcdb28e93ed340ec10a71bba00a31dbfcf1bd5d37/179542';
+              console.log(`ℹ️  Using fallback UAL for remaining operations: ${ual}`);
+            }
           }
 
           const reason = actualUal ? 'Publish failed but UAL exists' : 'Publish failed — No UAL';
@@ -628,11 +635,9 @@ describe('DKG Asset Lifecycle on Neuroweb Testnet', function () {
           const queryStart = Date.now();
           const queryResult = await Promise.race([
             DkgClient.graph.query(
-              `PREFIX schema: <http://schema.org/>
-               SELECT ?s ?name ?description
-               WHERE {
-                 ?s schema:name ?name ; schema:description ?description .
-               }`,
+              TEST_COMPACT_CHUNK_MODE
+                ? `SELECT ?s ?weight WHERE { ?s <https://dkg.synthetic/vocab/weight> ?weight . } LIMIT 10`
+                : `PREFIX schema: <http://schema.org/> SELECT ?s ?name ?description WHERE { ?s schema:name ?name ; schema:description ?description . } LIMIT 10`,
               'SELECT'
             ),
             new Promise((_, reject) =>

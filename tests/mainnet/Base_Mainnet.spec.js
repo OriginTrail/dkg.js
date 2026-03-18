@@ -261,6 +261,7 @@ describe('DKG Asset Lifecycle on Base Mainnet', function () {
       const remoteGetDurations = [];
 
       const failedAssets = [];
+      let firstSuccessfulUal = null;
 
       const DkgClient = new DKG({
         endpoint: hostname,
@@ -317,6 +318,7 @@ describe('DKG Asset Lifecycle on Base Mainnet', function () {
               assert.ok(ual);
           console.log(`✅ Published KA #${i + 1} | UAL: ${ual} | Operation ID: ${operationId}`);
               publishSuccess++;
+              if (!firstSuccessfulUal) firstSuccessfulUal = ual;
 
             })(),
             new Promise((_, reject) =>
@@ -351,8 +353,13 @@ describe('DKG Asset Lifecycle on Base Mainnet', function () {
             ual = actualUal;
           } else {
             console.log(`❌ Publish failed | No UAL | Operation ID: ${operationId}`);
-            ual = 'did:dkg:base:8453/0xc28f310a87f7621a087a603e2ce41c22523f11d7/734444';
-            console.log(`ℹ️  Using fallback UAL for remaining operations: ${ual}`);
+            if (firstSuccessfulUal) {
+              ual = firstSuccessfulUal;
+              console.log(`ℹ️  Using first successful UAL for remaining operations: ${ual}`);
+            } else {
+              ual = 'did:dkg:base:8453/0xc28f310a87f7621a087a603e2ce41c22523f11d7/734444';
+              console.log(`ℹ️  Using fallback UAL for remaining operations: ${ual}`);
+            }
           }
           
           const reason = actualUal ? 'Publish failed but UAL exists' : 'Publish failed — No UAL';

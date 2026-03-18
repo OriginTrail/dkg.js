@@ -261,6 +261,7 @@ describe('DKG Asset Lifecycle on Gnosis Mainnet', function () {
       const remoteGetDurations = [];
 
       const failedAssets = [];
+      let firstSuccessfulUal = null;
 
       const DkgClient = new DKG({
         endpoint: hostname,
@@ -318,6 +319,7 @@ describe('DKG Asset Lifecycle on Gnosis Mainnet', function () {
               assert.ok(ual);
           console.log(`✅ Published KA #${i + 1} | UAL: ${ual} | Operation ID: ${operationId}`);
               publishSuccess++;
+              if (!firstSuccessfulUal) firstSuccessfulUal = ual;
 
             })(),
             new Promise((_, reject) =>
@@ -352,8 +354,13 @@ describe('DKG Asset Lifecycle on Gnosis Mainnet', function () {
             ual = actualUal;
           } else {
             console.log(`❌ Publish failed | No UAL | Operation ID: ${operationId}`);
-            ual = 'did:dkg:gnosis:100/0x3cb124e1cdceecf6e464bb185325608dbe635f5d/2733067';
-            console.log(`ℹ️  Using fallback UAL for remaining operations: ${ual}`);
+            if (firstSuccessfulUal) {
+              ual = firstSuccessfulUal;
+              console.log(`ℹ️  Using first successful UAL for remaining operations: ${ual}`);
+            } else {
+              ual = 'did:dkg:gnosis:100/0x3cb124e1cdceecf6e464bb185325608dbe635f5d/2733067';
+              console.log(`ℹ️  Using fallback UAL for remaining operations: ${ual}`);
+            }
           }
           
           const reason = actualUal ? 'Publish failed but UAL exists' : 'Publish failed — No UAL';

@@ -261,6 +261,7 @@ describe('DKG Asset Lifecycle on Neuroweb Mainnet', function () {
       const remoteGetDurations = [];
 
       const failedAssets = [];
+      let firstSuccessfulUal = null;
 
       const DkgClient = new DKG({
         endpoint: hostname,
@@ -319,6 +320,7 @@ describe('DKG Asset Lifecycle on Neuroweb Mainnet', function () {
               assert.ok(ual);
               console.log(`✅ Published KA #${i + 1} | UAL: ${ual} | Operation ID: ${operationId}`);
               publishSuccess++;
+              if (!firstSuccessfulUal) firstSuccessfulUal = ual;
 
             })(),
             new Promise((_, reject) =>
@@ -353,8 +355,13 @@ describe('DKG Asset Lifecycle on Neuroweb Mainnet', function () {
             ual = actualUal;
           } else {
             console.log(`❌ Publish failed | No UAL | Operation ID: ${operationId}`);
-            ual = 'did:dkg:otp:2043/0x8f678eb0e57ee8a109b295710e23076fa3a443fe/3946237';
-            console.log(`ℹ️  Using fallback UAL for remaining operations: ${ual}`);
+            if (firstSuccessfulUal) {
+              ual = firstSuccessfulUal;
+              console.log(`ℹ️  Using first successful UAL for remaining operations: ${ual}`);
+            } else {
+              ual = 'did:dkg:otp:2043/0x8f678eb0e57ee8a109b295710e23076fa3a443fe/3946237';
+              console.log(`ℹ️  Using fallback UAL for remaining operations: ${ual}`);
+            }
           }
           
           const reason = actualUal ? 'Publish failed but UAL exists' : 'Publish failed — No UAL';
