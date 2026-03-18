@@ -192,6 +192,8 @@ export default class HttpService {
     ) {
         let retries = 0;
         let finality = 0;
+        const startTime = Date.now();
+        const maxTotalTime = 300_000; // 5 minutes total timeout
 
         const axios_config = {
             method: 'get',
@@ -201,9 +203,16 @@ export default class HttpService {
         };
 
         do {
+            // Check for total timeout
+            if (Date.now() - startTime >= maxTotalTime) {
+                throw Error(
+                    `Timeout: DKG finality exceeded maximum wait time (5 minutes) - Last finality: ${finality}, Required: ${requiredConfirmations}`
+                );
+            }
+
             if (retries > maxNumberOfRetries) {
                 throw Error(
-                    `Unable to achieve required confirmations. Max number of retries (${maxNumberOfRetries}) reached.`,
+                    `Unable to achieve required confirmations. Max number of retries (${maxNumberOfRetries}) reached. Last finality: ${finality}, Required: ${requiredConfirmations}`,
                 );
             }
 
@@ -217,7 +226,10 @@ export default class HttpService {
                 const response = await axios(axios_config);
                 finality = response.data.finality || 0;
             } catch (e) {
-                finality = 0;
+                // Don't reset finality to 0 on network errors, keep the last known value
+                // Only reset if we get a successful response with 0 finality
+                console.warn(`Warning: Network error during finality check for ${ual}: ${e.message}`);
+                // Don't increment finality, keep the last known value
             }
         } while (finality < requiredConfirmations && retries <= maxNumberOfRetries);
 

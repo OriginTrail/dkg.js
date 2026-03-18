@@ -110,6 +110,7 @@ export const NEUROWEB_INCENTIVE_TYPE_CHAINS = [
 export const TRANSACTION_RETRY_ERRORS = [
     'transaction was not mined',
     'already known',
+    'alreadyknown',
     'replacement transaction underpriced',
 ];
 
@@ -212,9 +213,9 @@ export const DEFAULT_PROXIMITY_SCORE_FUNCTIONS_PAIR_IDS = {
 export const DEFAULT_NEUROWEB_FINALITY_PARAMETERS = {
     WAIT_NEUROWEB_TX_FINALIZATION: false,
     TX_FINALITY_POLLING_INTERVAL: 6_000,
-    TX_FINALITY_MAX_WAIT_TIME: 60_000,
+    TX_FINALITY_MAX_WAIT_TIME: 300_000,
     TX_REMINING_POLLING_INTERVAL: 6_000,
-    TX_REMINING_MAX_WAIT_TIME: 60_000,
+    TX_REMINING_MAX_WAIT_TIME: 300_000, 
 };
 
 export const DEFAULT_PARAMETERS = {

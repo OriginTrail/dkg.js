@@ -492,6 +492,7 @@ export default class AssetOperationsManager {
         let knowledgeCollectionId;
         let mintKnowledgeCollectionReceipt;
 
+        try {
         ({ knowledgeCollectionId, receipt: mintKnowledgeCollectionReceipt } =
             await this.blockchainService.createKnowledgeCollection(
                 {
@@ -515,6 +516,11 @@ export default class AssetOperationsManager {
                 blockchain,
                 stepHooks,
             ));
+        } catch (error) {
+            // Attach operationId to blockchain transaction errors (no UAL yet at this stage)
+            error.operationId = publishOperationId;
+            throw error;
+        }
 
         // ------------------------------------------------------------------
         // Ensure KC minting transaction is reorg-safe by waiting until it is
@@ -554,11 +560,11 @@ export default class AssetOperationsManager {
      * Phase 3 of asset creation: poll node finality status for the minted asset.
      * @async
      * @param {string} UAL - Universal Asset Locator returned from minting.
+     * @param {string} publishOperationId - The publish operation ID for error tracking.
      * @param {Object} [options={}] - Finality options.
      * @returns {Object} Finality status details.
      */
-    async finalizePublishPhase(UAL, options = {}) {
-        // UAL should point to a knowledge collection (kcUAL), not a knowledge asset (kaUAL).
+    async finalizePublishPhase(UAL, publishOperationId, options = {}) {
         this.validationService.validateUAL(UAL);
 
         const {
@@ -581,6 +587,7 @@ export default class AssetOperationsManager {
 
         let finalityStatusResult = 0;
         if (minimumNumberOfFinalizationConfirmations > 0) {
+            try {
             finalityStatusResult = await this.nodeApiService.finalityStatus(
                 endpoint,
                 port,
@@ -590,6 +597,12 @@ export default class AssetOperationsManager {
                 maxNumberOfRetries,
                 frequency,
             );
+            } catch (error) {
+                // Attach UAL and operationId to the error so they can be logged even when finality fails
+                error.UAL = UAL;
+                error.operationId = publishOperationId;
+                throw error;
+            }
         }
 
         return {
@@ -672,6 +685,7 @@ export default class AssetOperationsManager {
 
         const finalityOperationOutput = await this.finalizePublishPhase(
             mintOperationOutput.UAL,
+            publishOperationId,
             options,
         );
 
