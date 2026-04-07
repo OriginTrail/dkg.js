@@ -44,3 +44,4 @@ ual-verification.log
 # All log files from test runs
 *.log
 *.md
+publisher_wallets_neuroweb.env
