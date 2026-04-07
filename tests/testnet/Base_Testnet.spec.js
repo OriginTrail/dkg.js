@@ -79,13 +79,6 @@ const nodes = [
   { name: 'Node 06', hostname: 'https://v6-pegasus-node-06.origin-trail.network' },
   { name: 'Node 07', hostname: 'https://v6-pegasus-node-07.origin-trail.network' },
   { name: 'Node 08', hostname: 'https://v6-pegasus-node-08.origin-trail.network' },
-  { name: 'Node 09', hostname: 'https://v6-pegasus-node-09.origin-trail.network' },
-  { name: 'Node 10', hostname: 'https://v6-pegasus-node-10.origin-trail.network' },
-  { name: 'Node 13', hostname: 'https://v6-pegasus-node-13.origin-trail.network' },
-  { name: 'Node 14', hostname: 'https://v6-pegasus-node-14.origin-trail.network' },
-  { name: 'Node 21', hostname: 'https://v6-pegasus-node-21.origin-trail.network' },
-  { name: 'Node 23', hostname: 'https://v6-pegasus-node-23.origin-trail.network' },
-  { name: 'Node 37', hostname: 'https://v6-pegasus-node-37.origin-trail.network' },
 ];
 
 function getRandomWord() {
