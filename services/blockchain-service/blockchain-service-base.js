@@ -1361,12 +1361,22 @@ export default class BlockchainServiceBase {
     // Get ask operations
     // To get price, multiply with size in bytes and epochs
     async getStakeWeightedAverageAsk(blockchain) {
-        return this.callContractFunction(
-            'AskStorage',
-            'getStakeWeightedAverageAsk',
+        const askStorageAddress = await this.callContractFunction(
+            'KnowledgeCollection',
+            'askStorage',
             [],
             blockchain,
         );
+
+        await this.ensureBlockchainInfo(blockchain);
+        const web3Instance = await this.getWeb3Instance(blockchain);
+        const askStorage = new web3Instance.eth.Contract(
+            this.abis.AskStorage,
+            askStorageAddress,
+            { from: blockchain.publicKey },
+        );
+
+        return askStorage.methods.getStakeWeightedAverageAsk().call();
     }
 
     // Blockchain operations
